@@ -1,0 +1,94 @@
+import 'dart:async';
+import 'dart:io';
+
+import '../../offline/application/offline_coordinator.dart';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+
+import '../../features/connection/application/session_controller.dart';
+import '../data/reader_asset_store.dart';
+import '../data/reader_repository.dart';
+import '../data/reader_store.dart';
+import '../data/tiered_page_source.dart';
+import '../domain/reading_settings.dart';
+import '../presentation/reader_image_provider.dart';
+
+final readerAssetStoreProvider = Provider<Future<ReaderAssetStore>>((
+  ref,
+) async {
+  final database = await ref.watch(databaseProvider);
+  final support = await getApplicationSupportDirectory();
+  final cache = await getApplicationCacheDirectory();
+  final store = ReaderAssetStore(
+    database,
+    Directory('${cache.path}/reader'),
+    Directory('${support.path}/downloads'),
+  );
+  try {
+    await store.recoverCache();
+  } catch (_) {
+    /* Evictable cache failure must not block downloaded reading. */
+  }
+  return store;
+});
+final pageNetworkGateProvider = Provider<PageNetworkGate>((ref) {
+  ref.watch(sessionProvider.select((state) => state.session?.accountId));
+  return PageNetworkGate();
+});
+final readerRepositoryProvider = FutureProvider.autoDispose<ReaderRepository?>((
+  ref,
+) async {
+  final account = ref.watch(
+    sessionProvider.select(
+      (state) =>
+          state.phase == SessionPhase.ready ? state.session?.accountId : null,
+    ),
+  );
+  if (account == null) return null;
+  var alive = true;
+  ReaderRepository? repository;
+  ref.onDispose(() {
+    alive = false;
+    repository?.close();
+    ReaderDecodedCache.clearAccount(account);
+  });
+  await ref.watch(nativeForegroundProvider.future);
+  final database = await ref.watch(databaseProvider);
+  final assets = await ref.watch(readerAssetStoreProvider);
+  if (!alive) return null;
+  final controller = ref.read(sessionProvider.notifier);
+  final client = controller.client;
+  if (client == null) return null;
+  repository = ReaderRepository(
+    ReaderStore(database, account),
+    assets,
+    client,
+    ref.watch(pageNetworkGateProvider),
+    isCurrent: () => alive && controller.client == client,
+  );
+  return repository;
+});
+final openReaderProvider = FutureProvider.autoDispose
+    .family<OpenReader, String>((ref, bookId) async {
+      final repository = await ref.watch(readerRepositoryProvider.future);
+      if (repository == null) {
+        throw StateError('Reader requires an active session');
+      }
+      var alive = true;
+      OpenReader? opened;
+      ref.onDispose(() {
+        alive = false;
+        if (opened != null) repository.release(opened);
+      });
+      opened = await repository.open(bookId);
+      if (!alive) repository.release(opened);
+      return opened;
+    }, retry: (_, _) => null);
+final readingSettingsProvider = StreamProvider.autoDispose
+    .family<ReadingSettings, String>((ref, bookId) async* {
+      final opened = await ref.watch(openReaderProvider(bookId).future);
+      final repository = await ref.watch(readerRepositoryProvider.future);
+      if (repository == null) return;
+      yield* repository.store.settings(opened.manifest);
+    });

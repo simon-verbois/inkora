@@ -1,0 +1,87 @@
+{
+  "content": [
+    {
+      "id": "fixture-id-1",
+      "seriesId": "fixture-id-2",
+      "seriesTitle": "Fixture",
+      "libraryId": "fixture-id-3",
+      "name": "Fixture",
+      "url": "file:/fixtures/book.cbz",
+      "number": 16,
+      "created": "2026-01-01T00:00:00Z",
+      "lastModified": "2026-01-01T00:00:00Z",
+      "fileLastModified": "2026-01-01T00:00:00Z",
+      "sizeBytes": 112585605,
+      "size": "107.4 MiB",
+      "media": {
+        "status": "READY",
+        "mediaType": "application/zip",
+        "pagesCount": 198,
+        "comment": "",
+        "epubDivinaCompatible": false,
+        "epubIsKepub": false,
+        "mediaProfile": "DIVINA"
+      },
+      "metadata": {
+        "title": "Fixture",
+        "titleLock": false,
+        "summary": "",
+        "summaryLock": false,
+        "number": "Fixture",
+        "numberLock": false,
+        "numberSort": 16.0,
+        "numberSortLock": false,
+        "releaseDate": null,
+        "releaseDateLock": false,
+        "authors": [
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          },
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          }
+        ],
+        "authorsLock": false,
+        "tags": [],
+        "tagsLock": false,
+        "isbn": "",
+        "isbnLock": false,
+        "links": [],
+        "linksLock": false,
+        "created": "2026-01-01T00:00:00Z",
+        "lastModified": "2026-01-01T00:00:00Z"
+      },
+      "readProgress": null,
+      "deleted": false,
+      "fileHash": "fixture-hash",
+      "oneshot": false
+    }
+  ],
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 200,
+    "sort": {
+      "empty": true,
+      "sorted": false,
+      "unsorted": true
+    },
+    "offset": 0,
+    "paged": true,
+    "unpaged": false
+  },
+  "totalElements": 1,
+  "totalPages": 1,
+  "last": true,
+  "size": 200,
+  "number": 0,
+  "sort": {
+    "empty": true,
+    "sorted": false,
+    "unsorted": true
+  },
+  "numberOfElements": 1,
+  "first": true,
+  "empty": false
+}

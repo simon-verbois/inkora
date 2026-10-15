@@ -1,0 +1,177 @@
+{
+  "content": [
+    {
+      "id": "fixture-id-6",
+      "seriesId": "fixture-id-3",
+      "seriesTitle": "Fixture",
+      "libraryId": "fixture-id-4",
+      "name": "Fixture",
+      "url": "file:/fixtures/book.cbz",
+      "number": 17,
+      "created": "2026-01-01T00:00:00Z",
+      "lastModified": "2026-01-01T00:00:00Z",
+      "fileLastModified": "2026-01-01T00:00:00Z",
+      "sizeBytes": 331676823,
+      "size": "316.3 MiB",
+      "media": {
+        "status": "READY",
+        "mediaType": "application/zip",
+        "pagesCount": 90,
+        "comment": "",
+        "epubDivinaCompatible": false,
+        "epubIsKepub": false,
+        "mediaProfile": "DIVINA"
+      },
+      "metadata": {
+        "title": "Fixture",
+        "titleLock": false,
+        "summary": "",
+        "summaryLock": false,
+        "number": "Fixture",
+        "numberLock": false,
+        "numberSort": 17.0,
+        "numberSortLock": false,
+        "releaseDate": null,
+        "releaseDateLock": false,
+        "authors": [
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          },
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          },
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          },
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          },
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          }
+        ],
+        "authorsLock": false,
+        "tags": [],
+        "tagsLock": false,
+        "isbn": "",
+        "isbnLock": false,
+        "links": [],
+        "linksLock": false,
+        "created": "2026-01-01T00:00:00Z",
+        "lastModified": "2026-01-01T00:00:00Z"
+      },
+      "readProgress": null,
+      "deleted": false,
+      "fileHash": "fixture-hash",
+      "oneshot": false
+    },
+    {
+      "id": "fixture-id-7",
+      "seriesId": "fixture-id-3",
+      "seriesTitle": "Fixture",
+      "libraryId": "fixture-id-4",
+      "name": "Fixture",
+      "url": "file:/fixtures/book.cbz",
+      "number": 1,
+      "created": "2026-01-01T00:00:00Z",
+      "lastModified": "2026-01-01T00:00:00Z",
+      "fileLastModified": "2026-01-01T00:00:00Z",
+      "sizeBytes": 231004070,
+      "size": "220.3 MiB",
+      "media": {
+        "status": "READY",
+        "mediaType": "application/zip",
+        "pagesCount": 180,
+        "comment": "",
+        "epubDivinaCompatible": false,
+        "epubIsKepub": false,
+        "mediaProfile": "DIVINA"
+      },
+      "metadata": {
+        "title": "Fixture",
+        "titleLock": false,
+        "summary": "",
+        "summaryLock": false,
+        "number": "Fixture",
+        "numberLock": false,
+        "numberSort": 1.0,
+        "numberSortLock": false,
+        "releaseDate": null,
+        "releaseDateLock": false,
+        "authors": [
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          },
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          },
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          },
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          },
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          }
+        ],
+        "authorsLock": false,
+        "tags": [],
+        "tagsLock": false,
+        "isbn": "",
+        "isbnLock": false,
+        "links": [],
+        "linksLock": false,
+        "created": "2026-01-01T00:00:00Z",
+        "lastModified": "2026-01-01T00:00:00Z"
+      },
+      "readProgress": {
+        "page": 1,
+        "completed": false,
+        "readDate": "2026-01-01T00:00:00Z",
+        "created": "2026-01-01T00:00:00Z",
+        "lastModified": "2026-01-01T00:00:00Z",
+        "deviceId": "",
+        "deviceName": ""
+      },
+      "deleted": false,
+      "fileHash": "fixture-hash",
+      "oneshot": false
+    }
+  ],
+  "pageable": {
+    "pageNumber": 1,
+    "pageSize": 2,
+    "sort": {
+      "empty": true,
+      "sorted": false,
+      "unsorted": true
+    },
+    "offset": 2,
+    "paged": true,
+    "unpaged": false
+  },
+  "totalElements": 961,
+  "totalPages": 481,
+  "last": false,
+  "size": 2,
+  "number": 1,
+  "sort": {
+    "empty": true,
+    "sorted": false,
+    "unsorted": true
+  },
+  "numberOfElements": 2,
+  "first": false,
+  "empty": false
+}

@@ -1,0 +1,17 @@
+{
+  "modified": "2026-10-14T00:00:00Z",
+  "device": {
+    "id": "fixture-device",
+    "name": "Inkora fixture"
+  },
+  "locator": {
+    "href": "EPUB/chapter2.xhtml",
+    "type": "application/xhtml+xml",
+    "locations": {
+      "progression": 0.0,
+      "position": 22,
+      "totalProgression": 0.52380955
+    },
+    "koboSpan": "kobo.1.1"
+  }
+}

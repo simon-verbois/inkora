@@ -1,0 +1,16 @@
+{
+  "id": "fixture-id-1",
+  "email": "reader@example.test",
+  "roles": [
+    "ADMIN",
+    "FILE_DOWNLOAD",
+    "KOBO_SYNC",
+    "KOREADER_SYNC",
+    "PAGE_STREAMING",
+    "USER"
+  ],
+  "sharedAllLibraries": true,
+  "sharedLibrariesIds": [],
+  "labelsAllow": [],
+  "labelsExclude": []
+}

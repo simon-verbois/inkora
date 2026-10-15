@@ -1,0 +1,21 @@
+{
+  "id": "fixture-epub",
+  "libraryId": "fixture-library",
+  "seriesId": "fixture-series-epub",
+  "metadata": {
+    "title": "Fixture EPUB"
+  },
+  "sizeBytes": 3464,
+  "fileHash": "synthetic-ebook-hash",
+  "fileLastModified": "2026-10-14T00:00:00Z",
+  "media": {
+    "status": "READY",
+    "mediaType": "application/epub+zip",
+    "pagesCount": 4,
+    "comment": "",
+    "epubDivinaCompatible": false,
+    "epubIsKepub": false,
+    "mediaProfile": "EPUB"
+  },
+  "deleted": false
+}

@@ -1,0 +1,21 @@
+{
+  "id": "fixture-pdf",
+  "libraryId": "fixture-library",
+  "seriesId": "fixture-series-pdf",
+  "metadata": {
+    "title": "Fixture PDF"
+  },
+  "sizeBytes": 1262,
+  "fileHash": "synthetic-ebook-hash",
+  "fileLastModified": "2026-10-14T00:00:00Z",
+  "media": {
+    "status": "READY",
+    "mediaType": "application/pdf",
+    "pagesCount": 3,
+    "comment": "",
+    "epubDivinaCompatible": false,
+    "epubIsKepub": false,
+    "mediaProfile": "PDF"
+  },
+  "deleted": false
+}

@@ -1,0 +1,163 @@
+{
+  "content": [
+    {
+      "id": "fixture-id-6",
+      "libraryId": "fixture-id-1",
+      "name": "Fixture",
+      "url": "file:/fixtures/book.cbz",
+      "created": "2026-01-01T00:00:00Z",
+      "lastModified": "2026-01-01T00:00:00Z",
+      "fileLastModified": "2026-01-01T00:00:00Z",
+      "booksCount": 1,
+      "booksReadCount": 0,
+      "booksUnreadCount": 1,
+      "booksInProgressCount": 0,
+      "metadata": {
+        "status": "ONGOING",
+        "statusLock": false,
+        "title": "Fixture",
+        "titleLock": false,
+        "titleSort": "Fixture",
+        "titleSortLock": false,
+        "summary": "",
+        "summaryLock": false,
+        "readingDirection": "",
+        "readingDirectionLock": false,
+        "publisher": "Fixture",
+        "publisherLock": false,
+        "ageRating": null,
+        "ageRatingLock": false,
+        "language": "Fixture",
+        "languageLock": false,
+        "genres": [
+          "Fixture"
+        ],
+        "genresLock": false,
+        "tags": [],
+        "tagsLock": false,
+        "totalBookCount": null,
+        "totalBookCountLock": false,
+        "sharingLabels": [],
+        "sharingLabelsLock": false,
+        "links": [],
+        "linksLock": false,
+        "alternateTitles": [],
+        "alternateTitlesLock": false,
+        "created": "2026-01-01T00:00:00Z",
+        "lastModified": "2026-01-01T00:00:00Z"
+      },
+      "booksMetadata": {
+        "authors": [
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          }
+        ],
+        "tags": [],
+        "releaseDate": "2026-01-01",
+        "summary": "Fixture",
+        "summaryNumber": "Fixture",
+        "created": "2026-01-01T00:00:00Z",
+        "lastModified": "2026-01-01T00:00:00Z"
+      },
+      "deleted": false,
+      "oneshot": false
+    },
+    {
+      "id": "fixture-id-7",
+      "libraryId": "fixture-id-1",
+      "name": "Fixture",
+      "url": "file:/fixtures/book.cbz",
+      "created": "2026-01-01T00:00:00Z",
+      "lastModified": "2026-01-01T00:00:00Z",
+      "fileLastModified": "2026-01-01T00:00:00Z",
+      "booksCount": 3,
+      "booksReadCount": 0,
+      "booksUnreadCount": 3,
+      "booksInProgressCount": 0,
+      "metadata": {
+        "status": "ONGOING",
+        "statusLock": false,
+        "title": "Fixture",
+        "titleLock": false,
+        "titleSort": "Fixture",
+        "titleSortLock": false,
+        "summary": "",
+        "summaryLock": false,
+        "readingDirection": "",
+        "readingDirectionLock": false,
+        "publisher": "Fixture",
+        "publisherLock": false,
+        "ageRating": null,
+        "ageRatingLock": false,
+        "language": "Fixture",
+        "languageLock": false,
+        "genres": [
+          "Fixture",
+          "Fixture",
+          "Fixture",
+          "Fixture",
+          "Fixture"
+        ],
+        "genresLock": false,
+        "tags": [],
+        "tagsLock": false,
+        "totalBookCount": null,
+        "totalBookCountLock": false,
+        "sharingLabels": [],
+        "sharingLabelsLock": false,
+        "links": [],
+        "linksLock": false,
+        "alternateTitles": [],
+        "alternateTitlesLock": false,
+        "created": "2026-01-01T00:00:00Z",
+        "lastModified": "2026-01-01T00:00:00Z"
+      },
+      "booksMetadata": {
+        "authors": [
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          },
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          }
+        ],
+        "tags": [],
+        "releaseDate": "2026-01-01",
+        "summary": "Fixture",
+        "summaryNumber": "Fixture",
+        "created": "2026-01-01T00:00:00Z",
+        "lastModified": "2026-01-01T00:00:00Z"
+      },
+      "deleted": false,
+      "oneshot": false
+    }
+  ],
+  "pageable": {
+    "pageNumber": 1,
+    "pageSize": 2,
+    "sort": {
+      "empty": true,
+      "sorted": false,
+      "unsorted": true
+    },
+    "offset": 2,
+    "paged": true,
+    "unpaged": false
+  },
+  "totalElements": 34,
+  "totalPages": 17,
+  "last": false,
+  "size": 2,
+  "number": 1,
+  "sort": {
+    "empty": true,
+    "sorted": false,
+    "unsorted": true
+  },
+  "numberOfElements": 2,
+  "first": false,
+  "empty": false
+}

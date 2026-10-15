@@ -1,0 +1,95 @@
+{
+  "id": "fixture-id-1",
+  "libraryId": "fixture-id-2",
+  "name": "Fixture",
+  "url": "file:/fixtures/book.cbz",
+  "created": "2026-01-01T00:00:00Z",
+  "lastModified": "2026-01-01T00:00:00Z",
+  "fileLastModified": "2026-01-01T00:00:00Z",
+  "booksCount": 20,
+  "booksReadCount": 0,
+  "booksUnreadCount": 19,
+  "booksInProgressCount": 1,
+  "metadata": {
+    "status": "ENDED",
+    "statusLock": false,
+    "title": "Fixture",
+    "titleLock": false,
+    "titleSort": "Fixture",
+    "titleSortLock": false,
+    "summary": "Fixture",
+    "summaryLock": false,
+    "readingDirection": "WEBTOON",
+    "readingDirectionLock": true,
+    "publisher": "Fixture",
+    "publisherLock": false,
+    "ageRating": null,
+    "ageRatingLock": false,
+    "language": "",
+    "languageLock": false,
+    "genres": [
+      "Genre 1",
+      "Genre 2",
+      "Genre 3",
+      "Genre 4"
+    ],
+    "genresLock": false,
+    "tags": [],
+    "tagsLock": false,
+    "totalBookCount": null,
+    "totalBookCountLock": false,
+    "sharingLabels": [],
+    "sharingLabelsLock": false,
+    "links": [
+      {
+        "label": "Reference 1",
+        "url": "https://example.test/reference/1"
+      },
+      {
+        "label": "Reference 2",
+        "url": "https://example.test/reference/2"
+      },
+      {
+        "label": "Reference 3",
+        "url": "https://example.test/reference/3"
+      }
+    ],
+    "linksLock": false,
+    "alternateTitles": [],
+    "alternateTitlesLock": false,
+    "created": "2026-01-01T00:00:00Z",
+    "lastModified": "2026-01-01T00:00:00Z"
+  },
+  "booksMetadata": {
+    "authors": [
+      {
+        "name": "Author 1",
+        "role": "writer"
+      },
+      {
+        "name": "Author 2",
+        "role": "writer"
+      },
+      {
+        "name": "Author 3",
+        "role": "penciller"
+      },
+      {
+        "name": "Author 4",
+        "role": "penciller"
+      },
+      {
+        "name": "Author 5",
+        "role": "writer"
+      }
+    ],
+    "tags": [],
+    "releaseDate": null,
+    "summary": "",
+    "summaryNumber": "",
+    "created": "2026-01-01T00:00:00Z",
+    "lastModified": "2026-01-01T00:00:00Z"
+  },
+  "deleted": false,
+  "oneshot": false
+}

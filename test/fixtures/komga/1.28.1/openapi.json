@@ -1,0 +1,1527 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Komga API",
+    "version": "1.28.1"
+  },
+  "paths": {
+    "/api/v2/users/me": {
+      "get": {
+        "operationId": "getCurrentUser",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "remember-me",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          }
+        },
+        "summary": "Retrieve current user",
+        "tags": [
+          "Current user"
+        ]
+      }
+    },
+    "/api/v1/books": {
+      "get": {
+        "deprecated": true,
+        "description": "Use POST /api/v1/books/list instead. Deprecated since 1.19.0.",
+        "operationId": "getAllBooksDeprecated",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "library_id",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "in": "query",
+            "name": "media_status",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "UNKNOWN",
+                  "ERROR",
+                  "READY",
+                  "UNSUPPORTED",
+                  "OUTDATED"
+                ]
+              }
+            }
+          },
+          {
+            "in": "query",
+            "name": "read_status",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "UNREAD",
+                  "READ",
+                  "IN_PROGRESS"
+                ]
+              }
+            }
+          },
+          {
+            "in": "query",
+            "name": "released_after",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tag",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "in": "query",
+            "name": "unpaged",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Zero-based page index (0..N)",
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "The size of the page to be returned",
+            "in": "query",
+            "name": "size",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Sorting criteria in the format: property(,asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageBookDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          }
+        },
+        "summary": "List books",
+        "tags": [
+          "Books",
+          "Deprecated"
+        ]
+      }
+    },
+    "/api/v1/books/{bookId}": {
+      "get": {
+        "operationId": "getBookById",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bookId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "summary": "Get book details",
+        "tags": [
+          "Books"
+        ]
+      }
+    },
+    "/api/v1/books/{bookId}/pages": {
+      "get": {
+        "operationId": "getBookPages",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bookId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PageDto"
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          }
+        },
+        "summary": "List book pages",
+        "tags": [
+          "Book Pages"
+        ]
+      }
+    },
+    "/api/v1/books/{bookId}/pages/{pageNumber}": {
+      "get": {
+        "description": "Required role: **PAGE_STREAMING**",
+        "operationId": "getBookPageByNumber",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bookId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "pageNumber",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Convert the image to the provided format.",
+            "in": "query",
+            "name": "convert",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "jpeg",
+                "png"
+              ]
+            }
+          },
+          {
+            "description": "If set to true, pages will start at index 0. If set to false, pages will start at index 1.",
+            "in": "query",
+            "name": "zero_based",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "description": "Some very limited server driven content negotiation is handled. If a book is a PDF book, and the Accept header contains 'application/pdf' as a more specific type than other 'image/' types, a raw PDF page will be returned.",
+            "in": "header",
+            "name": "Accept",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/MediaType"
+              }
+            }
+          },
+          {
+            "in": "query",
+            "name": "contentNegotiation",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "default": {
+            "content": {
+              "image/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "summary": "Get book page image",
+        "tags": [
+          "Book Pages"
+        ]
+      }
+    },
+    "/api/v1/books/{bookId}/read-progress": {
+      "delete": {
+        "description": "Mark book as unread",
+        "operationId": "deleteBookReadProgress",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bookId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          }
+        },
+        "summary": "Mark book as unread",
+        "tags": [
+          "Books"
+        ]
+      },
+      "patch": {
+        "description": "Mark book as read and/or change page progress.",
+        "operationId": "markBookReadProgress",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bookId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadProgressUpdateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          }
+        },
+        "summary": "Mark book's read progress",
+        "tags": [
+          "Books"
+        ]
+      }
+    },
+    "/api/v1/books/{bookId}/file": {
+      "delete": {
+        "description": "Required role: **ADMIN**",
+        "operationId": "deleteBookFile",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bookId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          },
+          "400": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          }
+        },
+        "summary": "Delete book file",
+        "tags": [
+          "Books"
+        ]
+      },
+      "get": {
+        "description": "Download the book file.\n\nRequired role: **FILE_DOWNLOAD**",
+        "operationId": "downloadBookFile",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bookId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreamingResponseBody"
+                }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreamingResponseBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          }
+        },
+        "summary": "Download book file",
+        "tags": [
+          "Books"
+        ]
+      }
+    },
+    "/api/v1/books/{bookId}/manifest/divina": {
+      "get": {
+        "operationId": "getBookWebPubManifestDivina",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bookId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/divina+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WPPublicationDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WPPublicationDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          }
+        },
+        "summary": "Get book's WebPub manifest (DiViNa)",
+        "tags": [
+          "WebPub Manifest"
+        ]
+      }
+    },
+    "/api/v1/books/{bookId}/manifest/epub": {
+      "get": {
+        "operationId": "getBookWebPubManifestEpub",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bookId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WPPublicationDto"
+                }
+              },
+              "application/webpub+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WPPublicationDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          }
+        },
+        "summary": "Get book's WebPub manifest (Epub)",
+        "tags": [
+          "WebPub Manifest"
+        ]
+      }
+    },
+    "/api/v1/books/{bookId}/manifest/pdf": {
+      "get": {
+        "operationId": "getBookWebPubManifestPdf",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bookId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WPPublicationDto"
+                }
+              },
+              "application/webpub+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WPPublicationDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          }
+        },
+        "summary": "Get book's WebPub manifest (PDF)",
+        "tags": [
+          "WebPub Manifest"
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UserDto": {
+        "type": "object",
+        "properties": {
+          "ageRestriction": {
+            "$ref": "#/components/schemas/AgeRestrictionDto"
+          },
+          "email": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "labelsAllow": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "labelsExclude": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "sharedAllLibraries": {
+            "type": "boolean"
+          },
+          "sharedLibrariesIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "email",
+          "id",
+          "labelsAllow",
+          "labelsExclude",
+          "roles",
+          "sharedAllLibraries",
+          "sharedLibrariesIds"
+        ]
+      },
+      "AgeRestrictionDto": {
+        "type": "object",
+        "properties": {
+          "age": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "restriction": {
+            "type": "string",
+            "enum": [
+              "ALLOW_ONLY",
+              "EXCLUDE"
+            ]
+          }
+        },
+        "required": [
+          "age",
+          "restriction"
+        ]
+      },
+      "ValidationErrorResponse": {
+        "type": "object",
+        "properties": {
+          "violations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Violation"
+            }
+          }
+        },
+        "required": [
+          "violations"
+        ]
+      },
+      "Violation": {
+        "type": "object",
+        "properties": {
+          "fieldName": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "PageBookDto": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookDto"
+            }
+          },
+          "empty": {
+            "type": "boolean"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "BookDto": {
+        "type": "object",
+        "properties": {
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "fileHash": {
+            "type": "string"
+          },
+          "fileLastModified": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string"
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "libraryId": {
+            "type": "string"
+          },
+          "media": {
+            "$ref": "#/components/schemas/MediaDto"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/BookMetadataDto"
+          },
+          "name": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "oneshot": {
+            "type": "boolean"
+          },
+          "readProgress": {
+            "$ref": "#/components/schemas/ReadProgressDto"
+          },
+          "seriesId": {
+            "type": "string"
+          },
+          "seriesTitle": {
+            "type": "string"
+          },
+          "size": {
+            "type": "string"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "created",
+          "deleted",
+          "fileHash",
+          "fileLastModified",
+          "id",
+          "lastModified",
+          "libraryId",
+          "media",
+          "metadata",
+          "name",
+          "number",
+          "oneshot",
+          "seriesId",
+          "seriesTitle",
+          "size",
+          "sizeBytes",
+          "url"
+        ]
+      },
+      "MediaDto": {
+        "type": "object",
+        "properties": {
+          "comment": {
+            "type": "string"
+          },
+          "epubDivinaCompatible": {
+            "type": "boolean"
+          },
+          "epubIsKepub": {
+            "type": "boolean"
+          },
+          "mediaProfile": {
+            "type": "string"
+          },
+          "mediaType": {
+            "type": "string"
+          },
+          "pagesCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "comment",
+          "epubDivinaCompatible",
+          "epubIsKepub",
+          "mediaProfile",
+          "mediaType",
+          "pagesCount",
+          "status"
+        ]
+      },
+      "BookMetadataDto": {
+        "type": "object",
+        "properties": {
+          "authors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuthorDto"
+            }
+          },
+          "authorsLock": {
+            "type": "boolean"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isbn": {
+            "type": "string"
+          },
+          "isbnLock": {
+            "type": "boolean"
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WebLinkDto"
+            }
+          },
+          "linksLock": {
+            "type": "boolean"
+          },
+          "number": {
+            "type": "string"
+          },
+          "numberLock": {
+            "type": "boolean"
+          },
+          "numberSort": {
+            "type": "number",
+            "format": "float"
+          },
+          "numberSortLock": {
+            "type": "boolean"
+          },
+          "releaseDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "releaseDateLock": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "summaryLock": {
+            "type": "boolean"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "tagsLock": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleLock": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "authors",
+          "authorsLock",
+          "created",
+          "isbn",
+          "isbnLock",
+          "lastModified",
+          "links",
+          "linksLock",
+          "number",
+          "numberLock",
+          "numberSort",
+          "numberSortLock",
+          "releaseDateLock",
+          "summary",
+          "summaryLock",
+          "tags",
+          "tagsLock",
+          "title",
+          "titleLock"
+        ]
+      },
+      "AuthorDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "role"
+        ]
+      },
+      "WebLinkDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "url"
+        ]
+      },
+      "ReadProgressDto": {
+        "type": "object",
+        "properties": {
+          "completed": {
+            "type": "boolean"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deviceId": {
+            "type": "string"
+          },
+          "deviceName": {
+            "type": "string"
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "readDate": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "completed",
+          "created",
+          "deviceId",
+          "deviceName",
+          "lastModified",
+          "page",
+          "readDate"
+        ]
+      },
+      "PageableObject": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "paged": {
+            "type": "boolean"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "unpaged": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SortObject": {
+        "type": "object",
+        "properties": {
+          "empty": {
+            "type": "boolean"
+          },
+          "sorted": {
+            "type": "boolean"
+          },
+          "unsorted": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageDto": {
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string"
+          },
+          "height": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "mediaType": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "string"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "width": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": [
+          "fileName",
+          "mediaType",
+          "number",
+          "size"
+        ]
+      },
+      "MediaType": {
+        "type": "object",
+        "properties": {
+          "charset": {
+            "type": "string"
+          },
+          "concrete": {
+            "type": "boolean"
+          },
+          "parameters": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "qualityValue": {
+            "type": "number",
+            "format": "double"
+          },
+          "subtype": {
+            "type": "string"
+          },
+          "subtypeSuffix": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "wildcardSubtype": {
+            "type": "boolean"
+          },
+          "wildcardType": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ReadProgressUpdateDto": {
+        "type": "object",
+        "description": "page can be omitted if completed is set to true. completed can be omitted, and will be set accordingly depending on the page passed and the total number of pages in the book.",
+        "properties": {
+          "completed": {
+            "type": "boolean"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "StreamingResponseBody": {},
+      "WPPublicationDto": {
+        "type": "object",
+        "properties": {
+          "context": {
+            "type": "string"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WPLinkDto"
+            }
+          },
+          "landmarks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WPLinkDto"
+            }
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WPLinkDto"
+            }
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/WPMetadataDto"
+          },
+          "pageList": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WPLinkDto"
+            }
+          },
+          "readingOrder": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WPLinkDto"
+            }
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WPLinkDto"
+            }
+          },
+          "toc": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WPLinkDto"
+            }
+          }
+        },
+        "required": [
+          "images",
+          "landmarks",
+          "links",
+          "metadata",
+          "pageList",
+          "readingOrder",
+          "resources",
+          "toc"
+        ]
+      },
+      "WPLinkDto": {
+        "type": "object",
+        "properties": {
+          "height": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "href": {
+            "type": "string"
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "rel": {
+            "type": "string"
+          },
+          "templated": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "width": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": [
+          "properties"
+        ]
+      },
+      "WPMetadataDto": {
+        "type": "object",
+        "properties": {
+          "artist": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "author": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "belongsTo": {
+            "$ref": "#/components/schemas/WPBelongsToDto"
+          },
+          "colorist": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "conformsTo": {
+            "type": "string"
+          },
+          "contributor": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
+            "type": "string"
+          },
+          "editor": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "illustrator": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "inker": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "language": {
+            "type": "string"
+          },
+          "letterer": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "modified": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "numberOfPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "penciler": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "published": {
+            "type": "string",
+            "format": "date"
+          },
+          "publisher": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "readingProgression": {
+            "type": "string",
+            "enum": [
+              "rtl",
+              "ltr",
+              "ttb",
+              "btt",
+              "auto"
+            ]
+          },
+          "rendition": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "sortAs": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "subtitle": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "translator": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "artist",
+          "author",
+          "colorist",
+          "contributor",
+          "editor",
+          "illustrator",
+          "inker",
+          "letterer",
+          "penciler",
+          "publisher",
+          "rendition",
+          "subject",
+          "title",
+          "translator"
+        ]
+      },
+      "WPBelongsToDto": {
+        "type": "object",
+        "properties": {
+          "collection": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WPContributorDto"
+            }
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WPContributorDto"
+            }
+          }
+        },
+        "required": [
+          "collection",
+          "series"
+        ]
+      },
+      "WPContributorDto": {
+        "type": "object",
+        "properties": {
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WPLinkDto"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "position": {
+            "type": "number",
+            "format": "float"
+          }
+        },
+        "required": [
+          "links",
+          "name"
+        ]
+      }
+    }
+  }
+}

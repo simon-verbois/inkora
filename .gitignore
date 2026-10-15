@@ -1,0 +1,23 @@
+# Flutter and generated build output
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+coverage/
+artifacts/
+.tooling/
+*.iml
+.idea/
+.DS_Store
+# Local configuration and signing material
+.env
+.env.*
+*.jks
+*.keystore
+*.p12
+key.properties
+android/local.properties
+__pycache__/
+*.py[cod]

@@ -1,0 +1,78 @@
+{
+  "id": "fixture-id-3",
+  "seriesId": "fixture-id-1",
+  "seriesTitle": "Fixture",
+  "libraryId": "fixture-id-2",
+  "name": "Fixture",
+  "url": "file:/fixtures/book.cbz",
+  "number": 1,
+  "created": "2026-01-01T00:00:00Z",
+  "lastModified": "2026-01-01T00:00:00Z",
+  "fileLastModified": "2026-01-01T00:00:00Z",
+  "sizeBytes": 231004070,
+  "size": "220.3 MiB",
+  "media": {
+    "status": "READY",
+    "mediaType": "application/zip",
+    "pagesCount": 180,
+    "comment": "",
+    "epubDivinaCompatible": false,
+    "epubIsKepub": false,
+    "mediaProfile": "DIVINA"
+  },
+  "metadata": {
+    "title": "Fixture",
+    "titleLock": false,
+    "summary": "",
+    "summaryLock": false,
+    "number": "Fixture",
+    "numberLock": false,
+    "numberSort": 1.0,
+    "numberSortLock": false,
+    "releaseDate": null,
+    "releaseDateLock": false,
+    "authors": [
+      {
+        "name": "Author 1",
+        "role": "writer"
+      },
+      {
+        "name": "Author 2",
+        "role": "writer"
+      },
+      {
+        "name": "Author 3",
+        "role": "penciller"
+      },
+      {
+        "name": "Author 4",
+        "role": "penciller"
+      },
+      {
+        "name": "Author 5",
+        "role": "writer"
+      }
+    ],
+    "authorsLock": false,
+    "tags": [],
+    "tagsLock": false,
+    "isbn": "",
+    "isbnLock": false,
+    "links": [],
+    "linksLock": false,
+    "created": "2026-01-01T00:00:00Z",
+    "lastModified": "2026-01-01T00:00:00Z"
+  },
+  "readProgress": {
+    "page": 27,
+    "completed": false,
+    "readDate": "2026-01-01T00:00:00Z",
+    "created": "2026-01-01T00:00:00Z",
+    "lastModified": "2026-01-01T00:00:00Z",
+    "deviceId": "",
+    "deviceName": ""
+  },
+  "deleted": false,
+  "fileHash": "fixture-hash",
+  "oneshot": false
+}

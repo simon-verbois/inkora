@@ -1,0 +1,11 @@
+{
+  "id": "fixture-id-7",
+  "email": "reader@example.test",
+  "roles": [
+    "USER"
+  ],
+  "sharedAllLibraries": true,
+  "sharedLibrariesIds": [],
+  "labelsAllow": [],
+  "labelsExclude": []
+}

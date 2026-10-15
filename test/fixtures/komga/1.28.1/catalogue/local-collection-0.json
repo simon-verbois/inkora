@@ -1,0 +1,41 @@
+{
+  "content": [
+    {
+      "id": "fixture-id-8",
+      "name": "Fixture",
+      "ordered": true,
+      "seriesIds": [
+        "fixture-id-3",
+        "fixture-id-2"
+      ],
+      "createdDate": "2026-01-01T00:00:00Z",
+      "lastModifiedDate": "2026-01-01T00:00:00Z",
+      "filtered": false
+    }
+  ],
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 2,
+    "sort": {
+      "empty": true,
+      "sorted": false,
+      "unsorted": true
+    },
+    "offset": 0,
+    "paged": true,
+    "unpaged": false
+  },
+  "last": true,
+  "totalElements": 1,
+  "totalPages": 1,
+  "size": 2,
+  "number": 0,
+  "sort": {
+    "empty": true,
+    "sorted": false,
+    "unsorted": true
+  },
+  "first": true,
+  "numberOfElements": 1,
+  "empty": false
+}

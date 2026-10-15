@@ -1,0 +1,142 @@
+{
+  "version": "1.28.1",
+  "paths": {
+    "/api/v1/books/{bookId}/positions": {
+      "get": {
+        "description": "The Positions API is a proposed standard for OPDS 2 and Readium. It is used by the Epub Reader.",
+        "operationId": "getBookPositions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bookId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/R2Positions"
+                }
+              },
+              "application/vnd.readium.position-list+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/R2Positions"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          }
+        },
+        "summary": "List book's positions",
+        "tags": [
+          "WebPub Manifest"
+        ]
+      }
+    },
+    "/api/v1/books/{bookId}/progression": {
+      "get": {
+        "description": "The Progression API is a proposed standard for OPDS 2 and Readium. It is used by the Epub Reader.",
+        "operationId": "getBookProgression",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bookId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/R2Progression"
+                }
+              },
+              "application/vnd.readium.progression+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/R2Progression"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          }
+        },
+        "summary": "Get book progression",
+        "tags": [
+          "WebPub Manifest"
+        ]
+      },
+      "put": {
+        "description": "The Progression API is a proposed standard for OPDS 2 and Readium. It is used by the Epub Reader.",
+        "operationId": "updateBookProgression",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bookId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/R2Progression"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          }
+        },
+        "summary": "Mark book progression",
+        "tags": [
+          "WebPub Manifest"
+        ]
+      }
+    }
+  }
+}

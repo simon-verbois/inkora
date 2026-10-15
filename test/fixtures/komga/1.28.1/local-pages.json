@@ -1,0 +1,29 @@
+[
+  {
+    "number": 1,
+    "fileName": "fixture-page.png",
+    "mediaType": "image/png",
+    "width": 32,
+    "height": 48,
+    "sizeBytes": 104,
+    "size": "104 B"
+  },
+  {
+    "number": 2,
+    "fileName": "fixture-page.png",
+    "mediaType": "image/png",
+    "width": 32,
+    "height": 48,
+    "sizeBytes": 105,
+    "size": "105 B"
+  },
+  {
+    "number": 3,
+    "fileName": "fixture-page.png",
+    "mediaType": "image/png",
+    "width": 32,
+    "height": 48,
+    "sizeBytes": 104,
+    "size": "104 B"
+  }
+]

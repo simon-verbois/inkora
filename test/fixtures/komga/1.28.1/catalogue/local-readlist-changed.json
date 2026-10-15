@@ -1,0 +1,14 @@
+{
+  "id": "fixture-id-9",
+  "name": "Fixture",
+  "summary": "",
+  "ordered": true,
+  "bookIds": [
+    "fixture-id-6",
+    "fixture-id-5",
+    "fixture-id-4"
+  ],
+  "createdDate": "2026-01-01T00:00:00Z",
+  "lastModifiedDate": "2026-01-01T00:00:00Z",
+  "filtered": false
+}

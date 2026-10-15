@@ -1,0 +1,424 @@
+{
+  "positions": [
+    {
+      "href": "EPUB/chapter1.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.0,
+        "position": 1,
+        "totalProgression": 0.023809524
+      },
+      "koboSpan": "kobo.1.1"
+    },
+    {
+      "href": "EPUB/chapter1.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.04761905,
+        "position": 2,
+        "totalProgression": 0.04761905
+      },
+      "koboSpan": "kobo.5.1"
+    },
+    {
+      "href": "EPUB/chapter1.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.0952381,
+        "position": 3,
+        "totalProgression": 0.071428575
+      },
+      "koboSpan": "kobo.9.2"
+    },
+    {
+      "href": "EPUB/chapter1.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.14285715,
+        "position": 4,
+        "totalProgression": 0.0952381
+      },
+      "koboSpan": "kobo.13.2"
+    },
+    {
+      "href": "EPUB/chapter1.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.1904762,
+        "position": 5,
+        "totalProgression": 0.11904762
+      },
+      "koboSpan": "kobo.18.1"
+    },
+    {
+      "href": "EPUB/chapter1.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.23809524,
+        "position": 6,
+        "totalProgression": 0.14285715
+      },
+      "koboSpan": "kobo.22.2"
+    },
+    {
+      "href": "EPUB/chapter1.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.2857143,
+        "position": 7,
+        "totalProgression": 0.16666667
+      },
+      "koboSpan": "kobo.27.1"
+    },
+    {
+      "href": "EPUB/chapter1.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.33333334,
+        "position": 8,
+        "totalProgression": 0.1904762
+      },
+      "koboSpan": "kobo.31.1"
+    },
+    {
+      "href": "EPUB/chapter1.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.3809524,
+        "position": 9,
+        "totalProgression": 0.21428572
+      },
+      "koboSpan": "kobo.35.2"
+    },
+    {
+      "href": "EPUB/chapter1.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.42857143,
+        "position": 10,
+        "totalProgression": 0.23809524
+      },
+      "koboSpan": "kobo.40.1"
+    },
+    {
+      "href": "EPUB/chapter1.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.47619048,
+        "position": 11,
+        "totalProgression": 0.26190478
+      },
+      "koboSpan": "kobo.44.1"
+    },
+    {
+      "href": "EPUB/chapter1.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.52380955,
+        "position": 12,
+        "totalProgression": 0.2857143
+      },
+      "koboSpan": "kobo.48.2"
+    },
+    {
+      "href": "EPUB/chapter1.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.5714286,
+        "position": 13,
+        "totalProgression": 0.30952382
+      },
+      "koboSpan": "kobo.53.1"
+    },
+    {
+      "href": "EPUB/chapter1.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.61904764,
+        "position": 14,
+        "totalProgression": 0.33333334
+      },
+      "koboSpan": "kobo.57.1"
+    },
+    {
+      "href": "EPUB/chapter1.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.6666667,
+        "position": 15,
+        "totalProgression": 0.35714287
+      },
+      "koboSpan": "kobo.61.2"
+    },
+    {
+      "href": "EPUB/chapter1.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.71428573,
+        "position": 16,
+        "totalProgression": 0.3809524
+      },
+      "koboSpan": "kobo.66.1"
+    },
+    {
+      "href": "EPUB/chapter1.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.7619048,
+        "position": 17,
+        "totalProgression": 0.4047619
+      },
+      "koboSpan": "kobo.70.1"
+    },
+    {
+      "href": "EPUB/chapter1.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.8095238,
+        "position": 18,
+        "totalProgression": 0.42857143
+      },
+      "koboSpan": "kobo.74.2"
+    },
+    {
+      "href": "EPUB/chapter1.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.85714287,
+        "position": 19,
+        "totalProgression": 0.45238096
+      },
+      "koboSpan": "kobo.79.1"
+    },
+    {
+      "href": "EPUB/chapter1.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.9047619,
+        "position": 20,
+        "totalProgression": 0.47619048
+      },
+      "koboSpan": "kobo.83.1"
+    },
+    {
+      "href": "EPUB/chapter1.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.95238096,
+        "position": 21,
+        "totalProgression": 0.5
+      },
+      "koboSpan": "kobo.87.2"
+    },
+    {
+      "href": "EPUB/chapter2.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.0,
+        "position": 22,
+        "totalProgression": 0.52380955
+      },
+      "koboSpan": "kobo.1.1"
+    },
+    {
+      "href": "EPUB/chapter2.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.04761905,
+        "position": 23,
+        "totalProgression": 0.54761904
+      },
+      "koboSpan": "kobo.5.1"
+    },
+    {
+      "href": "EPUB/chapter2.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.0952381,
+        "position": 24,
+        "totalProgression": 0.5714286
+      },
+      "koboSpan": "kobo.9.2"
+    },
+    {
+      "href": "EPUB/chapter2.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.14285715,
+        "position": 25,
+        "totalProgression": 0.5952381
+      },
+      "koboSpan": "kobo.13.2"
+    },
+    {
+      "href": "EPUB/chapter2.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.1904762,
+        "position": 26,
+        "totalProgression": 0.61904764
+      },
+      "koboSpan": "kobo.18.1"
+    },
+    {
+      "href": "EPUB/chapter2.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.23809524,
+        "position": 27,
+        "totalProgression": 0.64285713
+      },
+      "koboSpan": "kobo.22.2"
+    },
+    {
+      "href": "EPUB/chapter2.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.2857143,
+        "position": 28,
+        "totalProgression": 0.6666667
+      },
+      "koboSpan": "kobo.27.1"
+    },
+    {
+      "href": "EPUB/chapter2.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.33333334,
+        "position": 29,
+        "totalProgression": 0.6904762
+      },
+      "koboSpan": "kobo.31.1"
+    },
+    {
+      "href": "EPUB/chapter2.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.3809524,
+        "position": 30,
+        "totalProgression": 0.71428573
+      },
+      "koboSpan": "kobo.35.2"
+    },
+    {
+      "href": "EPUB/chapter2.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.42857143,
+        "position": 31,
+        "totalProgression": 0.7380952
+      },
+      "koboSpan": "kobo.40.1"
+    },
+    {
+      "href": "EPUB/chapter2.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.47619048,
+        "position": 32,
+        "totalProgression": 0.7619048
+      },
+      "koboSpan": "kobo.44.1"
+    },
+    {
+      "href": "EPUB/chapter2.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.52380955,
+        "position": 33,
+        "totalProgression": 0.78571427
+      },
+      "koboSpan": "kobo.48.2"
+    },
+    {
+      "href": "EPUB/chapter2.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.5714286,
+        "position": 34,
+        "totalProgression": 0.8095238
+      },
+      "koboSpan": "kobo.53.1"
+    },
+    {
+      "href": "EPUB/chapter2.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.61904764,
+        "position": 35,
+        "totalProgression": 0.8333333
+      },
+      "koboSpan": "kobo.57.1"
+    },
+    {
+      "href": "EPUB/chapter2.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.6666667,
+        "position": 36,
+        "totalProgression": 0.85714287
+      },
+      "koboSpan": "kobo.61.2"
+    },
+    {
+      "href": "EPUB/chapter2.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.71428573,
+        "position": 37,
+        "totalProgression": 0.88095236
+      },
+      "koboSpan": "kobo.66.1"
+    },
+    {
+      "href": "EPUB/chapter2.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.7619048,
+        "position": 38,
+        "totalProgression": 0.9047619
+      },
+      "koboSpan": "kobo.70.1"
+    },
+    {
+      "href": "EPUB/chapter2.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.8095238,
+        "position": 39,
+        "totalProgression": 0.9285714
+      },
+      "koboSpan": "kobo.74.2"
+    },
+    {
+      "href": "EPUB/chapter2.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.85714287,
+        "position": 40,
+        "totalProgression": 0.95238096
+      },
+      "koboSpan": "kobo.79.1"
+    },
+    {
+      "href": "EPUB/chapter2.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.9047619,
+        "position": 41,
+        "totalProgression": 0.97619045
+      },
+      "koboSpan": "kobo.83.1"
+    },
+    {
+      "href": "EPUB/chapter2.xhtml",
+      "type": "application/xhtml+xml",
+      "locations": {
+        "progression": 0.95238096,
+        "position": 42,
+        "totalProgression": 1.0
+      },
+      "koboSpan": "kobo.87.2"
+    }
+  ]
+}

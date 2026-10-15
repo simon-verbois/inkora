@@ -1,0 +1,199 @@
+{
+  "content": [
+    {
+      "id": "fixture-id-4",
+      "libraryId": "fixture-id-3",
+      "name": "Fixture",
+      "url": "file:/fixtures/book.cbz",
+      "created": "2026-01-01T00:00:00Z",
+      "lastModified": "2026-01-01T00:00:00Z",
+      "fileLastModified": "2026-01-01T00:00:00Z",
+      "booksCount": 20,
+      "booksReadCount": 0,
+      "booksUnreadCount": 19,
+      "booksInProgressCount": 1,
+      "metadata": {
+        "status": "ENDED",
+        "statusLock": false,
+        "title": "Fixture",
+        "titleLock": false,
+        "titleSort": "Fixture",
+        "titleSortLock": false,
+        "summary": "Fixture",
+        "summaryLock": false,
+        "readingDirection": "WEBTOON",
+        "readingDirectionLock": true,
+        "publisher": "Fixture",
+        "publisherLock": false,
+        "ageRating": null,
+        "ageRatingLock": false,
+        "language": "",
+        "languageLock": false,
+        "genres": [
+          "Fixture",
+          "Fixture",
+          "Fixture",
+          "Fixture"
+        ],
+        "genresLock": false,
+        "tags": [],
+        "tagsLock": false,
+        "totalBookCount": null,
+        "totalBookCountLock": false,
+        "sharingLabels": [],
+        "sharingLabelsLock": false,
+        "links": [
+          {
+            "label": "Fixture",
+            "url": "file:/fixtures/book.cbz"
+          },
+          {
+            "label": "Fixture",
+            "url": "file:/fixtures/book.cbz"
+          },
+          {
+            "label": "Fixture",
+            "url": "file:/fixtures/book.cbz"
+          }
+        ],
+        "linksLock": false,
+        "alternateTitles": [],
+        "alternateTitlesLock": false,
+        "created": "2026-01-01T00:00:00Z",
+        "lastModified": "2026-01-01T00:00:00Z"
+      },
+      "booksMetadata": {
+        "authors": [
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          },
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          },
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          },
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          },
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          }
+        ],
+        "tags": [],
+        "releaseDate": null,
+        "summary": "",
+        "summaryNumber": "",
+        "created": "2026-01-01T00:00:00Z",
+        "lastModified": "2026-01-01T00:00:00Z"
+      },
+      "deleted": false,
+      "oneshot": false
+    },
+    {
+      "id": "fixture-id-5",
+      "libraryId": "fixture-id-1",
+      "name": "Fixture",
+      "url": "file:/fixtures/book.cbz",
+      "created": "2026-01-01T00:00:00Z",
+      "lastModified": "2026-01-01T00:00:00Z",
+      "fileLastModified": "2026-01-01T00:00:00Z",
+      "booksCount": 41,
+      "booksReadCount": 0,
+      "booksUnreadCount": 40,
+      "booksInProgressCount": 1,
+      "metadata": {
+        "status": "ONGOING",
+        "statusLock": false,
+        "title": "Fixture",
+        "titleLock": false,
+        "titleSort": "Fixture",
+        "titleSortLock": false,
+        "summary": "",
+        "summaryLock": false,
+        "readingDirection": "",
+        "readingDirectionLock": false,
+        "publisher": "Fixture",
+        "publisherLock": false,
+        "ageRating": null,
+        "ageRatingLock": false,
+        "language": "Fixture",
+        "languageLock": false,
+        "genres": [
+          "Fixture",
+          "Fixture",
+          "Fixture",
+          "Fixture",
+          "Fixture"
+        ],
+        "genresLock": false,
+        "tags": [],
+        "tagsLock": false,
+        "totalBookCount": null,
+        "totalBookCountLock": false,
+        "sharingLabels": [],
+        "sharingLabelsLock": false,
+        "links": [],
+        "linksLock": false,
+        "alternateTitles": [],
+        "alternateTitlesLock": false,
+        "created": "2026-01-01T00:00:00Z",
+        "lastModified": "2026-01-01T00:00:00Z"
+      },
+      "booksMetadata": {
+        "authors": [
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          },
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          },
+          {
+            "name": "Fixture",
+            "role": "Fixture"
+          }
+        ],
+        "tags": [],
+        "releaseDate": "2026-01-01",
+        "summary": "Fixture",
+        "summaryNumber": "Fixture",
+        "created": "2026-01-01T00:00:00Z",
+        "lastModified": "2026-01-01T00:00:00Z"
+      },
+      "deleted": false,
+      "oneshot": false
+    }
+  ],
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 2,
+    "sort": {
+      "empty": true,
+      "sorted": false,
+      "unsorted": true
+    },
+    "offset": 0,
+    "paged": true,
+    "unpaged": false
+  },
+  "totalElements": 34,
+  "totalPages": 17,
+  "last": false,
+  "size": 2,
+  "number": 0,
+  "sort": {
+    "empty": true,
+    "sorted": false,
+    "unsorted": true
+  },
+  "numberOfElements": 2,
+  "first": true,
+  "empty": false
+}

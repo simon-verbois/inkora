@@ -5,7 +5,8 @@ enum AppAppearance { system, light, dark, amoled, sepia, ocean, forest }
 enum CatalogueDensity { comfortable, compact }
 
 final class UiPreferences {
-  static const textScales = [1.0, 1.15, 1.3];
+  static const minTextScale = .85;
+  static const maxTextScale = 1.3;
   const UiPreferences({
     this.appearance = AppAppearance.system,
     this.density = CatalogueDensity.comfortable,
@@ -78,7 +79,11 @@ final class UiPreferences {
               .where((value) => value.name == json['density'])
               .firstOrNull ??
           CatalogueDensity.comfortable,
-      textScale: scale is num && textScales.contains(scale.toDouble())
+      textScale:
+          scale is num &&
+              scale.isFinite &&
+              scale >= minTextScale &&
+              scale <= maxTextScale
           ? scale.toDouble()
           : 1,
       reduceMotion: json['reduceMotion'] == true,

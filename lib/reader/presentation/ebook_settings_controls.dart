@@ -34,6 +34,25 @@ class EbookSettingsControls extends StatelessWidget {
               (v) => onChanged('scroll', v),
             ),
             if (!pdf)
+              _choice(
+                context,
+                'Page margins',
+                const [.5, 1.0, 1.5, 2.0].contains(settings.margins)
+                    ? settings.margins.toString()
+                    : 'custom',
+                {
+                  '0.5': 'Narrow margins',
+                  '1.0': 'Balanced margins',
+                  '1.5': 'Wide margins',
+                  '2.0': 'Extra wide margins',
+                  if (!const [.5, 1.0, 1.5, 2.0].contains(settings.margins))
+                    'custom': 'Custom',
+                },
+                (v) {
+                  if (v != 'custom') onChanged('margins', double.parse(v));
+                },
+              ),
+            if (!pdf)
               _choice(context, 'Text columns', settings.columns, {
                 'auto': 'Automatic',
                 'one': 'One column',
@@ -49,6 +68,7 @@ class EbookSettingsControls extends StatelessWidget {
               'publisher': 'Publisher font',
               'serif': 'Serif',
               'sans-serif': 'Sans serif',
+              'baskerville': 'Libre Baskerville',
             }, (v) => onChanged('font', v)),
             _toggle(
               context,
@@ -151,7 +171,7 @@ class EbookSettingsControls extends StatelessWidget {
     double min,
     double max,
     int divisions,
-  ) => ReaderSettingsSlider(
+  ) => InkSlider(
     sliderKey: ValueKey('ebook-$key'),
     label: context.tr(label),
     formatValue: (v) => key == 'fontSize'

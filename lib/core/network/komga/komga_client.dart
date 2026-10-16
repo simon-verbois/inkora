@@ -377,6 +377,7 @@ final class KomgaClient {
     required CancelToken cancelToken,
     required int maximumBytes,
     bool original = false,
+    void Function(int received, int total)? onProgress,
   }) => _request(
     original ? '${_bookPath(id)}/file' : '${_bookPath(id)}/pages/${index + 1}',
     (value) async {
@@ -406,6 +407,7 @@ final class KomgaClient {
             );
           }
           await sink.writeFrom(chunk);
+          onProgress?.call(count, length ?? 0);
         }
         if (cancelToken.isCancelled) {
           throw const ApiFailure(FailureKind.cancelled, 'Download cancelled.');

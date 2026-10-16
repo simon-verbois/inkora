@@ -1,3 +1,4 @@
+import 'ebook_style_picker.dart';
 import 'ebook_settings_controls.dart';
 import 'reader_settings_layout.dart';
 import '../../app/l10n/app_strings.dart';
@@ -12,7 +13,7 @@ import '../domain/reader_manifest.dart';
 import '../domain/reading_settings.dart';
 import '../domain/webtoon_layout.dart';
 
-enum _PreferenceTab { layout, typography, rendering, preloading }
+enum _PreferenceTab { layout, style, typography, rendering, preloading }
 
 class ReaderSettingsSheet extends StatefulWidget {
   const ReaderSettingsSheet({
@@ -56,7 +57,10 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
       ? [_PreferenceTab.rendering, _PreferenceTab.preloading]
       : [
           _PreferenceTab.layout,
-          if (_supportsTypography) _PreferenceTab.typography,
+          if (_supportsTypography) ...[
+            _PreferenceTab.style,
+            _PreferenceTab.typography,
+          ],
           if (widget.manifest != null && !widget.manifest!.isDocument)
             _PreferenceTab.rendering,
           if (widget.manifest != null && _effective.mode == ReadingMode.webtoon)
@@ -104,12 +108,15 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
         seriesId: widget.manifest?.seriesId,
         bookId: widget.manifest?.bookId,
       );
+      final ebookConfigured = layers.values.any(
+        (layer) => layer.mode == ReadingMode.ebook,
+      );
       final value =
           layers[scope] ??
           (widget.manifest?.isDocument == true
-              ? const ReadingOverrides(
+              ? ReadingOverrides(
                   mode: ReadingMode.ebook,
-                  background: ReadingBackground.white,
+                  background: ebookConfigured ? null : ReadingBackground.sepia,
                 )
               : const ReadingOverrides());
       if (mounted && generation == _generation) {
@@ -133,7 +140,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
     final values = {..._overrides.toJson(), key: value};
     if (key == 'layout') values['spreads'] = null;
     if (key == 'mode' && value != _overrides.mode?.name) {
-      if (value == 'ebook') values['background'] = 'white';
+      if (value == 'ebook') values['background'] = 'sepia';
       for (final field in [
         'direction',
         'fit',
@@ -331,7 +338,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
       required double max,
       required int divisions,
       required ValueChanged<double> onChanged,
-    }) => ReaderSettingsSlider(
+    }) => InkSlider(
       sliderKey: Key('webtoon-$key'),
       label: label,
       value: current.clamp(min, max),
@@ -574,6 +581,12 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
               'black': 'Black',
               'white': 'White',
               'sepia': 'Sepia',
+              if (mode == ReadingMode.ebook) ...{
+                'ivory': 'Ivory',
+                'sage': 'Soft sage',
+                'mist': 'Blue mist',
+                'slate': 'Slate night',
+              },
             }),
             if (widget.manifest?.documentType == 'application/pdf')
               _select('Fit', 'fit', {'page': 'Fit page', 'width': 'Fit width'}),
@@ -627,6 +640,11 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
 
   Widget _tabContent() => switch (_activeTab) {
     _PreferenceTab.layout => _layoutControls(),
+    _PreferenceTab.style => EbookStylePicker(
+      settings: _effective,
+      onSelected: (style) =>
+          setState(() => _overrides = style.apply(_overrides)),
+    ),
     _PreferenceTab.typography => EbookSettingsControls(
       section: EbookControlsSection.typography,
       settings: _effective.ebook,
@@ -749,6 +767,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
                       ),
                       text: context.tr(switch (tab) {
                         _PreferenceTab.layout => 'Layout',
+                        _PreferenceTab.style => 'Reading style',
                         _PreferenceTab.typography => 'Typography',
                         _PreferenceTab.rendering => 'Rendering',
                         _PreferenceTab.preloading => 'Preloading',

@@ -58,7 +58,7 @@ void main() {
           expect(router.routeInformationProvider.value.uri.path, '/setup');
           expect(find.text(strings.text('Make Inkora yours')), findsOneWidget);
           expect(find.byKey(const Key('navigation-settings')), findsNothing);
-          expect(tester.widget(back), isA<FilledButton>());
+          expect(tester.widget(back), isA<OutlinedButton>());
           expect(tester.widget(next), isA<FilledButton>());
           expect(tester.getSize(back), tester.getSize(next));
           expect(tester.getTopLeft(back).dy, tester.getTopLeft(next).dy);
@@ -155,7 +155,7 @@ void main() {
     await harness.mount(tester);
     final next = find.byKey(const Key('setup-next'));
     final back = find.byKey(const Key('setup-back'));
-    expect(tester.widget<FilledButton>(back).onPressed, isNull);
+    expect(tester.widget<OutlinedButton>(back).onPressed, isNull);
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(
@@ -184,6 +184,7 @@ void main() {
       await tester.pumpAndSettle();
     }
     expect(find.text('Ready to read'), findsOneWidget);
+    expect(find.text('Start reading'), findsOneWidget);
     expect(find.text('Finish setup'), findsNothing);
     expect(
       (await tester.runAsync(

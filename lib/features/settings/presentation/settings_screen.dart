@@ -1,3 +1,4 @@
+import '../../../app/widgets/ink_slider.dart';
 import 'about_content.dart';
 import 'preference_labels.dart';
 import '../../../app/l10n/app_strings.dart';
@@ -221,32 +222,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const LText('Interface text size'),
-                    DropdownButton<double>(
-                      icon: const Icon(InkIcons.caretDown, size: 20),
-                      isExpanded: true,
+                    InkSlider(
+                      sliderKey: const Key('interface-text-scale'),
+                      label: context.tr('Interface text size'),
                       value: preferences.textScale,
-                      items: const [
-                        DropdownMenuItem(value: 1, child: LText('System size')),
-                        DropdownMenuItem(
-                          value: 1.15,
-                          child: LText('Larger · 115%'),
-                        ),
-                        DropdownMenuItem(
-                          value: 1.3,
-                          child: LText('Largest · 130%'),
-                        ),
-                      ],
-                      onChanged: _saving
-                          ? null
-                          : (value) {
-                              if (value != null) {
-                                _save(
-                                  (current) =>
-                                      current.copyWith(textScale: value),
-                                );
-                              }
-                            },
+                      min: UiPreferences.minTextScale,
+                      max: UiPreferences.maxTextScale,
+                      divisions: 9,
+                      enabled: !_saving,
+                      formatValue: (value) =>
+                          context.tr('{0} %', [(value * 100).round()]),
+                      onCommitted: (value) => _save(
+                        (current) => current.copyWith(textScale: value),
+                      ),
                     ),
                     const LText(
                       'Applied in addition to your device text size.',

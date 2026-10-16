@@ -65,7 +65,7 @@ void main() {
           builder: (context) {
             parentBuilds++;
             return Scaffold(
-              body: ReaderSettingsSlider(
+              body: InkSlider(
                 label: 'Text size',
                 formatValue: (v) => '$v',
                 value: 1,
@@ -190,7 +190,7 @@ void main() {
               tabs,
               kind == 'pdf'
                   ? findsNothing
-                  : findsNWidgets(kind == 'webtoon' ? 3 : 2),
+                  : findsNWidgets(kind == 'webtoon' || kind == 'epub' ? 3 : 2),
             );
             expect(
               find.text('Typography'),
@@ -211,7 +211,7 @@ void main() {
             expect(find.byKey(const ValueKey('ebook-fontSize')), findsNothing);
             if (kind == 'pdf' && size.width == 1024 && scale == 1) {
               final background = tester.getRect(
-                find.byKey(const ValueKey('book-background-white')),
+                find.byKey(const ValueKey('book-background-sepia')),
               );
               final fit = tester.getRect(
                 find.byKey(const ValueKey('book-fit-page')),
@@ -315,7 +315,7 @@ void main() {
       );
       await openSheet(tester, store, manifest);
       final background = tester.getRect(
-        find.byKey(const ValueKey('book-background-white')),
+        find.byKey(const ValueKey('book-background-sepia')),
       );
       final columns = tester.getRect(
         find.byKey(const ValueKey('ebook-Text columns-auto')),
@@ -335,7 +335,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Layout'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('book-background-white')));
+      await tester.tap(find.byKey(const ValueKey('book-background-sepia')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Black').last);
       await tester.pumpAndSettle();

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/icons/inkora_icons.dart';
 import '../../../app/l10n/app_strings.dart';
 import '../../../app/release_information.dart';
 import '../../../app/widgets/inkora_widgets.dart';
@@ -59,18 +58,6 @@ class AboutContent extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
         ],
-        InkPanel(
-          title: context.tr('Ebooks'),
-          child: InkEmptyState(
-            icon: InkIcons.bookOpen,
-            title: context.tr('EPUB and local PDF reading'),
-            message: context.tr(
-              'Read EPUB and PDF books with adjustable text, bookmarks and synchronized progress.',
-            ),
-            comingSoon: false,
-          ),
-        ),
-        const SizedBox(height: 12),
         OutlinedButton(
           onPressed: information.asData == null
               ? null

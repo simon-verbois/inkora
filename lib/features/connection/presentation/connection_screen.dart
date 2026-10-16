@@ -84,11 +84,9 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
     final session = ref.watch(sessionProvider);
     final busy = _saving || session.phase == SessionPhase.authenticating;
     return Scaffold(
-      appBar: AppBar(
-        title: widget.addServer
-            ? const LText('Add server')
-            : const InkoraWordmark(),
-      ),
+      appBar: widget.addServer
+          ? AppBar(title: const LText('Add server'))
+          : null,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -107,18 +105,19 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (!widget.addServer) const InkoraWordmark(size: 42),
-                      const SizedBox(height: 20),
-                      LText(
-                        widget.addServer
-                            ? 'Connect another server'
-                            : 'Connect to Komga',
-                        style: Theme.of(context).textTheme.headlineMedium,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
+                      if (!widget.addServer) ...[
+                        const Center(child: InkoraWordmark(size: 42)),
+                        const SizedBox(height: 20),
+                      ] else ...[
+                        LText(
+                          'Connect another server',
+                          style: Theme.of(context).textTheme.headlineMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                       const LText(
-                        'Connect your server to start reading.',
+                        'Connect your Komga server to start reading.',
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 24),

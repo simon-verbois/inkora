@@ -1,3 +1,6 @@
+import 'catalogue_toolbar.dart';
+import '../domain/catalogue_filters.dart';
+import 'catalogue_filters_sheet.dart';
 import '../../../app/l10n/app_strings.dart';
 import '../../../app/icons/inkora_icons.dart';
 
@@ -49,6 +52,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
   String? _libraryId;
   String _searchQuery = '';
   bool _showUnavailable = true, _listView = false;
+  MetadataFilters _metadataFilters = const MetadataFilters();
   late bool _searchOpen;
 
   CatalogueQuery get _query => CatalogueQuery(
@@ -63,6 +67,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
     search: _searchQuery,
     sort: _sort,
     showUnavailable: _showUnavailable,
+    filters: _metadataFilters,
   );
 
   @override
@@ -73,6 +78,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
   }
 
   void _reset() {
+    _metadataFilters = const MetadataFilters();
     _kind = widget.embedded ? CatalogueKind.series : widget.kind;
     _libraryId = widget.libraryId;
     _sort =
@@ -144,6 +150,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
     if (!mounted || result == null) return;
     _change(() {
       _libraryId = result.$1;
+      _metadataFilters = const MetadataFilters();
       if (_kind != CatalogueKind.book && _kind != CatalogueKind.series) {
         _kind = CatalogueKind.series;
       }
@@ -151,18 +158,26 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
   }
 
   Future<void> _filters() async {
-    final result = await showInkSheet<(bool, bool)>(
+    final query = _query;
+    final options = ref
+        .read(catalogueRepositoryProvider.future)
+        .then(
+          (repository) =>
+              repository?.store.facets(query) ??
+              Future.value(<CatalogueFacet, List<String>>{}),
+        );
+    final result = await showInkSheet<CatalogueFilterResult>(
       context: context,
-      child: _CatalogueFilters(
+      child: CatalogueFiltersSheet(
         showUnavailable: _showUnavailable,
-        listView: _listView,
-        allowViewMode: _kind != CatalogueKind.book,
+        filters: _metadataFilters,
+        options: options,
       ),
     );
     if (!mounted || result == null) return;
     _change(() {
-      _showUnavailable = result.$1;
-      _listView = result.$2;
+      _showUnavailable = result.showUnavailable;
+      _metadataFilters = result.filters;
     });
   }
 
@@ -238,98 +253,57 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
                     child: Column(
                       children: [
                         const CatalogueRefreshStatus(),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 4, 8, 0),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: librarySelection
-                                    ? TextButton(
-                                        key: const Key('library-selector'),
-                                        onPressed: _selectLibrary,
-                                        style: TextButton.styleFrom(
-                                          foregroundColor: colors.onSurface,
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 4,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            const Icon(
-                                              InkIcons.books,
-                                              size: 18,
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: Text(
-                                                selectedLibrary?.title ??
-                                                    context.tr(
-                                                      _libraryId == null
-                                                          ? 'All libraries'
-                                                          : 'Selected library',
-                                                    ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
+                        CatalogueToolbar(
+                          controlPrefix: 'catalogue',
+                          searchOpen: _searchOpen,
+                          onSearch: () =>
+                              setState(() => _searchOpen = !_searchOpen),
+                          onFilters: _filters,
+                          filtered: !_metadataFilters.isEmpty,
+                          listView: _kind != CatalogueKind.book
+                              ? _listView
+                              : null,
+                          onView: () => setState(() => _listView = !_listView),
+                          sort: categories
+                              ? const SizedBox.shrink()
+                              : _sortButton(),
+                          leading: librarySelection
+                              ? TextButton(
+                                  key: const Key('library-selector'),
+                                  onPressed: _selectLibrary,
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: colors.onSurface,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(InkIcons.books, size: 18),
+                                      const SizedBox(width: 8),
+                                      Flexible(
+                                        child: Text(
+                                          selectedLibrary?.title ??
+                                              context.tr(
+                                                _libraryId == null
+                                                    ? 'All libraries'
+                                                    : 'Selected library',
                                               ),
-                                            ),
-                                            const Icon(
-                                              InkIcons.caretDown,
-                                              size: 16,
-                                            ),
-                                          ],
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                      )
-                                    : LText(
-                                        "{0} {1}",
-                                        arguments: [
-                                          page?.total ?? 0,
-                                          (_kind == CatalogueKind.series
-                                                  ? 'Books'
-                                                  : catalogueLabel(_kind))
-                                              .toLowerCase(),
-                                        ],
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall,
                                       ),
-                              ),
-                              IconButton(
-                                key: const Key('catalogue-search-toggle'),
-                                tooltip: context.tr("Search this view"),
-                                isSelected: _searchOpen,
-                                icon: const Icon(
-                                  InkIcons.magnifyingGlass,
-                                  size: 20,
-                                ),
-                                onPressed: () =>
-                                    setState(() => _searchOpen = !_searchOpen),
-                              ),
-                              IconButton(
-                                key: const Key('catalogue-filters'),
-                                tooltip: context.tr("Filters"),
-                                icon: const Icon(
-                                  InkIcons.slidersHorizontal,
-                                  size: 20,
-                                ),
-                                onPressed: _filters,
-                              ),
-                              if (_kind != CatalogueKind.book)
-                                IconButton(
-                                  tooltip: context.tr(
-                                    _listView ? 'Show grid' : 'Show list',
+                                      const SizedBox(width: 6),
+                                      const Icon(InkIcons.caretDown, size: 16),
+                                    ],
                                   ),
-                                  onPressed: () =>
-                                      setState(() => _listView = !_listView),
-                                  icon: Icon(
-                                    _listView
-                                        ? InkIcons.squaresFour
-                                        : InkIcons.list,
-                                    size: 20,
-                                  ),
+                                )
+                              : Text(
+                                  AppStrings.of(context)
+                                      .quantity(page?.total ?? 0, 'item'),
+                                  style: Theme.of(context).textTheme.bodySmall,
                                 ),
-                              if (!categories) _sortButton(),
-                            ],
-                          ),
                         ),
                         if (_searchOpen)
                           Padding(
@@ -415,6 +389,8 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
                                               ),
                                               onPressed: () => _change(() {
                                                 _kind = kind;
+                                                _metadataFilters =
+                                                    const MetadataFilters();
                                                 _sort = CatalogueSort.title;
                                               }),
                                               child: LText(
@@ -609,59 +585,4 @@ class _LibrarySelector extends ConsumerWidget {
       ],
     );
   }
-}
-
-class _CatalogueFilters extends StatefulWidget {
-  const _CatalogueFilters({
-    required this.showUnavailable,
-    required this.listView,
-    this.allowViewMode = true,
-  });
-  final bool showUnavailable, listView;
-  final bool allowViewMode;
-  @override
-  State<_CatalogueFilters> createState() => _CatalogueFiltersState();
-}
-
-class _CatalogueFiltersState extends State<_CatalogueFilters> {
-  late bool _unavailable = widget.showUnavailable, _list = widget.listView;
-  @override
-  Widget build(BuildContext context) => SingleChildScrollView(
-    child: Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          LText(
-            'Catalogue filters',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 12),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const LText('Show unavailable items'),
-            subtitle: const LText(
-              'Keep removed titles and historical list entries visible.',
-            ),
-            value: _unavailable,
-            onChanged: (value) => setState(() => _unavailable = value),
-          ),
-          if (widget.allowViewMode)
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const LText('List view'),
-              subtitle: const LText('A compact alternative to the cover grid.'),
-              value: _list,
-              onChanged: (value) => setState(() => _list = value),
-            ),
-          const SizedBox(height: 12),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, (_unavailable, _list)),
-            child: const LText('Apply filters'),
-          ),
-        ],
-      ),
-    ),
-  );
 }

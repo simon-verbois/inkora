@@ -1,3 +1,5 @@
+import '../domain/ebook_locator.dart';
+import 'reading_colors.dart';
 import '../../app/l10n/app_strings.dart';
 
 import 'dart:math' as math;
@@ -17,6 +19,8 @@ class EbookPdfSurface extends StatefulWidget {
     required this.settings,
     required this.onPage,
     required this.onToggleControls,
+    this.onBookmark,
+    this.bookmarks = const [],
   });
   final String path;
   final PdfViewerController controller;
@@ -24,6 +28,8 @@ class EbookPdfSurface extends StatefulWidget {
   final ReadingSettings settings;
   final ValueChanged<int> onPage;
   final VoidCallback onToggleControls;
+  final Future<void> Function(EbookLocator)? onBookmark;
+  final List<EbookLocator> bookmarks;
   @override
   State<EbookPdfSurface> createState() => _EbookPdfSurfaceState();
 }
@@ -31,10 +37,68 @@ class EbookPdfSurface extends StatefulWidget {
 class _EbookPdfSurfaceState extends State<EbookPdfSurface>
     with WidgetsBindingObserver {
   bool _trimmed = false;
+  final _bookmarkRects = <int, List<PdfRect>>{};
+
+  void _indexBookmarks() {
+    _bookmarkRects.clear();
+    for (final bookmark in widget.bookmarks) {
+      final rect = bookmark.pdfRectangle;
+      final page = bookmark.locations['position'];
+      if (page is int && rect != null) {
+        (_bookmarkRects[page] ??= []).add(
+          PdfRect(rect[0], rect[1], rect[2], rect[3]),
+        );
+      }
+    }
+  }
+
+  @override
+  void didUpdateWidget(EbookPdfSurface oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.bookmarks, widget.bookmarks)) _indexBookmarks();
+  }
+
+  Future<void> _bookmarkSelection(
+    PdfViewerContextMenuBuilderParams params,
+  ) async {
+    final ranges = await params.textSelectionDelegate.getSelectedTextRanges();
+    if (!mounted || ranges.isEmpty) return;
+    final first = ranges.first;
+    final bounded = PdfPageTextRange(
+      pageText: first.pageText,
+      start: first.start,
+      end: math.min(first.end, first.start + 512),
+    );
+    final rect = bounded.bounds;
+    final bookmark = EbookLocator.bookmark({
+      'href': 'document.pdf',
+      'type': 'application/pdf',
+      'locations': {
+        'position': first.pageNumber,
+        'inkoraPdfRect': [rect.left, rect.top, rect.right, rect.bottom],
+      },
+      'text': {'highlight': bounded.text},
+    });
+    await params.textSelectionDelegate.clearTextSelection();
+    if (!mounted) return;
+    await widget.onBookmark?.call(bookmark);
+  }
+
+  void _paintBookmarks(Canvas canvas, Rect pageRect, PdfPage page) {
+    final paint = Paint()
+      ..color = const Color(0xffb47d20)
+      ..strokeWidth = 2;
+    for (final rect in _bookmarkRects[page.pageNumber] ?? const <PdfRect>[]) {
+      final marker = rect.toRectInDocument(page: page, pageRect: pageRect);
+      canvas.drawLine(marker.bottomLeft, marker.bottomRight, paint);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _indexBookmarks();
   }
 
   @override
@@ -75,11 +139,7 @@ class _EbookPdfSurfaceState extends State<EbookPdfSurface>
     controller: widget.controller,
     initialPageNumber: widget.initialPage,
     params: PdfViewerParams(
-      backgroundColor: switch (widget.settings.background) {
-        ReadingBackground.black => Colors.black,
-        ReadingBackground.white => const Color(0xfffaf8f4),
-        ReadingBackground.sepia => const Color(0xfff4ecd8),
-      },
+      backgroundColor: widget.settings.background.paperColor,
       layoutPages: widget.settings.ebook.scroll ? null : _horizontal,
       pageDropShadow: null,
       margin: 12,
@@ -95,6 +155,20 @@ class _EbookPdfSurfaceState extends State<EbookPdfSurface>
       errorBannerBuilder: (context, error, stack, document) =>
           const Center(child: LText('Unable to read this ebook.')),
       textSelectionParams: const PdfTextSelectionParams(),
+      pagePaintCallbacks: [_paintBookmarks],
+      customizeContextMenuItems: (params, items) {
+        if (widget.onBookmark != null &&
+            params.textSelectionDelegate.hasSelectedText &&
+            params.textSelectionDelegate.isCopyAllowed) {
+          items.insert(
+            0,
+            ContextMenuButtonItem(
+              label: context.tr('Add bookmark'),
+              onPressed: () => _bookmarkSelection(params),
+            ),
+          );
+        }
+      },
       onViewerReady: (document, controller) {
         final page = controller.pageNumber ?? widget.initialPage;
         final matrix = widget.settings.fit == ReadingFit.width

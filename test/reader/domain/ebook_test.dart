@@ -73,7 +73,7 @@ void main() {
       expect(settings.mode, ReadingMode.ebook);
       expect(settings.direction, ReadingDirection.leftToRight);
       expect(settings.layout, ReadingLayout.single);
-      expect(settings.background, ReadingBackground.white);
+      expect(settings.background, ReadingBackground.sepia);
       expect(settings.ebook.fontSize, 1.3);
       expect(settings.ebook.lineHeight, 1.8);
       expect(

@@ -1,3 +1,4 @@
+import 'reading_colors.dart';
 import '../../app/l10n/app_strings.dart';
 import '../../app/icons/inkora_icons.dart';
 
@@ -167,6 +168,7 @@ class _ReaderViewportState extends State<ReaderViewport>
       ReadingBackground.black => Colors.black,
       ReadingBackground.white => Colors.white,
       ReadingBackground.sepia => const Color(0xffeee2c8),
+      final background => background.paperColor,
     };
     return LayoutBuilder(
       builder: (context, viewport) {

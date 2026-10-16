@@ -210,7 +210,10 @@ void main() {
       UncontrolledProviderScope(container: first, child: const InkoraApp()),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Connect to Komga'), findsOneWidget);
+    expect(
+      find.text('Connect your Komga server to start reading.'),
+      findsOneWidget,
+    );
     await tester.enterText(
       find.byKey(const Key('server-url')),
       'https://example.test/komga',
@@ -256,11 +259,17 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Sign out').last);
     await tester.pumpAndSettle();
-    expect(find.text('Connect to Komga'), findsOneWidget);
+    expect(
+      find.text('Connect your Komga server to start reading.'),
+      findsOneWidget,
+    );
     expect(await store.restore(), isNull);
     second.read(routerProvider).go('/');
     await tester.pumpAndSettle();
-    expect(find.text('Connect to Komga'), findsOneWidget);
+    expect(
+      find.text('Connect your Komga server to start reading.'),
+      findsOneWidget,
+    );
   });
   testWidgets('native credentials remain scoped to their account', (
     tester,

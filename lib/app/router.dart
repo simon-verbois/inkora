@@ -1,4 +1,3 @@
-import '../offline/presentation/download_queue_screen.dart';
 import 'inkora_page.dart';
 import '../app/l10n/app_strings.dart';
 import '../features/settings/presentation/setup_screen.dart';
@@ -106,7 +105,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (_, state) => page(state, const ConnectionScreen()),
       ),
       StatefulShellRoute.indexedStack(
-        builder: (_, _, shell) => InkoraShell(navigationShell: shell),
+        builder: (_, state, shell) => InkoraShell(
+          navigationShell: shell,
+          showSearch:
+              !(state.topRoute?.name == 'catalogue-detail' &&
+                  state.pathParameters['kind'] == CatalogueKind.series.name),
+        ),
         branches: [
           StatefulShellBranch(
             routes: [
@@ -229,11 +233,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/downloads',
                 pageBuilder: (_, state) => page(state, const DownloadsScreen()),
                 routes: [
-                  GoRoute(
-                    path: 'queue',
-                    pageBuilder: (_, state) =>
-                        page(state, const DownloadQueueScreen()),
-                  ),
+                  GoRoute(path: 'queue', redirect: (_, _) => '/downloads'),
                   GoRoute(
                     path: 'series/:id',
                     pageBuilder: (_, state) => page(

@@ -1,3 +1,5 @@
+import 'package:inkora/features/library/domain/catalogue_metadata.dart';
+
 import 'dart:io';
 
 import 'package:drift/native.dart';
@@ -18,7 +20,6 @@ import 'package:inkora/offline/data/progress_sync.dart';
 import 'package:inkora/offline/domain/progress.dart';
 import 'package:inkora/offline/presentation/downloads_screen.dart';
 import 'package:inkora/offline/presentation/download_settings_panel.dart';
-import 'package:inkora/offline/presentation/download_queue_screen.dart';
 import 'package:inkora/features/connection/application/session_controller.dart';
 import 'package:inkora/offline/presentation/progress_sheet.dart';
 import 'package:inkora/reader/data/page_network_gate.dart';
@@ -196,7 +197,7 @@ void main() {
     },
   );
   testWidgets(
-    'dedicated download queue retains pause and cancel outside settings',
+    'inline transfers retain pause and cancel on the Downloads shelf',
     (tester) async {
       final id = (await tester.runAsync(
         () => service.store.enqueue(readerManifest()),
@@ -204,7 +205,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(home: DownloadQueueScreen()),
+          child: const MaterialApp(home: DownloadsScreen()),
         ),
       );
       await settle(tester);
@@ -216,16 +217,87 @@ void main() {
         (await tester.runAsync(() => service.store.job(id)))!.state,
         DownloadState.paused,
       );
-      await tap(tester, find.text('Cancel'));
+      await tap(tester, find.byTooltip('Cancel'));
       await settle(tester);
       expect(
         (await tester.runAsync(() => service.store.job(id)))!.state,
         DownloadState.cancelled,
       );
-      expect(find.text('No downloads in the queue'), findsOneWidget);
+      expect(find.text('Fixture reader'), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
+  testWidgets('offline metadata filters use book and inherited series fields', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      final catalogue = CatalogueStore(database, 'reader-account');
+      await catalogue.stage('metadata', [
+        for (final genre in ['Fantasy', 'Adventure']) ...[
+          CatalogueItem(
+            kind: CatalogueKind.series,
+            id: genre,
+            title: genre,
+            metadata: CatalogueMetadata(
+              genres: [genre],
+              publisher: 'Fixture Publisher',
+            ),
+          ),
+          CatalogueItem(
+            kind: CatalogueKind.book,
+            id: 'book-$genre',
+            title: '$genre book',
+            seriesId: genre,
+            metadata: const CatalogueMetadata(
+              mediaType: 'application/epub+zip',
+            ),
+          ),
+        ],
+      ]);
+      await catalogue.publish('metadata', DateTime(2026), () => true);
+      for (final genre in ['Fantasy', 'Adventure']) {
+        final original = readerManifest(book: 'book-$genre');
+        final manifest = ReaderManifest(
+          accountId: original.accountId,
+          bookId: original.bookId,
+          revision: original.revision,
+          title: '$genre book',
+          seriesId: genre,
+          documentType: 'application/epub+zip',
+          pages: original.pages,
+        );
+        final id = await service.store.enqueue(manifest);
+        await service.store.state(id, DownloadState.complete);
+      }
+    });
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: DownloadsScreen()),
+      ),
+    );
+    await settle(tester);
+    expect(find.text('Fantasy book'), findsOneWidget);
+    expect(find.text('Adventure book'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('downloads-filters')));
+    await tester.pumpAndSettle();
+    final genre = find.byWidgetPredicate(
+      (widget) =>
+          widget is DropdownButtonFormField<String> &&
+          widget.decoration.labelText == 'Genres',
+    );
+    await tester.tap(genre);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Fantasy').last);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Apply filters'));
+    await tester.tap(find.text('Apply filters'));
+    await tester.pumpAndSettle();
+    expect(find.text('Fantasy book'), findsOneWidget);
+    expect(find.text('Adventure book'), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
   for (final size in [const Size(320, 640), const Size(1024, 768)]) {
     for (final scale in [1.0, 2.0]) {
       testWidgets(
@@ -321,6 +393,7 @@ void main() {
           );
           await settle(tester);
           expect(find.text('Alpha Manga'), findsOneWidget);
+          expect(find.text('2 items'), findsOneWidget);
           await tester.scrollUntilVisible(
             find.text('Beta Ebook'),
             200,
@@ -332,9 +405,8 @@ void main() {
                 .first,
           );
           expect(find.text('Beta Ebook'), findsOneWidget);
-          expect(find.text('Pending book'), findsNothing);
+          // Pending downloads share this page above the completed gallery.
           expect(find.text('Fixture reader'), findsNothing);
-          expect(find.text('2 items'), findsOneWidget);
           expect(find.text('Alpha volume 1'), findsNothing);
           expect(find.text('Alpha volume 2'), findsNothing);
           expect(find.text('Beta volume 1'), findsNothing);
@@ -435,6 +507,8 @@ void main() {
           betaPoint.dy == alphaPoint.dy && betaPoint.dx < alphaPoint.dx,
       isTrue,
     );
+    await tester.tap(find.byKey(const Key('downloads-search-toggle')));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('downloads-search')), 'Alpha');
     await tester.pumpAndSettle();
     expect(
@@ -546,7 +620,7 @@ void main() {
             ),
           ),
           GoRoute(
-            path: '/downloads/queue',
+            path: '/downloads',
             builder: (_, _) => const Scaffold(body: Text('Download queue')),
           ),
         ],
@@ -573,7 +647,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Download queue'), findsOneWidget);
       expect((await tester.runAsync(service.store.jobs))!, hasLength(1));
-      router.pop();
+      router.go('/');
       await tester.pumpAndSettle();
       await tester.tap(find.text('Volume name'));
       await tester.pumpAndSettle();
@@ -687,11 +761,15 @@ void main() {
     );
     await settle(tester);
     expect(find.text('Storage and network'), findsOneWidget);
-    await tester.ensureVisible(find.byType(DropdownButton<int>));
+    final quotaSlider = find.byKey(const Key('download-quota'));
+    await tester.ensureVisible(quotaSlider);
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(DropdownButton<int>));
-    await tester.pumpAndSettle();
-    await tap(tester, find.text('512 MiB').last);
+    final slider = tester.widget<Slider>(quotaSlider);
+    slider.onChanged!(512);
+    await tester.pump();
+    expect(service.store.quota, defaultDownloadQuota);
+    tester.widget<Slider>(quotaSlider).onChangeEnd!(512);
+    await settle(tester);
     expect(service.store.quota, 512 * 1024 * 1024);
     await tester.ensureVisible(find.byType(SwitchListTile));
     await tester.pumpAndSettle();
@@ -819,6 +897,11 @@ void main() {
   testWidgets(
     'reader reset moves the viewport and ignores the disposed viewport locator',
     (tester) async {
+      // This regression asserts a two-page spread, independently of the device.
+      tester.view.physicalSize = const Size(800, 600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       final manifest = readerManifest();
       final client = fixtureClient(
         savedSession.endpoint,

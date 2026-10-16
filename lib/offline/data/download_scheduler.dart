@@ -1,3 +1,5 @@
+import 'download_progress.dart';
+
 import 'dart:async';
 import 'dart:io';
 
@@ -38,29 +40,45 @@ final class DownloadScheduler {
     required this.loadManifest,
     required this.transfer,
     required this.isCurrent,
-  });
+    DownloadProgress? progress,
+  }) : progress = progress ?? DownloadProgress();
   factory DownloadScheduler.komga(
     DownloadStore store,
     ReaderAssetStore assets,
     PageNetworkGate gate,
     KomgaClient client,
     bool Function() current,
-  ) => DownloadScheduler(
-    store,
-    assets,
-    gate,
-    loadManifest: (book, token) =>
-        KomgaReaderRemote.loadManifest(client, store.accountId, book, token),
-    transfer: (manifest, page, file, token, budget) => client.pageToFile(
-      manifest.bookId,
-      page,
-      file,
-      cancelToken: token,
-      maximumBytes: budget,
-      original: manifest.isDocument,
-    ),
-    isCurrent: current,
-  );
+  ) {
+    final progress = DownloadProgress();
+    return DownloadScheduler(
+      store,
+      assets,
+      gate,
+      loadManifest: (book, token) =>
+          KomgaReaderRemote.loadManifest(client, store.accountId, book, token),
+      transfer: (manifest, page, file, token, budget) {
+        final job = store.id(manifest);
+        return client.pageToFile(
+          manifest.bookId,
+          page,
+          file,
+          cancelToken: token,
+          maximumBytes: budget,
+          original: manifest.isDocument,
+          onProgress: (received, total) => progress.received(
+            job,
+            page,
+            received,
+            total > 0 ? total : manifest.pages[page].sizeBytes,
+          ),
+        );
+      },
+      progress: progress,
+      isCurrent: current,
+    );
+  }
+  final DownloadProgress progress;
+
   final DownloadStore store;
   final ReaderAssetStore assets;
   final PageNetworkGate gate;
@@ -315,6 +333,7 @@ final class DownloadScheduler {
       );
       await store.record(job.id, page, asset);
       parts[page] = asset;
+      progress.verified(job.id, page);
       return true;
     } finally {
       gate.release(request);
@@ -345,6 +364,7 @@ final class DownloadScheduler {
           );
         }
         final parts = await store.parts(job.id);
+        progress.begin(job.id, job.manifest.assetCount, parts.keys);
         final missing = [
           for (var page = 0; page < job.manifest.assetCount; page++)
             if (!parts.containsKey(page)) page,
@@ -461,6 +481,7 @@ final class DownloadScheduler {
   }
 
   void close() {
+    progress.close();
     for (final token in _enqueuing) {
       token.cancel();
     }

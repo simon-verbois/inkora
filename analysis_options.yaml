@@ -5,6 +5,7 @@ analyzer:
     - .tooling/**
     - '**/*.g.dart'
     - build/**
+    - artifacts/**
     - android/**
     - ios/**
   language:

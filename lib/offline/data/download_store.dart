@@ -1,3 +1,5 @@
+import '../../features/library/domain/catalogue_filters.dart';
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -36,7 +38,9 @@ enum DownloadState {
 /// pay for it when a caller actually needs page data.
 final class DownloadJob {
   DownloadJob(QueryRow row)
-    : id = row.read<String>('id'),
+    : _title = row.readNullable<String>('display_title'),
+      _assetCount = row.readNullable<int>('asset_count'),
+      id = row.read<String>('id'),
       accountId = row.read<String>('account_id'),
       bookId = row.read<String>('book_id'),
       revision = row.read<String>('revision'),
@@ -49,6 +53,10 @@ final class DownloadJob {
       partCount = row.data.containsKey('part_count')
           ? row.read<int>('part_count')
           : null;
+  final String? _title;
+  final int? _assetCount;
+  String get title => _title ?? manifest.title;
+  int get assetCount => _assetCount ?? manifest.assetCount;
   final String id, accountId, bookId, revision;
   final String _manifestJson;
   late final ReaderManifest manifest = ReaderManifest.fromJson(
@@ -213,7 +221,7 @@ final class DownloadStore {
 
   Stream<List<DownloadJob>> watch() => database
       .customSelect(
-        'SELECT j.*, (SELECT COUNT(*) FROM download_parts p WHERE p.job_id = j.id) AS part_count FROM download_jobs j WHERE j.account_id = ? ORDER BY j.rowid',
+        "SELECT j.*, json_extract(j.manifest, '\$.title') AS display_title, CASE WHEN json_extract(j.manifest, '\$.documentType') IS NOT NULL THEN 1 ELSE json_array_length(j.manifest, '\$.pages') END AS asset_count, (SELECT COUNT(*) FROM download_parts p WHERE p.job_id = j.id) AS part_count FROM download_jobs j WHERE j.account_id = ? ORDER BY j.rowid",
         variables: [Variable(accountId)],
         readsFrom: {database.downloadJobs, database.downloadParts},
       )
@@ -233,7 +241,7 @@ final class DownloadStore {
   /// Saved manifests still identify books removed from the remote catalogue.
   Stream<List<DownloadedBook>> completedBooks() => database
       .customSelect(
-        '''SELECT j.*, e.modified AS cover_modified
+        '''SELECT j.*, e.modified AS cover_modified, e.descriptive_metadata AS book_metadata
         FROM download_jobs j
         LEFT JOIN catalogue_snapshots s ON s.account_id=j.account_id
         LEFT JOIN catalogue_entries e ON e.account_id=j.account_id
@@ -248,11 +256,27 @@ final class DownloadStore {
   DownloadedBook _downloadedBook(QueryRow row) {
     final job = DownloadJob(row);
     final manifest = job.manifest;
+    final fields = jsonDecode(
+      row.readNullable<String>('book_metadata') ?? '{}',
+    ) as Map<String, dynamic>;
+    final parent = jsonDecode(
+      row.readNullable<String>('series_metadata') ?? '{}',
+    ) as Map<String, dynamic>;
+    // Match the catalogue's effective facet values when book fields are absent.
+    for (final facet in CatalogueFacet.values) {
+      final value = fields[facet.name];
+      if (value == null || value == '' || value is List && value.isEmpty) {
+        fields[facet.name] = parent[facet.name];
+      }
+    }
     final item = CatalogueItem(
       kind: CatalogueKind.book,
       id: manifest.bookId,
       title: manifest.title,
-      metadata: CatalogueMetadata(mediaType: manifest.documentType ?? ''),
+      metadata: CatalogueMetadata.fromJson({
+        ...fields,
+        'mediaType': manifest.documentType ?? '',
+      }),
       libraryId: manifest.libraryId,
       seriesId: manifest.seriesId,
       pageCount: manifest.pages.length,
@@ -268,7 +292,7 @@ final class DownloadStore {
       .customSelect(
         '''SELECT j.*, b.modified AS cover_modified,
       COALESCE(b.series_id, json_extract(j.manifest, '\$.seriesId')) AS parent_id,
-      b.number AS book_number, p.title AS series_title,
+      b.number AS book_number, b.descriptive_metadata AS book_metadata, p.descriptive_metadata AS series_metadata, p.title AS series_title,
       p.modified AS series_modified, p.library_id AS series_library
     FROM download_jobs j
     LEFT JOIN catalogue_snapshots s ON s.account_id=j.account_id
@@ -324,6 +348,10 @@ final class DownloadStore {
       id: id ?? 'unassigned',
       title: title ?? (id == null ? 'Unassigned series' : 'Saved series'),
       libraryId: first.readNullable<String>('series_library'),
+      metadata: CatalogueMetadata.fromJson(
+        jsonDecode(first.readNullable<String>('series_metadata') ?? '{}')
+            as Map<String, dynamic>,
+      ),
       itemCount: books.length,
       modified: first.readNullable<int>('series_modified') ?? 0,
     );

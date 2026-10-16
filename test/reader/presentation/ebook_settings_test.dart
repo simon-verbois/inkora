@@ -44,6 +44,17 @@ void main() {
         await tester.pump();
         expect(changes.length, 1);
         expect(changes.single.$1, 'fontSize');
+        final margins = find.byWidgetPredicate(
+          (widget) =>
+              widget is DropdownButtonFormField<String> &&
+              widget.decoration.labelText == 'Page margins',
+        );
+        await tester.ensureVisible(margins);
+        await tester.tap(margins);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Wide margins').last);
+        await tester.pumpAndSettle();
+        expect(changes.last, ('margins', 1.5));
         expect(tester.takeException(), isNull);
       },
     );

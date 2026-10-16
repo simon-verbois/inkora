@@ -49,33 +49,24 @@ class CatalogueDetailHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            catalogueDescription(item, context: context),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          if (metadata.status.isNotEmpty ||
-              metadata.readingDirection.isNotEmpty ||
-              metadata.ageRating != null) ...[
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                if (metadata.status.isNotEmpty)
-                  _Label(context.tr(humanizeMetadata(metadata.status))),
-                if (metadata.readingDirection.isNotEmpty)
-                  _Label(
-                    context.tr(
-                      readingDirectionLabel(metadata.readingDirection),
-                    ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  catalogueDescription(item, context: context),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
-                if (metadata.ageRating != null)
-                  _Label('${metadata.ageRating}+'),
+                ),
+              ),
+              if (item.kind == CatalogueKind.series &&
+                  metadata.status.toUpperCase() == 'ENDED') ...[
+                const SizedBox(width: 8),
+                Flexible(child: _Label(context.tr('Ended'))),
               ],
-            ),
-          ],
+            ],
+          ),
           if (resume != null && !resume!.onDeck) ...[
             const SizedBox(height: 12),
             LText(
@@ -183,14 +174,12 @@ class _CatalogueSummaryState extends State<CatalogueSummary> {
               TextButton.icon(
                 key: const Key('detail-summary-toggle'),
                 onPressed: () {
-                  setState(() => _expanded = !_expanded);
-                  if (!_expanded) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) {
-                        Scrollable.ensureVisible(context, alignment: 0);
-                      }
-                    });
+                  if (_expanded) {
+                    // Reposition before shrinking the sliver so the collapse
+                    // frame cannot jump into the volumes below the synopsis.
+                    Scrollable.ensureVisible(context, alignment: 0);
                   }
+                  setState(() => _expanded = !_expanded);
                 },
                 icon: Icon(
                   _expanded ? InkIcons.caretUp : InkIcons.caretDown,
@@ -401,11 +390,3 @@ String humanizeMetadata(String value) {
       ? words
       : '${words[0].toUpperCase()}${words.substring(1)}';
 }
-
-String readingDirectionLabel(String value) => switch (value.toUpperCase()) {
-  'LEFT_TO_RIGHT' => 'Left to right',
-  'RIGHT_TO_LEFT' => 'Right to left',
-  'VERTICAL' => 'Vertical',
-  'WEBTOON' => 'Webtoon',
-  _ => humanizeMetadata(value),
-};

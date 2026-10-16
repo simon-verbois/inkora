@@ -1,4 +1,5 @@
 import 'package:pdfrx/pdfrx.dart';
+import 'package:inkora/reader/domain/ebook_locator.dart';
 
 import 'support/ui_fixture_binding.dart';
 
@@ -35,8 +36,11 @@ Future<void> until(WidgetTester tester, bool Function() predicate) async {
 }
 
 void main() {
-  UiFixtureIntegrationBinding().framePolicy =
-      LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
+  final binding = UiFixtureIntegrationBinding()
+    ..framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
+  if (const bool.fromEnvironment('BOOKMARK_NATIVE_GESTURE')) {
+    binding.shouldPropagateDevicePointerEvents = true;
+  }
   for (final epub in [true, false]) {
     testWidgets(
       'local ${epub ? "EPUB" : "PDF"} opens, navigates, searches and persists position',
@@ -91,6 +95,14 @@ void main() {
           PageNetworkGate(),
           isCurrent: () => true,
         );
+        addTearDown(() async {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump(const Duration(milliseconds: 500));
+          repo.close();
+          client.close();
+          await db.close();
+          if (await root.exists()) await root.delete(recursive: true);
+        });
         final engine = FlutterReadium();
         var ready = false;
         Locator? location;
@@ -98,7 +110,11 @@ void main() {
           if (s == ReadiumReaderStatus.ready) ready = true;
         });
 
-        Future<void> open(ReaderLocator initial) => tester.pumpWidget(
+        Future<void> open(
+          ReaderLocator initial, {
+          double margins = 1,
+          String font = 'publisher',
+        }) => tester.pumpWidget(
           ProviderScope(
             child: MaterialApp(
               home: EbookReaderScreen(
@@ -109,7 +125,10 @@ void main() {
                   offline: true,
                 ),
                 repository: repo,
-                settings: const ReadingSettings(mode: ReadingMode.ebook),
+                settings: ReadingSettings(
+                  mode: ReadingMode.ebook,
+                  ebook: EbookSettings(margins: margins, font: font),
+                ),
               ),
             ),
           ),
@@ -131,9 +150,14 @@ void main() {
                         null,
         );
         expect(find.textContaining('Unable to open'), findsNothing);
-        final locations = engine.onTextLocatorChanged.listen(
-          (l) => location = l,
-        );
+        final locations = engine.onTextLocatorChanged.listen((l) {
+          location = l;
+          if (const bool.fromEnvironment('BOOKMARK_NATIVE_GESTURE')) {
+            debugPrint(
+              'BOOKMARK_LOCATION ${l.href} ${l.locations?.progression}',
+            );
+          }
+        });
         await tester.pump(const Duration(milliseconds: 500));
         if (epub) {
           await engine.goForward();
@@ -201,6 +225,16 @@ void main() {
           );
           await tester.pump(const Duration(milliseconds: 700));
           expect(location!.href, contains('chapter2'));
+          final screen = tester.getRect(find.byType(EbookReaderScreen));
+          final surface = tester.getRect(find.byType(ReadiumReaderWidget));
+          expect(surface.top - screen.top, closeTo(24, 1));
+          expect(screen.bottom - surface.bottom, closeTo(24, 1));
+          await open(ReaderLocator(0), margins: 2, font: 'baskerville');
+          await tester.pump(const Duration(milliseconds: 900));
+          final wideSurface = tester.getRect(find.byType(ReadiumReaderWidget));
+          expect(wideSurface.top - screen.top, closeTo(48, 1));
+          expect(screen.bottom - wideSurface.bottom, closeTo(48, 1));
+          expect(location!.href, contains('chapter2'));
         }
         if (epub) {
           final results = await engine.searchInPublication('lantern');
@@ -240,10 +274,161 @@ void main() {
           findsOneWidget,
         );
         expect(await db.select(db.readingPreferences).get(), isEmpty);
+        final bookmarks = EbookBookmarks(
+          db,
+          manifest.accountId,
+          manifest.bookId,
+        );
+        if (epub && const bool.fromEnvironment('BOOKMARK_NATIVE_GESTURE')) {
+          // Host adb performs a real long press and taps the native menu item.
+          // Keep fixtures isolated and the application installed during driving.
+          await tester.tapAt(tester.getCenter(find.byType(EbookReaderScreen)));
+          await tester.pump(const Duration(milliseconds: 300));
+          debugPrint('BOOKMARK_SELECTION_READY');
+          for (var attempt = 0; attempt < 450; attempt++) {
+            await tester.pump(const Duration(milliseconds: 200));
+            if ((await bookmarks.read()).isNotEmpty) break;
+          }
+          final selection = (await bookmarks.read()).single;
+          expect(selection.excerpt, isNotEmpty);
+          debugPrint('BOOKMARK_ANCHOR ${selection.encode()}');
+          final textAnchor = selection.value['text'] as Map;
+          expect(textAnchor['before'] ?? textAnchor['after'], isNotNull);
+          expect(
+            Locator.fromJson(selection.value)!.text?.highlight,
+            selection.excerpt,
+          );
+          await open(ReaderLocator(0), margins: 1.5, font: 'sans-serif');
+          await tester.pump(const Duration(milliseconds: 1000));
+          expect(
+            (await bookmarks.read()).single.bookmarkKey,
+            selection.bookmarkKey,
+          );
+          debugPrint('BOOKMARK_REFLOW_READY');
+          await tester.pump(const Duration(seconds: 2));
+          await engine.goToLocator(
+            Locator(
+              href: selection.href,
+              type: 'application/xhtml+xml',
+              locations: const Locations(progression: .75),
+            ),
+          );
+          await until(
+            tester,
+            () => (location?.locations?.progression ?? 0) > .5,
+          );
+        } else if (!epub) {
+          final viewer = tester.widget<PdfViewer>(find.byType(PdfViewer));
+          final controller = viewer.controller!;
+          // The synthetic PDF's second line starts at PDF (40,555).
+          final documentRect = controller.calcRectForRectInsidePage(
+            pageNumber: 2,
+            rect: const PdfRect(42, 570, 67, 550),
+          );
+          final point = controller.documentToGlobal(documentRect.center)!;
+          await tester.longPressAt(point);
+          await until(tester, () => tester.any(find.text('Add bookmark')));
+          await tester.tap(find.text('Add bookmark'));
+          await until(tester, () => tester.any(find.text('Bookmark added')));
+          final selection = (await bookmarks.read()).single;
+          expect(selection.excerpt, isNotEmpty);
+          expect(selection.pdfRectangle, isNotNull);
+          final native = Locator.fromJson(selection.value)!;
+          expect(
+            EbookLocator(Map<String, dynamic>.from(native.toJson()))
+                .pdfRectangle,
+            selection.pdfRectangle,
+          );
+          // Dismiss the confirmation so it does not cover reader controls.
+          ScaffoldMessenger.of(tester.element(find.byType(PdfViewer)))
+              .clearSnackBars();
+          await tester.pump(const Duration(milliseconds: 400));
+          await controller.goToPage(pageNumber: 3, duration: Duration.zero);
+          await until(tester, () => controller.pageNumber == 3);
+          final previousZoom = controller.currentZoom;
+          await controller.setZoom(
+            controller.centerPosition,
+            previousZoom * 1.5,
+            duration: Duration.zero,
+          );
+          expect(controller.currentZoom, greaterThan(previousZoom));
+          // The selection hides chrome; reveal it after dismissing selection.
+          await tester.tapAt(
+            tester.getBottomRight(find.byType(PdfViewer)) -
+                const Offset(24, 24),
+          );
+          await tester.pump(const Duration(milliseconds: 400));
+        }
+        if (epub) {
+          tester
+                  .widget<ReadiumReaderWidget>(find.byType(ReadiumReaderWidget))
+                  .shouldShowControls!
+                  .value =
+              true;
+          await tester.pump(const Duration(milliseconds: 400));
+        } else if (!tester.any(find.byTooltip('Reading controls'))) {
+          await tester.tapAt(tester.getCenter(find.byType(EbookReaderScreen)));
+          await tester.pump(const Duration(milliseconds: 400));
+        }
         await tester.tap(find.byTooltip('Reading controls'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Bookmarks'));
         await tester.pumpAndSettle();
+        final pdfBookmarkZoom = epub
+            ? null
+            : tester
+                  .widget<PdfViewer>(find.byType(PdfViewer))
+                  .controller!
+                  .currentZoom;
+        final preciseBookmarks = await bookmarks.read();
+        final preciseCount = preciseBookmarks.length;
+        if (preciseCount > 0) {
+          final beforeJump = location?.locations?.progression ?? 0;
+          if (epub) debugPrint('BOOKMARK_BEFORE_JUMP $beforeJump');
+          await tester.tap(find.text(preciseBookmarks.first.excerpt));
+          if (epub) {
+            await tester.pump(const Duration(milliseconds: 700));
+            debugPrint('BOOKMARK_AFTER_JUMP ${location?.toJson()}');
+            await until(
+              tester,
+              () => (location?.locations?.progression ?? 1) < beforeJump,
+            );
+            expect(location!.href, contains('chapter2'));
+            tester
+                    .widget<ReadiumReaderWidget>(
+                      find.byType(ReadiumReaderWidget),
+                    )
+                    .shouldShowControls!
+                    .value =
+                true;
+          } else {
+            await until(
+              tester,
+              () =>
+                  tester
+                      .widget<PdfViewer>(find.byType(PdfViewer))
+                      .controller!
+                      .pageNumber ==
+                  2,
+            );
+            final controller = tester
+                .widget<PdfViewer>(find.byType(PdfViewer))
+                .controller!;
+            expect(controller.currentZoom, closeTo(pdfBookmarkZoom!, .001));
+            final rect = preciseBookmarks.first.pdfRectangle!;
+            final target = controller.calcRectForRectInsidePage(
+              pageNumber: 2,
+              rect: PdfRect(rect[0], rect[1], rect[2], rect[3]),
+            );
+            expect(controller.visibleRect.contains(target.center), true);
+          }
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.tap(find.byTooltip('Reading controls'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Bookmarks'));
+          await tester.pumpAndSettle();
+          expect(find.text(preciseBookmarks.first.excerpt), findsOneWidget);
+        }
         await tester.tap(find.byTooltip('Add bookmark'));
         await until(
           tester,
@@ -251,7 +436,7 @@ void main() {
         );
         expect(
           await EbookBookmarks(db, manifest.accountId, manifest.bookId).read(),
-          hasLength(1),
+          hasLength(preciseCount + 1),
         );
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
@@ -261,6 +446,7 @@ void main() {
         final resume = await store.locator(manifest);
         if (!epub) expect(resume.pageIndex, 1);
         await open(resume);
+        expect(await bookmarks.read(), hasLength(preciseCount + 1));
         await until(
           tester,
           () => epub
@@ -297,10 +483,6 @@ void main() {
         }
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump(const Duration(milliseconds: 500));
-        repo.close();
-        client.close();
-        await db.close();
-        await root.delete(recursive: true);
       },
     );
   }

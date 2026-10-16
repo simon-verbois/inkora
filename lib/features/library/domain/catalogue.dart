@@ -1,3 +1,4 @@
+import 'catalogue_filters.dart';
 import 'catalogue_metadata.dart';
 
 enum CatalogueKind { library, series, book, collection, readlist }
@@ -66,6 +67,7 @@ final class CatalogueQuery {
     this.search = '',
     this.sort = CatalogueSort.title,
     this.showUnavailable = true,
+    this.filters = const MetadataFilters(),
     this.page = 0,
     this.pageSize = 30,
   });
@@ -80,6 +82,7 @@ final class CatalogueQuery {
   final String search;
   final CatalogueSort sort;
   final bool showUnavailable;
+  final MetadataFilters filters;
   final int page;
   final int pageSize;
 
@@ -95,6 +98,7 @@ final class CatalogueQuery {
       search == other.search &&
       sort == other.sort &&
       showUnavailable == other.showUnavailable &&
+      filters == other.filters &&
       page == other.page &&
       pageSize == other.pageSize;
   @override
@@ -108,6 +112,7 @@ final class CatalogueQuery {
     search,
     sort,
     showUnavailable,
+    filters,
     page,
     pageSize,
   );

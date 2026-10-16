@@ -179,7 +179,7 @@ class _DownloadBookActionState extends ConsumerState<DownloadBookAction> {
           : completed != null
           ? () => _remove(completed)
           : pending
-          ? () => context.push('/downloads/queue')
+          ? () => context.go('/downloads')
           : () => _download(job),
       icon: waiting
           ? const SizedBox(

@@ -1,3 +1,5 @@
+import '../../../app/widgets/inkora_widgets.dart';
+import '../../../app/icons/inkora_icons.dart';
 import 'preference_labels.dart';
 import 'library_defaults_screen.dart';
 import 'setup_introduction.dart';
@@ -152,38 +154,74 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                               section: _sections[step],
                               embedded: true,
                             )
-                    : ListView(
-                        padding: const EdgeInsets.all(24),
-                        children: [
-                          const LText(
-                            'Ready to read',
-                            style: TextStyle(fontSize: 26),
+                    : Center(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(24),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 560),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Icon(
+                                  InkIcons.checkCircle,
+                                  size: 56,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                const SizedBox(height: 20),
+                                LText(
+                                  'Ready to read',
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineMedium,
+                                ),
+                                const SizedBox(height: 12),
+                                const LText(
+                                  'Your configuration is saved on this device. You can change every setting later, or reopen Guided setup from Settings.',
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 24),
+                                InkPanel(
+                                  child: Column(
+                                    children: [
+                                      ListTile(
+                                        contentPadding: EdgeInsets.zero,
+                                        leading: const Icon(InkIcons.palette),
+                                        title: LText(
+                                          appearanceLabel(
+                                            preferences.appearance,
+                                          ),
+                                        ),
+                                        subtitle: LText(
+                                          densityLabel(preferences.density),
+                                        ),
+                                      ),
+                                      ListTile(
+                                        contentPadding: EdgeInsets.zero,
+                                        leading: const Icon(InkIcons.books),
+                                        title: Text(
+                                          languageNames[preferences.locale] ??
+                                              context.tr('System language'),
+                                        ),
+                                      ),
+                                      ListTile(
+                                        contentPadding: EdgeInsets.zero,
+                                        leading: const Icon(
+                                          InkIcons.personArmsSpread,
+                                        ),
+                                        title: LText(
+                                          gesturePresetLabel(
+                                            preferences.gestures.preset,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: 16),
-                          const LText(
-                            'Your configuration is saved on this device. You can change every setting later, or reopen Guided setup from Settings.',
-                          ),
-                          const SizedBox(height: 16),
-                          LText(
-                            "{0} · {1}",
-                            arguments: [
-                              context.tr(
-                                appearanceLabel(preferences.appearance),
-                              ),
-                              context.tr(densityLabel(preferences.density)),
-                            ],
-                          ),
-                          LText(
-                            "{0} · {1}",
-                            arguments: [
-                              context.tr(
-                                gesturePresetLabel(preferences.gestures.preset),
-                              ),
-                              languageNames[preferences.locale] ??
-                                  context.tr('System language'),
-                            ],
-                          ),
-                        ],
+                        ),
                       ),
               ),
               if (_error != null)
@@ -201,7 +239,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Expanded(
-                            child: FilledButton(
+                            child: OutlinedButton(
                               key: const Key('setup-back'),
                               onPressed: _saving || step == 0
                                   ? null
@@ -217,8 +255,10 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                             child: FilledButton(
                               key: const Key('setup-next'),
                               onPressed: _saving ? null : () => _next(step),
-                              child: const LText(
-                                'Next',
+                              child: LText(
+                                step == _sections.length
+                                    ? 'Start reading'
+                                    : 'Next',
                                 textAlign: TextAlign.center,
                               ),
                             ),

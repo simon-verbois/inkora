@@ -10,6 +10,23 @@ remain in progress.
 
 ## [Unreleased]
 
+## [2026.42.2] - 2026-10-16
+
+- Place the completed-series badge beside the book count and remove other header badges.
+- Include the target volume title in the series Start/Continue reading button and remove the separate subtitle.
+- Hide the catalogue search button on series detail pages.
+- Keep the synopsis visible when collapsing a series description, without jumping down to the volumes.
+
+- Center a single login wordmark and simplify its Komga-server introduction.
+
+- Add precise local ebook bookmarks from long-pressed text, with excerpts and visible underlines.
+- Default unconfigured ebooks to sepia and add manually selected reading styles, more paper colors and Libre Baskerville.
+
+- Add customizable download-quota and interface-size sliders, and a clearer guided-setup completion screen.
+- Add metadata-based catalogue and offline-shelf filters; keep grid/list switching in the shared toolbar and tighten library-selector spacing.
+- Show download progress and pause/resume/cancel controls directly on Downloads, replacing the separate queue page.
+- Add EPUB margin presets with space above and below the text, and remove the redundant ebook panel from About.
+
 ## [2026.42.1] - 2026-10-15
 
 ### Added

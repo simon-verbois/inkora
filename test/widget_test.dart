@@ -57,10 +57,22 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        expect(find.text('Connect to Komga'), findsOneWidget);
+        expect(
+          find.text('Connect your Komga server to start reading.'),
+          findsOneWidget,
+        );
+        expect(find.text('Inkora'), findsOneWidget);
+        expect(find.byType(AppBar), findsNothing);
+        expect(
+          tester.getCenter(find.text('Inkora')).dx,
+          closeTo(size.width / 2, 1),
+        );
         container.read(routerProvider).go('/');
         await tester.pumpAndSettle();
-        expect(find.text('Connect to Komga'), findsOneWidget);
+        expect(
+          find.text('Connect your Komga server to start reading.'),
+          findsOneWidget,
+        );
         await tester.enterText(
           find.byKey(const Key('server-url')),
           'https://example.test/komga',
@@ -106,11 +118,17 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text('Sign out').last);
         await tester.pumpAndSettle();
-        expect(find.text('Connect to Komga'), findsOneWidget);
+        expect(
+          find.text('Connect your Komga server to start reading.'),
+          findsOneWidget,
+        );
         expect(store.saved, isNull);
         container.read(routerProvider).go('/');
         await tester.pumpAndSettle();
-        expect(find.text('Connect to Komga'), findsOneWidget);
+        expect(
+          find.text('Connect your Komga server to start reading.'),
+          findsOneWidget,
+        );
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
         container.dispose();
@@ -146,7 +164,10 @@ void main() {
     );
     await tester.pump();
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(find.text('Connect to Komga'), findsNothing);
+    expect(
+      find.text('Connect your Komga server to start reading.'),
+      findsNothing,
+    );
     restore.complete(savedSession);
     await tester.pumpAndSettle();
     expect(find.text('Your next great read'), findsOneWidget);

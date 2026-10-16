@@ -179,7 +179,7 @@ final class ReaderStore {
             ...book.toJson(),
             'mode': 'ebook',
             if (!ebookConfigured && book.background == null)
-              'background': 'white',
+              'background': 'sepia',
           });
         }
         return ReadingSettings.resolveScopes(layers);

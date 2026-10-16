@@ -1,3 +1,9 @@
+import 'dart:async';
+
+import '../../features/library/domain/catalogue_filters.dart';
+import '../../features/library/presentation/catalogue_filters_sheet.dart';
+import '../../features/library/presentation/catalogue_toolbar.dart';
+import 'inline_download_queue.dart';
 import '../../app/l10n/app_strings.dart';
 import '../../app/icons/inkora_icons.dart';
 
@@ -34,10 +40,54 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
   late CatalogueSort _sort = widget.seriesId == null
       ? CatalogueSort.title
       : CatalogueSort.sequence;
-  bool _listView = false;
+  bool _listView = false, _searchOpen = false, _searchWasEmpty = true;
+  String _term = '';
+  Timer? _debounce;
+  MetadataFilters _metadataFilters = const MetadataFilters();
+
+  void _searchChanged(String value) {
+    if (value.isEmpty != _searchWasEmpty) {
+      setState(() => _searchWasEmpty = value.isEmpty);
+    }
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 180), () {
+      if (mounted) _change(() => _term = value.trim().toLowerCase());
+    });
+  }
+
+  Future<void> _filters() async {
+    final all = ref.read(downloadedSeriesProvider).asData?.value ?? [];
+    final items = widget.seriesId == null
+        ? all.map((group) => group.item)
+        : all
+              .where((group) => group.item.id == widget.seriesId)
+              .expand((group) => group.books.map((book) => book.item));
+    final options = <CatalogueFacet, List<String>>{};
+    for (final facet in CatalogueFacet.values) {
+      final values =
+          items
+              .expand((item) => facet.entries(item.metadata))
+              .where((value) => value.isNotEmpty)
+              .toSet()
+              .toList()
+            ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+      if (values.isNotEmpty) options[facet] = values;
+    }
+    final result = await showInkSheet<CatalogueFilterResult>(
+      context: context,
+      child: CatalogueFiltersSheet(
+        options: Future.value(options),
+        filters: _metadataFilters,
+      ),
+    );
+    if (mounted && result != null) {
+      _change(() => _metadataFilters = result.filters);
+    }
+  }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _search.dispose();
     _scroll.dispose();
     super.dispose();
@@ -90,18 +140,21 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
                   .firstOrNull;
               // Lowercase each title once and resolve rows through maps, so a
               // keystroke costs O(n log n) instead of O(n²) list scans.
-              final term = _search.text.trim().toLowerCase();
+              final term = _term;
               final titles = <String, String>{};
               String title(CatalogueItem item) =>
                   titles[item.identity] ??= item.title.toLowerCase();
               final groups = {
                 for (final group in all)
-                  if (title(group.item).contains(term))
+                  if (title(group.item).contains(term) &&
+                      _metadataFilters.matches(group.item.metadata))
                     group.item.identity: group,
               };
               final volumes = {
                 for (final book in parent?.books ?? const <DownloadedBook>[])
-                  if (title(book.item).contains(term)) book.item.id: book,
+                  if (title(book.item).contains(term) &&
+                      _metadataFilters.matches(book.item.metadata))
+                    book.item.id: book,
               };
               final root = widget.seriesId == null;
               final visible = root
@@ -144,123 +197,88 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
                 scrollCacheExtent: const ScrollCacheExtent.viewport(1),
                 slivers: [
                   SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: LText(
-                                  root
-                                      ? 'Downloads'
-                                      : parent?.item.title ??
-                                            'Downloaded volumes',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineSmall,
-                                ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        CatalogueToolbar(
+                          controlPrefix: 'downloads',
+                          leading: Text(
+                            AppStrings.of(
+                              context,
+                            ).quantity(visible.length, root ? 'item' : 'book'),
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          searchOpen: _searchOpen,
+                          onSearch: () =>
+                              setState(() => _searchOpen = !_searchOpen),
+                          onFilters: _filters,
+                          filtered: !_metadataFilters.isEmpty,
+                          listView: root ? _listView : null,
+                          onView: () => setState(() => _listView = !_listView),
+                          sort: PopupMenuButton<CatalogueSort>(
+                            key: const Key('downloads-sort'),
+                            tooltip: context.tr('Sort catalogue'),
+                            initialValue: _sort,
+                            icon: const Icon(InkIcons.sortAscending, size: 20),
+                            onSelected: (value) => _change(() => _sort = value),
+                            itemBuilder: (_) => [
+                              const PopupMenuItem(
+                                value: CatalogueSort.title,
+                                child: LText('Title A–Z'),
                               ),
-                              if (root)
-                                IconButton(
-                                  tooltip: context.tr('Download queue'),
-                                  icon: const Icon(InkIcons.list),
-                                  onPressed: () =>
-                                      context.push('/downloads/queue'),
+                              const PopupMenuItem(
+                                value: CatalogueSort.titleDescending,
+                                child: LText('Title Z–A'),
+                              ),
+                              if (!root)
+                                const PopupMenuItem(
+                                  value: CatalogueSort.sequence,
+                                  child: LText('Book number'),
                                 ),
                             ],
                           ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            key: const Key('downloads-search'),
-                            controller: _search,
-                            decoration: InputDecoration(
-                              labelText: context.tr(
-                                root ? 'Search' : 'Search downloaded volumes',
+                        ),
+                        if (_searchOpen)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                            child: TextField(
+                              key: const Key('downloads-search'),
+                              controller: _search,
+                              decoration: InputDecoration(
+                                isDense: true,
+                                hintText: context.tr(
+                                  root ? 'Search' : 'Search downloaded volumes',
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                prefixIcon: const Icon(
+                                  InkIcons.magnifyingGlass,
+                                  size: 18,
+                                ),
+                                suffixIcon: _search.text.isEmpty
+                                    ? null
+                                    : IconButton(
+                                        tooltip: context.tr('Clear search'),
+                                        icon: const Icon(InkIcons.x, size: 18),
+                                        onPressed: () {
+                                          _debounce?.cancel();
+                                          _change(() {
+                                            _search.clear();
+                                            _term = '';
+                                            _searchWasEmpty = true;
+                                          });
+                                        },
+                                      ),
                               ),
-                              prefixIcon: const Icon(InkIcons.magnifyingGlass),
-                              suffixIcon: _search.text.isEmpty
-                                  ? null
-                                  : IconButton(
-                                      tooltip: context.tr("Clear search"),
-                                      onPressed: () => _change(_search.clear),
-                                      icon: const Icon(InkIcons.x),
-                                    ),
+                              onChanged: _searchChanged,
                             ),
-                            onChanged: (_) => _change(() {}),
                           ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 16,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              Text(
-                                AppStrings.of(context).quantity(
-                                  visible.length,
-                                  root ? 'item' : 'book',
-                                ),
-                              ),
-                              SizedBox(
-                                width: scale > 1.3 ? double.infinity : 160,
-                                child: DropdownButton<CatalogueSort>(
-                                  icon: const Icon(
-                                    InkIcons.caretDown,
-                                    size: 20,
-                                  ),
-                                  isExpanded: true,
-                                  itemHeight: null,
-                                  key: const Key('downloads-sort'),
-                                  value: _sort,
-                                  items: [
-                                    const DropdownMenuItem(
-                                      value: CatalogueSort.title,
-                                      child: LText(
-                                        'Title A–Z',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    const DropdownMenuItem(
-                                      value: CatalogueSort.titleDescending,
-                                      child: LText(
-                                        'Title Z–A',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    if (!root)
-                                      const DropdownMenuItem(
-                                        value: CatalogueSort.sequence,
-                                        child: LText('Book number'),
-                                      ),
-                                  ],
-                                  onChanged: (sort) {
-                                    if (sort != null) {
-                                      _change(() => _sort = sort);
-                                    }
-                                  },
-                                ),
-                              ),
-                              if (root)
-                                IconButton(
-                                  tooltip: context.tr(
-                                    _listView ? 'Show grid' : 'Show list',
-                                  ),
-                                  onPressed: () =>
-                                      setState(() => _listView = !_listView),
-                                  icon: Icon(
-                                    _listView
-                                        ? InkIcons.squaresFour
-                                        : InkIcons.list,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
+                      ],
                     ),
                   ),
+                  if (root) InlineDownloadQueue(search: _term),
                   if (visible.isEmpty)
                     SliverToBoxAdapter(
                       child: InkEmptyState(

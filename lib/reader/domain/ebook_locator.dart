@@ -30,6 +30,79 @@ final class EbookLocator {
   factory EbookLocator.decode(String text) =>
       EbookLocator(jsonDecode(text) as Map<String, dynamic>);
 
+  /// A short display excerpt; structural anchors remain in locations.
+  String get excerpt => ((value['text'] as Map?)?['highlight'] as String? ?? '')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+
+  factory EbookLocator.bookmark(
+    Map<String, dynamic> value, {
+    String? selectedText,
+  }) {
+    final text = Map<String, dynamic>.from(value['text'] as Map? ?? const {});
+    String bounded(String value, int max) =>
+        value.length <= max ? value : value.substring(0, max);
+    final excerpt = selectedText ?? text['highlight'] as String?;
+    if (excerpt != null) text['highlight'] = bounded(excerpt, 512);
+    for (final key in ['before', 'after']) {
+      final context = text[key];
+      if (context is String) {
+        text[key] = key == 'before' && context.length > 128
+            ? context.substring(context.length - 128)
+            : bounded(context, 128);
+      }
+    }
+    return EbookLocator({...value, if (text.isNotEmpty) 'text': text});
+  }
+
+  /// Native EPUB positions can renumber after reflow. Prefer stable structural/text
+  /// anchors when present, retaining progression for older page-only bookmarks.
+  String get bookmarkKey {
+    final location = locations;
+    final text = value['text'] as Map?;
+    final anchored =
+        (text != null &&
+            ['before', 'after'].any(
+              (key) => text[key] is String && (text[key] as String).isNotEmpty,
+            )) ||
+        ['cssSelector', 'partialCfi', 'domRange', 'fragments'].any(
+          (key) => switch (location[key]) {
+            final String value => value.isNotEmpty,
+            final List<Object?> value => value.isNotEmpty,
+            final Map<Object?, Object?> value => value.isNotEmpty,
+            _ => false,
+          },
+        );
+    return jsonEncode(
+      _canonical({
+        'href': href,
+        'type': value['type'],
+        'locations': {
+          for (final entry in location.entries)
+            if (!anchored ||
+                ![
+                  'position',
+                  'progression',
+                  'totalProgression',
+                ].contains(entry.key))
+              entry.key: entry.value,
+        },
+        if (excerpt.isNotEmpty) 'text': value['text'],
+      }),
+    );
+  }
+
+  List<double>? get pdfRectangle {
+    final raw = locations['inkoraPdfRect'];
+    if (raw is! List ||
+        raw.length != 4 ||
+        raw.any((v) => v is! num || !v.isFinite || v.abs() > 1000000)) {
+      return null;
+    }
+    final rect = raw.map((v) => (v as num).toDouble()).toList();
+    return rect[0] < rect[2] && rect[1] > rect[3] ? rect : null;
+  }
+
   /// Komga and native Readium can use different position counts. Resolve by
   /// resource + progression against the server's own position list.
   int positionIn(List<Map<String, dynamic>> positions) {
@@ -114,4 +187,13 @@ final class EbookPositionMap {
       }),
     );
   }
+}
+
+Object? _canonical(Object? value) {
+  if (value is Map) {
+    final keys = value.keys.cast<String>().toList()..sort();
+    return {for (final key in keys) key: _canonical(value[key])};
+  }
+  if (value is List) return value.map(_canonical).toList();
+  return value;
 }

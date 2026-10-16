@@ -20,6 +20,7 @@ import '../../support/ui_harness.dart';
 const metadata = CatalogueMetadata(
   status: 'ENDED',
   readingDirection: 'WEBTOON',
+  ageRating: 16,
   publisher: 'Fixture Press',
   genres: ['Action', 'Fantasy'],
   tags: [
@@ -48,6 +49,8 @@ Future<void> seed(
   int volumes = 2,
   bool document = false,
   bool available = true,
+  String? synopsis,
+  String? firstVolumeTitle,
 }) async {
   await tester.runAsync(() async {
     await harness.repository.store.stage('details', [
@@ -56,7 +59,7 @@ Future<void> seed(
         id: 'series-a',
         title: 'A series with a deliberately long title',
         itemCount: volumes,
-        summary: summary,
+        summary: synopsis ?? summary,
         metadata: metadata,
         available: available,
       ),
@@ -64,7 +67,9 @@ Future<void> seed(
         CatalogueItem(
           kind: CatalogueKind.book,
           id: 'volume-$i',
-          title: 'Volume ${i.toString().padLeft(3, '0')}',
+          title: i == 0 && firstVolumeTitle != null
+              ? firstVolumeTitle
+              : 'Volume ${i.toString().padLeft(3, '0')}',
           seriesId: 'series-a',
           number: i.toDouble(),
           pageCount: document ? 0 : 30,
@@ -99,7 +104,22 @@ void main() {
     await harness.mount(tester);
     harness.container.read(routerProvider).go('/catalogue/series/series-a');
     await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('detail-read')),
+        matching: find.text('Commencer la lecture - Volume 000'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Terminée'), findsOneWidget);
+    expect(
+      tester.getCenter(find.text('Terminée')).dy,
+      tester.getCenter(find.text('2 livres')).dy,
+    );
+    expect(
+      tester.getTopLeft(find.text('Terminée')).dx,
+      greaterThan(tester.getTopRight(find.text('2 livres')).dx),
+    );
     await tester.ensureVisible(find.byKey(const Key('detail-metadata')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('detail-metadata')));
@@ -132,15 +152,52 @@ void main() {
             resumeEntries: const [],
           );
           addTearDown(() => harness.close(tester));
-          await seed(harness, tester);
+          final longSummary = List.filled(5, summary).join('\n');
+          const targetTitle =
+              'Volume 000 — Les voyageurs des mondes lointains : deuxième partie {0}';
+          await seed(
+            harness,
+            tester,
+            volumes: 85,
+            synopsis: longSummary,
+            firstVolumeTitle: targetTitle,
+          );
           await harness.mount(tester, textScale: scale);
           final router = harness.container.read(routerProvider);
           router.go('/catalogue/series/series-a');
           await tester.pumpAndSettle();
-          expect(find.text('Start reading'), findsOneWidget);
+          final readButton = find.byKey(const Key('detail-read'));
+          final readLabel = find.text('Start reading - $targetTitle');
+          expect(
+            find.descendant(of: readButton, matching: readLabel),
+            findsOneWidget,
+          );
+          expect(
+            find.descendant(
+              of: find.byType(CatalogueDetailHeader),
+              matching: find.text(targetTitle),
+            ),
+            findsNothing,
+          );
+          final labelBounds = tester.getRect(readLabel);
+          final buttonBounds = tester.getRect(readButton);
+          expect(labelBounds.left, greaterThanOrEqualTo(buttonBounds.left));
+          expect(labelBounds.right, lessThanOrEqualTo(buttonBounds.right));
+          expect(labelBounds.top, greaterThanOrEqualTo(buttonBounds.top));
+          expect(labelBounds.bottom, lessThanOrEqualTo(buttonBounds.bottom));
           expect(find.text('Browse books'), findsNothing);
           expect(find.text('Ended'), findsOneWidget);
-          expect(find.text('Webtoon'), findsOneWidget);
+          final count = find.text('85 books');
+          expect(
+            tester.getTopLeft(find.text('Ended')).dx,
+            greaterThan(tester.getTopRight(count).dx),
+          );
+          expect(
+            tester.getCenter(find.text('Ended')).dy,
+            tester.getCenter(count).dy,
+          );
+          expect(find.text('Webtoon'), findsNothing);
+          expect(find.text('16+'), findsNothing);
           {
             final cover = find.descendant(
               of: find.byType(CatalogueDetailHeader),
@@ -163,7 +220,7 @@ void main() {
           await tester.pumpAndSettle();
           expect(
             find.byWidgetPredicate(
-              (w) => w is SelectableText && w.data == summary,
+              (w) => w is SelectableText && w.data == longSummary,
             ),
             findsOneWidget,
           );
@@ -172,13 +229,32 @@ void main() {
           );
           await tester.pumpAndSettle();
           await tester.tap(find.byKey(const Key('detail-summary-toggle')));
+          // Check the collapse frame itself: settling hides the old transient
+          // jump to the volumes before the post-frame scroll restored the top.
+          await tester.pump();
+          final firstFrameSynopsis = tester.getRect(find.text('Synopsis'));
+          final firstFrameViewport = tester.getRect(
+            find.byType(CustomScrollView).last,
+          );
+          expect(
+            firstFrameSynopsis.top,
+            greaterThanOrEqualTo(firstFrameViewport.top),
+          );
+          expect(
+            firstFrameSynopsis.bottom,
+            lessThanOrEqualTo(firstFrameViewport.bottom),
+          );
           await tester.pumpAndSettle();
           expect(
             find.byWidgetPredicate(
-              (w) => w is SelectableText && w.data == summary,
+              (w) => w is SelectableText && w.data == longSummary,
             ),
             findsNothing,
           );
+          final synopsis = tester.getRect(find.text('Synopsis'));
+          final viewport = tester.getRect(find.byType(CustomScrollView).last);
+          expect(synopsis.top, greaterThanOrEqualTo(viewport.top));
+          expect(synopsis.bottom, lessThanOrEqualTo(viewport.bottom));
           await tester.ensureVisible(find.byKey(const Key('detail-metadata')));
           await tester.pumpAndSettle();
           await tester.tap(find.byKey(const Key('detail-metadata')));
@@ -424,7 +500,11 @@ void main() {
         router.go('/catalogue/series/series-a');
         await tester.pumpAndSettle();
         expect(
-          find.text(onDeck ? 'Read next volume' : 'Continue reading'),
+          find.text(
+            onDeck
+                ? 'Start reading - Volume 001'
+                : 'Continue reading - Volume 001',
+          ),
           findsOneWidget,
         );
         await tester.tap(find.byKey(const Key('detail-read')));

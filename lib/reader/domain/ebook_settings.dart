@@ -35,7 +35,7 @@ final class EbookSettings {
 
     final font = json['font'] as String? ?? 'publisher';
     final columns = json['columns'] as String? ?? 'auto';
-    if (!['publisher', 'serif', 'sans-serif'].contains(font) ||
+    if (!['publisher', 'serif', 'sans-serif', 'baskerville'].contains(font) ||
         !['auto', 'one', 'two'].contains(columns)) {
       throw const FormatException('Invalid ebook layout');
     }

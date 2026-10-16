@@ -29,6 +29,8 @@ void main() {
     expect(job.bookId, 'reader-book');
     expect(job.accountId, 'reader-account');
     expect(job.partCount, 0);
+    expect(job.title, 'Fixture reader');
+    expect(job.assetCount, 4);
 
     await store.record(
       id,

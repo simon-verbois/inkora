@@ -1,3 +1,10 @@
+import 'ebook_selection.dart';
+import 'reading_colors.dart';
+
+import 'dart:isolate';
+
+import 'package:flutter/services.dart';
+
 import 'ebook_search_sheet.dart';
 import '../domain/gesture_zones.dart';
 import 'reader_gesture_guard.dart';
@@ -72,6 +79,8 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   Timer? _saveTimer;
   Future<void> _writes = Future.value();
   Future<void> _preferences = Future.value();
+  Future<void> _bookmarkWrites = Future.value();
+  bool _bookmarkDecorationsReady = false;
   bool _backgrounded = false;
   bool _rewind = false;
   bool _savingSuppressed = false;
@@ -166,20 +175,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
       if (!mounted) return;
       if (!_epub) {
         _pdfPath = file.path;
-        _surface = EbookPdfSurface(
-          path: file.path,
-          controller: _pdfController,
-          initialPage: widget.reader.locator.pageIndex + 1,
-          settings: widget.settings,
-          onPage: (page) => _locationChanged(
-            Locator(
-              href: 'document.pdf',
-              type: 'application/pdf',
-              locations: Locations(position: page),
-            ),
-          ),
-          onToggleControls: () => _controls.value = !_controls.value,
-        );
+        _surface = _pdfSurface();
         setState(() {});
         return;
       }
@@ -225,6 +221,30 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
         goForwardSemanticLabel: context.tr('Next page'),
         toggleShowControlsSemanticLabel: context.tr('Reading controls'),
         onExternalLinkActivated: (_) {},
+        fontFamilyDeclarations: [_baskerville],
+        selectionActions: [
+          SelectionAction(
+            id: 'inkora-bookmark',
+            title: context.tr('Add bookmark'),
+          ),
+          if (Theme.of(context).platform == TargetPlatform.android)
+            SelectionAction(id: 'inkora-copy', title: context.tr('Copy')),
+        ],
+        allowedDefaultActions: const {DefaultSelectionAction.copy},
+        onTextSelected: (_) => _controls.value = false,
+        onSelectionAction: (event) {
+          if (event.actionId == 'inkora-bookmark') {
+            unawaited(
+              _addBookmark(event.locator, selectedText: event.selectedText),
+            );
+          } else if (event.actionId == 'inkora-copy') {
+            unawaited(
+              _copySelection(
+                event.selectedText ?? event.locator.text?.highlight ?? '',
+              ),
+            );
+          }
+        },
       );
       setState(() {});
     } catch (_) {
@@ -236,17 +256,105 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
     }
   }
 
+  static final _baskerville = ReaderFontFamily(
+    name: 'InkoraBaskerville',
+    fallbacks: const ['serif'],
+    faces: const [ReaderFontFace(asset: 'assets/fonts/LibreBaskerville.ttf')],
+  );
+
+  Widget _pdfSurface() => EbookPdfSurface(
+    path: _pdfPath!,
+    controller: _pdfController,
+    initialPage: _position.value.$1 + 1,
+    settings: widget.settings,
+    bookmarks: _saved,
+    onBookmark: (locator) => _addBookmark(Locator.fromJson(locator.value)!),
+    onPage: (page) => _locationChanged(
+      Locator(
+        href: 'document.pdf',
+        type: 'application/pdf',
+        locations: Locations(position: page),
+      ),
+    ),
+    onToggleControls: () => _controls.value = !_controls.value,
+  );
+
+  Future<void> _decorateBookmarks() async {
+    if (!mounted || !_epub || !_bookmarkDecorationsReady) return;
+    try {
+      await _native(() async {
+        if (!mounted) return;
+        await _engine.applyDecorations('inkora-bookmarks', [
+          for (var i = 0; i < _saved.length; i++)
+            if (_saved[i].excerpt.isNotEmpty &&
+                Locator.fromJson(_saved[i].value) != null)
+              ReaderDecoration(
+                id: 'bookmark-$i',
+                locator: Locator.fromJson(_saved[i].value)!,
+                style: const ReaderDecorationStyle(
+                  style: DecorationStyle.underline,
+                  tint: Color(0xffd39a32),
+                ),
+              ),
+        ]);
+      });
+    } catch (_) {
+      _showError('Unable to display bookmarks.');
+    }
+  }
+
+  Future<void> _addBookmark(Locator locator, {String? selectedText}) async {
+    try {
+      final bookmark = await _selectedBookmark(locator, selectedText);
+      await _clearSelection();
+      await _mutateBookmarks(() => _bookmarks.add(bookmark), announce: true);
+    } catch (_) {
+      _showError('Unable to save bookmark.');
+    }
+  }
+
+  Future<void> _clearSelection() => _native(() async {
+    if (mounted && _epub) await clearEbookSelection();
+  });
+
+  Future<void> _copySelection(String text) async {
+    await Clipboard.setData(ClipboardData(text: text));
+    await _clearSelection();
+  }
+
+  Future<void> _mutateBookmarks(
+    Future<List<EbookLocator>> Function() action, {
+    bool announce = false,
+  }) {
+    final next = _bookmarkWrites.then((_) async {
+      final before = _saved.length;
+      final saved = await action();
+      if (!mounted) return;
+      _saved = saved;
+      if (_epub) {
+        await _decorateBookmarks();
+      } else {
+        setState(() => _surface = _pdfSurface());
+      }
+      if (announce && saved.length > before) _showError('Bookmark added');
+    });
+    _bookmarkWrites = next.catchError(
+      (Object _) => _showError('Unable to save bookmark.'),
+    );
+    return _bookmarkWrites;
+  }
+
   Future<void> _applyPreferences() async {
     final settings = widget.settings;
     final ebook = settings.ebook;
-    final background = switch (settings.background) {
-      ReadingBackground.black => Colors.black,
-      ReadingBackground.white => const Color(0xfffaf8f4),
-      ReadingBackground.sepia => const Color(0xfff4ecd8),
-    };
+    final background = settings.background.paperColor;
     if (_epub) {
       final prefs = EPUBPreferences(
-        fontFamily: ebook.font == 'publisher' ? null : ebook.font,
+        fontFamily: ebook.font == 'publisher'
+            ? null
+            : ebook.font == 'baskerville'
+            ? 'InkoraBaskerville'
+            : ebook.font,
         fontSize: ebook.fontSize,
         lineHeight: ebook.lineHeight,
         pageMargins: ebook.margins,
@@ -255,9 +363,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
         publisherStyles: ebook.publisherStyles,
         textAlign: ebook.justify ? TextAlign.justify : TextAlign.start,
         backgroundColor: background,
-        textColor: settings.background == ReadingBackground.black
-            ? const Color(0xffe8e4dc)
-            : const Color(0xff252320),
+        textColor: settings.background.inkColor,
       );
       _engine.setDefaultPreferences(prefs);
       await _engine.setEPUBPreferences(prefs);
@@ -268,22 +374,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   void didUpdateWidget(EbookReaderScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.settings != widget.settings && !_epub && _pdfPath != null) {
-      setState(
-        () => _surface = EbookPdfSurface(
-          path: _pdfPath!,
-          controller: _pdfController,
-          initialPage: _position.value.$1 + 1,
-          settings: widget.settings,
-          onPage: (page) => _locationChanged(
-            Locator(
-              href: 'document.pdf',
-              type: 'application/pdf',
-              locations: Locations(position: page),
-            ),
-          ),
-          onToggleControls: () => _controls.value = !_controls.value,
-        ),
-      );
+      setState(() => _surface = _pdfSurface());
     }
     if (oldWidget.settings != widget.settings && _publication != null) {
       _preferences = _preferences
@@ -296,6 +387,10 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
 
   void _locationChanged(Locator locator) {
     if (!mounted || _backgrounded) return;
+    if (_epub && !_bookmarkDecorationsReady) {
+      _bookmarkDecorationsReady = true;
+      unawaited(_decorateBookmarks());
+    }
     try {
       _current = locator;
       final raw =
@@ -373,12 +468,36 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
       if (_epub) {
         if (!await _engine.goToLocator(locator)) _rewind = false;
       } else if (_pdfController.isReady) {
-        await _pdfController.goToPage(
-          pageNumber: (locator.locations?.position ?? 1).clamp(
-            1,
-            _manifest.pages.length,
-          ),
+        final page = (locator.locations?.position ?? 1).clamp(
+          1,
+          _manifest.pages.length,
         );
+        final bookmark = EbookLocator(
+          jsonDecode(jsonEncode(locator.toJson())) as Map<String, dynamic>,
+        );
+        final rect = bookmark.pdfRectangle;
+        if (rect == null) {
+          await _pdfController.goToPage(pageNumber: page);
+        } else {
+          final zoom = _pdfController.currentZoom;
+          // Set the engine's page hint, then restore scale before the next frame.
+          await _pdfController.goToPage(
+            pageNumber: page,
+            duration: Duration.zero,
+          );
+          final target = _pdfController.calcRectForRectInsidePage(
+            pageNumber: page,
+            rect: PdfRect(rect[0], rect[1], rect[2], rect[3]),
+          );
+          // goToPage fits the page; the text jump restores the captured zoom.
+          await _pdfController.goToPosition(
+            documentOffset: Offset(
+              target.left - 24 / zoom,
+              target.top - 48 / zoom,
+            ),
+            zoom: zoom,
+          );
+        }
       }
     } catch (_) {
       _rewind = false;
@@ -464,24 +583,15 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
                     onPressed: _current == null
                         ? null
                         : () async {
-                            try {
-                              final locator = EbookLocator(
-                                jsonDecode(jsonEncode(_current!.toJson()))
-                                    as Map<String, dynamic>,
-                              );
-                              if (_saved.any(
-                                (e) => e.encode() == locator.encode(),
-                              )) {
-                                return;
-                              }
-                              final bookmarks = [..._saved, locator];
-                              await _bookmarks.write(bookmarks);
-                              _saved = bookmarks;
-                              if (context.mounted) update(() {});
-                            } catch (_) {
-                              _showError('Unable to save bookmark.');
-                            }
+                            await _addBookmark(_current!);
+                            if (context.mounted) update(() {});
                           },
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: LText(
+                    'Hold a word or line, then choose Add bookmark.',
                   ),
                 ),
                 Expanded(
@@ -496,26 +606,34 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
                                 bookmark.value['title'] as String? ??
                                     context.tr('Bookmark {0}', [i + 1]),
                               ),
-                              subtitle: Text(bookmark.href),
-                              onTap: () {
-                                Navigator.pop(context);
+                              subtitle: bookmark.excerpt.isEmpty
+                                  ? null
+                                  : Text(
+                                      bookmark.excerpt,
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                              onTap: () async {
+                                final route = ModalRoute.of(context);
                                 final locator = Locator.fromJson(
                                   bookmark.value,
                                 );
-                                if (locator != null) unawaited(_jump(locator));
+                                Navigator.pop(context);
+                                // Native layout restoration during sheet dismissal
+                                // can overwrite a jump within the same chapter.
+                                await route?.completed;
+                                if (mounted && locator != null) {
+                                  await _jump(locator);
+                                }
                               },
                               trailing: IconButton(
                                 tooltip: context.tr('Remove bookmark'),
                                 icon: const Icon(Icons.close),
                                 onPressed: () async {
-                                  final bookmarks = [..._saved]..removeAt(i);
-                                  try {
-                                    await _bookmarks.write(bookmarks);
-                                    _saved = bookmarks;
-                                    if (context.mounted) update(() {});
-                                  } catch (_) {
-                                    _showError('Unable to save bookmark.');
-                                  }
+                                  await _mutateBookmarks(
+                                    () => _bookmarks.remove(bookmark),
+                                  );
+                                  if (context.mounted) update(() {});
                                 },
                               ),
                             );
@@ -667,7 +785,20 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
           child: ReaderGestureGuard(
             zones: widget.gestureZones,
             child:
-                _surface ??
+                (_surface == null
+                    ? null
+                    : _epub
+                    ? ColoredBox(
+                        color: widget.settings.background.paperColor,
+                        child: Padding(
+                          key: const Key('ebook-page-margins'),
+                          padding: EdgeInsets.symmetric(
+                            vertical: widget.settings.ebook.margins * 24,
+                          ),
+                          child: _surface,
+                        ),
+                      )
+                    : _surface) ??
                 Center(
                   child: _message == null
                       ? Column(
@@ -821,3 +952,12 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
     ),
   );
 }
+
+// Keep worker captures separate from reader state, services and platform views.
+Future<EbookLocator> _selectedBookmark(Locator locator, String? selectedText) =>
+    Isolate.run(
+      () => EbookLocator.bookmark(
+        jsonDecode(jsonEncode(locator.toJson())) as Map<String, dynamic>,
+        selectedText: selectedText,
+      ),
+    );

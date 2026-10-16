@@ -58,10 +58,20 @@ void main() {
           ]) {
             router.go(location);
             await tester.pumpAndSettle();
+            if (!location.startsWith('/catalogue/book/')) {
+              expect(
+                find.byTooltip('Search catalogue'),
+                location == '/catalogue/series/series-a'
+                    ? findsNothing
+                    : findsOneWidget,
+                reason: location,
+              );
+            }
             expect(tester.takeException(), isNull, reason: location);
           }
           router.go('/libraries');
           await tester.pumpAndSettle();
+          expect(find.byTooltip('Search catalogue'), findsOneWidget);
           expect(find.text('Favorites'), findsNothing);
           expect(find.byKey(const Key('navigation-downloads')), findsOneWidget);
           expect(find.byKey(const Key('navigation-settings')), findsOneWidget);
@@ -109,6 +119,10 @@ void main() {
             .id,
         'series-a',
       );
+      expect(find.byTooltip('Search catalogue'), findsNothing);
+      harness.container.read(routerProvider).pop();
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Search catalogue'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await harness.close(tester);
     });
@@ -340,9 +354,11 @@ void registerCatalogueRetentionTest() {
     );
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.text('Manga shelf'), findsOneWidget);
+    await tester.tap(find.byTooltip('Show list'));
     await tester.tap(find.byKey(const Key('catalogue-filters')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('List view'));
+    expect(find.text('List view'), findsNothing);
+    await tester.tap(find.text('Show unavailable items'));
     await tester.tap(find.text('Apply filters'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('catalogue-list')), findsOneWidget);

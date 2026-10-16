@@ -22,6 +22,24 @@ final class EbookBookmarks {
     return _decodeBookmarks(row.read<String>('payload'));
   }
 
+  /// Serialize mutation/read/write across instances through the existing DB.
+  Future<List<EbookLocator>> add(EbookLocator bookmark) =>
+      database.transaction(() async {
+        final current = await read();
+        final next = await _addUnique(current, bookmark);
+        if (next == null) return current;
+        await write(next);
+        return next;
+      });
+
+  Future<List<EbookLocator>> remove(EbookLocator bookmark) =>
+      database.transaction(() async {
+        final current = await read();
+        final next = await _without(current, bookmark);
+        if (next.length != current.length) await write(next);
+        return next;
+      });
+
   Future<void> write(List<EbookLocator> bookmarks) async {
     if (bookmarks.length > 200) {
       throw const FormatException('Bookmark limit reached');
@@ -44,3 +62,20 @@ Future<List<EbookLocator>> _decodeBookmarks(String payload) => Isolate.run(() {
 });
 Future<String> _encodeBookmarks(List<EbookLocator> bookmarks) =>
     Isolate.run(() => jsonEncode(bookmarks.map((e) => e.value).toList()));
+
+Future<List<EbookLocator>?> _addUnique(
+  List<EbookLocator> current,
+  EbookLocator bookmark,
+) => Isolate.run(() {
+  final key = bookmark.bookmarkKey;
+  return current.any((value) => value.bookmarkKey == key)
+      ? null
+      : [...current, bookmark];
+});
+Future<List<EbookLocator>> _without(
+  List<EbookLocator> current,
+  EbookLocator bookmark,
+) => Isolate.run(() {
+  final key = bookmark.bookmarkKey;
+  return current.where((value) => value.bookmarkKey != key).toList();
+});

@@ -1,3 +1,5 @@
+import '../domain/catalogue_filters.dart';
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -404,9 +406,59 @@ final class CatalogueStore {
     }
     final active = await snapshot();
     if (active == null) return const LocalCataloguePage([], 0, null);
+    final (:join, :where, :args) = _scope(query, active.generation);
+    final count = await database
+        .customSelect(
+          'SELECT COUNT(*) AS total FROM catalogue_entries e $join WHERE $where',
+          variables: args,
+        )
+        .getSingle();
+    final order = switch (query.sort) {
+      CatalogueSort.title => 'e.sort_title ASC',
+      CatalogueSort.titleDescending => 'e.sort_title DESC',
+      CatalogueSort.recentlyUpdated => 'e.modified DESC',
+      CatalogueSort.sequence =>
+        query.groupId != null
+            ? 'm.removed ASC, m.position ASC'
+            : 'e.number ASC, e.sort_title ASC',
+    };
+    final rows = await database
+        .customSelect(
+          'SELECT e.*, ${query.groupId == null ? '0' : 'm.removed'} AS membership_removed FROM catalogue_entries e $join WHERE $where ORDER BY $order, e.remote_id ASC, e.kind ASC LIMIT ? OFFSET ?',
+          variables: [
+            ...args,
+            Variable(itemLimit ?? query.pageSize),
+            Variable(
+              itemLimit == null ? query.page * query.pageSize : itemOffset,
+            ),
+          ],
+        )
+        .get();
+    return LocalCataloguePage(
+      rows.map(_item).toList(growable: false),
+      count.read<int>('total'),
+      active.updatedAt,
+    );
+  });
+
+  /// Parent lookup uses the account/generation/kind/remote identity index.
+  /// JSON predicates run only in the selected published scope, on filter changes.
+  String _facetValue(CatalogueFacet facet) {
+    final path = '\$.${facet.name}';
+    final own = "json_extract(e.descriptive_metadata, '$path')";
+    final parent =
+        "(SELECT json_extract(p.descriptive_metadata, '$path') FROM catalogue_entries p WHERE p.account_id=e.account_id AND p.generation=e.generation AND p.kind='series' AND p.remote_id=e.series_id)";
+    return "COALESCE(NULLIF(NULLIF(CAST($own AS TEXT), ''), '[]'), $parent)";
+  }
+
+  ({String join, String where, List<Variable<Object>> args}) _scope(
+    CatalogueQuery query,
+    String generation, {
+    bool applyFilters = true,
+  }) {
     final args = <Variable<Object>>[
       Variable(accountId),
-      Variable(active.generation),
+      Variable(generation),
       if (!query.readingUnits) Variable(query.kind.name),
     ];
     var join = '';
@@ -443,38 +495,49 @@ final class CatalogueStore {
       where += ' AND instr(e.search_text, ?) > 0';
       args.add(Variable(term));
     }
-    final count = await database
-        .customSelect(
-          'SELECT COUNT(*) AS total FROM catalogue_entries e $join WHERE $where',
-          variables: args,
-        )
-        .getSingle();
-    final order = switch (query.sort) {
-      CatalogueSort.title => 'e.sort_title ASC',
-      CatalogueSort.titleDescending => 'e.sort_title DESC',
-      CatalogueSort.recentlyUpdated => 'e.modified DESC',
-      CatalogueSort.sequence =>
-        query.groupId != null
-            ? 'm.removed ASC, m.position ASC'
-            : 'e.number ASC, e.sort_title ASC',
-    };
-    final rows = await database
-        .customSelect(
-          'SELECT e.*, ${query.groupId == null ? '0' : 'm.removed'} AS membership_removed FROM catalogue_entries e $join WHERE $where ORDER BY $order, e.remote_id ASC, e.kind ASC LIMIT ? OFFSET ?',
-          variables: [
-            ...args,
-            Variable(itemLimit ?? query.pageSize),
-            Variable(
-              itemLimit == null ? query.page * query.pageSize : itemOffset,
-            ),
-          ],
-        )
-        .get();
-    return LocalCataloguePage(
-      rows.map(_item).toList(growable: false),
-      count.read<int>('total'),
-      active.updatedAt,
+    if (applyFilters) {
+      for (final entry in query.filters.values.entries) {
+        final value = _facetValue(entry.key);
+        where += entry.key.multiple
+            ? " AND EXISTS (SELECT 1 FROM json_each($value) f WHERE ${entry.key == CatalogueFacet.authors ? "json_extract(f.value, '\$.name')" : 'f.value'} = ?)"
+            : ' AND CAST($value AS TEXT) = ?';
+        args.add(Variable(entry.value));
+      }
+    }
+    return (join: join, where: where, args: args);
+  }
+
+  /// One SQL aggregation per dimension, only while opening the filter sheet.
+  /// No full catalogue objects or growing page prefix are loaded into Dart.
+  Future<CatalogueFacets> facets(
+    CatalogueQuery query,
+  ) => database.transaction(() async {
+    final active = await snapshot();
+    if (active == null) return {};
+    final (:join, :where, :args) = _scope(
+      query,
+      active.generation,
+      applyFilters: false,
     );
+    final result = <CatalogueFacet, List<String>>{};
+    for (final facet in CatalogueFacet.values) {
+      final expression = _facetValue(facet);
+      final value = facet.multiple
+          ? facet == CatalogueFacet.authors
+                ? "json_extract(f.value, '\$.name')"
+                : 'f.value'
+          : expression;
+      final rows = await database
+          .customSelect(
+            "SELECT DISTINCT CAST($value AS TEXT) AS value FROM catalogue_entries e $join ${facet.multiple ? 'JOIN json_each($expression) f' : ''} WHERE $where AND $value IS NOT NULL AND CAST($value AS TEXT) <> '' ORDER BY value COLLATE NOCASE",
+            variables: args,
+          )
+          .get();
+      if (rows.isNotEmpty) {
+        result[facet] = rows.map((r) => r.read<String>('value')).toList();
+      }
+    }
+    return result;
   });
 
   CatalogueItem _item(QueryRow row) => CatalogueItem(

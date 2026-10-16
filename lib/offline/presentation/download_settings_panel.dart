@@ -1,3 +1,4 @@
+import '../../app/widgets/ink_slider.dart';
 import '../../app/l10n/app_strings.dart';
 import '../../app/icons/inkora_icons.dart';
 
@@ -6,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/widgets/inkora_widgets.dart';
 import '../application/offline_coordinator.dart';
-import '../data/download_store.dart';
 
 class DownloadSettingsPanel extends ConsumerStatefulWidget {
   const DownloadSettingsPanel({super.key});
@@ -103,39 +103,37 @@ class _DownloadSettingsPanelState extends ConsumerState<DownloadSettingsPanel> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        const LText('Download storage quota'),
-                        DropdownButton<int>(
-                          icon: const Icon(InkIcons.caretDown, size: 20),
-                          isExpanded: true,
-                          value: service.store.quota,
-                          items:
-                              [
-                                    512 * 1024 * 1024,
-                                    defaultDownloadQuota,
-                                    4 * 1024 * 1024 * 1024,
-                                  ]
-                                  .map(
-                                    (bytes) => DropdownMenuItem(
-                                      value: bytes,
-                                      child: LText(
-                                        "{0} MiB",
-                                        arguments: [bytes ~/ (1024 * 1024)],
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                          onChanged: _busy
-                              ? null
-                              : (value) {
-                                  if (value != null) {
-                                    _run(
-                                      (s) => s.configure(
-                                        quota: value,
-                                        wifiOnly: s.store.wifiOnly,
-                                      ),
-                                    );
-                                  }
-                                },
+                        InkSlider(
+                          sliderKey: const Key('download-quota'),
+                          label: context.tr('Download storage quota'),
+                          value: service.store.quota / (1024 * 1024),
+                          min: 256,
+                          max: (service.store.quota / (1024 * 1024)).clamp(
+                            32768,
+                            double.infinity,
+                          ),
+                          divisions:
+                              ((service.store.quota / (1024 * 1024)).clamp(
+                                            32768,
+                                            double.infinity,
+                                          ) /
+                                          256 -
+                                      1)
+                                  .round(),
+                          enabled: !_busy,
+                          formatValue: (value) => value < 1024
+                              ? context.tr('{0} MiB', [value.round()])
+                              : context.tr('{0} GiB', [
+                                  double.parse(
+                                    (value / 1024).toStringAsFixed(2),
+                                  ),
+                                ]),
+                          onCommitted: (value) => _run(
+                            (s) => s.configure(
+                              quota: value.round() * 1024 * 1024,
+                              wifiOnly: s.store.wifiOnly,
+                            ),
+                          ),
                         ),
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,

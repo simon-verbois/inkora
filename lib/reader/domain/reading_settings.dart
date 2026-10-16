@@ -22,7 +22,7 @@ enum ReadingDirection { leftToRight, rightToLeft, vertical }
 
 enum ReadingFit { page, width, comfort }
 
-enum ReadingBackground { black, white, sepia }
+enum ReadingBackground { black, white, sepia, ivory, sage, mist, slate }
 
 enum SettingsScope { global, library, series, book }
 
@@ -162,7 +162,9 @@ final class ReadingSettings {
     this.ebook = const EbookSettings(),
   }) : background =
            background ??
-           ((mode == ReadingMode.manga || mode == ReadingMode.ebook)
+           (mode == ReadingMode.ebook
+               ? ReadingBackground.sepia
+               : mode == ReadingMode.manga
                ? ReadingBackground.white
                : ReadingBackground.black),
        direction =

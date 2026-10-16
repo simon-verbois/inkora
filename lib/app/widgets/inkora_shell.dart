@@ -13,8 +13,13 @@ import 'inkora_widgets.dart';
 import 'inkora_navigation.dart';
 
 class InkoraShell extends ConsumerWidget {
-  const InkoraShell({super.key, required this.navigationShell});
+  const InkoraShell({
+    super.key,
+    required this.navigationShell,
+    this.showSearch = true,
+  });
   final StatefulNavigationShell navigationShell;
+  final bool showSearch;
 
   void _select(int index) => navigationShell.goBranch(
     index,
@@ -40,11 +45,12 @@ class InkoraShell extends ConsumerWidget {
           appBar: AppBar(
             title: const InkoraWordmark(),
             actions: [
-              IconButton(
-                tooltip: context.tr("Search catalogue"),
-                icon: const Icon(InkIcons.magnifyingGlass),
-                onPressed: () => context.push('/search'),
-              ),
+              if (showSearch)
+                IconButton(
+                  tooltip: context.tr("Search catalogue"),
+                  icon: const Icon(InkIcons.magnifyingGlass),
+                  onPressed: () => context.push('/search'),
+                ),
             ],
           ),
           body: SafeArea(

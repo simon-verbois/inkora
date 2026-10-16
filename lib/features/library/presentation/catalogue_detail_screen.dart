@@ -157,28 +157,15 @@ class _CatalogueDetailScreenState extends ConsumerState<CatalogueDetailScreen> {
                               onPressed: () => _open(nextBook),
                               icon: const Icon(InkIcons.play, size: 20),
                               label: LText(
-                                resume == null
-                                    ? 'Start reading'
-                                    : resume.onDeck
-                                    ? 'Read next volume'
-                                    : 'Continue reading',
+                                resume == null || resume.onDeck
+                                    ? 'Start reading - {0}'
+                                    : 'Continue reading - {0}',
+                                arguments: [nextBook.title],
+                                textAlign: TextAlign.center,
                               ),
                             ),
                           ),
                         ],
-                      ),
-                    if (kind == CatalogueKind.series && nextBook != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Text(
-                          nextBook.title,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                              ),
-                        ),
                       ),
                     if (item.canOpen && kind == CatalogueKind.library)
                       Wrap(

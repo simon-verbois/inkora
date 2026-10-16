@@ -3,6 +3,9 @@ package dev.inkora.inkora
 import android.os.Build
 import android.view.WindowInsets
 import android.view.WindowInsetsController
+import androidx.lifecycle.lifecycleScope
+import dk.nota.flutterreadium.ReadiumReader
+import kotlinx.coroutines.launch
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
@@ -46,6 +49,26 @@ class MainActivity : FlutterFragmentActivity() {
                         else -> result.notImplemented()
                     }
                 } catch (_: Exception) { result.error("background_transfer", "Native transfer unavailable.", null) }
+            }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "inkora/ebook_selection")
+            .setMethodCallHandler { call, result ->
+                if (call.method != "clear") {
+                    result.notImplemented()
+                } else {
+                    // A finished custom ActionMode leaves WebView's selection active.
+                    // Clear only that transient selection; never accept arbitrary script.
+                    lifecycleScope.launch {
+                        try {
+                            ReadiumReader.epubEvaluateJavascript(
+                                "window.getSelection()?.removeAllRanges();"
+                            )
+                            result.success(true)
+                        } catch (_: Exception) {
+                            // A reader may have closed while the action completed.
+                            result.success(false)
+                        }
+                    }
+                }
             }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "inkora/reader_network_policy")
             .setMethodCallHandler { call, result ->

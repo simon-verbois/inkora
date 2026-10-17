@@ -9,10 +9,11 @@ final class EbookSettings {
     this.columns = 'auto',
     this.publisherStyles = false,
     this.justify = false,
+    this.columnSeparator = false,
   });
   final String font, columns;
   final double fontSize, lineHeight, margins;
-  final bool scroll, publisherStyles, justify;
+  final bool scroll, publisherStyles, justify, columnSeparator;
   Map<String, dynamic> toJson() => {
     'font': font,
     'fontSize': fontSize,
@@ -22,6 +23,7 @@ final class EbookSettings {
     'columns': columns,
     'publisherStyles': publisherStyles,
     'justify': justify,
+    'columnSeparator': columnSeparator,
   };
   factory EbookSettings.fromJson(Map<String, dynamic> json) {
     double value(String key, double fallback, double min, double max) {
@@ -48,6 +50,7 @@ final class EbookSettings {
       scroll: json['scroll'] as bool? ?? false,
       publisherStyles: json['publisherStyles'] as bool? ?? false,
       justify: json['justify'] as bool? ?? false,
+      columnSeparator: json['columnSeparator'] as bool? ?? false,
     );
   }
   @override
@@ -60,7 +63,8 @@ final class EbookSettings {
       margins == other.margins &&
       scroll == other.scroll &&
       publisherStyles == other.publisherStyles &&
-      justify == other.justify;
+      justify == other.justify &&
+      columnSeparator == other.columnSeparator;
   @override
   int get hashCode => Object.hash(
     font,
@@ -71,5 +75,6 @@ final class EbookSettings {
     scroll,
     publisherStyles,
     justify,
+    columnSeparator,
   );
 }

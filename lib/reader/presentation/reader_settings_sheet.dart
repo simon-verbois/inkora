@@ -1,5 +1,6 @@
 import 'ebook_style_picker.dart';
 import 'ebook_settings_controls.dart';
+import 'ebook_presentation.dart';
 import 'reader_settings_layout.dart';
 import '../../app/l10n/app_strings.dart';
 import '../../app/icons/inkora_icons.dart';
@@ -516,6 +517,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
                 'spreads',
                 'layout',
                 'spreadOffset',
+                'pageAnimation',
                 'ebook',
               ]) {
       values[field] = null;
@@ -634,6 +636,16 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
                 _change('ebook', {...?_overrides.ebook, key: value}),
           ),
         ],
+        if (mode != ReadingMode.webtoon &&
+            (mode != ReadingMode.ebook || !_effective.ebook.scroll) &&
+            (widget.manifest?.documentType != 'application/epub+zip' ||
+                EbookPresentation.supported))
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: const LText('Page turn animation'),
+            value: _effective.pageAnimation,
+            onChanged: (value) => _change('pageAnimation', value),
+          ),
       ],
     );
   }

@@ -1,3 +1,5 @@
+import 'reader_chrome.dart';
+import 'reader_details.dart';
 import 'ebook_reader_screen.dart';
 import '../domain/gesture_zones.dart';
 import '../../app/l10n/app_strings.dart';
@@ -174,6 +176,52 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
     }
   }
 
+  Future<void> _settings(OpenReader reader) async {
+    final repository = await ref.read(readerRepositoryProvider.future);
+    if (!mounted || repository == null) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => ReaderSettingsSheet(
+        modal: true,
+        store: repository.store,
+        manifest: reader.manifest,
+      ),
+    );
+  }
+
+  Future<void> _details(OpenReader reader) async {
+    reader.prefetch?.suspend(true);
+    try {
+      await openReaderDetails(context, reader.manifest);
+    } finally {
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+        reader.prefetch?.suspend(false);
+      }
+    }
+  }
+
+  Future<void> _progress(OpenReader reader) async {
+    final previousSuppression = _suppressedReader;
+    final changed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => ProgressSheet(
+        manifest: reader.manifest,
+        currentLocator: _currentLocator ?? reader.locator,
+        onChanging: () {
+          _suppressedReader = reader;
+          _positionRevision++;
+        },
+      ),
+    );
+    if (mounted &&
+        (changed == true ||
+            !identical(previousSuppression, _suppressedReader))) {
+      ref.invalidate(openReaderProvider(widget.bookId));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final zones = widget.gestureZones;
@@ -201,91 +249,41 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
             child: _body(data, preferences, repository),
           ),
           if (_controlsVisible || data.hasError || preferences.hasError)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: SizedBox(
-                height: kToolbarHeight + MediaQuery.paddingOf(context).top,
-                child: AppBar(
-                  title: Text(
-                    data.asData?.value.manifest.title ?? context.tr('Reader'),
-                    overflow: TextOverflow.ellipsis,
+            Align(
+              alignment: Alignment.topCenter,
+              child: ReaderTopBar(
+                title: opened?.manifest.title ?? context.tr('Reader'),
+                onBack: () => context.pop(),
+                actions: [
+                  if (opened != null)
+                    ReaderDetailsButton(
+                      manifest: opened.manifest,
+                      onPressed: () => _details(opened),
+                    ),
+                  PopupMenuButton<String>(
+                    tooltip: context.tr('Reading controls'),
+                    icon: const Icon(InkIcons.dotsThreeVertical),
+                    itemBuilder: (_) => [
+                      if (opened != null)
+                        const PopupMenuItem(
+                          value: 'progress',
+                          child: LText('Reading progress'),
+                        ),
+                      PopupMenuItem(
+                        value: 'refresh',
+                        enabled: !_refreshing,
+                        child: const LText('Refresh book'),
+                      ),
+                    ],
+                    onSelected: (value) {
+                      if (value == 'progress' && opened != null) {
+                        unawaited(_progress(opened));
+                      } else if (value == 'refresh') {
+                        unawaited(_refresh());
+                      }
+                    },
                   ),
-                  actions: [
-                    if (data.hasValue)
-                      IconButton(
-                        tooltip: context.tr("Next chapter"),
-                        onPressed: _changingChapter
-                            ? null
-                            : () => _nextChapter(data.requireValue),
-                        icon: const Icon(InkIcons.skipForward),
-                      ),
-                    if (data.hasValue)
-                      IconButton(
-                        tooltip: context.tr("Reading progress"),
-                        icon: const Icon(InkIcons.arrowsClockwise),
-                        onPressed: () async {
-                          final reader = data.requireValue;
-                          final previousSuppression = _suppressedReader;
-                          final changed = await showModalBottomSheet<bool>(
-                            context: context,
-                            isScrollControlled: true,
-                            builder: (_) => ProgressSheet(
-                              manifest: reader.manifest,
-                              currentLocator: _currentLocator ?? reader.locator,
-                              onChanging: () {
-                                _suppressedReader = reader;
-                                _positionRevision++;
-                              },
-                            ),
-                          );
-                          if (mounted &&
-                              (changed == true ||
-                                  !identical(
-                                    previousSuppression,
-                                    _suppressedReader,
-                                  ))) {
-                            ref.invalidate(openReaderProvider(widget.bookId));
-                          }
-                        },
-                      ),
-                    IconButton(
-                      tooltip: context.tr("Refresh book"),
-                      onPressed: _refreshing ? null : _refresh,
-                      icon: _refreshing
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(InkIcons.arrowsClockwise),
-                    ),
-                    IconButton(
-                      tooltip: context.tr("Reading preferences"),
-                      onPressed: data.hasValue
-                          ? () async {
-                              final repository = await ref.read(
-                                readerRepositoryProvider.future,
-                              );
-                              if (!context.mounted || repository == null) {
-                                return;
-                              }
-                              await showModalBottomSheet<void>(
-                                context: context,
-                                isScrollControlled: true,
-                                builder: (context) => ReaderSettingsSheet(
-                                  modal: true,
-                                  store: repository.store,
-                                  manifest: data.requireValue.manifest,
-                                ),
-                              );
-                            }
-                          : null,
-                      icon: const Icon(InkIcons.slidersHorizontal),
-                    ),
-                  ],
-                ),
+                ],
               ),
             ),
         ],
@@ -348,6 +346,25 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
         reader: reader,
         settings: preferences.asData?.value ?? const ReadingSettings(),
         controlsVisible: _controlsVisible,
+        controlsActions: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: ReaderQuickAction(
+                label: 'Next chapter',
+                icon: InkIcons.skipForward,
+                onPressed: _changingChapter ? null : () => _nextChapter(reader),
+              ),
+            ),
+            Expanded(
+              child: ReaderQuickAction(
+                label: 'Reading preferences',
+                icon: InkIcons.slidersHorizontal,
+                onPressed: () => _settings(reader),
+              ),
+            ),
+          ],
+        ),
         onToggleControls: _toggleControls,
         saveLocator: (locator) async {
           if (repository != null && !identical(_suppressedReader, reader)) {

@@ -1,3 +1,7 @@
+import 'package:inkora/reader/presentation/ebook_presentation.dart';
+import 'package:inkora/app/theme/inkora_theme.dart';
+import 'package:inkora/features/library/application/catalogue_providers.dart';
+import 'package:inkora/features/library/domain/catalogue.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:inkora/reader/domain/ebook_locator.dart';
 
@@ -33,6 +37,13 @@ Future<void> until(WidgetTester tester, bool Function() predicate) async {
     if (predicate()) return;
   }
   fail('Native ebook did not become ready within 20 seconds');
+}
+
+Future<Map<String, dynamic>> epubLayout() async {
+  final raw = await EbookPresentation.channel.invokeMethod<String>('layout');
+  dynamic value = jsonDecode(raw!);
+  if (value is String) value = jsonDecode(value);
+  return Map<String, dynamic>.from(value as Map);
 }
 
 void main() {
@@ -114,9 +125,17 @@ void main() {
           ReaderLocator initial, {
           double margins = 1,
           String font = 'publisher',
+          bool separator = false,
+          bool animation = true,
+          String columns = 'auto',
         }) => tester.pumpWidget(
           ProviderScope(
+            overrides: [
+              catalogueItemProvider((CatalogueKind.book, manifest.bookId))
+                  .overrideWith((ref) => Stream.value(null)),
+            ],
             child: MaterialApp(
+              theme: InkoraTheme.forest(),
               home: EbookReaderScreen(
                 reader: OpenReader(
                   manifest,
@@ -127,7 +146,13 @@ void main() {
                 repository: repo,
                 settings: ReadingSettings(
                   mode: ReadingMode.ebook,
-                  ebook: EbookSettings(margins: margins, font: font),
+                  pageAnimation: animation,
+                  ebook: EbookSettings(
+                    margins: margins,
+                    font: font,
+                    columnSeparator: separator,
+                    columns: columns,
+                  ),
                 ),
               ),
             ),
@@ -159,6 +184,56 @@ void main() {
           }
         });
         await tester.pump(const Duration(milliseconds: 500));
+        if (epub) {
+          await open(
+            ReaderLocator(0),
+            columns: 'two',
+            separator: true,
+            animation: false,
+          );
+          await tester.pump(const Duration(milliseconds: 900));
+          final layout = await epubLayout();
+          expect(layout['columns'], '2');
+          expect(layout['rule'], 'solid');
+          // WebView quantizes a CSS pixel to its physical-pixel grid.
+          expect(
+            double.parse((layout['width'] as String).replaceAll('px', '')),
+            allOf(greaterThan(0), lessThanOrEqualTo(1)),
+          );
+          expect(await EbookPresentation.turn(1, animated: false), isTrue);
+          tester
+                  .widget<ReadiumReaderWidget>(find.byType(ReadiumReaderWidget))
+                  .shouldShowControls!
+                  .value =
+              true;
+          await tester.pump(const Duration(milliseconds: 300));
+          debugPrint('READER_UX_TWO_COLUMNS_READY');
+          await tester.pump(const Duration(seconds: 2));
+          tester
+                  .widget<ReadiumReaderWidget>(find.byType(ReadiumReaderWidget))
+                  .shouldShowControls!
+                  .value =
+              false;
+          await tester.pump(const Duration(milliseconds: 300));
+          final publicationState = tester.state(
+            find.byType(ReadiumReaderWidget),
+          );
+          await open(
+            ReaderLocator(0),
+            columns: 'one',
+            separator: true,
+            animation: false,
+          );
+          await tester.pump(const Duration(milliseconds: 700));
+          expect((await epubLayout())['columns'], '1');
+          expect(
+            tester.state(find.byType(ReadiumReaderWidget)),
+            same(publicationState),
+          );
+          await open(ReaderLocator(0), columns: 'one', separator: false);
+          await tester.pump(const Duration(milliseconds: 700));
+          expect((await epubLayout())['rule'], 'none');
+        }
         if (epub) {
           await engine.goForward();
         } else {
@@ -257,9 +332,13 @@ void main() {
           await tester.pumpAndSettle();
         }
         // Exercise the production modal above the native publication surface.
-        await tester.tap(find.byTooltip('Reading controls'));
+        await tester.tap(find.byKey(const Key('reader-details')));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Reading preferences'));
+        expect(find.text('Book details'), findsOneWidget);
+        expect(find.text(manifest.title), findsWidgets);
+        await tester.tap(find.byTooltip('Close'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('Reading preferences'));
         await tester.pumpAndSettle();
         expect(find.text('Typography'), epub ? findsOneWidget : findsNothing);
         if (epub) {
@@ -328,6 +407,7 @@ void main() {
           final point = controller.documentToGlobal(documentRect.center)!;
           await tester.longPressAt(point);
           await until(tester, () => tester.any(find.text('Add bookmark')));
+          expect(find.byKey(const Key('reader-details')), findsNothing);
           await tester.tap(find.text('Add bookmark'));
           await until(tester, () => tester.any(find.text('Bookmark added')));
           final selection = (await bookmarks.read()).single;
@@ -370,9 +450,7 @@ void main() {
           await tester.tapAt(tester.getCenter(find.byType(EbookReaderScreen)));
           await tester.pump(const Duration(milliseconds: 400));
         }
-        await tester.tap(find.byTooltip('Reading controls'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Bookmarks'));
+        await tester.tap(find.byTooltip('Bookmarks'));
         await tester.pumpAndSettle();
         final pdfBookmarkZoom = epub
             ? null
@@ -423,9 +501,7 @@ void main() {
             expect(controller.visibleRect.contains(target.center), true);
           }
           await tester.pump(const Duration(milliseconds: 400));
-          await tester.tap(find.byTooltip('Reading controls'));
-          await tester.pumpAndSettle();
-          await tester.tap(find.text('Bookmarks'));
+          await tester.tap(find.byTooltip('Bookmarks'));
           await tester.pumpAndSettle();
           expect(find.text(preciseBookmarks.first.excerpt), findsOneWidget);
         }

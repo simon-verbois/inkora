@@ -41,6 +41,7 @@ final class ReadingOverrides {
     this.webtoonPreload,
     this.webtoonMemoryMiB,
     this.spreadOffset,
+    this.pageAnimation,
     this.imageQuality,
     this.ebook,
   });
@@ -63,6 +64,7 @@ final class ReadingOverrides {
 
   /// Shift double-page pairing by one page (the first page stands alone).
   final bool? spreadOffset;
+  final bool? pageAnimation;
   final Map<RasterFormat, RasterQuality>? imageQuality;
   ReadingLayout? get effectiveLayout =>
       layout ??
@@ -86,6 +88,7 @@ final class ReadingOverrides {
     'webtoonPreload': webtoonPreload,
     'webtoonMemoryMiB': webtoonMemoryMiB,
     'spreadOffset': spreadOffset,
+    'pageAnimation': pageAnimation,
     'imageQuality': imageQuality == null
         ? null
         : {
@@ -131,6 +134,7 @@ final class ReadingOverrides {
       webtoonPreload: preload,
       webtoonMemoryMiB: memory,
       spreadOffset: json['spreadOffset'] as bool?,
+      pageAnimation: json['pageAnimation'] as bool?,
       imageQuality: json['imageQuality'] is Map
           ? Map.unmodifiable({
               for (final format in RasterFormat.values)
@@ -158,6 +162,7 @@ final class ReadingSettings {
     this.webtoonQuality = WebtoonQuality.sharp,
     this.customWebtoon = WebtoonQualityProfile.balanced,
     this.spreadOffset = false,
+    this.pageAnimation = true,
     this.imageQuality = const {},
     this.ebook = const EbookSettings(),
   }) : background =
@@ -194,6 +199,7 @@ final class ReadingSettings {
   final ReadingLayout layout;
   final WebtoonQuality webtoonQuality;
   final bool spreadOffset;
+  final bool pageAnimation;
   final Map<RasterFormat, RasterQuality> imageQuality;
   RasterQuality qualityFor(String mediaType) =>
       imageQuality[RasterFormat.fromMediaType(mediaType)] ??
@@ -226,6 +232,7 @@ final class ReadingSettings {
       webtoonQuality == other.webtoonQuality &&
       customWebtoon == other.customWebtoon &&
       spreadOffset == other.spreadOffset &&
+      pageAnimation == other.pageAnimation &&
       RasterFormat.values.every(
         (format) =>
             (imageQuality[format] ?? const RasterQuality()) ==
@@ -243,6 +250,7 @@ final class ReadingSettings {
     webtoonQuality,
     customWebtoon,
     spreadOffset,
+    pageAnimation,
     Object.hashAll(
       RasterFormat.values.map(
         (format) => imageQuality[format] ?? const RasterQuality(),
@@ -272,6 +280,7 @@ final class ReadingSettings {
     int? preload;
     int? memory;
     bool? offset;
+    bool? animation;
     final ebook = <String, dynamic>{};
     final images = <RasterFormat, RasterQuality>{};
     for (final layer in layers) {
@@ -298,6 +307,7 @@ final class ReadingSettings {
       preload = layer.webtoonPreload ?? preload;
       memory = layer.webtoonMemoryMiB ?? memory;
       offset = layer.spreadOffset ?? offset;
+      animation = layer.pageAnimation ?? animation;
       ebook.addAll(layer.ebook ?? const {});
       images.addAll(layer.imageQuality ?? const {});
     }
@@ -312,6 +322,7 @@ final class ReadingSettings {
       webtoonQuality: quality ?? WebtoonQuality.sharp,
       imageQuality: Map.unmodifiable(images),
       spreadOffset: offset ?? false,
+      pageAnimation: animation ?? true,
       customWebtoon: WebtoonQualityProfile(
         sharpness: sharpness ?? WebtoonQualityProfile.balanced.sharpness,
         preloadScreens:

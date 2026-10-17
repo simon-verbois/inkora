@@ -13,6 +13,95 @@ import '../../support/reader_fakes.dart';
 import '../../support/reader_widget_support.dart';
 
 void main() {
+  for (final (animation, reduced) in [
+    (true, false),
+    (false, false),
+    (true, true),
+  ]) {
+    testWidgets(
+      'page controls honor animation $animation and reduced motion $reduced',
+      (tester) async {
+        final reader = OpenReader(
+          readerManifest(),
+          FixturePageSource(),
+          ReaderLocator(0),
+        );
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MediaQuery(
+              data: MediaQueryData(disableAnimations: reduced),
+              child: Scaffold(
+                body: ReaderViewport(
+                  reader: reader,
+                  settings: ReadingSettings(
+                    layout: ReadingLayout.single,
+                    pageAnimation: animation,
+                  ),
+                  saveLocator: (_) async {},
+                ),
+              ),
+            ),
+          ),
+        );
+        await settleReaderImages(tester);
+        await tester.tap(find.byTooltip('Next page'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        final controller = tester
+            .widget<PageView>(find.byKey(const Key('paged-reader')))
+            .controller!;
+        if (animation && !reduced) {
+          expect(controller.page, allOf(greaterThan(0), lessThan(1)));
+        } else {
+          expect(controller.page, 1);
+        }
+        await settleReaderImages(tester);
+        expect(controller.page, 1);
+        await tester.pumpWidget(const SizedBox.shrink());
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+  testWidgets(
+    'scrubbing retains the page subtree and commits once on release',
+    (tester) async {
+      final source = FixturePageSource();
+      final saved = <ReaderLocator>[];
+      final manifest = readerManifest(count: 10);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ReaderViewport(
+              reader: OpenReader(manifest, source, ReaderLocator(0)),
+              settings: const ReadingSettings(layout: ReadingLayout.single),
+              saveLocator: (locator) async => saved.add(locator),
+            ),
+          ),
+        ),
+      );
+      await settleReaderImages(tester);
+      final pages = find.byKey(const Key('paged-reader'));
+      final subtree = tester.widget(pages);
+      final requests = source.requests.length;
+      final slider = find.byKey(const Key('reader-page-slider'));
+      final bounds = tester.getRect(slider);
+      final gesture = await tester.startGesture(
+        Offset(bounds.left + 30, bounds.center.dy),
+      );
+      for (var i = 0; i < 6; i++) {
+        await gesture.moveBy(const Offset(12, 0));
+        await tester.pump();
+        expect(tester.widget(pages), same(subtree));
+        expect(source.requests, hasLength(requests));
+        expect(saved, isEmpty);
+      }
+      await gesture.up();
+      await settleReaderImages(tester);
+      expect(saved, hasLength(1));
+      expect(saved.single.pageIndex, greaterThan(0));
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
   Future<void> mount(
     WidgetTester tester,
     OpenReader opened,

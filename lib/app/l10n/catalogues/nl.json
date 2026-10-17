@@ -930,5 +930,9 @@
   "Unable to display bookmarks.": "Het is niet mogelijk om bladwijzers weer te geven.",
   "Connect your Komga server to start reading.": "Maak verbinding met uw Komga-server om te beginnen met lezen.",
   "Start reading - {0}": "Begin met lezen - {0}",
-  "Continue reading - {0}": "Lees verder - {0}"
+  "Continue reading - {0}": "Lees verder - {0}",
+  "Book details": "Boekgegevens",
+  "Open series": "Serie openen",
+  "Page turn animation": "Animatie bij het omslaan van een pagina",
+  "Center page divider": "Middenlijn tussen pagina’s"
 }

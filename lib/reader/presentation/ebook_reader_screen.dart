@@ -1,3 +1,6 @@
+import 'reader_chrome.dart';
+import 'reader_details.dart';
+import 'ebook_presentation.dart';
 import 'ebook_selection.dart';
 import 'reading_colors.dart';
 
@@ -81,6 +84,10 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   Future<void> _preferences = Future.value();
   Future<void> _bookmarkWrites = Future.value();
   bool _bookmarkDecorationsReady = false;
+  bool _presentationReady = false;
+  bool _disableAnimations = false;
+  (bool, bool)? _lastPresentation;
+  EPUBPreferences? _lastEPUBPreferences;
   bool _backgrounded = false;
   bool _rewind = false;
   bool _savingSuppressed = false;
@@ -269,6 +276,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
     settings: widget.settings,
     bookmarks: _saved,
     onBookmark: (locator) => _addBookmark(Locator.fromJson(locator.value)!),
+    onTextSelected: () => _controls.value = false,
     onPage: (page) => _locationChanged(
       Locator(
         href: 'document.pdf',
@@ -365,8 +373,41 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
         backgroundColor: background,
         textColor: settings.background.inkColor,
       );
-      _engine.setDefaultPreferences(prefs);
-      await _engine.setEPUBPreferences(prefs);
+      if (_lastEPUBPreferences != prefs) {
+        _engine.setDefaultPreferences(prefs);
+        await _engine.setEPUBPreferences(prefs);
+        _lastEPUBPreferences = prefs;
+      }
+      await _configurePresentation();
+    }
+  }
+
+  Future<void> _configurePresentation({bool force = false}) async {
+    if (!mounted || !_epub) return;
+    final value = (
+      widget.settings.pageAnimation && !_disableAnimations,
+      widget.settings.ebook.columnSeparator && !widget.settings.ebook.scroll,
+    );
+    if (!force && _lastPresentation == value) return;
+    try {
+      if (await EbookPresentation.configure(
+        animations: value.$1,
+        separator: value.$2,
+      )) {
+        _lastPresentation = value;
+      }
+    } catch (_) {
+      _showError('Unable to apply ebook settings.');
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    if (_disableAnimations != reduced) {
+      _disableAnimations = reduced;
+      if (_publication != null) unawaited(_configurePresentation());
     }
   }
 
@@ -387,6 +428,10 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
 
   void _locationChanged(Locator locator) {
     if (!mounted || _backgrounded) return;
+    if (!_presentationReady) {
+      _presentationReady = true;
+      unawaited(_configurePresentation(force: true));
+    }
     if (_epub && !_bookmarkDecorationsReady) {
       _bookmarkDecorationsReady = true;
       unawaited(_decorateBookmarks());
@@ -477,7 +522,10 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
         );
         final rect = bookmark.pdfRectangle;
         if (rect == null) {
-          await _pdfController.goToPage(pageNumber: page);
+          await _pdfController.goToPage(
+            pageNumber: page,
+            duration: Duration.zero,
+          );
         } else {
           final zoom = _pdfController.currentZoom;
           // Set the engine's page hint, then restore scale before the next frame.
@@ -682,9 +730,18 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   Future<void> _turn(int delta) async {
     try {
       if (_epub) {
-        await (delta < 0 ? _engine.goBackward() : _engine.goForward());
+        final handled = await EbookPresentation.turn(
+          delta,
+          animated: widget.settings.pageAnimation && !_disableAnimations,
+        );
+        if (!handled) {
+          await (delta < 0 ? _engine.goBackward() : _engine.goForward());
+        }
       } else if (_pdfController.isReady) {
         await _pdfController.goToPage(
+          duration: widget.settings.pageAnimation && !_disableAnimations
+              ? const Duration(milliseconds: 220)
+              : Duration.zero,
           pageNumber: (_position.value.$1 + delta + 1).clamp(
             1,
             _manifest.pages.length,
@@ -694,6 +751,21 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
     } catch (_) {
       _showError('Unable to navigate to this position.');
     }
+  }
+
+  Future<void> _seek(int index) async {
+    final locator = _epub
+        ? Locator.fromJson(_manifest.positions[index])
+        : Locator(
+            href: 'document.pdf',
+            type: 'application/pdf',
+            locations: Locations(position: index + 1),
+          );
+    if (locator == null) {
+      _showError('Unable to navigate to this position.');
+      return;
+    }
+    await _jump(locator);
   }
 
   Future<void> _search() async {
@@ -835,63 +907,30 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
           builder: (context, visible, _) => visible || _surface == null
               ? Align(
                   alignment: Alignment.topCenter,
-                  child: Material(
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    child: SafeArea(
-                      bottom: false,
-                      child: Row(
-                        children: [
-                          BackButton(onPressed: () => context.pop()),
-                          Expanded(
-                            child: Text(
-                              _manifest.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (_surface != null) ...[
-                            IconButton(
-                              tooltip: context.tr('Table of contents'),
-                              icon: const Icon(InkIcons.list),
-                              onPressed: _toc,
-                            ),
-                            IconButton(
-                              tooltip: context.tr('Search in book'),
-                              icon: const Icon(InkIcons.magnifyingGlass),
-                              onPressed: _search,
-                            ),
-                            PopupMenuButton<String>(
-                              tooltip: context.tr('Reading controls'),
-                              icon: const Icon(InkIcons.dotsThreeVertical),
-                              itemBuilder: (_) => const [
-                                PopupMenuItem(
-                                  value: 'bookmarks',
-                                  child: LText('Bookmarks'),
-                                ),
-                                PopupMenuItem(
-                                  value: 'settings',
-                                  child: LText('Reading preferences'),
-                                ),
-                                PopupMenuItem(
-                                  value: 'progress',
-                                  child: LText('Reading progress'),
-                                ),
-                              ],
-                              onSelected: (action) {
-                                switch (action) {
-                                  case 'bookmarks':
-                                    unawaited(_bookmarkList());
-                                  case 'settings':
-                                    unawaited(_settings());
-                                  case 'progress':
-                                    unawaited(_progress());
-                                }
-                              },
+                  child: ReaderTopBar(
+                    title: _manifest.title,
+                    onBack: () => context.pop(),
+                    actions: [
+                      ReaderDetailsButton(manifest: _manifest),
+                      if (_surface != null) ...[
+                        IconButton(
+                          tooltip: context.tr('Search in book'),
+                          icon: const Icon(InkIcons.magnifyingGlass),
+                          onPressed: _search,
+                        ),
+                        PopupMenuButton<String>(
+                          tooltip: context.tr('Reading controls'),
+                          icon: const Icon(InkIcons.dotsThreeVertical),
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(
+                              value: 'progress',
+                              child: LText('Reading progress'),
                             ),
                           ],
-                        ],
-                      ),
-                    ),
+                          onSelected: (_) => unawaited(_progress()),
+                        ),
+                      ],
+                    ],
                   ),
                 )
               : const SizedBox.shrink(),
@@ -902,48 +941,95 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
               ? const SizedBox.shrink()
               : Align(
                   alignment: Alignment.bottomCenter,
-                  child: Material(
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    child: SafeArea(
-                      top: false,
-                      child: ValueListenableBuilder<(int, double)>(
-                        valueListenable: _position,
-                        builder: (context, position, _) => Row(
+                  child: ReaderPanel(
+                    child: ValueListenableBuilder<(int, double)>(
+                      valueListenable: _position,
+                      builder: (context, position, _) {
+                        final count = _epub
+                            ? _manifest.positions.length
+                            : _manifest.pages.length;
+                        String progressLabel(int index) => _epub
+                            ? context.tr('{0}% read', [
+                                (EbookLocator(_manifest.positions[index])
+                                            .total *
+                                        100)
+                                    .round(),
+                              ])
+                            : context.tr('Page {0}/{1}', [index + 1, count]);
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            IconButton(
-                              tooltip: context.tr('Previous page'),
-                              icon: const Icon(Icons.chevron_left),
-                              onPressed: () => _turn(-1),
-                            ),
-                            Expanded(
-                              child: Text(
-                                _epub
-                                    ? context.tr('{0}% read', [
-                                        ((_manifest.positions.isEmpty
-                                                    ? 0
-                                                    : (EbookLocator(
-                                                        _manifest
-                                                            .positions[position
-                                                            .$1],
-                                                      ).total)) *
-                                                100)
-                                            .round(),
-                                      ])
-                                    : context.tr('Page {0}/{1}', [
-                                        position.$1 + 1,
-                                        _manifest.pages.length,
-                                      ]),
-                                textAlign: TextAlign.center,
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      _current?.title ??
+                                          context.tr('Reading progress'),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelMedium,
+                                    ),
+                                  ),
+                                  Text(
+                                    count == 0
+                                        ? context.tr('Reading progress')
+                                        : progressLabel(position.$1),
+                                    key: const Key('reader-position'),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelMedium,
+                                  ),
+                                ],
                               ),
                             ),
-                            IconButton(
-                              tooltip: context.tr('Next page'),
-                              icon: const Icon(Icons.chevron_right),
-                              onPressed: () => _turn(1),
+                            ReaderSeekBar(
+                              position: position.$1,
+                              count: count,
+                              previewLabel: count == 0 ? null : progressLabel,
+                              onPrevious: position.$1 > 0 || position.$2 > 0
+                                  ? () => _turn(-1)
+                                  : null,
+                              onNext: _epub || position.$1 < count - 1
+                                  ? () => _turn(1)
+                                  : null,
+                              onSeek: _seek,
+                            ),
+                            const Divider(height: 1),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: ReaderQuickAction(
+                                    label: 'Table of contents',
+                                    icon: InkIcons.list,
+                                    onPressed: _toc,
+                                  ),
+                                ),
+                                Expanded(
+                                  child: ReaderQuickAction(
+                                    label: 'Bookmarks',
+                                    icon: InkIcons.bookmarks,
+                                    onPressed: _bookmarkList,
+                                  ),
+                                ),
+                                Expanded(
+                                  child: ReaderQuickAction(
+                                    label: 'Reading preferences',
+                                    icon: InkIcons.slidersHorizontal,
+                                    onPressed: _settings,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
-                        ),
-                      ),
+                        );
+                      },
                     ),
                   ),
                 ),

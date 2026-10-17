@@ -3,6 +3,38 @@ import 'package:inkora/reader/domain/ebook_locator.dart';
 import 'package:inkora/reader/domain/reading_settings.dart';
 
 void main() {
+  test(
+    'ebook presentation preferences preserve explicit scoped false values',
+    () {
+      final defaults = ReadingSettings.resolve(const []);
+      expect(defaults.pageAnimation, isTrue);
+      expect(defaults.ebook.columnSeparator, isFalse);
+      final parent = ReadingOverrides.fromJson({
+        'mode': 'ebook',
+        'pageAnimation': false,
+        'ebook': {'columnSeparator': true, 'fontSize': 1.4},
+      });
+      final inherited = ReadingSettings.resolve([parent]);
+      expect(inherited.pageAnimation, isFalse);
+      expect(inherited.ebook.columnSeparator, isTrue);
+      final child = ReadingOverrides.fromJson({
+        'pageAnimation': true,
+        'ebook': {'columnSeparator': false},
+      });
+      final resolved = ReadingSettings.resolve([
+        ReadingOverrides.fromJson(parent.toJson()),
+        ReadingOverrides.fromJson(child.toJson()),
+      ]);
+      expect(resolved.pageAnimation, isTrue);
+      expect(resolved.ebook.columnSeparator, isFalse);
+      expect(resolved.ebook.fontSize, 1.4);
+      expect(resolved, isNot(inherited));
+      expect(
+        ReadingSettings.resolve([ReadingOverrides.fromJson({})]),
+        defaults,
+      );
+    },
+  );
   final positions = [
     for (var i = 0; i < 4; i++)
       {

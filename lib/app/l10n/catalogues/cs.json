@@ -930,5 +930,9 @@
   "Unable to display bookmarks.": "Nelze zobrazit záložky.",
   "Connect your Komga server to start reading.": "Připojte se ke svému serveru Komga a začněte číst.",
   "Start reading - {0}": "Začít číst – {0}",
-  "Continue reading - {0}": "Pokračovat ve čtení – {0}"
+  "Continue reading - {0}": "Pokračovat ve čtení – {0}",
+  "Book details": "Podrobnosti o knize",
+  "Open series": "Otevřít sérii",
+  "Page turn animation": "Animace otáčení stránky",
+  "Center page divider": "Středový oddělovač stránek"
 }

@@ -4,6 +4,7 @@ import '../../app/l10n/app_strings.dart';
 import '../domain/ebook_settings.dart';
 import '../../app/icons/inkora_icons.dart';
 import 'reader_settings_layout.dart';
+import 'ebook_presentation.dart';
 
 enum EbookControlsSection { all, layout, typography }
 
@@ -58,6 +59,16 @@ class EbookSettingsControls extends StatelessWidget {
                 'one': 'One column',
                 'two': 'Two columns',
               }, (v) => onChanged('columns', v)),
+            if (!pdf &&
+                EbookPresentation.supported &&
+                !settings.scroll &&
+                settings.columns != 'one')
+              _toggle(
+                context,
+                'Center page divider',
+                settings.columnSeparator,
+                (v) => onChanged('columnSeparator', v),
+              ),
           ],
         ),
       if (!pdf && section != EbookControlsSection.layout) ...[

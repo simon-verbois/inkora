@@ -13,9 +13,11 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterFragmentActivity() {
     private var immersiveReading = false
+    private var ebookPresentation: EbookPresentation? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        ebookPresentation = EbookPresentation(this, flutterEngine.dartExecutor.binaryMessenger)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "inkora/download_background")
             .setMethodCallHandler { call, result ->
                 try {
@@ -115,6 +117,12 @@ class MainActivity : FlutterFragmentActivity() {
     override fun onResume() {
         super.onResume()
         DownloadBackground.pause()
+    }
+
+    override fun onDestroy() {
+        ebookPresentation?.close()
+        ebookPresentation = null
+        super.onDestroy()
     }
 
     override fun onStop() {

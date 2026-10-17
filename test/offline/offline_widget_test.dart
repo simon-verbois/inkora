@@ -949,7 +949,9 @@ void main() {
       );
       await settle(tester);
       expect(find.text('3–4 / 4'), findsOneWidget);
-      await tester.tap(find.byTooltip('Reading progress'));
+      await tester.tap(find.byTooltip('Reading controls'));
+      await settle(tester);
+      await tester.tap(find.text('Reading progress').last);
       await settle(tester);
       await tap(tester, find.text('Mark unread and restart'));
       await settle(tester);

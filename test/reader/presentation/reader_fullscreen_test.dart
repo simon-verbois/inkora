@@ -7,6 +7,7 @@ import 'package:inkora/reader/data/reader_repository.dart';
 import 'package:inkora/reader/domain/reader_manifest.dart';
 import 'package:inkora/reader/domain/reading_settings.dart';
 import 'package:inkora/reader/presentation/reader_screen.dart';
+import 'package:inkora/reader/presentation/reader_chrome.dart';
 import 'package:inkora/reader/presentation/reader_system_ui.dart';
 import 'package:inkora/reader/presentation/reader_viewport.dart';
 
@@ -71,13 +72,13 @@ void main() {
                     .controller!
                     .page!;
           final initial = position();
-          expect(find.byType(AppBar), findsNothing);
+          expect(find.byType(ReaderTopBar), findsNothing);
           expect(find.byKey(const Key('reader-page-slider')), findsNothing);
           expect(calls, [true]);
           // An edge tap reveals controls instead of changing the page.
           await tester.tapAt(Offset(20, size.height / 2));
           await settleReaderImages(tester);
-          expect(find.byType(AppBar), findsOneWidget);
+          expect(find.byType(ReaderTopBar), findsOneWidget);
           final doublePages =
               mode != ReadingMode.webtoon &&
               ReadingSettings(mode: mode)
@@ -110,7 +111,7 @@ void main() {
           expect(find.text('Invalid image — retry page'), findsNothing);
           await tester.tapAt(tester.getCenter(viewport));
           await settleReaderImages(tester);
-          expect(find.byType(AppBar), findsNothing);
+          expect(find.byType(ReaderTopBar), findsNothing);
           expect(find.byKey(const Key('reader-position')), findsNothing);
           expect(position(), closeTo(advanced, .01));
           expect(calls.last, true);
@@ -133,14 +134,14 @@ void main() {
                   ),
           );
           await settleReaderImages(tester);
-          expect(find.byType(AppBar), findsNothing);
+          expect(find.byType(ReaderTopBar), findsNothing);
           expect(position(), greaterThan(advanced));
           await tester.sendKeyEvent(LogicalKeyboardKey.space);
           await settleReaderImages(tester);
-          expect(find.byType(AppBar), findsOneWidget);
+          expect(find.byType(ReaderTopBar), findsOneWidget);
           await tester.sendKeyEvent(LogicalKeyboardKey.escape);
           await settleReaderImages(tester);
-          expect(find.byType(AppBar), findsNothing);
+          expect(find.byType(ReaderTopBar), findsNothing);
           await tester.pumpWidget(const SizedBox.shrink());
           await settleReaderImages(tester);
           expect(calls.last, false);

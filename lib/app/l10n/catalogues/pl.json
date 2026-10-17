@@ -930,5 +930,9 @@
   "Unable to display bookmarks.": "Nie można wyświetlić zakładek.",
   "Connect your Komga server to start reading.": "Połącz się ze swoim serwerem Komga, aby zacząć czytać.",
   "Start reading - {0}": "Rozpocznij czytanie – {0}",
-  "Continue reading - {0}": "Czytaj dalej – {0}"
+  "Continue reading - {0}": "Czytaj dalej – {0}",
+  "Book details": "Szczegóły książki",
+  "Open series": "Otwórz serię",
+  "Page turn animation": "Animacja przewracania stron",
+  "Center page divider": "Środkowy separator stron"
 }

@@ -930,5 +930,9 @@
   "Unable to display bookmarks.": "Impossibile visualizzare i segnalibri.",
   "Connect your Komga server to start reading.": "Collega il tuo server Komga per iniziare a leggere.",
   "Start reading - {0}": "Inizia a leggere - {0}",
-  "Continue reading - {0}": "Continua a leggere - {0}"
+  "Continue reading - {0}": "Continua a leggere - {0}",
+  "Book details": "Dettagli del libro",
+  "Open series": "Apri serie",
+  "Page turn animation": "Animazione di cambio pagina",
+  "Center page divider": "Divisore centrale della pagina"
 }

@@ -339,6 +339,12 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Black').last);
       await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Center page divider'));
+      await tester.tap(find.text('Center page divider'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Page turn animation'));
+      await tester.tap(find.text('Page turn animation'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Typography'));
       await tester.pumpAndSettle();
       expect(
@@ -358,6 +364,8 @@ void main() {
         () => store.overrides(SettingsScope.book, 'epub'),
       );
       expect(saved!.ebook!['fontSize'], 1.8);
+      expect(saved.ebook!['columnSeparator'], isTrue);
+      expect(saved.pageAnimation, isFalse);
       expect(saved.background, ReadingBackground.black);
       await tester.pumpWidget(const SizedBox.shrink());
     },

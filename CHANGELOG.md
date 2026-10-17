@@ -10,6 +10,11 @@ remain in progress.
 
 ## [Unreleased]
 
+## [2026.42.3] - 2026-10-17
+
+- Refresh reader controls with compact floating panels, direct reading actions and ebook progress seeking.
+- Add reader shortcuts to the current series or saved book details, optional page-turn animation and an EPUB center divider.
+
 ## [2026.42.2] - 2026-10-16
 
 - Place the completed-series badge beside the book count and remove other header badges.

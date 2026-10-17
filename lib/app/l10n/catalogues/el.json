@@ -930,5 +930,9 @@
   "Unable to display bookmarks.": "Δεν είναι δυνατή η εμφάνιση των σελιδοδεικτών.",
   "Connect your Komga server to start reading.": "Συνδεθείτε στον διακομιστή Komga για να ξεκινήσετε την ανάγνωση.",
   "Start reading - {0}": "Ξεκινήστε την ανάγνωση - {0}",
-  "Continue reading - {0}": "Συνέχεια ανάγνωσης - {0}"
+  "Continue reading - {0}": "Συνέχεια ανάγνωσης - {0}",
+  "Book details": "Λεπτομέρειες βιβλίου",
+  "Open series": "Άνοιγμα σειράς",
+  "Page turn animation": "Κινούμενη εικόνα αλλαγής σελίδας",
+  "Center page divider": "Κεντρικός διαχωριστής σελίδων"
 }

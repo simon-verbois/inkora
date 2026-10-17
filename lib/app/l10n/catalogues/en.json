@@ -930,5 +930,9 @@
   "Unable to display bookmarks.": "Unable to display bookmarks.",
   "Connect your Komga server to start reading.": "Connect your Komga server to start reading.",
   "Start reading - {0}": "Start reading - {0}",
-  "Continue reading - {0}": "Continue reading - {0}"
+  "Continue reading - {0}": "Continue reading - {0}",
+  "Book details": "Book details",
+  "Open series": "Open series",
+  "Page turn animation": "Page turn animation",
+  "Center page divider": "Center page divider"
 }

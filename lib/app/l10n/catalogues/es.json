@@ -930,5 +930,9 @@
   "Unable to display bookmarks.": "No se pueden mostrar los marcadores.",
   "Connect your Komga server to start reading.": "Conéctese a su servidor Komga para empezar a leer.",
   "Start reading - {0}": "Empezar a leer - {0}",
-  "Continue reading - {0}": "Continuar leyendo - {0}"
+  "Continue reading - {0}": "Continuar leyendo - {0}",
+  "Book details": "Detalles del libro",
+  "Open series": "Abrir serie",
+  "Page turn animation": "Animación al pasar página",
+  "Center page divider": "Separador de página central"
 }

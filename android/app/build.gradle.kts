@@ -78,4 +78,8 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+    // Compile against the exact navigator already supplied by flutter_readium.
+    // The app's typed presentation bridge does not add a second engine/version.
+    implementation("org.readium.kotlin-toolkit:readium-navigator:3.3.0")
+    implementation("org.readium.kotlin-toolkit:readium-shared:3.3.0")
 }

@@ -930,5 +930,9 @@
   "Unable to display bookmarks.": "Semnele de carte nu pot fi afișate.",
   "Connect your Komga server to start reading.": "Conectați-vă la serverul Komga pentru a începe lectura.",
   "Start reading - {0}": "Începeți lectura - {0}",
-  "Continue reading - {0}": "Continuați lectura - {0}"
+  "Continue reading - {0}": "Continuați lectura - {0}",
+  "Book details": "Detalii despre carte",
+  "Open series": "Deschideți seria",
+  "Page turn animation": "Animația de răsfoire a paginilor",
+  "Center page divider": "Separator central de pagină"
 }

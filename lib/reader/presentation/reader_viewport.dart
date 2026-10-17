@@ -1,3 +1,4 @@
+import 'reader_chrome.dart';
 import 'reading_colors.dart';
 import '../../app/l10n/app_strings.dart';
 import '../../app/icons/inkora_icons.dart';
@@ -29,6 +30,7 @@ class ReaderViewport extends StatefulWidget {
     this.onToggleControls,
     this.onLocatorChanged,
     this.onToggleSpreadOffset,
+    this.controlsActions,
     super.key,
   });
   final OpenReader reader;
@@ -40,6 +42,7 @@ class ReaderViewport extends StatefulWidget {
 
   /// Flips the book's one-page spread offset (persisted by the screen).
   final VoidCallback? onToggleSpreadOffset;
+  final Widget? controlsActions;
   @override
   State<ReaderViewport> createState() => _ReaderViewportState();
 }
@@ -54,7 +57,7 @@ class _ReaderViewportState extends State<ReaderViewport>
   Future<void> _writes = Future.value();
   bool _saveFailed = false;
   PagedLayout? _pagedLayout;
-  int? _scrub;
+  final _pagedKey = GlobalKey<_PagedViewportState>();
 
   @override
   void initState() {
@@ -144,7 +147,7 @@ class _ReaderViewportState extends State<ReaderViewport>
     if (widget.settings.mode == ReadingMode.webtoon || _pagedLayout == null) {
       _jump(_locator.pageIndex + delta);
     } else {
-      _jump(_pagedLayout!.adjacent(_locator.pageIndex, delta));
+      _pagedKey.currentState?._turn(delta);
     }
   }
 
@@ -238,9 +241,7 @@ class _ReaderViewportState extends State<ReaderViewport>
                               onPosition: _position,
                             )
                           : _PagedViewport(
-                              key: ValueKey(
-                                'paged-${widget.reader.manifest.revision}-${settings.direction.name}-${_pagedLayout!.groups.length}',
-                              ),
+                              key: _pagedKey,
                               reader: widget.reader,
                               settings: settings,
                               locator: _locator,
@@ -270,10 +271,9 @@ class _ReaderViewportState extends State<ReaderViewport>
                           ? position.pageIndex < count - 1
                           : _pagedLayout!.groupFor(position.pageIndex) <
                                 _pagedLayout!.groups.length - 1;
-                      return Material(
-                        color: Theme.of(context).colorScheme.surface,
-                        child: SafeArea(
-                          top: false,
+                      return Align(
+                        alignment: Alignment.bottomCenter,
+                        child: ReaderPanel(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -281,81 +281,74 @@ class _ReaderViewportState extends State<ReaderViewport>
                                 const LText(
                                   'Reading position could not be saved.',
                                 ),
-                              Row(
-                                children: [
-                                  IconButton(
-                                    tooltip: context.tr("Previous page"),
-                                    onPressed: hasPrevious
-                                        ? () => _advance(-1)
-                                        : null,
-                                    icon: const Icon(InkIcons.caretLeft),
-                                  ),
-                                  Expanded(
-                                    child: Slider(
-                                      key: const Key('reader-page-slider'),
-                                      min: 0,
-                                      max: math.max(1, count - 1).toDouble(),
-                                      value: (_scrub ?? _locator.pageIndex)
-                                          .toDouble(),
-                                      divisions: count > 1 ? count - 1 : null,
-                                      label: context.tr('{0}', [
-                                        (_scrub ?? _locator.pageIndex) + 1,
-                                      ]),
-                                      // Scrubbing previews only; the page load,
-                                      // locator write and jump happen on release.
-                                      onChanged: count > 1
-                                          ? (value) => setState(
-                                              () => _scrub = value.round(),
-                                            )
-                                          : null,
-                                      onChangeEnd: count > 1
-                                          ? (value) {
-                                              _scrub = null;
-                                              _jump(value.round());
-                                            }
-                                          : null,
-                                    ),
-                                  ),
-                                  // One tap re-pairs spreads by one page; shown
-                                  // only when two pages can share the screen.
-                                  if (!isWebtoon &&
-                                      doubles &&
-                                      widget.onToggleSpreadOffset != null)
-                                    IconButton(
-                                      key: const Key('reader-spread-offset'),
-                                      tooltip: context.tr(
-                                        settings.spreadOffset
-                                            ? 'Pair pages from the first page'
-                                            : 'Shift page pairing by one',
-                                      ),
-                                      isSelected: settings.spreadOffset,
-                                      onPressed: widget.onToggleSpreadOffset,
-                                      icon: const Icon(
-                                        InkIcons.arrowsLeftRight,
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: LText(
+                                        'Reading progress',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelMedium,
                                       ),
                                     ),
-                                  LText(
-                                    pages.length > 1
-                                        ? context.tr('{0}–{1} / {2}', [
-                                            pages.first + 1,
-                                            pages.last + 1,
-                                            count,
-                                          ])
-                                        : context.tr('{0} / {1}', [
-                                            _locator.pageIndex + 1,
-                                            count,
-                                          ]),
-                                    key: const Key('reader-position'),
-                                  ),
-                                  IconButton(
-                                    tooltip: context.tr("Next page"),
-                                    onPressed: hasNext
-                                        ? () => _advance(1)
-                                        : null,
-                                    icon: const Icon(InkIcons.caretRight),
-                                  ),
-                                ],
+                                    Text(
+                                      pages.length > 1
+                                          ? context.tr('{0}–{1} / {2}', [
+                                              pages.first + 1,
+                                              pages.last + 1,
+                                              count,
+                                            ])
+                                          : context.tr('{0} / {1}', [
+                                              position.pageIndex + 1,
+                                              count,
+                                            ]),
+                                      key: const Key('reader-position'),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelMedium,
+                                    ),
+                                  ],
+                                ),
                               ),
+                              ReaderSeekBar(
+                                position: position.pageIndex,
+                                count: count,
+                                previewLabel: (page) => context.tr(
+                                  'Page {0}/{1}',
+                                  [page + 1, count],
+                                ),
+                                onSeek: _jump,
+                                onPrevious: hasPrevious
+                                    ? () => _advance(-1)
+                                    : null,
+                                onNext: hasNext ? () => _advance(1) : null,
+                                trailing:
+                                    !isWebtoon &&
+                                        doubles &&
+                                        widget.onToggleSpreadOffset != null
+                                    ? IconButton(
+                                        key: const Key('reader-spread-offset'),
+                                        tooltip: context.tr(
+                                          settings.spreadOffset
+                                              ? 'Pair pages from the first page'
+                                              : 'Shift page pairing by one',
+                                        ),
+                                        isSelected: settings.spreadOffset,
+                                        onPressed: widget.onToggleSpreadOffset,
+                                        icon: const Icon(
+                                          InkIcons.arrowsLeftRight,
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                              if (widget.controlsActions != null) ...[
+                                const Divider(height: 1),
+                                widget.controlsActions!,
+                              ],
                             ],
                           ),
                         ),
@@ -405,6 +398,11 @@ class _PagedViewportState extends State<_PagedViewport> {
     final current = widget.layout.groupFor(widget.locator.pageIndex);
     final next = (current + delta).clamp(0, widget.layout.groups.length - 1);
     if (next != current) {
+      if (!widget.settings.pageAnimation ||
+          MediaQuery.disableAnimationsOf(context)) {
+        _controller.jumpToPage(next);
+        return;
+      }
       unawaited(
         _controller.animateToPage(
           next,

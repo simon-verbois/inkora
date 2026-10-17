@@ -20,6 +20,7 @@ class EbookPdfSurface extends StatefulWidget {
     required this.onPage,
     required this.onToggleControls,
     this.onBookmark,
+    this.onTextSelected,
     this.bookmarks = const [],
   });
   final String path;
@@ -29,6 +30,7 @@ class EbookPdfSurface extends StatefulWidget {
   final ValueChanged<int> onPage;
   final VoidCallback onToggleControls;
   final Future<void> Function(EbookLocator)? onBookmark;
+  final VoidCallback? onTextSelected;
   final List<EbookLocator> bookmarks;
   @override
   State<EbookPdfSurface> createState() => _EbookPdfSurfaceState();
@@ -154,7 +156,11 @@ class _EbookPdfSurfaceState extends State<EbookPdfSurface>
       ),
       errorBannerBuilder: (context, error, stack, document) =>
           const Center(child: LText('Unable to read this ebook.')),
-      textSelectionParams: const PdfTextSelectionParams(),
+      textSelectionParams: PdfTextSelectionParams(
+        onTextSelectionChange: (selection) {
+          if (selection.hasSelectedText) widget.onTextSelected?.call();
+        },
+      ),
       pagePaintCallbacks: [_paintBookmarks],
       customizeContextMenuItems: (params, items) {
         if (widget.onBookmark != null &&

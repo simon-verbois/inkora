@@ -930,5 +930,9 @@
   "Unable to display bookmarks.": "A könyvjelzők nem jeleníthetők meg.",
   "Connect your Komga server to start reading.": "Csatlakozzon a Komga-kiszolgálójához az olvasás megkezdéséhez.",
   "Start reading - {0}": "Olvasás megkezdése – {0}",
-  "Continue reading - {0}": "Olvasás folytatása – {0}"
+  "Continue reading - {0}": "Olvasás folytatása – {0}",
+  "Book details": "A könyv adatai",
+  "Open series": "Sorozat megnyitása",
+  "Page turn animation": "Oldalfordítási animáció",
+  "Center page divider": "Oldalelválasztó középen"
 }

@@ -930,5 +930,9 @@
   "Unable to display bookmarks.": "Lesezeichen können nicht angezeigt werden.",
   "Connect your Komga server to start reading.": "Stellen Sie eine Verbindung zu Ihrem Komga-Server her, um mit dem Lesen zu beginnen.",
   "Start reading - {0}": "Mit dem Lesen beginnen – {0}",
-  "Continue reading - {0}": "Weiterlesen – {0}"
+  "Continue reading - {0}": "Weiterlesen – {0}",
+  "Book details": "Buchdetails",
+  "Open series": "Serie öffnen",
+  "Page turn animation": "Animation beim Umblättern",
+  "Center page divider": "Mittlere Seitentrennlinie"
 }

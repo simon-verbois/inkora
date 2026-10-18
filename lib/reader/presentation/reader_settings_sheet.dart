@@ -24,12 +24,14 @@ class ReaderSettingsSheet extends StatefulWidget {
     this.onSaved,
     this.showSaveAction = true,
     this.qualityOnly = false,
+    this.qualityHeader,
     this.modal = false,
     super.key,
   });
   final VoidCallback? onSaved;
   final bool showSaveAction;
   final bool qualityOnly;
+  final Widget? qualityHeader;
   final bool modal;
   final ReaderStore store;
   final ReaderManifest? manifest;
@@ -215,6 +217,10 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
   Widget _imageQuality() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
+      if (widget.qualityHeader != null) ...[
+        widget.qualityHeader!,
+        const SizedBox(height: 24),
+      ],
       const LText(
         'Choose how each image format is displayed. Archive files use the format of each page inside them.',
       ),

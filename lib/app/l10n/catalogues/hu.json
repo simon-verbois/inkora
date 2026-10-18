@@ -934,5 +934,14 @@
   "Book details": "A könyv adatai",
   "Open series": "Sorozat megnyitása",
   "Page turn animation": "Oldalfordítási animáció",
-  "Center page divider": "Oldalelválasztó középen"
+  "Center page divider": "Oldalelválasztó középen",
+  "Upscaling and sharpening": "Felskálázás és élesítés",
+  "Sharpen enlarged images and covers on this device. Missing detail cannot be reconstructed.": "A nagyított képek és borítók élesítése ezen az eszközön. A hiányzó részletek nem állíthatók helyre.",
+  "Strength": "Erősség",
+  "Off": "Ki",
+  "Gentle": "Kíméletes",
+  "Strong": "Erős",
+  "Floating navigation": "Lebegő navigáció",
+  "Panel opacity": "Panelek fedettsége",
+  "Applies to navigation, headers and search. Text stays fully opaque.": "Ez vonatkozik a navigációra, a fejlécre és a keresésre. A szöveg teljesen átlátszatlan marad."
 }

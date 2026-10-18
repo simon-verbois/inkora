@@ -1,10 +1,13 @@
 import '../../../reader/domain/gesture_zones.dart';
+import '../../../core/images/image_enhancement.dart';
 
 enum AppAppearance { system, light, dark, amoled, sepia, ocean, forest }
 
 enum CatalogueDensity { comfortable, compact }
 
 final class UiPreferences {
+  static const minPanelOpacity = .88;
+  static const maxPanelOpacity = 1.0;
   static const minTextScale = .85;
   static const maxTextScale = 1.3;
   const UiPreferences({
@@ -12,39 +15,51 @@ final class UiPreferences {
     this.density = CatalogueDensity.comfortable,
     this.textScale = 1,
     this.reduceMotion = false,
+    this.floatingNavigation = true,
+    this.panelOpacity = 1,
     this.locale,
     this.setupCompleted = false,
     this.setupStep = 0,
     this.gestures = const GestureZones(),
+    this.imageEnhancement = ImageEnhancement.off,
   });
 
   final AppAppearance appearance;
   final CatalogueDensity density;
   final double textScale;
   final bool reduceMotion, setupCompleted;
+  final bool floatingNavigation;
+  final double panelOpacity;
   final String? locale;
   final int setupStep;
   final GestureZones gestures;
+  final ImageEnhancement imageEnhancement;
 
   UiPreferences copyWith({
     AppAppearance? appearance,
     CatalogueDensity? density,
     double? textScale,
     bool? reduceMotion,
+    bool? floatingNavigation,
+    double? panelOpacity,
     String? locale,
     bool systemLocale = false,
     bool? setupCompleted,
     int? setupStep,
     GestureZones? gestures,
+    ImageEnhancement? imageEnhancement,
   }) => UiPreferences(
     appearance: appearance ?? this.appearance,
     density: density ?? this.density,
     textScale: textScale ?? this.textScale,
     reduceMotion: reduceMotion ?? this.reduceMotion,
+    floatingNavigation: floatingNavigation ?? this.floatingNavigation,
+    panelOpacity: panelOpacity ?? this.panelOpacity,
     locale: systemLocale ? null : locale ?? this.locale,
     setupCompleted: setupCompleted ?? this.setupCompleted,
     setupStep: setupStep ?? this.setupStep,
     gestures: gestures ?? this.gestures,
+    imageEnhancement: imageEnhancement ?? this.imageEnhancement,
   );
 
   Map<String, Object?> toJson() => {
@@ -52,15 +67,19 @@ final class UiPreferences {
     'density': density.name,
     'textScale': textScale,
     'reduceMotion': reduceMotion,
+    'floatingNavigation': floatingNavigation,
+    'panelOpacity': panelOpacity,
     'locale': locale,
     'setupCompleted': setupCompleted,
     'setupStep': setupStep,
     'setupVersion': 2,
     'gestures': gestures.toJson(),
+    'imageEnhancement': imageEnhancement.name,
   };
 
   factory UiPreferences.fromJson(Map<String, dynamic> json) {
     final scale = json['textScale'];
+    final opacity = json['panelOpacity'];
     final savedStep = json['setupStep'] is int
         ? (json['setupStep'] as int).clamp(0, 8)
         : 0;
@@ -87,6 +106,11 @@ final class UiPreferences {
           ? scale.toDouble()
           : 1,
       reduceMotion: json['reduceMotion'] == true,
+      floatingNavigation: json['floatingNavigation'] != false,
+      panelOpacity: opacity is num && opacity.isFinite
+          ? opacity.toDouble().clamp(minPanelOpacity, maxPanelOpacity)
+          : 1,
+      imageEnhancement: ImageEnhancement.parse(json['imageEnhancement']),
       locale: json['locale'] is String ? json['locale'] as String : null,
       setupCompleted: json['setupCompleted'] == true,
       setupStep: step,

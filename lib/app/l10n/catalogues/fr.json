@@ -934,5 +934,14 @@
   "Book details": "Détails du livre",
   "Open series": "Ouvrir la série",
   "Page turn animation": "Animation de changement de page",
-  "Center page divider": "Séparateur de page central"
+  "Center page divider": "Séparateur de page central",
+  "Upscaling and sharpening": "Agrandissement et netteté",
+  "Sharpen enlarged images and covers on this device. Missing detail cannot be reconstructed.": "Améliorez la netteté des images agrandies et des couvertures sur cet appareil. Les détails manquants ne peuvent pas être reconstitués.",
+  "Strength": "Intensité",
+  "Off": "Désactivé",
+  "Gentle": "Douce",
+  "Strong": "Forte",
+  "Floating navigation": "Navigation flottante",
+  "Panel opacity": "Opacité des panneaux",
+  "Applies to navigation, headers and search. Text stays fully opaque.": "S'applique à la navigation, aux en-têtes et à la recherche. Le texte reste entièrement opaque."
 }

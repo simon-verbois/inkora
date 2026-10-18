@@ -36,13 +36,13 @@ void main() {
           );
           addTearDown(() => harness.close(tester));
           await harness.mount(tester);
-          expect(find.text('Continue reading'), findsOneWidget);
+          expect(find.byKey(const Key('library-selector')), findsOneWidget);
           expect(find.byTooltip('Refresh catalogue'), findsNothing);
           expect(find.byTooltip('Search catalogue'), findsOneWidget);
           expect(find.byIcon(Icons.shield_outlined), findsNothing);
           final router = harness.container.read(routerProvider);
           for (final location in [
-            '/libraries',
+            '/',
             '/settings',
             '/downloads',
             '/settings/appearance',
@@ -69,17 +69,16 @@ void main() {
             }
             expect(tester.takeException(), isNull, reason: location);
           }
-          router.go('/libraries');
+          router.go('/');
           await tester.pumpAndSettle();
           expect(find.byTooltip('Search catalogue'), findsOneWidget);
           expect(find.text('Favorites'), findsNothing);
           expect(find.byKey(const Key('navigation-downloads')), findsOneWidget);
           expect(find.byKey(const Key('navigation-settings')), findsOneWidget);
+          expect(find.byKey(const Key('navigation-home')), findsNothing);
           expect(
-            tester
-                .widget<InkoraNavigation>(find.byType(InkoraNavigation))
-                .vertical,
-            size.width >= InkoraLayout.railBreakpoint,
+            tester.getRect(find.byType(InkoraNavigation)).top,
+            greaterThan(size.height - 140),
           );
           await harness.close(tester);
         },
@@ -259,7 +258,7 @@ void main() {
       final router = harness.container.read(routerProvider);
       for (final location in [
         '/',
-        '/libraries',
+        '/',
         '/settings',
         '/settings/accessibility',
         '/catalogue/book/book-a',

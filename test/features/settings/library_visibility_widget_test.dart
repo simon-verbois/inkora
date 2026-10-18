@@ -40,7 +40,7 @@ void main() {
             ),
           );
           expect(filtered!.items.map((item) => item.id), ['series-a']);
-          harness.container.read(routerProvider).go('/libraries');
+          harness.container.read(routerProvider).go('/');
           await tester.pumpAndSettle();
           expect(find.text('Atlas Nine'), findsNothing);
           expect(find.text('Moonlit District'), findsWidgets);

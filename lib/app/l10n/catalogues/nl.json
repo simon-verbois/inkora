@@ -934,5 +934,14 @@
   "Book details": "Boekgegevens",
   "Open series": "Serie openen",
   "Page turn animation": "Animatie bij het omslaan van een pagina",
-  "Center page divider": "Middenlijn tussen pagina’s"
+  "Center page divider": "Middenlijn tussen pagina’s",
+  "Upscaling and sharpening": "Opschalen en verscherpen",
+  "Sharpen enlarged images and covers on this device. Missing detail cannot be reconstructed.": "Vergrote afbeeldingen en omslagen op dit apparaat worden verscherpt. Ontbrekende details kunnen niet worden gereconstrueerd.",
+  "Strength": "Sterkte",
+  "Off": "Uit",
+  "Gentle": "Zacht",
+  "Strong": "Sterk",
+  "Floating navigation": "Zwevende navigatie",
+  "Panel opacity": "Dekking van panelen",
+  "Applies to navigation, headers and search. Text stays fully opaque.": "Dit geldt voor navigatie, kopteksten en zoeken. Tekst blijft volledig ondoorzichtig."
 }

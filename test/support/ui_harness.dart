@@ -36,8 +36,11 @@ final class UiHarness {
     DateTime Function()? discoveryClock,
     CoverRepository? covers,
     List<CatalogueItem>? catalogue,
+    bool refreshCatalogue = true,
+    AppDatabase? databaseOverride,
+    OfflineCoordinator Function(AppDatabase)? offlineFactory,
   }) async {
-    final database = AppDatabase(NativeDatabase.memory());
+    final database = databaseOverride ?? AppDatabase(NativeDatabase.memory());
     final remote = FakeCatalogueRemote();
     remote.items[CatalogueKind.library] = [
       entry('library-a', kind: CatalogueKind.library, title: 'Manga shelf'),
@@ -73,14 +76,16 @@ final class UiHarness {
       CatalogueStore(database, savedSession.accountId),
       remote,
     );
+    OfflineCoordinator? offline;
     await tester.runAsync(() async {
-      await repository.refresh();
+      if (refreshCatalogue) await repository.refresh();
       await UiPreferencesStore(database).save(
         preferences.copyWith(
           setupCompleted: true,
           locale: preferences.locale ?? 'en',
         ),
       );
+      offline = offlineFactory?.call(database);
     });
     final container = ProviderContainer(
       overrides: [
@@ -115,9 +120,10 @@ final class UiHarness {
         ),
         catalogueRepositoryProvider.overrideWith((ref) async => repository),
         coverRepositoryProvider.overrideWith((ref) async => covers),
-        offlineCoordinatorProvider.overrideWith((ref) async => null),
+        offlineCoordinatorProvider.overrideWith((ref) async => offline),
         readerRepositoryProvider.overrideWith((ref) async => null),
-        downloadsProvider.overrideWith((ref) => Stream.value([])),
+        if (offline == null)
+          downloadsProvider.overrideWith((ref) => Stream.value([])),
         progressIntentsProvider.overrideWith((ref) => Stream.value([])),
       ],
     );
@@ -128,6 +134,7 @@ final class UiHarness {
     WidgetTester tester, {
     double textScale = 1,
     Key? captureKey,
+    bool settle = true,
   }) async {
     tester.platformDispatcher.textScaleFactorTestValue = textScale;
     await tester.pumpWidget(
@@ -138,7 +145,7 @@ final class UiHarness {
             : RepaintBoundary(key: captureKey, child: const InkoraApp()),
       ),
     );
-    await tester.pumpAndSettle();
+    if (settle) await tester.pumpAndSettle();
   }
 
   Future<void> close(WidgetTester tester) async {

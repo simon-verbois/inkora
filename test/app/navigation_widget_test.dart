@@ -12,78 +12,87 @@ import 'package:inkora/app/widgets/inkora_navigation.dart';
 void main() {
   for (final language in languageNames.keys) {
     for (final scale in [1.0, 2.0]) {
-      testWidgets('$language sidebar keeps words whole at $scale text scale', (
-        tester,
-      ) async {
-        var selected = 0;
-        final textScaler = TextScaler.linear(scale);
-        late StateSetter update;
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: InkoraTheme.light(),
-            locale: AppStrings.localeFor(language),
-            supportedLocales: AppStrings.supportedLocales,
-            localizationsDelegates: const [
-              AppStrings.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            home: MediaQuery(
-              data: MediaQueryData(textScaler: textScaler),
-              child: Scaffold(
-                body: StatefulBuilder(
-                  builder: (context, setState) {
-                    update = setState;
-                    return Row(
-                      children: [
-                        InkoraNavigation(
-                          vertical: true,
-                          selectedIndex: selected,
-                          onSelect: (value) => setState(() => selected = value),
-                        ),
-                        const Expanded(child: SizedBox()),
-                      ],
-                    );
-                  },
+      testWidgets(
+        '$language bottom navigation keeps full labels at $scale text scale',
+        (tester) async {
+          var selected = 0;
+          final textScaler = TextScaler.linear(scale);
+          late StateSetter update;
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: InkoraTheme.light(),
+              locale: AppStrings.localeFor(language),
+              supportedLocales: AppStrings.supportedLocales,
+              localizationsDelegates: const [
+                AppStrings.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              home: MediaQuery(
+                data: MediaQueryData(textScaler: textScaler),
+                child: Scaffold(
+                  body: StatefulBuilder(
+                    builder: (context, setState) {
+                      update = setState;
+                      return Row(
+                        children: [
+                          InkoraNavigation(
+                            selectedIndex: selected,
+                            onSelect: (value) =>
+                                setState(() => selected = value),
+                          ),
+                          const Expanded(child: SizedBox()),
+                        ],
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
-          ),
-        );
-        await tester.pumpAndSettle();
-        for (final key in ['Home', 'Libraries', 'Downloads', 'Settings']) {
-          final label = AppStrings(language).text(key);
-          final paragraph = tester.renderObject<RenderParagraph>(
-            find.text(label),
           );
-          final boxes = paragraph.getBoxesForSelection(
-            TextSelection(baseOffset: 0, extentOffset: label.length),
-          );
+          await tester.pumpAndSettle();
+          for (final key in ['Libraries', 'Downloads', 'Settings']) {
+            final label = AppStrings(language).text(key);
+            final paragraph = tester.renderObject<RenderParagraph>(
+              find.text(label),
+            );
+            final boxes = [
+              for (final word in RegExp(r'\S+').allMatches(label))
+                ...paragraph.getBoxesForSelection(
+                  TextSelection(baseOffset: word.start, extentOffset: word.end),
+                ),
+            ];
+            expect(boxes, isNotEmpty, reason: label);
+            expect(
+              boxes.every(
+                (box) =>
+                    box.right <= paragraph.size.width + 1 &&
+                    box.bottom <= paragraph.size.height + 1,
+              ),
+              isTrue,
+              reason: label,
+            );
+            expect(paragraph.didExceedMaxLines, false);
+          }
+          final dynamic state = tester.state(find.byType(InkoraNavigation));
+          final measured = state.labelMeasurementCount;
+          update(() => selected = 2);
+          await tester.pumpAndSettle();
           expect(
-            boxes.map((box) => box.top).toSet(),
-            hasLength(1),
-            reason: label,
+            state.labelMeasurementCount,
+            measured,
+            reason: 'Selection does not remeasure unchanged localized labels',
           );
-          expect(paragraph.didExceedMaxLines, false);
-        }
-        final dynamic state = tester.state(find.byType(InkoraNavigation));
-        final measured = state.labelMeasurementCount;
-        update(() => selected = 3);
-        await tester.pumpAndSettle();
-        expect(
-          state.labelMeasurementCount,
-          measured,
-          reason: 'Selection does not remeasure unchanged localized labels',
-        );
-        expect(tester.takeException(), isNull);
-      });
+          expect(tester.takeException(), isNull);
+        },
+      );
     }
   }
-  for (final vertical in [false, true]) {
+  for (final width in [390.0, 1024.0]) {
     for (final reducedMotion in [false, true]) {
       testWidgets(
-        'whole destination ripples then clears: $vertical/$reducedMotion',
+        'whole destination ripples then clears: $width/$reducedMotion',
         (tester) async {
           const captureKey = Key('navigation-capture');
           var selected = 0;
@@ -98,10 +107,8 @@ void main() {
                     child: RepaintBoundary(
                       key: captureKey,
                       child: SizedBox(
-                        width: vertical ? 112 : 390,
-                        height: vertical ? 400 : null,
+                        width: width,
                         child: InkoraNavigation(
-                          vertical: vertical,
                           selectedIndex: selected,
                           onSelect: (value) => selected = value,
                         ),
@@ -113,7 +120,7 @@ void main() {
             ),
           );
           await tester.pumpAndSettle();
-          expect(find.byType(InkWell), findsNWidgets(4));
+          expect(find.byType(InkWell), findsNWidgets(3));
           expect(find.text('Favorites'), findsNothing);
           Future<Uint8List> pixels() async => (await tester.runAsync(() async {
             final boundary = tester.renderObject<RenderRepaintBoundary>(
@@ -127,14 +134,17 @@ void main() {
             return bytes!.buffer.asUint8List();
           }))!;
           final before = await pixels();
-          final button = find.byKey(const Key('navigation-home'));
+          final button = find.byKey(const Key('navigation-libraries'));
           final bounds = tester.getRect(button);
           final icon = find.descendant(of: button, matching: find.byType(Icon));
           expect(bounds.contains(tester.getCenter(icon)), isTrue);
-          expect(bounds.contains(tester.getCenter(find.text('Home'))), isTrue);
+          expect(
+            bounds.contains(tester.getCenter(find.text('Libraries'))),
+            isTrue,
+          );
           expect(bounds.height, greaterThanOrEqualTo(48));
           final gesture = await tester.startGesture(
-            tester.getCenter(find.text('Home')),
+            tester.getCenter(find.text('Libraries')),
           );
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 100));
@@ -149,17 +159,17 @@ void main() {
           );
           await tester.tap(find.text('Libraries'));
           await tester.pumpAndSettle();
-          expect(selected, 1);
+          expect(selected, 0);
           await tester.tap(find.text('Downloads'));
           await tester.pumpAndSettle();
-          expect(selected, 2);
+          expect(selected, 1);
           final settingsIcon = find.descendant(
             of: find.byKey(const Key('navigation-settings')),
             matching: find.byType(Icon),
           );
           await tester.tap(settingsIcon);
           await tester.pumpAndSettle();
-          expect(selected, 3);
+          expect(selected, 2);
           expect(tester.takeException(), isNull);
         },
       );

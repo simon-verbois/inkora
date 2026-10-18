@@ -8,7 +8,7 @@ import '../../support/ui_harness.dart';
 void main() {
   for (final size in [const Size(390, 844), const Size(1024, 768)]) {
     testWidgets(
-      'four destinations and series actions work without favorites at $size',
+      'three destinations and series actions work without favorites at $size',
       (tester) async {
         tester.view.physicalSize = size;
         tester.view.devicePixelRatio = 1;
@@ -21,7 +21,7 @@ void main() {
           'libraries',
           'downloads',
           'settings',
-          'home',
+          'libraries',
         ]) {
           await tester.tap(find.byKey(ValueKey('navigation-$destination')));
           await tester.pumpAndSettle();
@@ -32,7 +32,7 @@ void main() {
                 .value
                 .uri
                 .path,
-            destination == 'home' ? '/' : '/$destination',
+            destination == 'libraries' ? '/' : '/$destination',
           );
         }
         expect(find.byKey(const Key('navigation-favorites')), findsNothing);

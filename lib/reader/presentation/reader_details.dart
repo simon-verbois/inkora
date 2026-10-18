@@ -23,7 +23,10 @@ Future<void> openReaderDetails(
         route.pathParameters['id'] == manifest.seriesId) {
       context.pop();
     } else {
-      await context.pushNamed<void>(
+      // A shell route pushed above a retained root reader duplicates the shell
+      // when goBranch restores its history. Leave the reader before returning
+      // to the shell; its existing origin remains underneath for Back.
+      context.pushReplacementNamed(
         'catalogue-detail',
         pathParameters: {'kind': 'series', 'id': manifest.seriesId!},
       );

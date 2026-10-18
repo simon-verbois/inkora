@@ -1,3 +1,5 @@
+import '../../../app/widgets/ink_surface.dart';
+
 import 'dart:async';
 
 import '../../features/library/domain/catalogue_filters.dart';
@@ -114,9 +116,10 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
     return Scaffold(
       appBar: widget.seriesId == null
           ? null
-          : AppBar(title: const LText('Downloaded volumes')),
+          : InkAppBar(title: const LText('Downloaded volumes')),
       body: SafeArea(
         top: false,
+        bottom: false,
         child: InkContent(
           child: series.when(
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -346,6 +349,11 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
                         onOpen: open,
                       ),
                     ),
+                  SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: MediaQuery.paddingOf(context).bottom + 12,
+                    ),
+                  ),
                 ],
               );
             },

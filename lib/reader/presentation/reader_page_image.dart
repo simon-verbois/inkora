@@ -1,4 +1,5 @@
 import '../../app/l10n/app_strings.dart';
+import '../../app/widgets/image_enhancement.dart';
 
 import 'dart:math' as math;
 
@@ -325,18 +326,21 @@ class _ReaderPageImageState extends State<ReaderPageImage> {
                     }
                   });
                 }
+                final raw = child as RawImage;
                 final painted = quality.filter == VisualFilter.original
                     ? child
-                    : ReaderFilteredImage(
-                        raw: child as RawImage,
-                        filter: quality.filter,
-                      );
+                    : ReaderFilteredImage(raw: raw, filter: quality.filter);
+                final enhanced = EnhancedRawImage(
+                  raw: raw,
+                  fallback: painted,
+                  colorFilter: visualColorFilter(quality.filter),
+                );
                 return ReaderTrace.sink == null
-                    ? painted
+                    ? enhanced
                     : ReaderPaintProbe(
                         page: widget.index,
-                        image: (child as RawImage).image,
-                        child: painted,
+                        image: raw.image,
+                        child: enhanced,
                       );
               },
               fit: widget.edgeToEdge || widget.fit == ReadingFit.width

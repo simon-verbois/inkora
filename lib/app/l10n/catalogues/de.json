@@ -934,5 +934,14 @@
   "Book details": "Buchdetails",
   "Open series": "Serie öffnen",
   "Page turn animation": "Animation beim Umblättern",
-  "Center page divider": "Mittlere Seitentrennlinie"
+  "Center page divider": "Mittlere Seitentrennlinie",
+  "Upscaling and sharpening": "Hochskalierung und Schärfung",
+  "Sharpen enlarged images and covers on this device. Missing detail cannot be reconstructed.": "Verbessert die Schärfe vergrößerter Bilder und Cover auf diesem Gerät. Fehlende Details lassen sich nicht rekonstruieren.",
+  "Strength": "Stärke",
+  "Off": "Aus",
+  "Gentle": "Sanft",
+  "Strong": "Stark",
+  "Floating navigation": "Schwebende Navigation",
+  "Panel opacity": "Deckkraft der Bedienfelder",
+  "Applies to navigation, headers and search. Text stays fully opaque.": "Gilt für Navigation, Kopfzeilen und Suche. Der Text bleibt vollständig undurchsichtig."
 }

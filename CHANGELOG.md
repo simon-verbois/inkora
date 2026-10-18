@@ -10,6 +10,21 @@ remain in progress.
 
 ## [Unreleased]
 
+## [2026.42.4] - 2026-10-18
+
+- Document reusable mobile usability, adaptive-layout, accessibility and performance review practices.
+
+- Extend the reader's rounded-panel style to application headers, settings and guided setup, with optional floating navigation and adjustable overlay opacity.
+- Open live catalogue search in a keyboard-safe overlay, preserving the current screen when dismissed.
+- Let reopened guided setup close directly to Settings while retaining saved choices.
+
+- Replace the Home dashboard with the library cover grid and Continue reading carousel, with bottom navigation on phones and tablets.
+- Unify quick tab fades, eased detail transitions and sheet motion while preserving reduced motion and Android predictive back.
+- Add optional image sharpening for enlarged covers, comic pages and document images, with three strengths saved on the device.
+- Keep the reader open when a Bluetooth keyboard connects, sleeps or disconnects on Android.
+- Fix blocked navigation after leaving a direct-entry reader for its series page.
+- Start catalogue loading earlier during setup and keep library defaults pending until the first refresh completes, with retry after failure.
+
 ## [2026.42.3] - 2026-10-17
 
 - Refresh reader controls with compact floating panels, direct reading actions and ebook progress seeking.

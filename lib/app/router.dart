@@ -1,4 +1,7 @@
+import 'widgets/ink_overlay_page.dart';
+import '../features/library/presentation/catalogue_presentation.dart';
 import 'inkora_page.dart';
+import 'widgets/branch_transition.dart';
 import '../app/l10n/app_strings.dart';
 import '../features/settings/presentation/setup_screen.dart';
 import 'icons/inkora_icons.dart';
@@ -34,8 +37,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     uiPreferencesProvider.select((value) => value.asData?.value.setupCompleted),
     (_, _) => refresh.notify(),
   );
-  Page<void> page(GoRouterState state, Widget child) =>
-      ref.read(uiPreferencesProvider).asData?.value.reduceMotion == true
+  Page<void> page(GoRouterState state, Widget child, {bool primary = false}) =>
+      (primary ||
+          ref.read(uiPreferencesProvider).asData?.value.reduceMotion == true)
       ? NoTransitionPage(key: state.pageKey, child: child)
       : InkoraPage(key: state.pageKey, child: child);
   final router = GoRouter(
@@ -104,7 +108,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/connections',
         pageBuilder: (_, state) => page(state, const ConnectionScreen()),
       ),
-      StatefulShellRoute.indexedStack(
+      // Old links share the same home branch, instead of creating a second
+      // catalogue navigator with independent filters/scroll/history.
+      GoRoute(
+        path: '/libraries',
+        redirect: (_, state) => Uri(
+          path: '/',
+          query: state.uri.hasQuery ? state.uri.query : null,
+        ).toString(),
+      ),
+      StatefulShellRoute(
+        navigatorContainerBuilder: (_, shell, children) =>
+            BranchTransition(index: shell.currentIndex, children: children),
         builder: (_, state, shell) => InkoraShell(
           navigationShell: shell,
           showSearch:
@@ -116,31 +131,27 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/',
-                pageBuilder: (_, state) => page(state, const LibraryScreen()),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/libraries',
-                pageBuilder: (_, state) => page(
-                  state,
-                  const CatalogueScreen(
-                    kind: CatalogueKind.series,
-                    embedded: true,
+                pageBuilder: (_, state) =>
+                    page(state, const LibraryScreen(), primary: true),
+                routes: [
+                  GoRoute(
+                    path: 'search',
+                    parentNavigatorKey: rootNavigator,
+                    pageBuilder: (context, state) => InkOverlayPage<void>(
+                      key: state.pageKey,
+                      child: CatalogueScreen(
+                        kind: CatalogueKind.series,
+                        searchMode: true,
+                        embedded: true,
+                        onOpen: (item) {
+                          // Pop the modal first so it cannot cover the destination.
+                          context.pop();
+                          openCatalogueItem(context, item);
+                        },
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              GoRoute(
-                path: '/search',
-                pageBuilder: (_, state) => page(
-                  state,
-                  const CatalogueScreen(
-                    kind: CatalogueKind.series,
-                    searchMode: true,
-                  ),
-                ),
+                ],
               ),
               GoRoute(
                 name: 'catalogue',
@@ -231,7 +242,8 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 name: 'downloads',
                 path: '/downloads',
-                pageBuilder: (_, state) => page(state, const DownloadsScreen()),
+                pageBuilder: (_, state) =>
+                    page(state, const DownloadsScreen(), primary: true),
                 routes: [
                   GoRoute(path: 'queue', redirect: (_, _) => '/downloads'),
                   GoRoute(
@@ -249,7 +261,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/settings',
-                pageBuilder: (_, state) => page(state, const SettingsScreen()),
+                pageBuilder: (_, state) =>
+                    page(state, const SettingsScreen(), primary: true),
                 routes: [
                   GoRoute(
                     path: 'servers',

@@ -1,3 +1,4 @@
+import '../../../app/widgets/ink_surface.dart';
 import '../../../app/l10n/app_strings.dart';
 
 import 'package:flutter/material.dart';
@@ -88,13 +89,16 @@ class _LibraryDefaultsScreenState extends ConsumerState<LibraryDefaultsScreen> {
         }
       });
     }
+    final refresh = libraryId == null
+        ? ref.watch(catalogueRefreshProvider)
+        : null;
     final library = libraryId == null
         ? null
         : ref.watch(catalogueItemProvider((CatalogueKind.library, libraryId)));
     return Scaffold(
       appBar: widget.embedded
           ? null
-          : AppBar(
+          : InkAppBar(
               title: Text(
                 library?.asData?.value?.title ??
                     context.tr(
@@ -154,7 +158,15 @@ class _LibraryDefaultsScreenState extends ConsumerState<LibraryDefaultsScreen> {
                   final items =
                       libraries?.asData?.value.page.items ??
                       const <CatalogueItem>[];
-                  if (libraries?.hasError == true || defaults.hasError) {
+                  final firstPublicationPending =
+                      libraries?.asData?.value.page.lastUpdated == null &&
+                      (refresh?.isLoading == true ||
+                          refresh?.asData?.value.busy == true);
+                  if (libraries?.hasError == true ||
+                      defaults.hasError ||
+                      (items.isEmpty &&
+                          (refresh?.hasError == true ||
+                              refresh?.asData?.value.message != null))) {
                     final error = InkEmptyState(
                       icon: InkIcons.warningCircle,
                       title: context.tr("Library defaults unavailable"),
@@ -163,6 +175,11 @@ class _LibraryDefaultsScreenState extends ConsumerState<LibraryDefaultsScreen> {
                       ),
                       label: context.tr("Retry"),
                       action: () {
+                        final repository = ref
+                            .read(catalogueRepositoryProvider)
+                            .asData
+                            ?.value;
+                        repository?.refresh();
                         ref.invalidate(catalogueFeedProvider(_query));
                         setState(() => _defaults = _store!.libraryDefaults());
                       },
@@ -175,7 +192,8 @@ class _LibraryDefaultsScreenState extends ConsumerState<LibraryDefaultsScreen> {
                         : error;
                   }
                   if (items.isEmpty &&
-                      (libraries?.isLoading == true ||
+                      (firstPublicationPending ||
+                          libraries?.isLoading == true ||
                           libraries?.asData?.value.loading == true)) {
                     return const Center(child: CircularProgressIndicator());
                   }

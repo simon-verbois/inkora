@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/reader/presentation/ebook_presentation.dart';
+import 'package:inkora/core/images/image_enhancement.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -21,16 +22,24 @@ void main() {
         .setMockMethodCallHandler(EbookPresentation.channel, null);
   });
   test(
-    'presentation and page turns carry only fixed boolean arguments',
+    'presentation and page turns carry only bounded configuration values',
     () async {
       expect(
-        await EbookPresentation.configure(animations: false, separator: true),
+        await EbookPresentation.configure(
+          animations: false,
+          separator: true,
+          imageEnhancement: ImageEnhancement.balanced,
+        ),
         isTrue,
       );
       expect(await EbookPresentation.turn(1, animated: false), isTrue);
       expect(await EbookPresentation.turn(-1, animated: true), isTrue);
       expect(calls.map((call) => call.method), ['configure', 'turn', 'turn']);
-      expect(calls[0].arguments, {'animations': false, 'separator': true});
+      expect(calls[0].arguments, {
+        'animations': false,
+        'separator': true,
+        'imageEnhancement': 2,
+      });
       expect(calls[1].arguments, {'forward': true, 'animated': false});
       expect(calls[2].arguments, {'forward': false, 'animated': true});
     },

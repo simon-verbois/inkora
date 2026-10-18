@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'inkora_motion.dart';
+
 /// Full-size horizontal navigation on Android, including system edge gestures.
 /// InkoraPage owns eligibility; this observer only drives the accepted route.
 class HorizontalPageTransitionsBuilder extends PageTransitionsBuilder {
   const HorizontalPageTransitionsBuilder();
   @override
-  Duration get transitionDuration => const Duration(milliseconds: 280);
+  Duration get transitionDuration => InkoraMotion.forward;
+  @override
+  Duration get reverseTransitionDuration => InkoraMotion.reverse;
   @override
   Widget buildTransitions<T>(
     PageRoute<T> route,
@@ -14,7 +18,9 @@ class HorizontalPageTransitionsBuilder extends PageTransitionsBuilder {
     Animation<double> animation,
     Animation<double> secondaryAnimation,
     Widget child,
-  ) => _HorizontalPage(route: route, animation: animation, child: child);
+  ) => MediaQuery.disableAnimationsOf(context)
+      ? child
+      : _HorizontalPage(route: route, animation: animation, child: child);
 }
 
 class _HorizontalPage extends StatefulWidget {
@@ -33,12 +39,24 @@ class _HorizontalPage extends StatefulWidget {
 class _HorizontalPageState extends State<_HorizontalPage>
     with WidgetsBindingObserver {
   late Animation<Offset> _position;
+  late Animation<Offset> _interactivePosition;
   bool _accepted = false;
+  bool _interactive = false;
   void _bind() {
-    _position = Tween<Offset>(
-      begin: const Offset(1, 0),
-      end: Offset.zero,
-    ).animate(widget.animation);
+    final tween = Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero);
+    _interactivePosition = tween.animate(widget.animation);
+    _position = tween.animate(
+      widget.animation.drive(CurveTween(curve: Curves.easeOutCubic)),
+    );
+    widget.animation.addStatusListener(_finished);
+  }
+
+  void _finished(AnimationStatus status) {
+    if (_interactive &&
+        (status == AnimationStatus.completed ||
+            status == AnimationStatus.dismissed)) {
+      setState(() => _interactive = false);
+    }
   }
 
   @override
@@ -51,7 +69,10 @@ class _HorizontalPageState extends State<_HorizontalPage>
   @override
   void didUpdateWidget(_HorizontalPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.animation != oldWidget.animation) _bind();
+    if (widget.animation != oldWidget.animation) {
+      oldWidget.animation.removeStatusListener(_finished);
+      _bind();
+    }
   }
 
   @override
@@ -60,6 +81,7 @@ class _HorizontalPageState extends State<_HorizontalPage>
       return false;
     }
     _accepted = true;
+    setState(() => _interactive = true);
     widget.route.handleStartBackGesture(progress: 1 - event.progress);
     return true;
   }
@@ -89,11 +111,14 @@ class _HorizontalPageState extends State<_HorizontalPage>
 
   @override
   void dispose() {
+    widget.animation.removeStatusListener(_finished);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) =>
-      SlideTransition(position: _position, child: widget.child);
+  Widget build(BuildContext context) => SlideTransition(
+    position: _interactive ? _interactivePosition : _position,
+    child: widget.child,
+  );
 }

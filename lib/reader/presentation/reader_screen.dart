@@ -1,3 +1,4 @@
+import '../../app/theme/inkora_motion.dart';
 import 'reader_chrome.dart';
 import 'reader_details.dart';
 import 'ebook_reader_screen.dart';
@@ -181,6 +182,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
     if (!mounted || repository == null) return;
     await showModalBottomSheet<void>(
       context: context,
+      sheetAnimationStyle: InkoraMotion.sheetStyle(context),
       isScrollControlled: true,
       builder: (_) => ReaderSettingsSheet(
         modal: true,
@@ -205,6 +207,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
     final previousSuppression = _suppressedReader;
     final changed = await showModalBottomSheet<bool>(
       context: context,
+      sheetAnimationStyle: InkoraMotion.sheetStyle(context),
       isScrollControlled: true,
       builder: (_) => ProgressSheet(
         manifest: reader.manifest,

@@ -10,6 +10,8 @@ import 'support/ui_fixture_binding.dart';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/services.dart';
+
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,6 +32,10 @@ import 'package:inkora/reader/presentation/ebook_reader_screen.dart';
 import '../test/support/connection_fakes.dart';
 import '../test/support/reader_fakes.dart';
 import 'support/ebook_fixtures.dart';
+import 'support/image_ebook_fixture.dart';
+
+import 'package:inkora/app/widgets/image_enhancement.dart';
+import 'package:inkora/core/images/image_enhancement.dart';
 
 Future<void> until(WidgetTester tester, bool Function() predicate) async {
   for (var i = 0; i < 100; i++) {
@@ -65,7 +71,12 @@ void main() {
           Directory('${root.path}/cache'),
           Directory('${root.path}/downloads'),
         );
-        final bytes = base64Decode(epub ? epubFixtureBase64 : pdfFixtureBase64);
+        const enhancementTest = bool.fromEnvironment('ENHANCEMENT_NATIVE');
+        final bytes = base64Decode(
+          epub
+              ? (enhancementTest ? imageEpubFixtureBase64 : epubFixtureBase64)
+              : pdfFixtureBase64,
+        );
         final positions = epub
             ? (jsonDecode(epubPositionsJson)['positions'] as List)
                   .map((p) => Map<String, dynamic>.from(p as Map))
@@ -134,24 +145,29 @@ void main() {
               catalogueItemProvider((CatalogueKind.book, manifest.bookId))
                   .overrideWith((ref) => Stream.value(null)),
             ],
-            child: MaterialApp(
-              theme: InkoraTheme.forest(),
-              home: EbookReaderScreen(
-                reader: OpenReader(
-                  manifest,
-                  FixturePageSource(),
-                  initial,
-                  offline: true,
-                ),
-                repository: repo,
-                settings: ReadingSettings(
-                  mode: ReadingMode.ebook,
-                  pageAnimation: animation,
-                  ebook: EbookSettings(
-                    margins: margins,
-                    font: font,
-                    columnSeparator: separator,
-                    columns: columns,
+            child: ImageEnhancementScope(
+              level: enhancementTest
+                  ? ImageEnhancement.balanced
+                  : ImageEnhancement.off,
+              child: MaterialApp(
+                theme: InkoraTheme.forest(),
+                home: EbookReaderScreen(
+                  reader: OpenReader(
+                    manifest,
+                    FixturePageSource(),
+                    initial,
+                    offline: true,
+                  ),
+                  repository: repo,
+                  settings: ReadingSettings(
+                    mode: ReadingMode.ebook,
+                    pageAnimation: animation,
+                    ebook: EbookSettings(
+                      margins: margins,
+                      font: font,
+                      columnSeparator: separator,
+                      columns: columns,
+                    ),
                   ),
                 ),
               ),
@@ -184,6 +200,19 @@ void main() {
           }
         });
         await tester.pump(const Duration(milliseconds: 500));
+        if (epub && enhancementTest) {
+          expect((await epubLayout())['enhancedImages'], greaterThan(0));
+          final state = tester.state(find.byType(ReadiumReaderWidget));
+          await EbookPresentation.configure(animations: true, separator: false);
+          expect((await epubLayout())['enhancedImages'], 0);
+          await EbookPresentation.configure(
+            animations: true,
+            separator: false,
+            imageEnhancement: ImageEnhancement.balanced,
+          );
+          expect((await epubLayout())['enhancedImages'], greaterThan(0));
+          expect(tester.state(find.byType(ReadiumReaderWidget)), same(state));
+        }
         if (epub) {
           await open(
             ReaderLocator(0),
@@ -260,6 +289,49 @@ void main() {
           }
         }
         final saved = await store.locator(manifest);
+        if (const bool.fromEnvironment('INPUT_LIFECYCLE')) {
+          const input = MethodChannel('inkora/input_configuration');
+          final before = (await input.invokeMapMethod<String, int>(
+            'snapshot',
+          ))!;
+          final publication = tester.state(
+            find.byType(epub ? ReadiumReaderWidget : PdfViewer),
+          );
+          final locator = await store.locator(manifest);
+          debugPrint('INPUT_READY_${epub ? 'EPUB' : 'PDF'}');
+          var attached = false;
+          var detached = false;
+          for (var attempt = 0; attempt < 300; attempt++) {
+            await tester.pump(const Duration(milliseconds: 100));
+            final current = (await input.invokeMapMethod<String, int>(
+              'snapshot',
+            ))!;
+            expect(current['instance'], before['instance']);
+            expect(
+              tester.state(find.byType(epub ? ReadiumReaderWidget : PdfViewer)),
+              same(publication),
+            );
+            if (current['navigation'] == 2) attached = true;
+            if (attached && current['navigation'] == before['navigation']) {
+              detached = true;
+              break;
+            }
+          }
+          expect(
+            attached,
+            isTrue,
+            reason: 'Host must register the temporary DPAD keyboard',
+          );
+          expect(
+            detached,
+            isTrue,
+            reason: 'Host must remove the temporary DPAD keyboard',
+          );
+          final after = await store.locator(manifest);
+          expect(after.pageIndex, locator.pageIndex);
+          expect(after.documentLocator, locator.documentLocator);
+          debugPrint('INPUT_RETAINED_${epub ? 'EPUB' : 'PDF'}');
+        }
         if (epub) {
           expect(saved.documentLocator, isNotNull);
         } else {

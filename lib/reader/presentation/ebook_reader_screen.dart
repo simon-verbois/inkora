@@ -1,3 +1,4 @@
+import '../../app/theme/inkora_motion.dart';
 import 'reader_chrome.dart';
 import 'reader_details.dart';
 import 'ebook_presentation.dart';
@@ -29,6 +30,8 @@ import 'package:flutter_readium/reader_widget.dart' as native;
 import 'package:go_router/go_router.dart';
 
 import '../../app/icons/inkora_icons.dart';
+import '../../app/widgets/image_enhancement.dart';
+import '../../core/images/image_enhancement.dart';
 import '../../app/l10n/app_strings.dart';
 import '../../offline/application/offline_coordinator.dart';
 import '../../offline/data/download_store.dart';
@@ -86,7 +89,8 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   bool _bookmarkDecorationsReady = false;
   bool _presentationReady = false;
   bool _disableAnimations = false;
-  (bool, bool)? _lastPresentation;
+  (bool, bool, ImageEnhancement)? _lastPresentation;
+  ImageEnhancement _imageEnhancement = ImageEnhancement.off;
   EPUBPreferences? _lastEPUBPreferences;
   bool _backgrounded = false;
   bool _rewind = false;
@@ -387,12 +391,14 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
     final value = (
       widget.settings.pageAnimation && !_disableAnimations,
       widget.settings.ebook.columnSeparator && !widget.settings.ebook.scroll,
+      _imageEnhancement,
     );
     if (!force && _lastPresentation == value) return;
     try {
       if (await EbookPresentation.configure(
         animations: value.$1,
         separator: value.$2,
+        imageEnhancement: value.$3,
       )) {
         _lastPresentation = value;
       }
@@ -405,8 +411,10 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     final reduced = MediaQuery.disableAnimationsOf(context);
-    if (_disableAnimations != reduced) {
+    final enhancement = ImageEnhancementScope.levelOf(context);
+    if (_disableAnimations != reduced || _imageEnhancement != enhancement) {
       _disableAnimations = reduced;
+      _imageEnhancement = enhancement;
       if (_publication != null) unawaited(_configurePresentation());
     }
   }
@@ -583,6 +591,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
     if (!mounted) return;
     await showModalBottomSheet<void>(
       context: context,
+      sheetAnimationStyle: InkoraMotion.sheetStyle(context),
       isScrollControlled: true,
       builder: (context) => SafeArea(
         child: SizedBox(
@@ -616,6 +625,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   Future<void> _bookmarkList() async {
     await showModalBottomSheet<void>(
       context: context,
+      sheetAnimationStyle: InkoraMotion.sheetStyle(context),
       isScrollControlled: true,
       builder: (context) => StatefulBuilder(
         builder: (context, update) => SafeArea(
@@ -771,6 +781,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   Future<void> _search() async {
     final locator = await showModalBottomSheet<Locator>(
       context: context,
+      sheetAnimationStyle: InkoraMotion.sheetStyle(context),
       isScrollControlled: true,
       builder: (context) => EbookSearchSheet(search: _searchBook),
     );
@@ -783,6 +794,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
     if (!mounted) return;
     final changed = await showModalBottomSheet<bool>(
       context: context,
+      sheetAnimationStyle: InkoraMotion.sheetStyle(context),
       isScrollControlled: true,
       builder: (context) => ProgressSheet(
         manifest: _manifest,
@@ -805,6 +817,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   Future<void> _settings() async {
     await showModalBottomSheet<void>(
       context: context,
+      sheetAnimationStyle: InkoraMotion.sheetStyle(context),
       isScrollControlled: true,
       builder: (context) => ReaderSettingsSheet(
         store: widget.repository.store,

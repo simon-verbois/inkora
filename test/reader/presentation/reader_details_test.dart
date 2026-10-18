@@ -57,14 +57,8 @@ void main() {
         expect(find.text('Series page'), findsOneWidget);
         router.pop();
         await tester.pumpAndSettle();
-        expect(
-          find.text('Home'),
-          coveredSeries ? findsOneWidget : findsNothing,
-        );
-        expect(
-          find.byType(ReaderDetailsButton),
-          coveredSeries ? findsNothing : findsOneWidget,
-        );
+        expect(find.text('Home'), findsOneWidget);
+        expect(find.byType(ReaderDetailsButton), findsNothing);
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
       },

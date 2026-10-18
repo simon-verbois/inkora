@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/images/image_enhancement.dart';
+
 /// Small typed adapter for the pinned Android EPUB navigator. No document
 /// scripts, metadata or credentials cross this channel.
 abstract final class EbookPresentation {
@@ -11,12 +13,14 @@ abstract final class EbookPresentation {
   static Future<bool> configure({
     required bool animations,
     required bool separator,
+    ImageEnhancement imageEnhancement = ImageEnhancement.off,
   }) async {
     if (!supported) return false;
     try {
       return await channel.invokeMethod<bool>('configure', {
             'animations': animations,
             'separator': separator,
+            'imageEnhancement': imageEnhancement.index,
           }) ??
           false;
     } on MissingPluginException {

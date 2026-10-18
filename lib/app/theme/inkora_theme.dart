@@ -8,9 +8,8 @@ import '../icons/inkora_icons.dart';
 abstract final class InkoraLayout {
   static const double space = 12;
   static const double pagePadding = 16;
-  static const double radius = 10;
+  static const double radius = 20;
   static const double touchTarget = 48;
-  static const double railBreakpoint = 840;
   static const double maxContentWidth = 1200;
   static const double maxSettingsWidth = 760;
   static const double coverRatio = 0.7;
@@ -224,7 +223,7 @@ abstract final class InkoraTheme {
         showDragHandle: true,
         modalBarrierColor: Colors.black54,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
       ),
       dividerTheme: DividerThemeData(

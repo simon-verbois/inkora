@@ -934,5 +934,14 @@
   "Book details": "Book details",
   "Open series": "Open series",
   "Page turn animation": "Page turn animation",
-  "Center page divider": "Center page divider"
+  "Center page divider": "Center page divider",
+  "Upscaling and sharpening": "Upscaling and sharpening",
+  "Sharpen enlarged images and covers on this device. Missing detail cannot be reconstructed.": "Sharpen enlarged images and covers on this device. Missing detail cannot be reconstructed.",
+  "Strength": "Strength",
+  "Off": "Off",
+  "Gentle": "Gentle",
+  "Strong": "Strong",
+  "Floating navigation": "Floating navigation",
+  "Panel opacity": "Panel opacity",
+  "Applies to navigation, headers and search. Text stays fully opaque.": "Applies to navigation, headers and search. Text stays fully opaque."
 }

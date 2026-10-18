@@ -4,6 +4,8 @@ import '../icons/inkora_icons.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/inkora_theme.dart';
+import 'ink_surface.dart';
+import '../theme/inkora_motion.dart';
 
 class InkoraWordmark extends StatelessWidget {
   const InkoraWordmark({super.key, this.size = 29});
@@ -42,67 +44,52 @@ class InkPanel extends StatelessWidget {
     final colors = InkoraColors.of(context);
     final contentPadding =
         padding ?? (framed ? const EdgeInsets.all(12) : EdgeInsets.zero);
-    return Material(
-      type: MaterialType.transparency,
-      child: Container(
-        decoration: framed
-            ? BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [colors.raised.withValues(alpha: .45), colors.panel],
-                ),
-                border: Border.all(color: colors.border),
-                borderRadius: BorderRadius.circular(InkoraLayout.radius),
-              )
-            : null,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (title != null)
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: framed ? 12 : 0),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: 48),
-                  child: Padding(
-                    padding: EdgeInsets.zero,
-                    child: Row(
-                      children: [
-                        if (icon != null) ...[
-                          Icon(icon, size: 22),
-                          const SizedBox(width: 10),
-                        ],
-                        Expanded(
-                          child: Semantics(
-                            header: true,
-                            child: LText(
-                              title!,
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
-                                    color: colors.heading,
-                                  ),
-                            ),
-                          ),
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (title != null)
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: framed ? 12 : 0),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Padding(
+                padding: EdgeInsets.zero,
+                child: Row(
+                  children: [
+                    if (icon != null) ...[
+                      Icon(icon, size: 22),
+                      const SizedBox(width: 10),
+                    ],
+                    Expanded(
+                      child: Semantics(
+                        header: true,
+                        child: LText(
+                          title!,
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: colors.heading,
+                              ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
-            Padding(
-              padding: title == null
-                  ? contentPadding
-                  : contentPadding
-                        .resolve(Directionality.of(context))
-                        .copyWith(top: 0),
-              child: child,
             ),
-          ],
+          ),
+        Padding(
+          padding: title == null
+              ? contentPadding
+              : contentPadding
+                    .resolve(Directionality.of(context))
+                    .copyWith(top: 0),
+          child: child,
         ),
-      ),
+      ],
     );
+    return framed ? InkSurface(child: content) : content;
   }
 }
 
@@ -122,41 +109,6 @@ class InkContent extends StatelessWidget {
       child: child,
     ),
   );
-}
-
-/// A small background overlay softens scrolling content under the app header.
-/// It adds no layout inset and never consumes gestures or reader image memory.
-class InkTopFade extends StatelessWidget {
-  const InkTopFade({super.key, required this.child});
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final background = Theme.of(context).scaffoldBackgroundColor;
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        child,
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 18,
-          child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [background, background.withValues(alpha: 0)],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 class InkEmptyState extends StatelessWidget {
@@ -223,15 +175,17 @@ class InkSettingsRow extends StatelessWidget {
   final VoidCallback? onTap;
   final Widget? trailing;
   @override
-  Widget build(BuildContext context) => Material(
-    type: MaterialType.transparency,
-    child: ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      leading: Icon(icon),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-      subtitle: subtitle == null ? null : LText(subtitle!),
-      onTap: onTap,
-      trailing: trailing ?? const Icon(InkIcons.caretRight),
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: InkSurface(
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        leading: Icon(icon),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+        subtitle: subtitle == null ? null : LText(subtitle!),
+        onTap: onTap,
+        trailing: trailing ?? const Icon(InkIcons.caretRight),
+      ),
     ),
   );
 }
@@ -241,16 +195,25 @@ Future<T?> showInkSheet<T>({
   required Widget child,
 }) => showModalBottomSheet<T>(
   context: context,
+  sheetAnimationStyle: InkoraMotion.sheetStyle(context),
   isScrollControlled: true,
   useRootNavigator: true,
   useSafeArea: true,
-  builder: (context) => ConstrainedBox(
-    constraints: BoxConstraints(
-      maxHeight: MediaQuery.sizeOf(context).height * .85,
+  backgroundColor: Colors.transparent,
+  showDragHandle: false,
+  constraints: const BoxConstraints(maxWidth: 784),
+  builder: (context) => Padding(
+    padding: EdgeInsets.fromLTRB(
+      12,
+      8,
+      12,
+      12 + MediaQuery.viewInsetsOf(context).bottom,
     ),
-    child: Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: child,
+    child: ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * .85,
+      ),
+      child: InkOverlaySurface(child: child),
     ),
   ),
 );

@@ -1,3 +1,5 @@
+import 'package:inkora/features/library/presentation/catalogue_screen.dart';
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -95,10 +97,15 @@ void main() {
           router.pop();
           await tester.pumpAndSettle();
           expect(router.routeInformationProvider.value.uri.path, '/');
-          router.go('/libraries');
+          router.go('/');
           await tester.pumpAndSettle();
           await tester.scrollUntilVisible(
-            find.text('Novel a'),
+            find.descendant(
+              of: find.byKey(
+                Key(scale > 1.5 ? 'catalogue-list' : 'catalogue-grid'),
+              ),
+              matching: find.text('Novel a'),
+            ),
             180,
             scrollable: find
                 .descendant(
@@ -107,7 +114,7 @@ void main() {
                 )
                 .first,
           );
-          expect(find.text('Novel a'), findsOneWidget);
+          expect(find.text('Novel a'), findsWidgets);
           expect(
             find.text('An author'),
             findsWidgets,
@@ -128,14 +135,22 @@ void main() {
           );
           await tester.pump(const Duration(milliseconds: 250));
           await tester.pumpAndSettle();
-          expect(
-            find
-                .text('Novel c', findRichText: false)
-                .evaluate()
-                .where((element) => element.widget is Text),
-            hasLength(1),
+          final searchOverlay = find.byWidgetPredicate(
+            (widget) => widget is CatalogueScreen && widget.searchMode,
           );
-          expect(find.text('Novel a'), findsNothing);
+          expect(
+            find.descendant(
+              of: searchOverlay,
+              matching: find.byWidgetPredicate(
+                (widget) => widget is Text && widget.data == 'Novel c',
+              ),
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.descendant(of: searchOverlay, matching: find.text('Novel a')),
+            findsNothing,
+          );
           expect(tester.takeException(), isNull);
           await harness.close(tester);
         },
@@ -213,7 +228,7 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        expect(find.text('Novel a'), findsOneWidget);
+        expect(find.text('Novel a'), findsWidgets);
         expect(find.text('Saved series'), findsNothing);
         await tester.tap(find.text('Novel a'));
         await tester.pumpAndSettle();

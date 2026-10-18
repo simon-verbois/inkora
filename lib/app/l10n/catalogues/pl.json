@@ -934,5 +934,14 @@
   "Book details": "Szczegóły książki",
   "Open series": "Otwórz serię",
   "Page turn animation": "Animacja przewracania stron",
-  "Center page divider": "Środkowy separator stron"
+  "Center page divider": "Środkowy separator stron",
+  "Upscaling and sharpening": "Skalowanie w górę i wyostrzanie",
+  "Sharpen enlarged images and covers on this device. Missing detail cannot be reconstructed.": "Wyostrzanie powiększonych obrazów i okładek na tym urządzeniu. Brakujących szczegółów nie da się odtworzyć.",
+  "Strength": "Siła",
+  "Off": "Wyłączone",
+  "Gentle": "Delikatna",
+  "Strong": "Duża",
+  "Floating navigation": "Pływająca nawigacja",
+  "Panel opacity": "Nieprzezroczystość paneli",
+  "Applies to navigation, headers and search. Text stays fully opaque.": "Dotyczy to nawigacji, nagłówków i wyszukiwania. Tekst pozostaje w pełni nieprzezroczysty."
 }

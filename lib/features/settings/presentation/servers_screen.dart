@@ -1,3 +1,4 @@
+import '../../../app/widgets/ink_surface.dart';
 import '../../../app/l10n/app_strings.dart';
 
 import 'package:flutter/material.dart';
@@ -83,112 +84,117 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     final state = ref.watch(sessionProvider);
     final saved = ref.watch(savedSessionsProvider);
     return Scaffold(
-      appBar: AppBar(title: const LText('Servers and account')),
-      body: InkContent(
-        maxWidth: InkoraLayout.maxSettingsWidth,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            if (state.session != null) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          LText(
-                            'Server',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 8),
-                          SelectableText(
-                            state.session!.endpoint.uri.toString(),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 24),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          LText(
-                            'Active account',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 8),
-                          SelectableText(state.session!.user.email),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Center(
-                child: TextButton.icon(
-                  icon: const Icon(InkIcons.signOut),
-                  label: const LText('Sign out'),
-                  onPressed: _busy ? null : _signOut,
-                ),
-              ),
-              const Divider(height: 32),
-              LibraryVisibilityPanel(key: ValueKey(state.session!.accountId)),
-              const Divider(height: 32),
-            ],
-            LText(
-              'Saved servers',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            ...saved.when(
-              loading: () => [const LinearProgressIndicator()],
-              error: (_, _) => [
-                TextButton(
-                  onPressed: () => ref.invalidate(savedSessionsProvider),
-                  child: const LText('Retry loading servers'),
-                ),
-              ],
-              data: (sessions) => [
-                for (final session in sessions)
-                  ListTile(
-                    key: ValueKey(session.accountId),
-                    leading: Icon(
-                      session.accountId == state.session?.accountId
-                          ? InkIcons.checkCircle
-                          : InkIcons.books,
-                    ),
-                    title: Text(session.endpoint.uri.host),
-                    subtitle: LText(
-                      "{0}\n{1}",
-                      arguments: [session.endpoint.uri, session.user.email],
-                    ),
-                    isThreeLine: true,
-                    selected: session.accountId == state.session?.accountId,
-                    onTap: _busy ? null : () => _select(session),
-                    trailing: IconButton(
-                      tooltip: context.tr('Remove server {0}', [
-                        session.endpoint.uri.host,
-                      ]),
-                      icon: const Icon(InkIcons.trash),
-                      onPressed: _busy ? null : () => _remove(session),
-                    ),
+      appBar: InkAppBar(title: const LText('Servers and account')),
+      body: SafeArea(
+        top: false,
+        child: InkContent(
+          maxWidth: InkoraLayout.maxSettingsWidth,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              if (state.session != null) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
                   ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            LText(
+                              'Server',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 8),
+                            SelectableText(
+                              state.session!.endpoint.uri.toString(),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            LText(
+                              'Active account',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 8),
+                            SelectableText(state.session!.user.email),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Center(
+                  child: TextButton.icon(
+                    icon: const Icon(InkIcons.signOut),
+                    label: const LText('Sign out'),
+                    onPressed: _busy ? null : _signOut,
+                  ),
+                ),
+                const Divider(height: 32),
+                LibraryVisibilityPanel(key: ValueKey(state.session!.accountId)),
+                const Divider(height: 32),
               ],
-            ),
-            const SizedBox(height: 12),
-            ListTile(
-              key: const Key('add-server'),
-              leading: const Icon(InkIcons.books),
-              title: const LText('Add server'),
-              trailing: const Icon(InkIcons.caretRight),
-              onTap: _busy ? null : () => context.push('/settings/servers/add'),
-            ),
-          ],
+              LText(
+                'Saved servers',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              ...saved.when(
+                loading: () => [const LinearProgressIndicator()],
+                error: (_, _) => [
+                  TextButton(
+                    onPressed: () => ref.invalidate(savedSessionsProvider),
+                    child: const LText('Retry loading servers'),
+                  ),
+                ],
+                data: (sessions) => [
+                  for (final session in sessions)
+                    ListTile(
+                      key: ValueKey(session.accountId),
+                      leading: Icon(
+                        session.accountId == state.session?.accountId
+                            ? InkIcons.checkCircle
+                            : InkIcons.books,
+                      ),
+                      title: Text(session.endpoint.uri.host),
+                      subtitle: LText(
+                        "{0}\n{1}",
+                        arguments: [session.endpoint.uri, session.user.email],
+                      ),
+                      isThreeLine: true,
+                      selected: session.accountId == state.session?.accountId,
+                      onTap: _busy ? null : () => _select(session),
+                      trailing: IconButton(
+                        tooltip: context.tr('Remove server {0}', [
+                          session.endpoint.uri.host,
+                        ]),
+                        icon: const Icon(InkIcons.trash),
+                        onPressed: _busy ? null : () => _remove(session),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                key: const Key('add-server'),
+                leading: const Icon(InkIcons.books),
+                title: const LText('Add server'),
+                trailing: const Icon(InkIcons.caretRight),
+                onTap: _busy
+                    ? null
+                    : () => context.push('/settings/servers/add'),
+              ),
+            ],
+          ),
         ),
       ),
     );

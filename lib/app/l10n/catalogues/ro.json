@@ -934,5 +934,14 @@
   "Book details": "Detalii despre carte",
   "Open series": "Deschideți seria",
   "Page turn animation": "Animația de răsfoire a paginilor",
-  "Center page divider": "Separator central de pagină"
+  "Center page divider": "Separator central de pagină",
+  "Upscaling and sharpening": "Mărirea rezoluției și accentuarea contururilor",
+  "Sharpen enlarged images and covers on this device. Missing detail cannot be reconstructed.": "Îmbunătățiți claritatea imaginilor și a coperților mărite pe acest dispozitiv. Detaliile lipsă nu pot fi reconstituite.",
+  "Strength": "Intensitate",
+  "Off": "Oprit",
+  "Gentle": "Ușor",
+  "Strong": "Puternic",
+  "Floating navigation": "Navigare flotantă",
+  "Panel opacity": "Opacitatea panourilor",
+  "Applies to navigation, headers and search. Text stays fully opaque.": "Se aplică la navigare, anteturi și căutare. Textul rămâne complet opac."
 }

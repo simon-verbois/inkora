@@ -48,26 +48,11 @@ class SetupIntroduction extends StatelessWidget {
           ),
         ])
           Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(feature.$1, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      LText(
-                        feature.$2,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 4),
-                      LText(feature.$3),
-                    ],
-                  ),
-                ),
-              ],
+            padding: const EdgeInsets.only(bottom: 12),
+            child: InkPanel(
+              title: feature.$2,
+              icon: feature.$1,
+              child: LText(feature.$3),
             ),
           ),
       ],

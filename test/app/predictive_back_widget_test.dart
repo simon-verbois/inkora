@@ -55,7 +55,7 @@ void main() {
             // the gesture, whether its origin is Home or series details.
             router.go('/settings/appearance');
             await tester.pumpAndSettle();
-            router.go(fromHome ? '/' : '/libraries');
+            router.go(fromHome ? '/' : '/');
             await tester.pumpAndSettle();
             if (fromHome) {
               await tester.tap(find.byKey(const ValueKey('resume-book-a')));

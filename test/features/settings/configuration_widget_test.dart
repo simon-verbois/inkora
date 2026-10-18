@@ -25,7 +25,7 @@ void main({bool includeLifecycle = true}) {
         addTearDown(() => harness.close(tester));
         await harness.mount(tester);
         final router = harness.container.read(routerProvider);
-        router.go('/libraries');
+        router.go('/');
         await tester.pumpAndSettle();
         router.push<void>('/catalogue/series/series-a');
         await tester.pumpAndSettle();
@@ -39,7 +39,7 @@ void main({bool includeLifecycle = true}) {
         expect(find.byType(CatalogueDetailScreen), findsOneWidget);
         await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();
-        expect(router.routeInformationProvider.value.uri.path, '/libraries');
+        expect(router.routeInformationProvider.value.uri.path, '/');
         expect(find.byType(CatalogueDetailScreen), findsNothing);
         expect(tester.takeException(), isNull);
         await harness.close(tester);

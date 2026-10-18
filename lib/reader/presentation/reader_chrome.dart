@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/icons/inkora_icons.dart';
+import '../../app/widgets/ink_surface.dart';
 import '../../app/l10n/app_strings.dart';
 
 /// Retained publication surfaces sit behind these small, opaque control panels.
@@ -18,16 +19,7 @@ class ReaderPanel extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(12, top ? 8 : 0, 12, top ? 0 : 12),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 760),
-        child: Material(
-          color: Theme.of(context).colorScheme.surfaceContainer,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(
-              color: Theme.of(context).colorScheme.outlineVariant,
-            ),
-          ),
-          child: Padding(padding: const EdgeInsets.all(8), child: child),
-        ),
+        child: InkSurface(padding: const EdgeInsets.all(8), child: child),
       ),
     ),
   );

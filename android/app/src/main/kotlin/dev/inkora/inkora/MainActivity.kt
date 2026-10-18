@@ -18,6 +18,23 @@ class MainActivity : FlutterFragmentActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         ebookPresentation = EbookPresentation(this, flutterEngine.dartExecutor.binaryMessenger)
+        // Fixed, read-only scalar probe for real input-device lifecycle tests.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "inkora/input_configuration")
+            .setMethodCallHandler { call, result ->
+                if (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE == 0 || call.method != "snapshot") {
+                    result.notImplemented()
+                } else {
+                    val config = resources.configuration
+                    result.success(mapOf(
+                        "instance" to System.identityHashCode(this),
+                        "keyboard" to config.keyboard,
+                        "keyboardHidden" to config.keyboardHidden,
+                        "hardKeyboardHidden" to config.hardKeyboardHidden,
+                        "navigation" to config.navigation,
+                        "navigationHidden" to config.navigationHidden,
+                    ))
+                }
+            }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "inkora/download_background")
             .setMethodCallHandler { call, result ->
                 try {

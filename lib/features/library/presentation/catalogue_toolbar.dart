@@ -16,6 +16,7 @@ class CatalogueToolbar extends StatelessWidget {
     required this.controlPrefix,
     this.listView,
     this.onView,
+    this.showSearch = true,
   });
   final Widget leading, sort;
   final bool searchOpen, filtered;
@@ -23,6 +24,7 @@ class CatalogueToolbar extends StatelessWidget {
   final VoidCallback onSearch, onFilters;
   final VoidCallback? onView;
   final String controlPrefix;
+  final bool showSearch;
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(12, 4, 8, 0),
@@ -31,13 +33,14 @@ class CatalogueToolbar extends StatelessWidget {
         Expanded(
           child: Align(alignment: Alignment.centerLeft, child: leading),
         ),
-        IconButton(
-          key: Key('$controlPrefix-search-toggle'),
-          tooltip: context.tr('Search this view'),
-          isSelected: searchOpen,
-          icon: const Icon(InkIcons.magnifyingGlass, size: 20),
-          onPressed: onSearch,
-        ),
+        if (showSearch)
+          IconButton(
+            key: Key('$controlPrefix-search-toggle'),
+            tooltip: context.tr('Search this view'),
+            isSelected: searchOpen,
+            icon: const Icon(InkIcons.magnifyingGlass, size: 20),
+            onPressed: onSearch,
+          ),
         IconButton(
           key: Key('$controlPrefix-filters'),
           tooltip: context.tr('Filters'),

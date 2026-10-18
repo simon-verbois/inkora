@@ -1,6 +1,7 @@
 import '../domain/ebook_locator.dart';
 import 'reading_colors.dart';
 import '../../app/l10n/app_strings.dart';
+import '../../app/widgets/image_enhancement.dart';
 
 import 'dart:math' as math;
 
@@ -136,63 +137,65 @@ class _EbookPdfSurfaceState extends State<EbookPdfSurface>
   }
 
   @override
-  Widget build(BuildContext context) => PdfViewer.file(
-    widget.path,
-    controller: widget.controller,
-    initialPageNumber: widget.initialPage,
-    params: PdfViewerParams(
-      backgroundColor: widget.settings.background.paperColor,
-      layoutPages: widget.settings.ebook.scroll ? null : _horizontal,
-      pageDropShadow: null,
-      margin: 12,
-      limitRenderingCache: true,
-      maxImageBytesCachedOnMemory: _trimmed
-          ? 16 * 1024 * 1024
-          : 64 * 1024 * 1024,
-      horizontalCacheExtent: .5,
-      verticalCacheExtent: .5,
-      sizeDelegateProvider: PdfViewerSizeDelegateProviderSmart(
-        maxPagesVisible: 1,
-      ),
-      errorBannerBuilder: (context, error, stack, document) =>
-          const Center(child: LText('Unable to read this ebook.')),
-      textSelectionParams: PdfTextSelectionParams(
-        onTextSelectionChange: (selection) {
-          if (selection.hasSelectedText) widget.onTextSelected?.call();
+  Widget build(BuildContext context) => EnhancedDocumentSurface(
+    child: PdfViewer.file(
+      widget.path,
+      controller: widget.controller,
+      initialPageNumber: widget.initialPage,
+      params: PdfViewerParams(
+        backgroundColor: widget.settings.background.paperColor,
+        layoutPages: widget.settings.ebook.scroll ? null : _horizontal,
+        pageDropShadow: null,
+        margin: 12,
+        limitRenderingCache: true,
+        maxImageBytesCachedOnMemory: _trimmed
+            ? 16 * 1024 * 1024
+            : 64 * 1024 * 1024,
+        horizontalCacheExtent: .5,
+        verticalCacheExtent: .5,
+        sizeDelegateProvider: PdfViewerSizeDelegateProviderSmart(
+          maxPagesVisible: 1,
+        ),
+        errorBannerBuilder: (context, error, stack, document) =>
+            const Center(child: LText('Unable to read this ebook.')),
+        textSelectionParams: PdfTextSelectionParams(
+          onTextSelectionChange: (selection) {
+            if (selection.hasSelectedText) widget.onTextSelected?.call();
+          },
+        ),
+        pagePaintCallbacks: [_paintBookmarks],
+        customizeContextMenuItems: (params, items) {
+          if (widget.onBookmark != null &&
+              params.textSelectionDelegate.hasSelectedText &&
+              params.textSelectionDelegate.isCopyAllowed) {
+            items.insert(
+              0,
+              ContextMenuButtonItem(
+                label: context.tr('Add bookmark'),
+                onPressed: () => _bookmarkSelection(params),
+              ),
+            );
+          }
+        },
+        onViewerReady: (document, controller) {
+          final page = controller.pageNumber ?? widget.initialPage;
+          final matrix = widget.settings.fit == ReadingFit.width
+              ? controller.calcMatrixFitWidthForPage(pageNumber: page)
+              : controller.calcMatrixForFit(pageNumber: page);
+          if (matrix != null) controller.value = matrix;
+        },
+        onPageChanged: (page) {
+          if (page != null) widget.onPage(page);
+        },
+        onGeneralTap: (context, controller, details) {
+          if (details.type == PdfViewerGeneralTapType.tap &&
+              details.tapOn != PdfViewerPart.selectedText) {
+            widget.onToggleControls();
+            return true;
+          }
+          return false;
         },
       ),
-      pagePaintCallbacks: [_paintBookmarks],
-      customizeContextMenuItems: (params, items) {
-        if (widget.onBookmark != null &&
-            params.textSelectionDelegate.hasSelectedText &&
-            params.textSelectionDelegate.isCopyAllowed) {
-          items.insert(
-            0,
-            ContextMenuButtonItem(
-              label: context.tr('Add bookmark'),
-              onPressed: () => _bookmarkSelection(params),
-            ),
-          );
-        }
-      },
-      onViewerReady: (document, controller) {
-        final page = controller.pageNumber ?? widget.initialPage;
-        final matrix = widget.settings.fit == ReadingFit.width
-            ? controller.calcMatrixFitWidthForPage(pageNumber: page)
-            : controller.calcMatrixForFit(pageNumber: page);
-        if (matrix != null) controller.value = matrix;
-      },
-      onPageChanged: (page) {
-        if (page != null) widget.onPage(page);
-      },
-      onGeneralTap: (context, controller, details) {
-        if (details.type == PdfViewerGeneralTapType.tap &&
-            details.tapOn != PdfViewerPart.selectedText) {
-          widget.onToggleControls();
-          return true;
-        }
-        return false;
-      },
     ),
   );
 }

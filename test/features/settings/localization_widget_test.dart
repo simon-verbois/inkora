@@ -29,7 +29,7 @@ void main() {
         addTearDown(() => harness.close(tester));
         await harness.mount(tester);
         final strings = AppStrings(language);
-        expect(find.text(strings.text('Home')), findsOneWidget);
+        expect(find.text(strings.text('Libraries')), findsOneWidget);
         expect(find.text('Moonlit District'), findsWidgets);
         await tester.tap(find.byKey(const Key('navigation-settings')));
         await tester.pumpAndSettle();

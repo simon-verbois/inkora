@@ -12,6 +12,7 @@ import '../offline/application/offline_coordinator.dart';
 import '../features/settings/application/ui_preferences_provider.dart';
 import '../features/settings/domain/ui_preferences.dart';
 import 'theme/inkora_theme.dart';
+import 'widgets/image_enhancement.dart';
 
 class InkoraApp extends ConsumerWidget {
   const InkoraApp({super.key});
@@ -82,7 +83,7 @@ class InkoraApp extends ConsumerWidget {
               preferences.textScale,
             ),
           ),
-          child: child!,
+          child: ImageEnhancementHost(child: child!),
         );
       },
       routerConfig: ref.watch(routerProvider),

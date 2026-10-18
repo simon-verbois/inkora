@@ -1,3 +1,4 @@
+import '../../../app/widgets/ink_surface.dart';
 import '../../../app/widgets/inkora_widgets.dart';
 import '../../../app/icons/inkora_icons.dart';
 import 'preference_labels.dart';
@@ -6,6 +7,7 @@ import 'setup_introduction.dart';
 import '../../../app/l10n/app_strings.dart';
 import '../../../reader/presentation/reader_settings_sheet.dart';
 import '../../connection/application/session_controller.dart';
+import '../../library/application/catalogue_providers.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,13 +25,13 @@ class SetupScreen extends ConsumerStatefulWidget {
 
 class _SetupScreenState extends ConsumerState<SetupScreen> {
   static const _sections = [
-    'language',
-    'introduction',
-    'appearance',
-    'gestures',
-    'library-defaults',
-    'downloads',
-    'accessibility',
+    ('language', 'Language'),
+    ('introduction', 'Welcome to Inkora'),
+    ('appearance', 'Appearance'),
+    ('gestures', 'Reading gestures'),
+    ('library-defaults', 'Library defaults'),
+    ('downloads', 'Downloads'),
+    ('accessibility', 'Accessibility'),
   ];
   bool _saving = false;
   late int? _editingStep = widget.editing ? 0 : null;
@@ -44,6 +46,8 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       setState(() => _libraryId = null);
     } else if (step > 0) {
       _move(step - 1);
+    } else if (widget.editing) {
+      context.go('/settings');
     }
   }
 
@@ -91,6 +95,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Start the existing account refresh while the user configures the first
+    // steps, and retain its owner when moving between setup sections.
+    ref.listen(catalogueRepositoryProvider, (_, _) {});
     final account = ref.watch(
       sessionProvider.select((state) => state.session?.accountId),
     );
@@ -113,15 +120,23 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         if (!didPop) _back(step);
       },
       child: Scaffold(
-        appBar: AppBar(
+        appBar: InkAppBar(
           automaticallyImplyLeading: false,
           title: const LText('Make Inkora yours'),
+          actions: [
+            if (widget.editing)
+              CloseButton(
+                onPressed: _saving ? null : () => context.go('/settings'),
+              ),
+          ],
         ),
         body: SafeArea(
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(
+                  MediaQuery.textScalerOf(context).scale(1) > 1.5 ? 8 : 16,
+                ),
                 child: Column(
                   children: [
                     LText(
@@ -130,6 +145,11 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                     ),
                     const SizedBox(height: 8),
                     LinearProgressIndicator(
+                      semanticsLabel: context.tr(
+                        step < _sections.length
+                            ? _sections[step].$2
+                            : 'Ready to read',
+                      ),
                       value: (step + 1) / (_sections.length + 1),
                     ),
                   ],
@@ -137,7 +157,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
               ),
               Expanded(
                 child: step < _sections.length
-                    ? _sections[step] == 'library-defaults'
+                    ? _sections[step].$1 == 'library-defaults'
                           ? LibraryDefaultsScreen(
                               key: ValueKey(_libraryId),
                               embedded: true,
@@ -147,11 +167,11 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                                   setState(() => _libraryId = id),
                               onSaved: () => setState(() => _libraryId = null),
                             )
-                          : _sections[step] == 'introduction'
+                          : _sections[step].$1 == 'introduction'
                           ? const SetupIntroduction()
                           : SettingsScreen(
                               key: ValueKey(step),
-                              section: _sections[step],
+                              section: _sections[step].$1,
                               embedded: true,
                             )
                     : Center(
@@ -230,40 +250,45 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                   child: LText(_error!),
                 ),
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(
+                  MediaQuery.textScalerOf(context).scale(1) > 1.5 ? 8 : 16,
+                ),
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 420),
-                    child: IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              key: const Key('setup-back'),
-                              onPressed: _saving || step == 0
-                                  ? null
-                                  : () => _back(step),
-                              child: const LText(
-                                'Back',
-                                textAlign: TextAlign.center,
+                    child: InkSurface(
+                      padding: const EdgeInsets.all(8),
+                      child: IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                key: const Key('setup-back'),
+                                onPressed: _saving || step == 0
+                                    ? null
+                                    : () => _back(step),
+                                child: const LText(
+                                  'Back',
+                                  textAlign: TextAlign.center,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: FilledButton(
-                              key: const Key('setup-next'),
-                              onPressed: _saving ? null : () => _next(step),
-                              child: LText(
-                                step == _sections.length
-                                    ? 'Start reading'
-                                    : 'Next',
-                                textAlign: TextAlign.center,
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: FilledButton(
+                                key: const Key('setup-next'),
+                                onPressed: _saving ? null : () => _next(step),
+                                child: LText(
+                                  step == _sections.length
+                                      ? 'Start reading'
+                                      : 'Next',
+                                  textAlign: TextAlign.center,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),

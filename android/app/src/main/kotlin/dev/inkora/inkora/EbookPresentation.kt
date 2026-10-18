@@ -24,6 +24,7 @@ import org.readium.r2.navigator.util.DirectionalNavigationAdapter
 class EbookPresentation(private val activity: FlutterFragmentActivity, messenger: BinaryMessenger) {
     private var animations = true
     private var separator = false
+    private var imageEnhancement = 0
     private val navigators = mutableSetOf<EpubNavigatorFragment>()
     private val jobs = mutableMapOf<EpubNavigatorFragment, Job>()
     private val callbacks = object : FragmentManager.FragmentLifecycleCallbacks() {
@@ -68,11 +69,13 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
                 "configure" -> {
                     val animationValue = args?.get("animations") as? Boolean
                     val separatorValue = args?.get("separator") as? Boolean
-                    if (animationValue == null || separatorValue == null) {
+                    val imageValue = (args?.get("imageEnhancement") as? Number)?.toInt() ?: 0
+                    if (animationValue == null || separatorValue == null || imageValue !in 0..3) {
                         result.error("invalid_argument", "Expected presentation booleans.", null)
                     } else {
                         animations = animationValue
                         separator = separatorValue
+                        imageEnhancement = imageValue
                         activity.lifecycleScope.launch {
                             navigators.toList().forEach { applyDivider(it) }
                             result.success(true)
@@ -102,7 +105,7 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
                     } else activity.lifecycleScope.launch {
                         try {
                             result.success(ReadiumReader.epubEvaluateJavascript(
-                                "JSON.stringify({columns:getComputedStyle(document.documentElement).columnCount,rule:getComputedStyle(document.documentElement).columnRuleStyle,width:getComputedStyle(document.documentElement).columnRuleWidth})"
+                                "JSON.stringify({columns:getComputedStyle(document.documentElement).columnCount,rule:getComputedStyle(document.documentElement).columnRuleStyle,width:getComputedStyle(document.documentElement).columnRuleWidth,enhancedImages:document.querySelectorAll('.inkora-enhanced-image').length})"
                             ))
                         } catch (_: Exception) { result.success(null) }
                     }
@@ -118,8 +121,48 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
             // CSS draws a rule only between actual columns. Single-column and
             // fixed-layout pages never get a spurious Flutter overlay line.
             val rule = if (separator) "1px solid black" else "none"
+            val amount = doubleArrayOf(0.0, 0.2, 0.45, 0.7)[imageEnhancement]
+            val kernel = "0 ${-amount} 0 ${-amount} ${1 + 4 * amount} ${-amount} 0 ${-amount} 0"
             navigator.evaluateJavascript(
-                "document.documentElement.style.setProperty('column-rule', '$rule', 'important');"
+                """(() => {
+                  document.documentElement.style.setProperty('column-rule', '$rule', 'important');
+                  window.__inkoraImageObserver?.disconnect();
+                  document.querySelectorAll('.inkora-enhanced-image').forEach(i => i.classList.remove('inkora-enhanced-image'));
+                  document.getElementById('inkora-enhancement-style')?.remove();
+                  document.getElementById('inkora-enhancement-svg')?.remove();
+                  if ($amount > 0 && document.querySelector('img,svg image')) {
+                    const ns = 'http://www.w3.org/2000/svg';
+                    const svg = document.createElementNS(ns,'svg');
+                    svg.id = 'inkora-enhancement-svg';
+                    svg.setAttribute('width','0'); svg.setAttribute('height','0');
+                    svg.style.position = 'absolute'; svg.style.pointerEvents = 'none';
+                    const filter = document.createElementNS(ns,'filter');
+                    filter.id = 'inkora-image-enhancement';
+                    filter.setAttribute('color-interpolation-filters','sRGB');
+                    const convolution = document.createElementNS(ns,'feConvolveMatrix');
+                    convolution.setAttribute('order','3');
+                    convolution.setAttribute('kernelMatrix','$kernel');
+                    convolution.setAttribute('divisor','1');
+                    convolution.setAttribute('edgeMode','duplicate');
+                    convolution.setAttribute('preserveAlpha','true');
+                    filter.appendChild(convolution); svg.appendChild(filter);
+                    document.documentElement.appendChild(svg);
+                    const style = document.createElement('style');
+                    style.id = 'inkora-enhancement-style';
+                    style.textContent = '.inkora-enhanced-image{filter:url(#inkora-image-enhancement) !important}';
+                    document.documentElement.appendChild(style);
+                    // Limit extra native filter surfaces to 2 Mi pixels/image.
+                    // ResizeObserver reacts to layout/reflow, never scroll pixels.
+                    const update = image => {
+                      const r = image.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+                      image.classList.toggle('inkora-enhanced-image',r.width > 0 && r.height > 0 && r.width*d <= 4096 && r.height*d <= 4096 && r.width*r.height*d*d <= 2097152);
+                    };
+                    const observer = new ResizeObserver(entries => entries.forEach(e => update(e.target)));
+                    document.querySelectorAll('img,svg image').forEach(image => {update(image);observer.observe(image)});
+                    window.__inkoraImageObserver = observer;
+                  }
+                  return true;
+                })()"""
             )
         } catch (cancelled: CancellationException) {
             throw cancelled

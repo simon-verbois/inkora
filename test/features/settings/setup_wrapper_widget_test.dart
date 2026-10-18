@@ -170,12 +170,20 @@ void main() {
     await tester.tap(next);
     await tester.pumpAndSettle();
     expect(find.text('Welcome to Inkora'), findsOneWidget);
-    expect(
-      find.text(
-        'Read EPUB and PDF books with adjustable text, bookmarks and synchronized progress.',
-      ),
-      findsOneWidget,
+    final ebookIntroduction = find.text(
+      'Read EPUB and PDF books with adjustable text, bookmarks and synchronized progress.',
     );
+    await tester.scrollUntilVisible(
+      ebookIntroduction,
+      120,
+      scrollable: find
+          .descendant(
+            of: find.byType(ListView).last,
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    expect(ebookIntroduction, findsOneWidget);
     expect(find.byType(ReaderSettingsSheet), findsNothing);
     for (var step = 1; step < 7; step++) {
       expect(find.text('Keep current reading settings'), findsNothing);

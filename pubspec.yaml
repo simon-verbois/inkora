@@ -37,6 +37,9 @@ dev_dependencies:
 
 
 flutter:
+  shaders:
+    - assets/shaders/image_enhancement.frag
+    - assets/shaders/surface_enhancement.frag
 
   uses-material-design: true
   assets:

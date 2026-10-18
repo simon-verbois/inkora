@@ -1,3 +1,4 @@
+import '../../../app/widgets/ink_surface.dart';
 import '../../../app/widgets/ink_slider.dart';
 import 'about_content.dart';
 import 'preference_labels.dart';
@@ -21,6 +22,7 @@ import '../application/ui_preferences_provider.dart';
 import '../domain/ui_preferences.dart';
 import 'appearance_picker.dart';
 import 'library_defaults_screen.dart';
+import 'image_enhancement_control.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({
@@ -65,7 +67,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       return InkContent(
         maxWidth: InkoraLayout.maxSettingsWidth,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            16 + MediaQuery.paddingOf(context).bottom,
+          ),
           children: [
             LText('Settings', style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 12),
@@ -110,7 +117,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       return Scaffold(
         appBar: widget.embedded
             ? null
-            : AppBar(
+            : InkAppBar(
                 title: LText(section == 'quality' ? 'Quality' : 'Reading'),
               ),
         body: InkContent(
@@ -127,6 +134,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     key: ValueKey(account),
                     store: ReaderStore(snapshot.requireData, account),
                     qualityOnly: section == 'quality',
+                    qualityHeader: section == 'quality'
+                        ? const ImageEnhancementControl()
+                        : null,
                     onSaved: widget.onSaved,
                   ),
           ),
@@ -136,7 +146,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Scaffold(
       appBar: widget.embedded
           ? null
-          : AppBar(
+          : InkAppBar(
               title: LText(switch (section) {
                 'language' => 'Language',
                 'gestures' => 'Reading gestures',
@@ -149,7 +159,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       body: InkContent(
         maxWidth: InkoraLayout.maxSettingsWidth,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            16 + MediaQuery.paddingOf(context).bottom,
+          ),
           children: [
             if (data.hasError)
               const Padding(
@@ -175,6 +190,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           : (value) => _save(
                               (current) => current.copyWith(appearance: value),
                             ),
+                    ),
+                    const SizedBox(height: 20),
+                    SwitchListTile(
+                      key: const Key('floating-navigation-setting'),
+                      contentPadding: EdgeInsets.zero,
+                      title: const LText('Floating navigation'),
+                      value: preferences.floatingNavigation,
+                      onChanged: _saving || !data.hasValue
+                          ? null
+                          : (value) => _save(
+                              (current) =>
+                                  current.copyWith(floatingNavigation: value),
+                            ),
+                    ),
+                    InkSlider(
+                      sliderKey: const Key('panel-opacity'),
+                      label: context.tr('Panel opacity'),
+                      value: preferences.panelOpacity,
+                      min: UiPreferences.minPanelOpacity,
+                      max: UiPreferences.maxPanelOpacity,
+                      divisions: 6,
+                      enabled: !_saving && data.hasValue,
+                      formatValue: (value) =>
+                          context.tr('{0} %', [(value * 100).round()]),
+                      onCommitted: (value) => _save(
+                        (current) => current.copyWith(panelOpacity: value),
+                      ),
+                    ),
+                    const LText(
+                      'Applies to navigation, headers and search. Text stays fully opaque.',
                     ),
                     if (section == 'appearance') ...[
                       const SizedBox(height: 20),

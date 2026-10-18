@@ -1,7 +1,6 @@
 import '../../settings/application/ui_preferences_provider.dart';
 import '../../settings/domain/ui_preferences.dart';
 import '../../../app/l10n/app_strings.dart';
-import '../../../app/icons/inkora_icons.dart';
 
 import 'dart:async';
 
@@ -10,17 +9,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/widgets/inkora_widgets.dart';
-import '../../../app/theme/inkora_theme.dart';
 import '../application/catalogue_providers.dart';
 import '../application/cover_providers.dart';
-import '../application/discovery_providers.dart';
 import '../domain/catalogue.dart';
-import '../domain/discovery.dart';
-import 'catalogue_card.dart';
-import 'catalogue_widgets.dart';
 import 'resume_carousel.dart';
+import 'catalogue_screen.dart';
 
-/// The authenticated home hub. Shelves use the active account's local data.
+/// The library catalogue is the home destination, with saved reading above it.
 class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
 
@@ -95,185 +90,45 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   }
 
   @override
-  Widget build(BuildContext context) {
-    // Each section watches only its own provider: a reading-progress or
-    // discovery emission must not rebuild (and re-measure) every shelf.
-    return InkContent(
-      child: RefreshIndicator(
-        onRefresh: () => refreshCatalogue(ref),
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(
-            16,
-            MediaQuery.sizeOf(context).width >= InkoraLayout.railBreakpoint
-                ? 8
-                : 16,
-            16,
-            16,
-          ),
-          children: [
-            const CatalogueRefreshStatus(),
-            const _ResumeSection(),
-            const SizedBox(height: 4),
-            const _DiscoveryShelf(index: 0),
-            const SizedBox(height: 4),
-            const _RecentShelf(),
-            for (
-              var index = 1;
-              index < DiscoveryPage.sectionCount;
-              index++
-            ) ...[const SizedBox(height: 4), _DiscoveryShelf(index: index)],
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const CatalogueScreen(
+    kind: CatalogueKind.series,
+    embedded: true,
+    header: _ResumeSection(),
+  );
 }
 
+/// Independent from the catalogue feed: resume updates never rebuild its grid.
 class _ResumeSection extends ConsumerWidget {
   const _ResumeSection();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final resume = ref.watch(resumeEntriesProvider);
-    return InkPanel(
-      framed: false,
-      title: context.tr("Continue reading"),
-      child: resume.when(
-        loading: () => const LinearProgressIndicator(),
-        error: (_, _) => InkEmptyState(
-          icon: InkIcons.clockCounterClockwise,
-          title: context.tr("Reading history unavailable"),
-          message: context.tr("Your saved books remain in Libraries."),
-        ),
-        data: (entries) => entries.isEmpty
-            ? InkEmptyState(
-                icon: InkIcons.bookOpen,
-                title: context.tr("Your next great read"),
-                message: context.tr(
-                  "Open a book to start your reading journey.",
+    return resume.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const Padding(
+        padding: EdgeInsets.all(16),
+        child: LText('Reading history unavailable'),
+      ),
+      data: (entries) => entries.isEmpty
+          ? const SizedBox.shrink()
+          : Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: InkPanel(
+                framed: false,
+                title: context.tr('Continue reading'),
+                child: ResumeCarousel(
+                  entries: entries,
+                  density:
+                      ref.watch(
+                        uiPreferencesProvider.select(
+                          (p) => p.asData?.value.density,
+                        ),
+                      ) ??
+                      CatalogueDensity.comfortable,
                 ),
-                action: () => context.go('/libraries'),
-                label: context.tr("Explore libraries"),
-              )
-            : ResumeCarousel(
-                entries: entries,
-                density:
-                    ref.watch(
-                      uiPreferencesProvider.select(
-                        (p) => p.asData?.value.density,
-                      ),
-                    ) ??
-                    CatalogueDensity.comfortable,
-                onViewAll: () => context.go('/libraries'),
               ),
-      ),
-    );
-  }
-}
-
-class _RecentShelf extends ConsumerWidget {
-  const _RecentShelf();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) => _HomeShelf(
-    title: context.tr("Recently updated"),
-    data: ref.watch(
-      cataloguePageProvider(
-        const CatalogueQuery(
-          kind: CatalogueKind.series,
-          readingUnits: true,
-          sort: CatalogueSort.recentlyUpdated,
-          pageSize: CatalogueShelf.maxItems,
-          showUnavailable: false,
-        ),
-      ),
-    ),
-    actionLabel: context.tr("Recently updated"),
-    onAction: () => context.push('/catalogue/series?sort=recentlyUpdated'),
-  );
-}
-
-class _DiscoveryShelf extends ConsumerWidget {
-  const _DiscoveryShelf({required this.index});
-  final int index;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final data = ref
-        .watch(discoverySectionsProvider)
-        .whenData((pages) => pages[index]);
-    final label =
-        data.asData?.value.label ??
-        (index == 1 ? 'From your libraries' : 'More to explore');
-    return _HomeShelf(
-      key: ValueKey(index == 0 ? 'home-discovery' : 'home-discovery-$index'),
-      title: index == 0
-          ? (data.asData == null
-                ? 'Discover'
-                : context.tr('Discover · {0}', [context.tr(label)]))
-          : label,
-      data: data.whenData(
-        (page) => LocalCataloguePage(page.items, page.items.length, null),
-      ),
-      actionLabel: switch (index) {
-        0 => 'Browse all books',
-        1 => 'Browse libraries',
-        _ => 'Explore your libraries',
-      },
-      shelfIdentity: data.asData?.value.items
-          .map((item) => item.identity)
-          .join('|'),
-      emptyTitle: context.tr("Nothing new to suggest"),
-      emptyMessage: context.tr(
-        "Refresh your catalogue to bring your books here.",
-      ),
-      onAction: () => context.go('/libraries'),
-    );
-  }
-}
-
-class _HomeShelf extends ConsumerWidget {
-  const _HomeShelf({
-    super.key,
-    required this.title,
-    required this.data,
-    required this.onAction,
-    required this.actionLabel,
-    this.emptyTitle = 'Your shelves are waiting',
-    this.emptyMessage = 'Refresh your catalogue to bring your books here.',
-    this.shelfIdentity,
-  });
-  final String title, actionLabel, emptyTitle, emptyMessage;
-  final AsyncValue<LocalCataloguePage> data;
-  final VoidCallback onAction;
-  final Object? shelfIdentity;
-  @override
-  Widget build(BuildContext context, WidgetRef ref) => InkPanel(
-    framed: false,
-    title: title,
-    child: data.when(
-      loading: () => const LinearProgressIndicator(),
-      error: (_, _) =>
-          const LText('Saved catalogue unavailable. Try refreshing.'),
-      data: (page) => page.items.isEmpty
-          ? InkEmptyState(
-              icon: InkIcons.bookOpen,
-              title: emptyTitle,
-              message: emptyMessage,
-            )
-          : CatalogueShelf(
-              key: shelfIdentity == null ? null : ValueKey(shelfIdentity),
-              items: page.items,
-              density:
-                  ref.watch(
-                    uiPreferencesProvider.select(
-                      (p) => p.asData?.value.density,
-                    ),
-                  ) ??
-                  CatalogueDensity.comfortable,
-              onViewAll: onAction,
-              viewAllLabel: actionLabel,
             ),
-    ),
-  );
+    );
+  }
 }

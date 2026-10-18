@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/inkora_theme.dart';
+import '../../../app/widgets/image_enhancement.dart';
 import '../application/cover_providers.dart';
 import '../data/cover_repository.dart';
 import '../domain/catalogue.dart';
@@ -99,6 +100,10 @@ class BookCover extends ConsumerWidget {
                           fit: BoxFit.cover,
                           filterQuality: FilterQuality.medium,
                           gaplessPlayback: true,
+                          excludeFromSemantics: true,
+                          frameBuilder: (_, child, _, _) => child is RawImage
+                              ? EnhancedRawImage(raw: child)
+                              : child,
                           errorBuilder: (_, _, _) => placeholder,
                         ),
                 ),

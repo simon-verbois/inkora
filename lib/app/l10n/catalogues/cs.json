@@ -934,5 +934,14 @@
   "Book details": "Podrobnosti o knize",
   "Open series": "Otevřít sérii",
   "Page turn animation": "Animace otáčení stránky",
-  "Center page divider": "Středový oddělovač stránek"
+  "Center page divider": "Středový oddělovač stránek",
+  "Upscaling and sharpening": "Zvětšení a zaostření",
+  "Sharpen enlarged images and covers on this device. Missing detail cannot be reconstructed.": "Na tomto zařízení zaostřujte zvětšené obrázky a obálky. Chybějící detaily nelze obnovit.",
+  "Strength": "Síla",
+  "Off": "Vypnuto",
+  "Gentle": "Jemná",
+  "Strong": "Silná",
+  "Floating navigation": "Plovoucí navigace",
+  "Panel opacity": "Neprůhlednost panelů",
+  "Applies to navigation, headers and search. Text stays fully opaque.": "Platí pro navigaci, záhlaví a vyhledávání. Text zůstává zcela neprůhledný."
 }

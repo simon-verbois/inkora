@@ -6,8 +6,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/core/storage/app_database.dart';
 import 'package:inkora/features/settings/data/ui_preferences_store.dart';
 import 'package:inkora/features/settings/domain/ui_preferences.dart';
+import 'package:inkora/core/images/image_enhancement.dart';
 
 void main() {
+  test(
+    'legacy and malformed overlay values retain usable bounded preferences',
+    () {
+      expect(UiPreferences.fromJson({}).floatingNavigation, isTrue);
+      expect(UiPreferences.fromJson({}).panelOpacity, 1);
+      for (final value in [double.nan, double.infinity, 'broken', null]) {
+        expect(UiPreferences.fromJson({'panelOpacity': value}).panelOpacity, 1);
+      }
+      expect(UiPreferences.fromJson({'panelOpacity': 0}).panelOpacity, .88);
+      expect(UiPreferences.fromJson({'panelOpacity': 2}).panelOpacity, 1);
+    },
+  );
   test(
     'discovery writes do not re-emit unchanged appearance preferences',
     () async {
@@ -93,6 +106,9 @@ void main() {
         density: CatalogueDensity.compact,
         textScale: 1.3,
         reduceMotion: true,
+        floatingNavigation: false,
+        panelOpacity: .9,
+        imageEnhancement: ImageEnhancement.balanced,
       ),
     );
     await database.close();
@@ -103,6 +119,14 @@ void main() {
       expect(restored.density, CatalogueDensity.compact);
       expect(restored.textScale, 1.3);
       expect(restored.reduceMotion, isTrue);
+      expect(restored.floatingNavigation, isFalse);
+      expect(restored.panelOpacity, .9);
+      expect(restored.copyWith(locale: 'fr').panelOpacity, .9);
+      expect(restored.imageEnhancement, ImageEnhancement.balanced);
+      expect(
+        restored.copyWith(locale: 'fr').imageEnhancement,
+        ImageEnhancement.balanced,
+      );
     } finally {
       await database.close();
     }
@@ -121,9 +145,12 @@ void main() {
       final preferences = UiPreferences.fromJson({
         'appearance': 'future-theme',
         'textScale': 20,
+        'imageEnhancement': 'future-enhancement',
       });
       expect(preferences.textScale, 1);
       expect(preferences.appearance, AppAppearance.system);
+      expect(preferences.imageEnhancement, ImageEnhancement.off);
+      expect(UiPreferences.fromJson({}).imageEnhancement, ImageEnhancement.off);
     },
   );
 }

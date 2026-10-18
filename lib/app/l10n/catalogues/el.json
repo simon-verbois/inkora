@@ -934,5 +934,14 @@
   "Book details": "Λεπτομέρειες βιβλίου",
   "Open series": "Άνοιγμα σειράς",
   "Page turn animation": "Κινούμενη εικόνα αλλαγής σελίδας",
-  "Center page divider": "Κεντρικός διαχωριστής σελίδων"
+  "Center page divider": "Κεντρικός διαχωριστής σελίδων",
+  "Upscaling and sharpening": "Αναβάθμιση ανάλυσης και ενίσχυση ευκρίνειας",
+  "Sharpen enlarged images and covers on this device. Missing detail cannot be reconstructed.": "Ενισχύστε την ευκρίνεια των μεγεθυμένων εικόνων και εξωφύλλων σε αυτή τη συσκευή. Οι λεπτομέρειες που λείπουν δεν μπορούν να ανακατασκευαστούν.",
+  "Strength": "Ένταση",
+  "Off": "Απενεργοποίηση",
+  "Gentle": "Ήπια",
+  "Strong": "Ισχυρή",
+  "Floating navigation": "Αιωρούμενη πλοήγηση",
+  "Panel opacity": "Αδιαφάνεια πλαισίων",
+  "Applies to navigation, headers and search. Text stays fully opaque.": "Ισχύει για την πλοήγηση, τις κεφαλίδες και την αναζήτηση. Το κείμενο παραμένει πλήρως αδιαφανές."
 }

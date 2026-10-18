@@ -103,7 +103,8 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        expect(find.text('Continue reading'), findsOneWidget);
+        expect(find.byKey(const Key('library-selector')), findsOneWidget);
+        expect(find.text('Continue reading'), findsNothing);
         await tester.tap(find.text('Libraries'));
         await tester.pumpAndSettle();
         container.read(routerProvider).go('/catalogue/library');

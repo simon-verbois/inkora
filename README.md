@@ -21,7 +21,7 @@ is under development and has not yet been validated on a native build. See
 - **Make it yours.** Choose appearance palettes, reading direction, page layout,
   gestures, image quality and EPUB typography.
 - **Find your next read.** Search your catalogue and browse series, collections
-  and reading lists, with discovery shelves on Home.
+  and reading lists, with your current reads above the library grid.
 - **Choose what appears.** Connect multiple server accounts and filter their
   visible libraries. All libraries you can access are selected by default.
 - **Read in your language.** The interface supports Czech, Dutch, English,
@@ -35,9 +35,9 @@ and original sample cover artwork.
 
 | Home | Library | Appearance |
 | --- | --- | --- |
-| ![Home with Continue reading and discovery shelves](docs/screenshots/phone-home.png) | ![Library grid with illustrated sample covers](docs/screenshots/phone-library.png) | ![Appearance settings and reading palettes](docs/screenshots/phone-appearance.png) |
+| ![Library home with Continue reading above the cover grid](docs/screenshots/phone-home.png) | ![Library grid with illustrated sample covers](docs/screenshots/phone-library.png) | ![Appearance settings and reading palettes](docs/screenshots/phone-appearance.png) |
 
-![Inkora Home on a tablet with a navigation rail and reading shelves](docs/screenshots/tablet-home.png)
+![Inkora library home on a tablet with bottom navigation](docs/screenshots/tablet-home.png)
 
 ## Get started
 

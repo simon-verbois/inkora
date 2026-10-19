@@ -36,13 +36,13 @@ def build(destination: Path) -> None:
         raise ValueError('Destination cannot contain the source repository.')
     destination.mkdir(parents=True, exist_ok=True)
     for name in ('index.html', 'styles.css', 'site.js', 'favicon.svg'):
-        shutil.copyfile(ROOT / 'site' / name, destination / name)
-    (destination / 'images').mkdir()
+        shutil.copyfile(ROOT / 'docs' / name, destination / name)
+    (destination / 'screenshots').mkdir()
     for name in SCREENSHOTS:
-        shutil.copyfile(ROOT / 'docs/screenshots' / f'{name}.png', destination / 'images' / f'{name}.png')
+        shutil.copyfile(ROOT / 'docs/screenshots' / f'{name}.png', destination / 'screenshots' / f'{name}.png')
     (destination / 'fonts').mkdir()
-    shutil.copyfile(ROOT / 'assets/fonts/LibreBaskerville.ttf', destination / 'fonts/LibreBaskerville.ttf')
-    shutil.copyfile(ROOT / 'assets/fonts/OFL.txt', destination / 'font-license.txt')
+    shutil.copyfile(ROOT / 'docs/fonts/LibreBaskerville.ttf', destination / 'fonts/LibreBaskerville.ttf')
+    shutil.copyfile(ROOT / 'docs/font-license.txt', destination / 'font-license.txt')
     (destination / '.nojekyll').touch()
     links = Links()
     links.feed((destination / 'index.html').read_text())

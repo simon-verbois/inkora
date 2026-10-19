@@ -22,17 +22,19 @@ The build checks local HTML assets and section links.
 
 ## GitHub Pages setup
 
-Prepared here; no deployment is performed by building or pushing the source.
-In the **public GitHub repository**, open **Settings → Pages → Build and deployment**
-and select **GitHub Actions**. Then run **Actions → Inkora presentation site → Run
-workflow** on the default branch. The workflow is manual only, builds the reviewed
-assets and deploys through the `github-pages` environment. Branch protection and
-environment approval rules can be configured in GitHub. A successful workflow
-reports the actual public URL; no URL is claimed live in this repository.
+The website entry point is `docs/index.html`; all required assets are inside
+`docs/`, so the public GitHub repository can publish directly from that folder.
+In **Settings → Pages → Build and deployment**, select **Deploy from a branch**,
+then the default branch and **/docs**. Save to start GitHub's Pages deployment.
+The public export contains only reviewed website files and demonstration images;
+internal project documentation is excluded.
 
-GitHub's branch-based source supports only the repository root or `/docs`.
-A custom Actions workflow supports our dedicated `site/` source, so internal
-project documentation never becomes a website artifact. See the official
+Alternatively, select **GitHub Actions** and manually run **Inkora presentation
+site** on the default branch. That workflow builds the same reviewed static
+artifact. Choose one publishing source; no remote Pages configuration is changed
+by the local builder or release script.
+
+See GitHub's official
 [publishing source documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
 and [custom workflow documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
 
@@ -44,5 +46,5 @@ fictional catalogue data and original sample artwork, rendered by the repository
 opt-in screenshot test. They represent development, which may be ahead of releases.
 Keep release links generic unless a version has been verified published. Android
 is tested; iOS native validation remains pending. Do not add personal server data,
-credentials or private documentation to the site. Font license is copied into the
-site from `assets/fonts/OFL.txt`.
+credentials or private documentation to the site. Keep `docs/fonts/LibreBaskerville.ttf` and `docs/font-license.txt` identical to
+the canonical `assets/fonts/LibreBaskerville.ttf` and `assets/fonts/OFL.txt`.

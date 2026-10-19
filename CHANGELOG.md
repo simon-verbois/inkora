@@ -10,6 +10,10 @@ remain in progress.
 
 ## [Unreleased]
 
+## [2026.43.2] - 2026-10-19
+
+- Move the presentation website into docs with self-contained assets for GitHub Pages branch publishing.
+
 ## [2026.43.1] - 2026-10-19
 
 - Keep ebook text stationary when showing reader controls and retain a central gutter between EPUB pages with custom margins.

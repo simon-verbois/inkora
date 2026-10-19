@@ -98,9 +98,9 @@ read offline from **Settings → About Inkora**.
 
 ## Presentation website
 
-The Inkora-style static website lives in [site/](site/README.md), with local
-preview and manual GitHub Pages setup instructions. Its build uses only Python 3
-and the shared demonstration screenshots; no Flutter SDK is needed to build it.
+The Inkora-style static website lives in [docs/](docs/PAGES.md), with local
+preview and GitHub Pages setup instructions. Publish directly from the default
+branch’s `/docs` folder, or use the optional Python-only build and manual workflow.
 
 ## Credits
 

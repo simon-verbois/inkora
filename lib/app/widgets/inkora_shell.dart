@@ -11,15 +11,17 @@ import '../../features/connection/application/session_controller.dart';
 import '../theme/inkora_theme.dart';
 import 'inkora_widgets.dart';
 import 'inkora_navigation.dart';
+import '../../features/settings/presentation/settings_workspace.dart';
+import '../../features/settings/presentation/settings_adaptive_layout.dart';
 
 class InkoraShell extends ConsumerWidget {
   const InkoraShell({
     super.key,
     required this.navigationShell,
-    this.showSearch = true,
+    this.currentPath = '/',
   });
   final StatefulNavigationShell navigationShell;
-  final bool showSearch;
+  final String currentPath;
 
   void _select(int index) => navigationShell.goBranch(
     index,
@@ -36,21 +38,21 @@ class InkoraShell extends ConsumerWidget {
     );
     final opacity = ref.watch(
       uiPreferencesProvider.select(
-        (data) => data.asData?.value.panelOpacity ?? 1,
+        (data) => data.asData?.value.panelOpacity ?? .94,
       ),
     );
+    final wideSettings =
+        navigationShell.currentIndex == 2 &&
+        useWideSettings(
+          context,
+          MediaQuery.sizeOf(context).width -
+              MediaQuery.paddingOf(context).horizontal,
+        );
     return Scaffold(
       extendBody: floating,
       appBar: InkAppBar(
+        automaticallyImplyLeading: !wideSettings,
         title: const InkoraWordmark(),
-        actions: [
-          if (showSearch)
-            IconButton(
-              tooltip: context.tr("Search catalogue"),
-              icon: const Icon(InkIcons.magnifyingGlass),
-              onPressed: () => context.push('/search'),
-            ),
-        ],
       ),
       body: SafeArea(
         top: false,
@@ -75,7 +77,13 @@ class InkoraShell extends ConsumerWidget {
                   ),
                 ),
               ),
-            Expanded(child: navigationShell),
+            Expanded(
+              child: SettingsWorkspace(
+                path: currentPath,
+                active: navigationShell.currentIndex == 2,
+                child: navigationShell,
+              ),
+            ),
           ],
         ),
       ),

@@ -1,4 +1,6 @@
 import 'package:inkora/reader/presentation/ebook_presentation.dart';
+import 'package:inkora/reader/presentation/reader_system_ui.dart';
+import 'package:inkora/reader/presentation/ebook_pdf_surface.dart';
 import 'package:inkora/app/theme/inkora_theme.dart';
 import 'package:inkora/features/library/application/catalogue_providers.dart';
 import 'package:inkora/features/library/domain/catalogue.dart';
@@ -62,6 +64,18 @@ void main() {
     testWidgets(
       'local ${epub ? "EPUB" : "PDF"} opens, navigates, searches and persists position',
       (tester) async {
+        var systemUiCalls = 0;
+        final messenger = binding.defaultBinaryMessenger;
+        messenger.setMockMessageHandler(ReaderSystemUi.channel.name, (message) {
+          systemUiCalls++;
+          return messenger.delegate.send(ReaderSystemUi.channel.name, message);
+        });
+        addTearDown(
+          () => messenger.setMockMessageHandler(
+            ReaderSystemUi.channel.name,
+            null,
+          ),
+        );
         final support = await getTemporaryDirectory();
         final root = await Directory('${support.path}/ebook-native-fixture')
             .create(recursive: true);
@@ -135,6 +149,7 @@ void main() {
         Future<void> open(
           ReaderLocator initial, {
           double margins = 1,
+          EbookPageInsets? pageInsets,
           String font = 'publisher',
           bool separator = false,
           bool animation = true,
@@ -164,6 +179,7 @@ void main() {
                     pageAnimation: animation,
                     ebook: EbookSettings(
                       margins: margins,
+                      pageInsets: pageInsets,
                       font: font,
                       columnSeparator: separator,
                       columns: columns,
@@ -191,6 +207,34 @@ void main() {
                         null,
         );
         expect(find.textContaining('Unable to open'), findsNothing);
+        final surface = find.byType(
+          epub ? ReadiumReaderWidget : EbookPdfSurface,
+        );
+        final surfaceState = tester.state(surface);
+        final surfaceBounds = tester.getRect(surface);
+        await tester.pump(const Duration(milliseconds: 600));
+        final uiCallsBeforeControls = systemUiCalls;
+        final initialLayout = epub ? await epubLayout() : null;
+        for (var i = 0; i < 4; i++) {
+          if (epub) {
+            final controls = tester
+                .widget<ReadiumReaderWidget>(surface)
+                .shouldShowControls!;
+            controls.value = !controls.value;
+          } else {
+            tester.widget<EbookPdfSurface>(surface).onToggleControls();
+          }
+          await tester.pump(const Duration(milliseconds: 350));
+          expect(tester.getRect(surface), surfaceBounds);
+          expect(tester.state(surface), same(surfaceState));
+        }
+        expect(systemUiCalls, uiCallsBeforeControls);
+        if (epub) {
+          final layout = await epubLayout();
+          expect(layout['viewportWidth'], initialLayout!['viewportWidth']);
+          expect(layout['viewportHeight'], initialLayout['viewportHeight']);
+        }
+
         final locations = engine.onTextLocatorChanged.listen((l) {
           location = l;
           if (const bool.fromEnvironment('BOOKMARK_NATIVE_GESTURE')) {
@@ -217,12 +261,32 @@ void main() {
           await open(
             ReaderLocator(0),
             columns: 'two',
+            pageInsets: const EbookPageInsets(
+              left: 0,
+              right: 0,
+              top: 0,
+              bottom: 0,
+            ),
             separator: true,
             animation: false,
           );
           await tester.pump(const Duration(milliseconds: 900));
           final layout = await epubLayout();
           expect(layout['columns'], '2');
+          expect(
+            double.parse(
+              (layout['paddingLeft'] as String).replaceAll('px', ''),
+            ),
+            greaterThanOrEqualTo(16),
+          );
+          expect(
+            double.parse(
+              (layout['paddingRight'] as String).replaceAll('px', ''),
+            ),
+            greaterThanOrEqualTo(16),
+          );
+          expect(layout['crossingLines'], 0);
+
           expect(layout['rule'], 'solid');
           // WebView quantizes a CSS pixel to its physical-pixel grid.
           expect(
@@ -374,13 +438,43 @@ void main() {
           expect(location!.href, contains('chapter2'));
           final screen = tester.getRect(find.byType(EbookReaderScreen));
           final surface = tester.getRect(find.byType(ReadiumReaderWidget));
-          expect(surface.top - screen.top, closeTo(24, 1));
-          expect(screen.bottom - surface.bottom, closeTo(24, 1));
+          final safe = MediaQuery.viewPaddingOf(
+            tester.element(find.byType(EbookReaderScreen)),
+          );
+          expect(surface.top - screen.top, closeTo(safe.top + 24, 1));
+          expect(screen.bottom - surface.bottom, closeTo(safe.bottom + 24, 1));
           await open(ReaderLocator(0), margins: 2, font: 'baskerville');
           await tester.pump(const Duration(milliseconds: 900));
           final wideSurface = tester.getRect(find.byType(ReadiumReaderWidget));
-          expect(wideSurface.top - screen.top, closeTo(48, 1));
-          expect(screen.bottom - wideSurface.bottom, closeTo(48, 1));
+          expect(wideSurface.top - screen.top, closeTo(safe.top + 48, 1));
+          expect(
+            screen.bottom - wideSurface.bottom,
+            closeTo(safe.bottom + 48, 1),
+          );
+          expect(location!.href, contains('chapter2'));
+          await open(
+            ReaderLocator(0),
+            pageInsets: const EbookPageInsets(
+              left: 17,
+              top: 43,
+              right: 29,
+              bottom: 61,
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 900));
+          final customSurface = tester.getRect(
+            find.byType(ReadiumReaderWidget),
+          );
+          expect(customSurface.left - screen.left, closeTo(safe.left + 17, 1));
+          expect(customSurface.top - screen.top, closeTo(safe.top + 43, 1));
+          expect(
+            screen.right - customSurface.right,
+            closeTo(safe.right + 29, 1),
+          );
+          expect(
+            screen.bottom - customSurface.bottom,
+            closeTo(safe.bottom + 61, 1),
+          );
           expect(location!.href, contains('chapter2'));
         }
         if (epub) {

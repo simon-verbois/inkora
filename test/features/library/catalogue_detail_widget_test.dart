@@ -91,6 +91,36 @@ Future<void> seed(
 }
 
 void main() {
+  testWidgets(
+    'series back bubble survives scrolling and returns to its originating route',
+    (tester) async {
+      final harness = await UiHarness.create(
+        tester,
+        preferences: const UiPreferences(locale: 'en'),
+      );
+      addTearDown(() => harness.close(tester));
+      await seed(harness, tester, volumes: 30);
+      await harness.mount(tester);
+      final router = harness.container.read(routerProvider);
+      router.push('/catalogue/series/series-a');
+      await tester.pumpAndSettle();
+      final bubble = find.byKey(const Key('series-back'));
+      final position = tester.getTopLeft(bubble);
+      expect(tester.getSize(bubble).shortestSide, greaterThanOrEqualTo(48));
+      final scroll = find.descendant(
+        of: find.byType(CatalogueDetailScreen),
+        matching: find.byType(CustomScrollView),
+      );
+      await tester.drag(scroll, const Offset(0, -500));
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(bubble), position);
+      await tester.tap(bubble);
+      await tester.pumpAndSettle();
+      expect(router.routeInformationProvider.value.uri.path, '/');
+      expect(find.byType(CatalogueDetailScreen), findsNothing);
+      await harness.close(tester);
+    },
+  );
   testWidgets('French publication labels preserve server-owned credits', (
     tester,
   ) async {

@@ -18,13 +18,17 @@ final class CatalogueFeedState {
 /// replaces the prefix atomically, preserving sort/membership order and avoiding
 /// duplicate rows from concatenating different catalogue generations.
 final class CatalogueFeed {
-  CatalogueFeed(this.store, this.query) {
+  CatalogueFeed(this.store, this.query)
+    : _limit = query.initialWindowSize < batchSize
+          ? batchSize
+          : query.initialWindowSize {
     _subscribe();
   }
   final CatalogueStore store;
   final CatalogueQuery query;
   static const batchSize = 60;
-  int _limit = batchSize, _generation = 0;
+  int _limit;
+  int _generation = 0;
   bool _closed = false;
   CatalogueFeedState _state = const CatalogueFeedState();
   final _updates = StreamController<CatalogueFeedState>.broadcast(sync: true);

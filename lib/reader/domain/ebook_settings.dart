@@ -5,12 +5,14 @@ final class EbookSettings {
     this.fontSize = 1.1,
     this.lineHeight = 1.5,
     this.margins = 1.0,
+    this.pageInsets,
     this.scroll = false,
     this.columns = 'auto',
     this.publisherStyles = false,
     this.justify = false,
     this.columnSeparator = false,
   });
+  final EbookPageInsets? pageInsets;
   final String font, columns;
   final double fontSize, lineHeight, margins;
   final bool scroll, publisherStyles, justify, columnSeparator;
@@ -19,6 +21,7 @@ final class EbookSettings {
     'fontSize': fontSize,
     'lineHeight': lineHeight,
     'margins': margins,
+    if (pageInsets != null) 'pageInsets': pageInsets!.toJson(),
     'scroll': scroll,
     'columns': columns,
     'publisherStyles': publisherStyles,
@@ -47,6 +50,11 @@ final class EbookSettings {
       fontSize: value('fontSize', 1.1, .7, 2.5),
       lineHeight: value('lineHeight', 1.5, 1, 2.5),
       margins: value('margins', 1, .2, 2),
+      pageInsets: json['pageInsets'] == null
+          ? null
+          : EbookPageInsets.fromJson(
+              json['pageInsets'] as Map<String, dynamic>,
+            ),
       scroll: json['scroll'] as bool? ?? false,
       publisherStyles: json['publisherStyles'] as bool? ?? false,
       justify: json['justify'] as bool? ?? false,
@@ -61,6 +69,7 @@ final class EbookSettings {
       fontSize == other.fontSize &&
       lineHeight == other.lineHeight &&
       margins == other.margins &&
+      pageInsets == other.pageInsets &&
       scroll == other.scroll &&
       publisherStyles == other.publisherStyles &&
       justify == other.justify &&
@@ -72,9 +81,65 @@ final class EbookSettings {
     fontSize,
     lineHeight,
     margins,
+    pageInsets,
     scroll,
     publisherStyles,
     justify,
     columnSeparator,
   );
+}
+
+/// Extra publication space in logical pixels, inside the device safe area.
+/// Absent values retain the legacy horizontal Readium margin and vertical scale.
+final class EbookPageInsets {
+  const EbookPageInsets({
+    required this.left,
+    required this.top,
+    required this.right,
+    required this.bottom,
+  });
+  final double left, top, right, bottom;
+  static const maximum = 160.0;
+
+  factory EbookPageInsets.preset({
+    required bool tablet,
+    required double scale,
+  }) => EbookPageInsets(
+    left: (tablet ? 32 : 16) * scale,
+    right: (tablet ? 32 : 16) * scale,
+    top: (tablet ? 32 : 24) * scale,
+    bottom: (tablet ? 32 : 24) * scale,
+  );
+
+  Map<String, double> toJson() => {
+    'left': left,
+    'top': top,
+    'right': right,
+    'bottom': bottom,
+  };
+  factory EbookPageInsets.fromJson(Map<String, dynamic> json) {
+    double edge(String key) {
+      final value = json[key];
+      if (value is! num || !value.isFinite || value < 0 || value > maximum) {
+        throw const FormatException('Invalid ebook page inset');
+      }
+      return value.toDouble();
+    }
+
+    return EbookPageInsets(
+      left: edge('left'),
+      top: edge('top'),
+      right: edge('right'),
+      bottom: edge('bottom'),
+    );
+  }
+  @override
+  bool operator ==(Object other) =>
+      other is EbookPageInsets &&
+      left == other.left &&
+      top == other.top &&
+      right == other.right &&
+      bottom == other.bottom;
+  @override
+  int get hashCode => Object.hash(left, top, right, bottom);
 }

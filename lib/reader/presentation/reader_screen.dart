@@ -1,3 +1,12 @@
+import 'raster_navigation_sheet.dart';
+import '../data/raster_bookmarks.dart';
+import '../../offline/data/progress_store.dart';
+import '../../offline/domain/progress.dart';
+import '../../features/library/application/catalogue_providers.dart';
+import '../../features/library/domain/catalogue.dart';
+import '../../features/library/presentation/book_cover.dart';
+import '../../offline/application/offline_coordinator.dart';
+import '../../app/widgets/inkora_widgets.dart';
 import '../../app/theme/inkora_motion.dart';
 import 'reader_chrome.dart';
 import 'reader_details.dart';
@@ -41,6 +50,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
   OpenReader? _suppressedReader, _locatorOwner;
   ReaderLocator? _currentLocator;
   int _positionRevision = 0;
+  final _navigation = ValueNotifier<ReaderLocator?>(null);
+  bool _ending = false;
   bool _refreshing = false;
   bool _changingChapter = false;
   bool _controlsVisible = false;
@@ -110,6 +121,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
 
   @override
   void dispose() {
+    _navigation.dispose();
     WidgetsBinding.instance.removeObserver(this);
     unawaited(ReaderSystemUi.setImmersive(false));
     super.dispose();
@@ -141,22 +153,23 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
     }
   }
 
-  Future<void> _nextChapter(OpenReader reader) async {
+  Future<bool> _nextChapter(OpenReader reader) async {
     setState(() => _changingChapter = true);
     try {
       final repository = await ref.read(readerRepositoryProvider.future);
       final next = await repository?.nextChapterId(reader.manifest);
-      if (!mounted) return;
+      if (!mounted) return false;
       if (next == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: LText('No next chapter is available.')),
         );
-        return;
+        return false;
       }
       reader.prefetch?.suspend(true);
-      if (reader.manifest.seriesId == null) {
+      if (GoRouterState.of(context).name != 'series-reader' ||
+          reader.manifest.seriesId == null) {
         context.pushReplacementNamed('reader', pathParameters: {'id': next});
-        return;
+        return true;
       }
       context.pushReplacementNamed(
         'series-reader',
@@ -166,14 +179,84 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
           'bookId': next,
         },
       );
+      return true;
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: LText('Unable to open the next chapter.')),
         );
       }
+      return false;
     } finally {
       if (mounted) setState(() => _changingChapter = false);
+    }
+  }
+
+  Future<void> _navigate(OpenReader reader, {bool bookmarks = false}) async {
+    final repository = await ref.read(readerRepositoryProvider.future);
+    if (!mounted || repository == null) return;
+    final result = await showInkSheet<ReaderLocator>(
+      context: context,
+      child: RasterNavigationSheet(
+        reader: reader,
+        current: _currentLocator ?? reader.locator,
+        bookmarks: RasterBookmarks(
+          repository.store.database,
+          reader.manifest.accountId,
+          reader.manifest.bookId,
+        ),
+        showBookmarks: bookmarks,
+      ),
+    );
+    if (mounted && result != null) _navigation.value = result;
+  }
+
+  Future<void> _end(OpenReader reader) async {
+    if (_ending) return;
+    _ending = true;
+    try {
+      final repository = await ref.read(readerRepositoryProvider.future);
+      final catalogue = await ref.read(catalogueRepositoryProvider.future);
+      if (repository == null || !mounted) return;
+      final nextId = await repository.nextChapterId(reader.manifest);
+      // Exact lookup remains account/publication scoped; never infer remote IDs.
+      final nextItem = nextId == null
+          ? null
+          : await catalogue?.store.item(CatalogueKind.book, nextId).first;
+      if (!mounted) return;
+      final action = await showInkSheet<String>(
+        context: context,
+        child: _VolumeEndSheet(next: nextItem),
+      );
+      if (action == null || !mounted) return;
+      final last = ReaderLocator(reader.manifest.pages.length - 1, 1);
+      final previous = _suppressedReader;
+      _suppressedReader = reader;
+      try {
+        await ProgressStore(
+          repository.store.database,
+          repository.store.accountId,
+        ).save(reader.manifest, last, operation: ProgressOperation.complete);
+      } catch (_) {
+        _suppressedReader = previous;
+        rethrow;
+      }
+      if (!mounted) return;
+      if (action == 'next' && nextId != null) {
+        if (!await _nextChapter(reader)) _suppressedReader = previous;
+      } else {
+        await openReaderDetails(context, reader.manifest);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: LText('Unable to finish this volume. Try again.'),
+          ),
+        );
+      }
+    } finally {
+      _ending = false;
     }
   }
 
@@ -345,26 +428,33 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
               ? _positionRevision - 1
               : _positionRevision,
         )),
+        navigation: _navigation,
+        onEnd: () => _end(reader),
         onLocatorChanged: (locator) => _currentLocator = locator,
         reader: reader,
         settings: preferences.asData?.value ?? const ReadingSettings(),
         controlsVisible: _controlsVisible,
-        controlsActions: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        controlsActions: _ReaderActions(
           children: [
-            Expanded(
-              child: ReaderQuickAction(
-                label: 'Next chapter',
-                icon: InkIcons.skipForward,
-                onPressed: _changingChapter ? null : () => _nextChapter(reader),
-              ),
+            ReaderQuickAction(
+              label: 'Finish volume',
+              icon: InkIcons.skipForward,
+              onPressed: _changingChapter ? null : () => _end(reader),
             ),
-            Expanded(
-              child: ReaderQuickAction(
-                label: 'Reading preferences',
-                icon: InkIcons.slidersHorizontal,
-                onPressed: () => _settings(reader),
-              ),
+            ReaderQuickAction(
+              label: 'Page overview',
+              icon: InkIcons.squaresFour,
+              onPressed: () => _navigate(reader),
+            ),
+            ReaderQuickAction(
+              label: 'Bookmarks',
+              icon: InkIcons.bookmarks,
+              onPressed: () => _navigate(reader, bookmarks: true),
+            ),
+            ReaderQuickAction(
+              label: 'Reading preferences',
+              icon: InkIcons.slidersHorizontal,
+              onPressed: () => _settings(reader),
             ),
           ],
         ),
@@ -383,6 +473,92 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
                   preferences.asData?.value.spreadOffset ?? false,
                 ),
               ),
+      );
+    },
+  );
+}
+
+class _VolumeEndSheet extends ConsumerWidget {
+  const _VolumeEndSheet({required this.next});
+  final CatalogueItem? next;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final downloaded = ref.watch(
+      downloadedBooksProvider.select(
+        (value) =>
+            value.asData?.value.any((b) => b.item.id == next?.id) ?? false,
+      ),
+    );
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: LText(
+                    'Finish volume',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+                const CloseButton(),
+              ],
+            ),
+            if (next != null) ...[
+              Center(
+                child: SizedBox(
+                  width: 120,
+                  height: 180,
+                  child: BookCover(item: next!),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(next!.title, textAlign: TextAlign.center),
+              LText(
+                downloaded
+                    ? 'Available offline'
+                    : 'Download required for offline reading',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: next!.canOpen
+                    ? () => Navigator.pop(context, 'next')
+                    : null,
+                child: const LText('Read next volume'),
+              ),
+            ] else
+              const LText('No next chapter is available.'),
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'series'),
+              child: const LText('Return to series'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReaderActions extends StatelessWidget {
+  const _ReaderActions({required this.children});
+  final List<Widget> children;
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, bounds) {
+      final columns =
+          bounds.maxWidth < 480 ||
+              MediaQuery.textScalerOf(context).scale(1) > 1.5
+          ? 2
+          : 4;
+      return Wrap(
+        children: [
+          for (final child in children)
+            SizedBox(width: bounds.maxWidth / columns, child: child),
+        ],
       );
     },
   );

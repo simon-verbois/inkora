@@ -8,25 +8,41 @@ import 'package:inkora/features/settings/domain/ui_preferences.dart';
 import 'package:inkora/reader/domain/gesture_zones.dart';
 
 void main() {
-  test('legacy setup resumes at the corresponding section in version two', () {
-    const mapping = [0, 2, 3, 3, 4, 5, 6, 6, 7];
-    for (var old = 0; old < mapping.length; old++) {
-      final restored = UiPreferences.fromJson({
+  test('version two setup retains Downloads, Accessibility and final review after Quality insertion', () {
+    for (var old = 0; old <= 7; old++) {
+      final value = UiPreferences.fromJson({
+        'setupVersion': 2,
         'setupStep': old,
-        'locale': 'fr',
-        'setupCompleted': true,
       });
-      expect(restored.setupStep, mapping[old]);
-      expect(restored.locale, 'fr');
-      expect(restored.setupCompleted, true);
-      expect(UiPreferences.fromJson(restored.toJson()).setupStep, mapping[old]);
+      expect(value.setupStep, old >= 5 ? old + 1 : old);
+      expect(UiPreferences.fromJson(value.toJson()).setupStep, value.setupStep);
     }
-    expect(
-      UiPreferences.fromJson({'setupVersion': 2, 'setupStep': 99}).setupStep,
-      7,
-    );
-    expect(UiPreferences.fromJson({'setupStep': -1}).setupStep, 0);
   });
+  test(
+    'legacy setup resumes at the corresponding section in version three',
+    () {
+      const mapping = [0, 2, 3, 3, 4, 6, 7, 7, 8];
+      for (var old = 0; old < mapping.length; old++) {
+        final restored = UiPreferences.fromJson({
+          'setupStep': old,
+          'locale': 'fr',
+          'setupCompleted': true,
+        });
+        expect(restored.setupStep, mapping[old]);
+        expect(restored.locale, 'fr');
+        expect(restored.setupCompleted, true);
+        expect(
+          UiPreferences.fromJson(restored.toJson()).setupStep,
+          mapping[old],
+        );
+      }
+      expect(
+        UiPreferences.fromJson({'setupVersion': 2, 'setupStep': 99}).setupStep,
+        8,
+      );
+      expect(UiPreferences.fromJson({'setupStep': -1}).setupStep, 0);
+    },
+  );
   test('settings round trip and identical saves emit once', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);

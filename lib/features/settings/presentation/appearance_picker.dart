@@ -1,85 +1,112 @@
-import '../../../app/l10n/app_strings.dart';
-import '../../../app/icons/inkora_icons.dart';
-
 import 'package:flutter/material.dart';
 
+import '../../../app/l10n/app_strings.dart';
+import '../../../app/icons/inkora_icons.dart';
+import '../../../app/theme/appearance_palette.dart';
 import '../../../app/theme/inkora_theme.dart';
 import '../domain/ui_preferences.dart';
 import 'preference_labels.dart';
+import 'settings_adaptive_layout.dart';
 
 class AppearancePicker extends StatelessWidget {
   const AppearancePicker({
     super.key,
     required this.preferences,
     required this.onSelect,
+    required this.onSystemLightSelect,
+    required this.onSystemDarkSelect,
   });
   final UiPreferences preferences;
   final ValueChanged<AppAppearance>? onSelect;
+  final ValueChanged<AppAppearance>? onSystemLightSelect, onSystemDarkSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final automatic = preferences.appearance == AppAppearance.system;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SwitchListTile.adaptive(
+          key: const Key('follow-system-theme'),
+          contentPadding: EdgeInsets.zero,
+          title: const LText('Follow system'),
+          subtitle: const LText('Choose a theme for each system appearance.'),
+          value: automatic,
+          onChanged: onSelect == null
+              ? null
+              : (enabled) => onSelect!(
+                  enabled
+                      ? AppAppearance.system
+                      : Theme.of(context).brightness == Brightness.dark
+                      ? preferences.darkTheme
+                      : preferences.lightTheme,
+                ),
+        ),
+        const SizedBox(height: 16),
+        SettingsColumns(
+          first: _PaletteGroup(
+            key: const Key('light-theme-group'),
+            title: automatic ? 'Default light theme' : 'Light themes',
+            light: true,
+            selected: automatic
+                ? preferences.lightTheme
+                : preferences.appearance,
+            onSelect: automatic ? onSystemLightSelect : onSelect,
+          ),
+          second: _PaletteGroup(
+            key: const Key('dark-theme-group'),
+            title: automatic ? 'Default dark theme' : 'Dark themes',
+            light: false,
+            selected: automatic
+                ? preferences.darkTheme
+                : preferences.appearance,
+            onSelect: automatic ? onSystemDarkSelect : onSelect,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PaletteGroup extends StatelessWidget {
+  const _PaletteGroup({
+    super.key,
+    required this.title,
+    required this.light,
+    required this.selected,
+    required this.onSelect,
+  });
+  final String title;
+  final bool light;
+  final AppAppearance selected;
+  final ValueChanged<AppAppearance>? onSelect;
+
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      FilterChip(
-        label: const LText('Follow system'),
-        avatar: const Icon(InkIcons.circleHalf, size: 18),
-        selected: preferences.appearance == AppAppearance.system,
-        onSelected: onSelect == null
-            ? null
-            : (_) => onSelect!(AppAppearance.system),
-      ),
-      const SizedBox(height: 8),
+      LText(title, style: Theme.of(context).textTheme.titleSmall),
+      const SizedBox(height: 12),
       LayoutBuilder(
-        builder: (context, constraints) {
-          final columns = constraints.maxWidth >= 480 ? 3 : 2;
-          final width = (constraints.maxWidth - (columns - 1) * 12) / columns;
+        builder: (context, bounds) {
+          final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+          final columns = (bounds.maxWidth / (136 * scale)).floor().clamp(1, 4);
+          final width = (bounds.maxWidth - 12 * (columns - 1)) / columns;
           return Wrap(
             spacing: 12,
             runSpacing: 12,
             children: [
-              for (final appearance in AppAppearance.values.skip(1))
+              for (final appearance in AppAppearance.values.where(
+                (value) => light ? value.isLight : value.isDark,
+              ))
                 SizedBox(
                   width: width,
-                  child: Semantics(
-                    selected: preferences.appearance == appearance,
-                    button: true,
-                    child: InkWell(
-                      key: ValueKey('theme-${appearance.name}'),
-                      onTap: onSelect == null
-                          ? null
-                          : () => onSelect!(appearance),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Column(
-                        children: [
-                          Container(
-                            height: 100,
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                width: preferences.appearance == appearance
-                                    ? 2
-                                    : 1,
-                                color: preferences.appearance == appearance
-                                    ? Theme.of(context).colorScheme.primary
-                                    : InkoraColors.of(context).border,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: CustomPaint(
-                                painter: _ThemePreview(appearance),
-                                child: const SizedBox.expand(),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          LText(
-                            appearanceLabel(appearance),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                        ],
-                      ),
-                    ),
+                  child: _PaletteTile(
+                    appearance: appearance,
+                    selected: selected == appearance,
+                    onTap: onSelect == null
+                        ? null
+                        : () => onSelect!(appearance),
                   ),
                 ),
             ],
@@ -90,33 +117,92 @@ class AppearancePicker extends StatelessWidget {
   );
 }
 
+class _PaletteTile extends StatelessWidget {
+  const _PaletteTile({
+    required this.appearance,
+    required this.selected,
+    required this.onTap,
+  });
+  final AppAppearance appearance;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      selected: selected,
+      button: true,
+      child: Material(
+        color: selected
+            ? scheme.primary.withValues(alpha: .08)
+            : Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: selected ? scheme.primary : InkoraColors.of(context).border,
+            width: selected ? 2 : 1,
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          key: ValueKey('theme-${appearance.name}'),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: SizedBox(
+                    height: 48,
+                    child: CustomPaint(painter: _ThemePreview(appearance)),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: LText(
+                        appearanceLabel(appearance),
+                        style: TextStyle(
+                          fontWeight: selected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: selected
+                          ? Icon(
+                              InkIcons.checkCircle,
+                              size: 20,
+                              color: scheme.primary,
+                            )
+                          : null,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ThemePreview extends CustomPainter {
-  _ThemePreview(this.appearance);
+  const _ThemePreview(this.appearance);
   final AppAppearance appearance;
   @override
   void paint(Canvas canvas, Size size) {
-    final light =
-        appearance == AppAppearance.light || appearance == AppAppearance.sepia;
-    final base = switch (appearance) {
-      AppAppearance.sepia => const Color(0xFFF0E3CA),
-      AppAppearance.ocean => const Color(0xFF071B2B),
-      AppAppearance.forest => const Color(0xFF0C1C16),
-      AppAppearance.amoled => Colors.black,
-      AppAppearance.light => const Color(0xFFFBF6ED),
-      _ => const Color(0xFF0D1115),
-    };
-    final panel = switch (appearance) {
-      AppAppearance.sepia => const Color(0xFFE4D4B7),
-      AppAppearance.ocean => const Color(0xFF1A394E),
-      AppAppearance.forest => const Color(0xFF234234),
-      _ => light ? const Color(0xFFE9DFCE) : const Color(0xFF27313D),
-    };
-    final accent = appearance == AppAppearance.sepia
-        ? const Color(0xFF8C3D00)
-        : light
-        ? const Color(0xFF9C4700)
-        : const Color(0xFFFFAD45);
-    canvas.drawRect(Offset.zero & size, Paint()..color = base);
+    final palette = AppearancePalette.of(appearance);
+    canvas.drawRect(Offset.zero & size, Paint()..color = palette.background);
     void box(double x, double y, double w, double h, Color color) =>
         canvas.drawRRect(
           RRect.fromRectAndRadius(
@@ -126,20 +212,15 @@ class _ThemePreview extends CustomPainter {
               size.width * w,
               size.height * h,
             ),
-            const Radius.circular(2),
+            const Radius.circular(3),
           ),
           Paint()..color = color,
         );
-    box(.08, .1, .45, .04, accent);
-    box(.08, .24, .84, .22, panel);
-    box(.12, .28, .16, .14, accent.withValues(alpha: .6));
-    box(.34, .29, .5, .03, accent);
-    box(.34, .36, .35, .02, base);
-    box(.08, .53, .84, .03, accent.withValues(alpha: .6));
-    for (var i = 0; i < 3; i++) {
-      box(.08 + i * .29, .62, .24, .24, panel);
-    }
-    box(.08, .92, .84, .02, panel);
+    box(.06, .14, .88, .72, palette.panel);
+    box(.1, .24, .2, .52, palette.raised);
+    box(.36, .28, .48, .08, palette.accent);
+    box(.36, .46, .35, .06, palette.accent.withValues(alpha: .55));
+    box(.36, .64, .2, .12, palette.button ?? InkoraTheme.action);
   }
 
   @override

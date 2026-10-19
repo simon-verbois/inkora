@@ -15,6 +15,7 @@ import 'package:go_router/go_router.dart';
 
 import '../application/ui_preferences_provider.dart';
 import 'settings_screen.dart';
+import 'settings_adaptive_layout.dart';
 
 class SetupScreen extends ConsumerStatefulWidget {
   const SetupScreen({super.key, this.editing = false});
@@ -30,6 +31,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     ('appearance', 'Appearance'),
     ('gestures', 'Reading gestures'),
     ('library-defaults', 'Library defaults'),
+    ('quality', 'Quality'),
     ('downloads', 'Downloads'),
     ('accessibility', 'Accessibility'),
   ];
@@ -61,6 +63,16 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         if (mounted) setState(() => _saving = false);
       }
     } else {
+      if (_sections.length > step && _sections[step].$1 == 'quality') {
+        setState(() => _saving = true);
+        bool? saved;
+        try {
+          saved = await _editorKey.currentState?.savePreferences();
+        } finally {
+          if (mounted) setState(() => _saving = false);
+        }
+        if (saved != true || !mounted) return;
+      }
       await _move(
         (step + 1).clamp(0, _sections.length),
         finish: step == _sections.length,
@@ -114,177 +126,93 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       0,
       _sections.length,
     );
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) _back(step);
-      },
-      child: Scaffold(
-        appBar: InkAppBar(
-          automaticallyImplyLeading: false,
-          title: const LText('Make Inkora yours'),
-          actions: [
-            if (widget.editing)
-              CloseButton(
-                onPressed: _saving ? null : () => context.go('/settings'),
-              ),
-          ],
-        ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: EdgeInsets.all(
-                  MediaQuery.textScalerOf(context).scale(1) > 1.5 ? 8 : 16,
-                ),
-                child: Column(
-                  children: [
-                    LText(
-                      'Step {0} of {1}',
-                      arguments: [step + 1, _sections.length + 1],
-                    ),
-                    const SizedBox(height: 8),
-                    LinearProgressIndicator(
-                      semanticsLabel: context.tr(
-                        step < _sections.length
-                            ? _sections[step].$2
-                            : 'Ready to read',
-                      ),
-                      value: (step + 1) / (_sections.length + 1),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: step < _sections.length
-                    ? _sections[step].$1 == 'library-defaults'
-                          ? LibraryDefaultsScreen(
-                              key: ValueKey(_libraryId),
-                              embedded: true,
-                              libraryId: _libraryId,
-                              editorKey: _editorKey,
-                              onLibrarySelected: (id) =>
-                                  setState(() => _libraryId = id),
-                              onSaved: () => setState(() => _libraryId = null),
-                            )
-                          : _sections[step].$1 == 'introduction'
-                          ? const SetupIntroduction()
-                          : SettingsScreen(
-                              key: ValueKey(step),
-                              section: _sections[step].$1,
-                              embedded: true,
-                            )
-                    : Center(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(24),
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 560),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Icon(
-                                  InkIcons.checkCircle,
-                                  size: 56,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                                const SizedBox(height: 20),
-                                LText(
-                                  'Ready to read',
-                                  textAlign: TextAlign.center,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineMedium,
-                                ),
-                                const SizedBox(height: 12),
-                                const LText(
-                                  'Your configuration is saved on this device. You can change every setting later, or reopen Guided setup from Settings.',
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 24),
-                                InkPanel(
-                                  child: Column(
-                                    children: [
-                                      ListTile(
-                                        contentPadding: EdgeInsets.zero,
-                                        leading: const Icon(InkIcons.palette),
-                                        title: LText(
-                                          appearanceLabel(
-                                            preferences.appearance,
-                                          ),
-                                        ),
-                                        subtitle: LText(
-                                          densityLabel(preferences.density),
-                                        ),
-                                      ),
-                                      ListTile(
-                                        contentPadding: EdgeInsets.zero,
-                                        leading: const Icon(InkIcons.books),
-                                        title: Text(
-                                          languageNames[preferences.locale] ??
-                                              context.tr('System language'),
-                                        ),
-                                      ),
-                                      ListTile(
-                                        contentPadding: EdgeInsets.zero,
-                                        leading: const Icon(
-                                          InkIcons.personArmsSpread,
-                                        ),
-                                        title: LText(
-                                          gesturePresetLabel(
-                                            preferences.gestures.preset,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-              ),
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: LText(_error!),
-                ),
-              Padding(
-                padding: EdgeInsets.all(
-                  MediaQuery.textScalerOf(context).scale(1) > 1.5 ? 8 : 16,
-                ),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 420),
-                    child: InkSurface(
-                      padding: const EdgeInsets.all(8),
-                      child: IntrinsicHeight(
-                        child: Row(
+    final stepTitle = step < _sections.length
+        ? _sections[step].$2
+        : 'Ready to read';
+    return LayoutBuilder(
+      builder: (context, bounds) {
+        final wide = useWideSettings(context, bounds.maxWidth);
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) {
+            if (!didPop) _back(step);
+          },
+          child: Scaffold(
+            appBar: InkAppBar(
+              automaticallyImplyLeading: false,
+              title: LText(wide ? stepTitle : 'Make Inkora yours'),
+              actions: [
+                if (widget.editing)
+                  CloseButton(
+                    onPressed: _saving ? null : () => context.go('/settings'),
+                  ),
+              ],
+            ),
+            body: SafeArea(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Offstage(
+                    offstage: !wide,
+                    child: SizedBox(
+                      width: 248,
+                      child: Padding(
+                        key: const Key('setup-sidebar'),
+                        padding: const EdgeInsets.fromLTRB(24, 16, 8, 16),
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                key: const Key('setup-back'),
-                                onPressed: _saving || step == 0
-                                    ? null
-                                    : () => _back(step),
-                                child: const LText(
-                                  'Back',
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
+                            LText(
+                              'Make Inkora yours',
+                              style: Theme.of(context).textTheme.titleLarge,
                             ),
-                            const SizedBox(width: 16),
+                            const SizedBox(height: 8),
+                            LText(
+                              'Step {0} of {1}',
+                              arguments: [step + 1, _sections.length + 1],
+                            ),
+                            const SizedBox(height: 16),
                             Expanded(
-                              child: FilledButton(
-                                key: const Key('setup-next'),
-                                onPressed: _saving ? null : () => _next(step),
-                                child: LText(
-                                  step == _sections.length
-                                      ? 'Start reading'
-                                      : 'Next',
-                                  textAlign: TextAlign.center,
-                                ),
+                              child: ListView(
+                                children: [
+                                  for (
+                                    var index = 0;
+                                    index <= _sections.length;
+                                    index++
+                                  )
+                                    Semantics(
+                                      selected: index == step,
+                                      child: ListTile(
+                                        key: ValueKey('setup-stage-$index'),
+                                        selected: index == step,
+                                        selectedTileColor: Theme.of(context)
+                                            .colorScheme
+                                            .secondaryContainer,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                            ),
+                                        leading: ExcludeSemantics(
+                                          child: index < step
+                                              ? const Icon(
+                                                  InkIcons.checkCircle,
+                                                  size: 22,
+                                                )
+                                              : Text('${index + 1}'),
+                                        ),
+                                        title: LText(
+                                          index < _sections.length
+                                              ? _sections[index].$2
+                                              : 'Ready to read',
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
                           ],
@@ -292,12 +220,226 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                       ),
                     ),
                   ),
-                ),
+                  SizedBox(width: wide ? 16 : 0),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Offstage(
+                          offstage: wide,
+                          child: Padding(
+                            padding: EdgeInsets.all(
+                              MediaQuery.textScalerOf(context).scale(1) > 1.5
+                                  ? 8
+                                  : 16,
+                            ),
+                            child: Column(
+                              children: [
+                                LText(
+                                  'Step {0} of {1}',
+                                  arguments: [step + 1, _sections.length + 1],
+                                ),
+                                const SizedBox(height: 8),
+                                LinearProgressIndicator(
+                                  semanticsLabel: context.tr(
+                                    step < _sections.length
+                                        ? _sections[step].$2
+                                        : 'Ready to read',
+                                  ),
+                                  value: (step + 1) / (_sections.length + 1),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: SettingsPaneScope(
+                            wide: wide,
+                            child: step < _sections.length
+                                ? _sections[step].$1 == 'library-defaults'
+                                      ? LibraryDefaultsScreen(
+                                          key: ValueKey(_libraryId),
+                                          embedded: true,
+                                          libraryId: _libraryId,
+                                          editorKey: _editorKey,
+                                          onLibrarySelected: (id) =>
+                                              setState(() => _libraryId = id),
+                                          onSaved: () =>
+                                              setState(() => _libraryId = null),
+                                        )
+                                      : _sections[step].$1 == 'introduction'
+                                      ? SetupIntroduction(showTitle: !wide)
+                                      : SettingsScreen(
+                                          key: ValueKey(step),
+                                          section: _sections[step].$1,
+                                          embedded: true,
+                                          editorKey:
+                                              _sections[step].$1 == 'quality'
+                                              ? _editorKey
+                                              : null,
+                                          onSaved:
+                                              _sections[step].$1 == 'quality'
+                                              ? () {}
+                                              : null,
+                                        )
+                                : Center(
+                                    child: SingleChildScrollView(
+                                      padding: const EdgeInsets.all(24),
+                                      child: ConstrainedBox(
+                                        constraints: const BoxConstraints(
+                                          maxWidth: 560,
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
+                                            Icon(
+                                              InkIcons.checkCircle,
+                                              size: 56,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary,
+                                            ),
+                                            const SizedBox(height: 20),
+                                            if (!wide)
+                                              LText(
+                                                'Ready to read',
+                                                textAlign: TextAlign.center,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .headlineMedium,
+                                              ),
+                                            const SizedBox(height: 12),
+                                            const LText(
+                                              'Your configuration is saved on this device. You can change every setting later, or reopen Guided setup from Settings.',
+                                              textAlign: TextAlign.center,
+                                            ),
+                                            const SizedBox(height: 24),
+                                            InkPanel(
+                                              child: Column(
+                                                children: [
+                                                  ListTile(
+                                                    contentPadding:
+                                                        EdgeInsets.zero,
+                                                    leading: const Icon(
+                                                      InkIcons.palette,
+                                                    ),
+                                                    title: LText(
+                                                      appearanceLabel(
+                                                        preferences.appearance,
+                                                      ),
+                                                    ),
+                                                    subtitle: LText(
+                                                      densityLabel(
+                                                        preferences.density,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  ListTile(
+                                                    contentPadding:
+                                                        EdgeInsets.zero,
+                                                    leading: const Icon(
+                                                      InkIcons.books,
+                                                    ),
+                                                    title: Text(
+                                                      languageNames[preferences
+                                                              .locale] ??
+                                                          context.tr(
+                                                            'System language',
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  ListTile(
+                                                    contentPadding:
+                                                        EdgeInsets.zero,
+                                                    leading: const Icon(
+                                                      InkIcons.personArmsSpread,
+                                                    ),
+                                                    title: LText(
+                                                      gesturePresetLabel(
+                                                        preferences
+                                                            .gestures
+                                                            .preset,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        if (_error != null)
+                          Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: LText(_error!),
+                          ),
+                        Padding(
+                          padding: EdgeInsets.all(
+                            MediaQuery.textScalerOf(context).scale(1) > 1.5
+                                ? 8
+                                : 16,
+                          ),
+                          child: Align(
+                            alignment: wide
+                                ? Alignment.centerRight
+                                : Alignment.center,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 420),
+                              child: Padding(
+                                key: const Key('setup-footer'),
+                                padding: const EdgeInsets.all(8),
+                                child: IntrinsicHeight(
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton(
+                                          key: const Key('setup-back'),
+                                          onPressed: _saving || step == 0
+                                              ? null
+                                              : () => _back(step),
+                                          child: const LText(
+                                            'Back',
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: FilledButton(
+                                          key: const Key('setup-next'),
+                                          onPressed: _saving
+                                              ? null
+                                              : () => _next(step),
+                                          child: LText(
+                                            step == _sections.length
+                                                ? 'Start reading'
+                                                : 'Next',
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

@@ -5,6 +5,7 @@ import '../domain/ebook_settings.dart';
 import '../../app/icons/inkora_icons.dart';
 import 'reader_settings_layout.dart';
 import 'ebook_presentation.dart';
+import 'ebook_margins_dialog.dart';
 
 enum EbookControlsSection { all, layout, typography }
 
@@ -35,22 +36,18 @@ class EbookSettingsControls extends StatelessWidget {
               (v) => onChanged('scroll', v),
             ),
             if (!pdf)
-              _choice(
-                context,
-                'Page margins',
-                const [.5, 1.0, 1.5, 2.0].contains(settings.margins)
-                    ? settings.margins.toString()
-                    : 'custom',
-                {
-                  '0.5': 'Narrow margins',
-                  '1.0': 'Balanced margins',
-                  '1.5': 'Wide margins',
-                  '2.0': 'Extra wide margins',
-                  if (!const [.5, 1.0, 1.5, 2.0].contains(settings.margins))
-                    'custom': 'Custom',
-                },
-                (v) {
-                  if (v != 'custom') onChanged('margins', double.parse(v));
+              OutlinedButton.icon(
+                key: const Key('ebook-margin-picker'),
+                icon: const Icon(InkIcons.slidersHorizontal),
+                label: const LText('Page margins'),
+                onPressed: () async {
+                  final result = await showDialog<EbookPageInsets>(
+                    context: context,
+                    builder: (_) => EbookMarginsDialog(settings: settings),
+                  );
+                  if (result != null && context.mounted) {
+                    onChanged('pageInsets', result.toJson());
+                  }
                 },
               ),
             if (!pdf)
@@ -109,15 +106,6 @@ class EbookSettingsControls extends StatelessWidget {
               1,
               2.5,
               15,
-            ),
-            _slider(
-              context,
-              'Page margins',
-              'margins',
-              settings.margins,
-              .2,
-              2,
-              18,
             ),
             _toggle(
               context,

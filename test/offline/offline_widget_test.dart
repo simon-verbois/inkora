@@ -1,3 +1,4 @@
+import 'package:inkora/app/widgets/ink_surface.dart';
 import 'package:inkora/features/library/domain/catalogue_metadata.dart';
 
 import 'dart:io';
@@ -184,6 +185,13 @@ void main() {
       expect(find.text('Pause'), findsNothing);
       expect(find.text('No downloads in the queue'), findsNothing);
       expect(find.text('Storage and network'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(DownloadSettingsPanel),
+          matching: find.byType(InkSurface),
+        ),
+        findsNothing,
+      );
       expect(find.text('Download storage quota'), findsOneWidget);
       final previous = service.store.wifiOnly;
       await tap(tester, find.byType(SwitchListTile));

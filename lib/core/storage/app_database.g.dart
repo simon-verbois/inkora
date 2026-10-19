@@ -6910,6 +6910,584 @@ class ResumeSnapshotsCompanion extends UpdateCompanion<ResumeSnapshot> {
   }
 }
 
+class $ReadingHistoryTable extends ReadingHistory
+    with TableInfo<$ReadingHistoryTable, ReadingHistoryData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReadingHistoryTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _accountIdMeta = const VerificationMeta(
+    'accountId',
+  );
+  @override
+  late final GeneratedColumn<String> accountId = GeneratedColumn<String>(
+    'account_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bookIdMeta = const VerificationMeta('bookId');
+  @override
+  late final GeneratedColumn<String> bookId = GeneratedColumn<String>(
+    'book_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _openedAtMeta = const VerificationMeta(
+    'openedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> openedAt = GeneratedColumn<DateTime>(
+    'opened_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [accountId, bookId, title, openedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'reading_history';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ReadingHistoryData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('account_id')) {
+      context.handle(
+        _accountIdMeta,
+        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_accountIdMeta);
+    }
+    if (data.containsKey('book_id')) {
+      context.handle(
+        _bookIdMeta,
+        bookId.isAcceptableOrUnknown(data['book_id']!, _bookIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bookIdMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('opened_at')) {
+      context.handle(
+        _openedAtMeta,
+        openedAt.isAcceptableOrUnknown(data['opened_at']!, _openedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_openedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {accountId, bookId};
+  @override
+  ReadingHistoryData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ReadingHistoryData(
+      accountId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}account_id'],
+      )!,
+      bookId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}book_id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      openedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}opened_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ReadingHistoryTable createAlias(String alias) {
+    return $ReadingHistoryTable(attachedDatabase, alias);
+  }
+}
+
+class ReadingHistoryData extends DataClass
+    implements Insertable<ReadingHistoryData> {
+  final String accountId;
+  final String bookId;
+  final String title;
+  final DateTime openedAt;
+  const ReadingHistoryData({
+    required this.accountId,
+    required this.bookId,
+    required this.title,
+    required this.openedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['account_id'] = Variable<String>(accountId);
+    map['book_id'] = Variable<String>(bookId);
+    map['title'] = Variable<String>(title);
+    map['opened_at'] = Variable<DateTime>(openedAt);
+    return map;
+  }
+
+  ReadingHistoryCompanion toCompanion(bool nullToAbsent) {
+    return ReadingHistoryCompanion(
+      accountId: Value(accountId),
+      bookId: Value(bookId),
+      title: Value(title),
+      openedAt: Value(openedAt),
+    );
+  }
+
+  factory ReadingHistoryData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ReadingHistoryData(
+      accountId: serializer.fromJson<String>(json['accountId']),
+      bookId: serializer.fromJson<String>(json['bookId']),
+      title: serializer.fromJson<String>(json['title']),
+      openedAt: serializer.fromJson<DateTime>(json['openedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'accountId': serializer.toJson<String>(accountId),
+      'bookId': serializer.toJson<String>(bookId),
+      'title': serializer.toJson<String>(title),
+      'openedAt': serializer.toJson<DateTime>(openedAt),
+    };
+  }
+
+  ReadingHistoryData copyWith({
+    String? accountId,
+    String? bookId,
+    String? title,
+    DateTime? openedAt,
+  }) => ReadingHistoryData(
+    accountId: accountId ?? this.accountId,
+    bookId: bookId ?? this.bookId,
+    title: title ?? this.title,
+    openedAt: openedAt ?? this.openedAt,
+  );
+  ReadingHistoryData copyWithCompanion(ReadingHistoryCompanion data) {
+    return ReadingHistoryData(
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
+      bookId: data.bookId.present ? data.bookId.value : this.bookId,
+      title: data.title.present ? data.title.value : this.title,
+      openedAt: data.openedAt.present ? data.openedAt.value : this.openedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReadingHistoryData(')
+          ..write('accountId: $accountId, ')
+          ..write('bookId: $bookId, ')
+          ..write('title: $title, ')
+          ..write('openedAt: $openedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(accountId, bookId, title, openedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ReadingHistoryData &&
+          other.accountId == this.accountId &&
+          other.bookId == this.bookId &&
+          other.title == this.title &&
+          other.openedAt == this.openedAt);
+}
+
+class ReadingHistoryCompanion extends UpdateCompanion<ReadingHistoryData> {
+  final Value<String> accountId;
+  final Value<String> bookId;
+  final Value<String> title;
+  final Value<DateTime> openedAt;
+  final Value<int> rowid;
+  const ReadingHistoryCompanion({
+    this.accountId = const Value.absent(),
+    this.bookId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.openedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ReadingHistoryCompanion.insert({
+    required String accountId,
+    required String bookId,
+    required String title,
+    required DateTime openedAt,
+    this.rowid = const Value.absent(),
+  }) : accountId = Value(accountId),
+       bookId = Value(bookId),
+       title = Value(title),
+       openedAt = Value(openedAt);
+  static Insertable<ReadingHistoryData> custom({
+    Expression<String>? accountId,
+    Expression<String>? bookId,
+    Expression<String>? title,
+    Expression<DateTime>? openedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (accountId != null) 'account_id': accountId,
+      if (bookId != null) 'book_id': bookId,
+      if (title != null) 'title': title,
+      if (openedAt != null) 'opened_at': openedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ReadingHistoryCompanion copyWith({
+    Value<String>? accountId,
+    Value<String>? bookId,
+    Value<String>? title,
+    Value<DateTime>? openedAt,
+    Value<int>? rowid,
+  }) {
+    return ReadingHistoryCompanion(
+      accountId: accountId ?? this.accountId,
+      bookId: bookId ?? this.bookId,
+      title: title ?? this.title,
+      openedAt: openedAt ?? this.openedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (accountId.present) {
+      map['account_id'] = Variable<String>(accountId.value);
+    }
+    if (bookId.present) {
+      map['book_id'] = Variable<String>(bookId.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (openedAt.present) {
+      map['opened_at'] = Variable<DateTime>(openedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReadingHistoryCompanion(')
+          ..write('accountId: $accountId, ')
+          ..write('bookId: $bookId, ')
+          ..write('title: $title, ')
+          ..write('openedAt: $openedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BookReadingStatesTable extends BookReadingStates
+    with TableInfo<$BookReadingStatesTable, BookReadingState> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BookReadingStatesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _accountIdMeta = const VerificationMeta(
+    'accountId',
+  );
+  @override
+  late final GeneratedColumn<String> accountId = GeneratedColumn<String>(
+    'account_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bookIdMeta = const VerificationMeta('bookId');
+  @override
+  late final GeneratedColumn<String> bookId = GeneratedColumn<String>(
+    'book_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [accountId, bookId, status];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'book_reading_states';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BookReadingState> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('account_id')) {
+      context.handle(
+        _accountIdMeta,
+        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_accountIdMeta);
+    }
+    if (data.containsKey('book_id')) {
+      context.handle(
+        _bookIdMeta,
+        bookId.isAcceptableOrUnknown(data['book_id']!, _bookIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bookIdMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {accountId, bookId};
+  @override
+  BookReadingState map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BookReadingState(
+      accountId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}account_id'],
+      )!,
+      bookId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}book_id'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+    );
+  }
+
+  @override
+  $BookReadingStatesTable createAlias(String alias) {
+    return $BookReadingStatesTable(attachedDatabase, alias);
+  }
+}
+
+class BookReadingState extends DataClass
+    implements Insertable<BookReadingState> {
+  final String accountId;
+  final String bookId;
+  final String status;
+  const BookReadingState({
+    required this.accountId,
+    required this.bookId,
+    required this.status,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['account_id'] = Variable<String>(accountId);
+    map['book_id'] = Variable<String>(bookId);
+    map['status'] = Variable<String>(status);
+    return map;
+  }
+
+  BookReadingStatesCompanion toCompanion(bool nullToAbsent) {
+    return BookReadingStatesCompanion(
+      accountId: Value(accountId),
+      bookId: Value(bookId),
+      status: Value(status),
+    );
+  }
+
+  factory BookReadingState.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BookReadingState(
+      accountId: serializer.fromJson<String>(json['accountId']),
+      bookId: serializer.fromJson<String>(json['bookId']),
+      status: serializer.fromJson<String>(json['status']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'accountId': serializer.toJson<String>(accountId),
+      'bookId': serializer.toJson<String>(bookId),
+      'status': serializer.toJson<String>(status),
+    };
+  }
+
+  BookReadingState copyWith({
+    String? accountId,
+    String? bookId,
+    String? status,
+  }) => BookReadingState(
+    accountId: accountId ?? this.accountId,
+    bookId: bookId ?? this.bookId,
+    status: status ?? this.status,
+  );
+  BookReadingState copyWithCompanion(BookReadingStatesCompanion data) {
+    return BookReadingState(
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
+      bookId: data.bookId.present ? data.bookId.value : this.bookId,
+      status: data.status.present ? data.status.value : this.status,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BookReadingState(')
+          ..write('accountId: $accountId, ')
+          ..write('bookId: $bookId, ')
+          ..write('status: $status')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(accountId, bookId, status);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BookReadingState &&
+          other.accountId == this.accountId &&
+          other.bookId == this.bookId &&
+          other.status == this.status);
+}
+
+class BookReadingStatesCompanion extends UpdateCompanion<BookReadingState> {
+  final Value<String> accountId;
+  final Value<String> bookId;
+  final Value<String> status;
+  final Value<int> rowid;
+  const BookReadingStatesCompanion({
+    this.accountId = const Value.absent(),
+    this.bookId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BookReadingStatesCompanion.insert({
+    required String accountId,
+    required String bookId,
+    required String status,
+    this.rowid = const Value.absent(),
+  }) : accountId = Value(accountId),
+       bookId = Value(bookId),
+       status = Value(status);
+  static Insertable<BookReadingState> custom({
+    Expression<String>? accountId,
+    Expression<String>? bookId,
+    Expression<String>? status,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (accountId != null) 'account_id': accountId,
+      if (bookId != null) 'book_id': bookId,
+      if (status != null) 'status': status,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BookReadingStatesCompanion copyWith({
+    Value<String>? accountId,
+    Value<String>? bookId,
+    Value<String>? status,
+    Value<int>? rowid,
+  }) {
+    return BookReadingStatesCompanion(
+      accountId: accountId ?? this.accountId,
+      bookId: bookId ?? this.bookId,
+      status: status ?? this.status,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (accountId.present) {
+      map['account_id'] = Variable<String>(accountId.value);
+    }
+    if (bookId.present) {
+      map['book_id'] = Variable<String>(bookId.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BookReadingStatesCompanion(')
+          ..write('accountId: $accountId, ')
+          ..write('bookId: $bookId, ')
+          ..write('status: $status, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -6944,6 +7522,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ResumeSnapshotsTable resumeSnapshots = $ResumeSnapshotsTable(
     this,
   );
+  late final $ReadingHistoryTable readingHistory = $ReadingHistoryTable(this);
+  late final $BookReadingStatesTable bookReadingStates =
+      $BookReadingStatesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6965,6 +7546,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     progressEvents,
     appPreferences,
     resumeSnapshots,
+    readingHistory,
+    bookReadingStates,
   ];
   @override
   DriftDatabaseOptions get options =>
@@ -10836,6 +11419,386 @@ typedef $$ResumeSnapshotsTableProcessedTableManager =
       ResumeSnapshot,
       PrefetchHooks Function()
     >;
+typedef $$ReadingHistoryTableCreateCompanionBuilder =
+    ReadingHistoryCompanion Function({
+      required String accountId,
+      required String bookId,
+      required String title,
+      required DateTime openedAt,
+      Value<int> rowid,
+    });
+typedef $$ReadingHistoryTableUpdateCompanionBuilder =
+    ReadingHistoryCompanion Function({
+      Value<String> accountId,
+      Value<String> bookId,
+      Value<String> title,
+      Value<DateTime> openedAt,
+      Value<int> rowid,
+    });
+
+class $$ReadingHistoryTableFilterComposer
+    extends Composer<_$AppDatabase, $ReadingHistoryTable> {
+  $$ReadingHistoryTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get accountId => $composableBuilder(
+    column: $table.accountId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bookId => $composableBuilder(
+    column: $table.bookId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get openedAt => $composableBuilder(
+    column: $table.openedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ReadingHistoryTableOrderingComposer
+    extends Composer<_$AppDatabase, $ReadingHistoryTable> {
+  $$ReadingHistoryTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get accountId => $composableBuilder(
+    column: $table.accountId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bookId => $composableBuilder(
+    column: $table.bookId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get openedAt => $composableBuilder(
+    column: $table.openedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ReadingHistoryTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ReadingHistoryTable> {
+  $$ReadingHistoryTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
+
+  GeneratedColumn<String> get bookId =>
+      $composableBuilder(column: $table.bookId, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get openedAt =>
+      $composableBuilder(column: $table.openedAt, builder: (column) => column);
+}
+
+class $$ReadingHistoryTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ReadingHistoryTable,
+          ReadingHistoryData,
+          $$ReadingHistoryTableFilterComposer,
+          $$ReadingHistoryTableOrderingComposer,
+          $$ReadingHistoryTableAnnotationComposer,
+          $$ReadingHistoryTableCreateCompanionBuilder,
+          $$ReadingHistoryTableUpdateCompanionBuilder,
+          (
+            ReadingHistoryData,
+            BaseReferences<
+              _$AppDatabase,
+              $ReadingHistoryTable,
+              ReadingHistoryData
+            >,
+          ),
+          ReadingHistoryData,
+          PrefetchHooks Function()
+        > {
+  $$ReadingHistoryTableTableManager(
+    _$AppDatabase db,
+    $ReadingHistoryTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ReadingHistoryTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ReadingHistoryTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ReadingHistoryTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> accountId = const Value.absent(),
+                Value<String> bookId = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<DateTime> openedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ReadingHistoryCompanion(
+                accountId: accountId,
+                bookId: bookId,
+                title: title,
+                openedAt: openedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String accountId,
+                required String bookId,
+                required String title,
+                required DateTime openedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ReadingHistoryCompanion.insert(
+                accountId: accountId,
+                bookId: bookId,
+                title: title,
+                openedAt: openedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ReadingHistoryTable, ReadingHistoryData>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $ReadingHistoryTable,
+                    ReadingHistoryData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ReadingHistoryTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ReadingHistoryTable,
+      ReadingHistoryData,
+      $$ReadingHistoryTableFilterComposer,
+      $$ReadingHistoryTableOrderingComposer,
+      $$ReadingHistoryTableAnnotationComposer,
+      $$ReadingHistoryTableCreateCompanionBuilder,
+      $$ReadingHistoryTableUpdateCompanionBuilder,
+      (
+        ReadingHistoryData,
+        BaseReferences<_$AppDatabase, $ReadingHistoryTable, ReadingHistoryData>,
+      ),
+      ReadingHistoryData,
+      PrefetchHooks Function()
+    >;
+typedef $$BookReadingStatesTableCreateCompanionBuilder =
+    BookReadingStatesCompanion Function({
+      required String accountId,
+      required String bookId,
+      required String status,
+      Value<int> rowid,
+    });
+typedef $$BookReadingStatesTableUpdateCompanionBuilder =
+    BookReadingStatesCompanion Function({
+      Value<String> accountId,
+      Value<String> bookId,
+      Value<String> status,
+      Value<int> rowid,
+    });
+
+class $$BookReadingStatesTableFilterComposer
+    extends Composer<_$AppDatabase, $BookReadingStatesTable> {
+  $$BookReadingStatesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get accountId => $composableBuilder(
+    column: $table.accountId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bookId => $composableBuilder(
+    column: $table.bookId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$BookReadingStatesTableOrderingComposer
+    extends Composer<_$AppDatabase, $BookReadingStatesTable> {
+  $$BookReadingStatesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get accountId => $composableBuilder(
+    column: $table.accountId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bookId => $composableBuilder(
+    column: $table.bookId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$BookReadingStatesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BookReadingStatesTable> {
+  $$BookReadingStatesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
+
+  GeneratedColumn<String> get bookId =>
+      $composableBuilder(column: $table.bookId, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+}
+
+class $$BookReadingStatesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BookReadingStatesTable,
+          BookReadingState,
+          $$BookReadingStatesTableFilterComposer,
+          $$BookReadingStatesTableOrderingComposer,
+          $$BookReadingStatesTableAnnotationComposer,
+          $$BookReadingStatesTableCreateCompanionBuilder,
+          $$BookReadingStatesTableUpdateCompanionBuilder,
+          (
+            BookReadingState,
+            BaseReferences<
+              _$AppDatabase,
+              $BookReadingStatesTable,
+              BookReadingState
+            >,
+          ),
+          BookReadingState,
+          PrefetchHooks Function()
+        > {
+  $$BookReadingStatesTableTableManager(
+    _$AppDatabase db,
+    $BookReadingStatesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BookReadingStatesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BookReadingStatesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BookReadingStatesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> accountId = const Value.absent(),
+                Value<String> bookId = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BookReadingStatesCompanion(
+                accountId: accountId,
+                bookId: bookId,
+                status: status,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String accountId,
+                required String bookId,
+                required String status,
+                Value<int> rowid = const Value.absent(),
+              }) => BookReadingStatesCompanion.insert(
+                accountId: accountId,
+                bookId: bookId,
+                status: status,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$BookReadingStatesTable, BookReadingState>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $BookReadingStatesTable,
+                    BookReadingState
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$BookReadingStatesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BookReadingStatesTable,
+      BookReadingState,
+      $$BookReadingStatesTableFilterComposer,
+      $$BookReadingStatesTableOrderingComposer,
+      $$BookReadingStatesTableAnnotationComposer,
+      $$BookReadingStatesTableCreateCompanionBuilder,
+      $$BookReadingStatesTableUpdateCompanionBuilder,
+      (
+        BookReadingState,
+        BaseReferences<
+          _$AppDatabase,
+          $BookReadingStatesTable,
+          BookReadingState
+        >,
+      ),
+      BookReadingState,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -10872,4 +11835,8 @@ class $AppDatabaseManager {
       $$AppPreferencesTableTableManager(_db, _db.appPreferences);
   $$ResumeSnapshotsTableTableManager get resumeSnapshots =>
       $$ResumeSnapshotsTableTableManager(_db, _db.resumeSnapshots);
+  $$ReadingHistoryTableTableManager get readingHistory =>
+      $$ReadingHistoryTableTableManager(_db, _db.readingHistory);
+  $$BookReadingStatesTableTableManager get bookReadingStates =>
+      $$BookReadingStatesTableTableManager(_db, _db.bookReadingStates);
 }

@@ -10,6 +10,50 @@ remain in progress.
 
 ## [Unreleased]
 
+## [2026.43.1] - 2026-10-19
+
+- Keep ebook text stationary when showing reader controls and retain a central gutter between EPUB pages with custom margins.
+- Move Guided setup into the About settings page.
+
+- Hide tablet settings scrollbars, separate the menu from its page and expand search from its icon over the Settings heading, opening the keyboard immediately.
+
+- Keep the Inkora wordmark in the tablet settings header and remove its section-title Back button.
+
+- Move enlargement and sharpening controls to a dedicated Upscaling tab in Quality, including guided setup.
+- Remove enclosing panel backgrounds from settings and download configuration.
+
+- Remove incomplete QR code export; retain file backups and import of existing settings QR codes.
+
+- Label navigation benchmark reports with their actual debug/profile runtime mode.
+
+- Align reading history with Continue reading and combine library selection, quick filters and catalogue tools in one sticky row. Center wide-screen chips and use a quick-filter popup in compact windows.
+- Keep the catalogue scroll position while changing sort order, including already loaded result windows.
+- Remove global header search and its modal route; retain search within each catalogue.
+
+- Remove the shared background frame behind guided setup Back/Next buttons.
+
+- Refresh the public README, current product documentation and six reproducible demonstration screenshots.
+- Add an Inkora-style static presentation website with accessible screenshot previews and a manual GitHub Pages workflow.
+- Preserve Material label typography when emphasizing filled-button text.
+
+- Add batch volume downloads, quick reading/offline filters and comic archive format filtering.
+- Add manga/comic/webtoon bookmarks, a page overview, scrub previews, end-of-volume handoff and local reading history.
+- Add account-safe settings/bookmark file backup and native scanning of existing portable settings QR codes.
+
+- Make tablet settings continuation visible with a persistent scrollbar, compact category rows and a guided-setup action below the list.
+
+- Choose separate default light and dark themes when following system appearance.
+- Add Pearl, Rose, Midnight and Plum palettes and regroup compact theme previews for phones and tablets.
+
+- Use a persistent category pane and compact headings for tablet-landscape settings; show setup steps beside the active page, with paired controls and fixed navigation actions.
+- Preserve reading-setting drafts across resizing and refresh adaptive layouts when the system text size changes.
+
+- Add phone/tablet ebook margin presets and independent custom edges in a dialog, with camera-safe text placement.
+- Default image enhancement to Balanced and panel opacity to 94%; include reading Quality after library defaults in guided setup.
+- Keep a floating Back button on series details and place synopsis and metadata below the cover/title area.
+
+- Install Android debug/profile and local development test builds as a separate Inkora Dev app, preserving the installed distribution app and its data.
+
 ## [2026.42.4] - 2026-10-18
 
 - Document reusable mobile usability, adaptive-layout, accessibility and performance review practices.

@@ -170,6 +170,7 @@ final class ProgressStore {
       ],
       updates: {database.progressEvents},
     );
+    await _readingState(manifest.bookId);
   });
   Future<List<ProgressIntent>> pending() async =>
       (await database
@@ -202,9 +203,37 @@ final class ProgressStore {
     "UPDATE progress_events SET state = 'queued' WHERE account_id = ? AND state = 'sending'",
     [accountId],
   );
+
+  /// A page save may update the outbox, but never wakes a filtered catalogue
+  /// unless its three-state classification actually changes.
+  Future<void> _readingState(String book) async {
+    final changed = await database.customUpdate(
+      """INSERT INTO book_reading_states(account_id,book_id,status)
+      SELECT ?, ?, COALESCE(
+        (SELECT CASE WHEN operation='markUnread' THEN 'unread' WHEN operation='complete' THEN 'completed'
+          WHEN document_locator IS NOT NULL THEN CASE WHEN json_extract(document_locator,'\$.locations.totalProgression')>=0.99 THEN 'completed' ELSE 'inProgress' END
+          WHEN page_index>=page_count-1 THEN 'completed' ELSE 'inProgress' END
+          FROM progress_events WHERE account_id=? AND book_id=? ORDER BY sequence DESC LIMIT 1),
+        (SELECT CASE WHEN json_extract(baseline,'\$.completed')=1 THEN 'completed' WHEN json_extract(baseline,'\$.page') IS NOT NULL THEN 'inProgress' ELSE 'unread' END
+          FROM progress_heads WHERE account_id=? AND book_id=?), 'unread')
+      ON CONFLICT(account_id,book_id) DO UPDATE SET status=excluded.status WHERE book_reading_states.status<>excluded.status""",
+      variables: [
+        Variable(accountId),
+        Variable(book),
+        Variable(accountId),
+        Variable(book),
+        Variable(accountId),
+        Variable(book),
+      ],
+    );
+    if (changed > 0) {
+      database.notifyUpdates({TableUpdate.onTable(database.bookReadingStates)});
+    }
+  }
+
   Future<void> observe(String book, ProgressSnapshot remote) async {
     await database.customUpdate(
-      'INSERT INTO progress_heads (account_id, book_id, sequence, baseline) VALUES (?, ?, 0, ?) ON CONFLICT(account_id, book_id) DO UPDATE SET baseline = excluded.baseline',
+      'INSERT INTO progress_heads (account_id, book_id, sequence, baseline) VALUES (?, ?, 0, ?) ON CONFLICT(account_id, book_id) DO UPDATE SET baseline = excluded.baseline WHERE progress_heads.baseline IS NOT excluded.baseline',
       variables: [
         Variable(accountId),
         Variable(book),
@@ -212,6 +241,7 @@ final class ProgressStore {
       ],
       updates: {database.progressHeads},
     );
+    await _readingState(book);
   }
 
   Future<void> acknowledge(
@@ -244,6 +274,7 @@ final class ProgressStore {
         ],
       );
     }
+    await _readingState(event.bookId);
   });
   Future<void> state(
     ProgressIntent event,

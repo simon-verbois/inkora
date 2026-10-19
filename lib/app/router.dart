@@ -1,5 +1,4 @@
-import 'widgets/ink_overlay_page.dart';
-import '../features/library/presentation/catalogue_presentation.dart';
+import '../features/library/presentation/reading_history_screen.dart';
 import 'inkora_page.dart';
 import 'widgets/branch_transition.dart';
 import '../app/l10n/app_strings.dart';
@@ -120,12 +119,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       StatefulShellRoute(
         navigatorContainerBuilder: (_, shell, children) =>
             BranchTransition(index: shell.currentIndex, children: children),
-        builder: (_, state, shell) => InkoraShell(
-          navigationShell: shell,
-          showSearch:
-              !(state.topRoute?.name == 'catalogue-detail' &&
-                  state.pathParameters['kind'] == CatalogueKind.series.name),
-        ),
+        builder: (_, state, shell) =>
+            InkoraShell(navigationShell: shell, currentPath: state.uri.path),
         branches: [
           StatefulShellBranch(
             routes: [
@@ -135,21 +130,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                     page(state, const LibraryScreen(), primary: true),
                 routes: [
                   GoRoute(
-                    path: 'search',
-                    parentNavigatorKey: rootNavigator,
-                    pageBuilder: (context, state) => InkOverlayPage<void>(
-                      key: state.pageKey,
-                      child: CatalogueScreen(
-                        kind: CatalogueKind.series,
-                        searchMode: true,
-                        embedded: true,
-                        onOpen: (item) {
-                          // Pop the modal first so it cannot cover the destination.
-                          context.pop();
-                          openCatalogueItem(context, item);
-                        },
-                      ),
-                    ),
+                    path: 'history',
+                    pageBuilder: (_, state) =>
+                        page(state, const ReadingHistoryScreen()),
                   ),
                 ],
               ),
@@ -311,6 +294,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                       return page(
                         state,
                         const {
+                              'transfer',
                               'appearance',
                               'language',
                               'gestures',

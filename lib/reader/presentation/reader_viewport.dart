@@ -31,8 +31,12 @@ class ReaderViewport extends StatefulWidget {
     this.onLocatorChanged,
     this.onToggleSpreadOffset,
     this.controlsActions,
+    this.navigation,
+    this.onEnd,
     super.key,
   });
+  final ValueNotifier<ReaderLocator?>? navigation;
+  final VoidCallback? onEnd;
   final OpenReader reader;
   final ReadingSettings settings;
   final Future<void> Function(ReaderLocator) saveLocator;
@@ -64,6 +68,7 @@ class _ReaderViewportState extends State<ReaderViewport>
     super.initState();
     _locator = widget.reader.locator;
     _controlPosition = ValueNotifier(_locator);
+    widget.navigation?.addListener(_navigate);
     WidgetsBinding.instance.addObserver(this);
     if (widget.reader.prefetch != null) {
       widget.reader.prefetch!.policy.paused = true;
@@ -143,7 +148,31 @@ class _ReaderViewportState extends State<ReaderViewport>
     ReaderLocator(page.clamp(0, widget.reader.manifest.pages.length - 1)),
     immediate: true,
   );
+  void _navigate() {
+    final value = widget.navigation?.value;
+    if (value != null) _position(value, immediate: true);
+  }
+
+  @override
+  void didUpdateWidget(ReaderViewport oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.navigation != widget.navigation) {
+      oldWidget.navigation?.removeListener(_navigate);
+      widget.navigation?.addListener(_navigate);
+    }
+  }
+
   void _advance(int delta) {
+    final atEnd = widget.settings.mode == ReadingMode.webtoon
+        ? _locator.pageIndex == widget.reader.manifest.pages.length - 1
+        : _pagedLayout != null &&
+              _pagedLayout!.groupFor(_locator.pageIndex) ==
+                  _pagedLayout!.groups.length - 1;
+    if (delta > 0 && atEnd && widget.onEnd != null) {
+      widget.onEnd!();
+      return;
+    }
+
     if (widget.settings.mode == ReadingMode.webtoon || _pagedLayout == null) {
       _jump(_locator.pageIndex + delta);
     } else {
@@ -153,6 +182,7 @@ class _ReaderViewportState extends State<ReaderViewport>
 
   @override
   void dispose() {
+    widget.navigation?.removeListener(_navigate);
     _saveTimer?.cancel();
     unawaited(_policy?.cancel());
     _save();
@@ -325,7 +355,20 @@ class _ReaderViewportState extends State<ReaderViewport>
                                 onPrevious: hasPrevious
                                     ? () => _advance(-1)
                                     : null,
-                                onNext: hasNext ? () => _advance(1) : null,
+                                onNext: hasNext || widget.onEnd != null
+                                    ? () => _advance(1)
+                                    : null,
+                                previewBuilder: (page) => SizedBox(
+                                  height: 110,
+                                  width: 90,
+                                  child: ReaderPageImage(
+                                    manifest: widget.reader.manifest,
+                                    index: page,
+                                    source: widget.reader.source,
+                                    visible: false,
+                                    decodeBudget: 128 * 1024,
+                                  ),
+                                ),
                                 trailing:
                                     !isWebtoon &&
                                         doubles &&

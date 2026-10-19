@@ -83,11 +83,7 @@ class CatalogueDetailHeader extends StatelessWidget {
               ),
             ],
           ],
-          if (wide && !stacked) ...[
-            const SizedBox(height: 16),
-            actions,
-            details,
-          ],
+          if (wide && !stacked) ...[const SizedBox(height: 16), actions],
         ],
       );
       return Column(
@@ -109,11 +105,9 @@ class CatalogueDetailHeader extends StatelessWidget {
                 Expanded(child: information),
               ],
             ),
-          if (!wide || stacked) ...[
-            const SizedBox(height: 16),
-            actions,
-            details,
-          ],
+          if (!wide || stacked) ...[const SizedBox(height: 16), actions],
+          const SizedBox(height: 4),
+          details,
         ],
       );
     },

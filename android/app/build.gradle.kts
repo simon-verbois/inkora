@@ -17,6 +17,10 @@ val inkoraVersionCode = if (inkoraVersion == "0.1.0") {
 }
 val inkoraKeystorePath = System.getenv("INKORA_KEYSTORE_PATH")
 val inkoraRequireSigning = System.getenv("INKORA_REQUIRE_RELEASE_SIGNING") == "true"
+val inkoraDevRelease = System.getenv("INKORA_DEVELOPMENT_BUILD") == "true"
+require(!(inkoraRequireSigning && inkoraDevRelease)) {
+    "Distribution signing cannot be combined with a development build."
+}
 if (inkoraRequireSigning) {
     require(!inkoraKeystorePath.isNullOrBlank()) { "A release keystore is required." }
 }
@@ -34,8 +38,8 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "dev.inkora.inkora"
+        manifestPlaceholders["inkoraAppLabel"] = "Inkora"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = maxOf(24, flutter.minSdkVersion)
@@ -56,11 +60,23 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".dev"
+            manifestPlaceholders["inkoraAppLabel"] = "Inkora Dev"
+        }
+        getByName("profile") {
+            applicationIdSuffix = ".dev"
+            manifestPlaceholders["inkoraAppLabel"] = "Inkora Dev"
+        }
         release {
+            if (inkoraDevRelease) {
+                applicationIdSuffix = ".dev"
+                manifestPlaceholders["inkoraAppLabel"] = "Inkora Dev"
+            }
             // Local development keeps its existing signature. CI requires the
             // stable distribution keystore; it never publishes a debug-signed APK.
             signingConfig = signingConfigs.getByName(
-                if (inkoraKeystorePath.isNullOrBlank()) "debug" else "distribution"
+                if (inkoraDevRelease || inkoraKeystorePath.isNullOrBlank()) "debug" else "distribution"
             )
         }
     }

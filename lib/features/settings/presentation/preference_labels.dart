@@ -9,6 +9,10 @@ String appearanceLabel(AppAppearance appearance) => switch (appearance) {
   AppAppearance.sepia => 'Sepia',
   AppAppearance.ocean => 'Ocean',
   AppAppearance.forest => 'Forest',
+  AppAppearance.pearl => 'Pearl',
+  AppAppearance.rose => 'Rose',
+  AppAppearance.midnight => 'Midnight',
+  AppAppearance.plum => 'Plum',
 };
 String densityLabel(CatalogueDensity density) => switch (density) {
   CatalogueDensity.comfortable => 'Comfortable',

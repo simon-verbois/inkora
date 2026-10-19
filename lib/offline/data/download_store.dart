@@ -1,3 +1,4 @@
+import '../../features/library/data/catalogue_store.dart';
 import '../../features/library/domain/catalogue_filters.dart';
 
 import 'dart:convert';
@@ -273,9 +274,14 @@ final class DownloadStore {
       kind: CatalogueKind.book,
       id: manifest.bookId,
       title: manifest.title,
+      readingStatus:
+          ReadingStatus.values
+              .where((v) => v.name == row.readNullable<String>('reading_state'))
+              .firstOrNull ??
+          ReadingStatus.unread,
       metadata: CatalogueMetadata.fromJson({
         ...fields,
-        'mediaType': manifest.documentType ?? '',
+        'mediaType': manifest.documentType ?? fields['mediaType'] ?? '',
       }),
       libraryId: manifest.libraryId,
       seriesId: manifest.seriesId,
@@ -288,9 +294,11 @@ final class DownloadStore {
 
   /// Group completed volumes using only the account's published generation.
   /// Manifests retain access when series metadata has disappeared.
-  Stream<List<DownloadedSeries>> completedSeries() => database
+  Stream<List<DownloadedSeries>> completedSeries({
+    bool includeReadingStatus = false,
+  }) => database
       .customSelect(
-        '''SELECT j.*, b.modified AS cover_modified,
+        '''SELECT j.*, ${includeReadingStatus ? CatalogueStore.readingState('j', id: 'book_id', metadata: 'b.descriptive_metadata') : 'NULL'} AS reading_state, b.modified AS cover_modified,
       COALESCE(b.series_id, json_extract(j.manifest, '\$.seriesId')) AS parent_id,
       b.number AS book_number, b.descriptive_metadata AS book_metadata, p.descriptive_metadata AS series_metadata, p.title AS series_title,
       p.modified AS series_modified, p.library_id AS series_library
@@ -304,7 +312,14 @@ final class DownloadStore {
     WHERE j.account_id=? AND j.state='complete'
     ORDER BY COALESCE(b.number, 0), j.rowid''',
         variables: [Variable(accountId)],
-        readsFrom: {database.downloadJobs, database.catalogueSnapshots},
+        readsFrom: {
+          database.downloadJobs,
+          database.catalogueSnapshots,
+          if (includeReadingStatus) ...{
+            database.bookReadingStates,
+            database.resumeSnapshots,
+          },
+        },
       )
       .watch()
       .map((rows) {
@@ -347,6 +362,16 @@ final class DownloadStore {
       kind: CatalogueKind.series,
       id: id ?? 'unassigned',
       title: title ?? (id == null ? 'Unassigned series' : 'Saved series'),
+      readingStatus:
+          books.values.every(
+            (b) => b.item.readingStatus == ReadingStatus.completed,
+          )
+          ? ReadingStatus.completed
+          : books.values.every(
+              (b) => b.item.readingStatus == ReadingStatus.unread,
+            )
+          ? ReadingStatus.unread
+          : ReadingStatus.inProgress,
       libraryId: first.readNullable<String>('series_library'),
       metadata: CatalogueMetadata.fromJson(
         jsonDecode(first.readNullable<String>('series_metadata') ?? '{}')

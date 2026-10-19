@@ -8,6 +8,36 @@ import 'package:inkora/features/library/domain/catalogue.dart';
 import '../../support/catalogue_fakes.dart';
 
 void main() {
+  test(
+    'a resort can restore a loaded prefix larger than one SQL page',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      final store = CatalogueStore(database, 'account');
+      await store.stage('sort', [
+        for (var i = 0; i < 270; i++)
+          entry('id-$i', title: 'Book ${i.toString().padLeft(3, '0')}'),
+      ]);
+      await store.publish('sort', DateTime.now(), () => true);
+      final feed = CatalogueFeed(
+        store,
+        const CatalogueQuery(
+          kind: CatalogueKind.book,
+          sort: CatalogueSort.titleDescending,
+          initialWindowSize: 240,
+        ),
+      );
+      addTearDown(() async {
+        feed.close();
+        await database.close();
+      });
+      final state = await feed.stream.firstWhere((state) => !state.loading);
+      expect(state.page.items, hasLength(240));
+      expect(state.page.items.first.id, 'id-269');
+      expect(state.page.items.last.id, 'id-30');
+      expect(state.hasMore, isTrue);
+    },
+  );
+
   test('continuous local windows grow without duplicates, preserve order and replace published generations atomically', () async {
     final database = AppDatabase(NativeDatabase.memory());
     final store = CatalogueStore(database, 'account');

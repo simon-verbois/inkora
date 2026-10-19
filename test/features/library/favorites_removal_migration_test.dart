@@ -72,7 +72,7 @@ void main() {
         final version = await database
             .customSelect('PRAGMA user_version')
             .getSingle();
-        expect(version.read<int>('user_version'), 10);
+        expect(version.read<int>('user_version'), 11);
         final legacy = await database
             .customSelect(
               "SELECT name FROM sqlite_master WHERE type='table' AND name='favorite_series'",

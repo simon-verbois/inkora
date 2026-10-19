@@ -1,3 +1,4 @@
+import '../../../app/icons/inkora_icons.dart';
 import '../../settings/application/ui_preferences_provider.dart';
 import '../../settings/domain/ui_preferences.dart';
 import '../../../app/l10n/app_strings.dart';
@@ -111,12 +112,16 @@ class _ResumeSection extends ConsumerWidget {
         child: LText('Reading history unavailable'),
       ),
       data: (entries) => entries.isEmpty
-          ? const SizedBox.shrink()
+          ? const Align(
+              alignment: Alignment.centerRight,
+              child: _HistoryAction(),
+            )
           : Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: InkPanel(
                 framed: false,
                 title: context.tr('Continue reading'),
+                action: const _HistoryAction(),
                 child: ResumeCarousel(
                   entries: entries,
                   density:
@@ -130,5 +135,30 @@ class _ResumeSection extends ConsumerWidget {
               ),
             ),
     );
+  }
+}
+
+class _HistoryAction extends StatelessWidget {
+  const _HistoryAction();
+  @override
+  Widget build(BuildContext context) {
+    void open() => context.push('/history');
+    final wide =
+        MediaQuery.sizeOf(context).width /
+            MediaQuery.textScalerOf(context).scale(1) >=
+        700;
+    return wide
+        ? TextButton.icon(
+            key: const Key('reading-history-action'),
+            onPressed: open,
+            icon: const Icon(InkIcons.clockCounterClockwise),
+            label: const LText('Reading history'),
+          )
+        : IconButton(
+            key: const Key('reading-history-action'),
+            tooltip: context.tr('Reading history'),
+            onPressed: open,
+            icon: const Icon(InkIcons.clockCounterClockwise),
+          );
   }
 }

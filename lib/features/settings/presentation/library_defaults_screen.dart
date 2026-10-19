@@ -1,3 +1,4 @@
+import 'settings_adaptive_layout.dart';
 import '../../../app/widgets/ink_surface.dart';
 import '../../../app/l10n/app_strings.dart';
 
@@ -96,7 +97,7 @@ class _LibraryDefaultsScreenState extends ConsumerState<LibraryDefaultsScreen> {
         ? null
         : ref.watch(catalogueItemProvider((CatalogueKind.library, libraryId)));
     return Scaffold(
-      appBar: widget.embedded
+      appBar: widget.embedded || SettingsPaneScope.wideOf(context)
           ? null
           : InkAppBar(
               title: Text(
@@ -135,22 +136,26 @@ class _LibraryDefaultsScreenState extends ConsumerState<LibraryDefaultsScreen> {
                   libraryId: libraryId,
                   onSaved: widget.onSaved,
                   showSaveAction: !widget.embedded,
+                  showHeader: !SettingsPaneScope.wideOf(context),
                 );
-                return widget.embedded
-                    ? Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Text(
-                              library?.asData?.value?.title ??
-                                  context.tr('Library defaults'),
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                          ),
-                          Expanded(child: editor),
-                        ],
-                      )
-                    : editor;
+                return Column(
+                  children: [
+                    Offstage(
+                      offstage:
+                          !widget.embedded &&
+                          !SettingsPaneScope.wideOf(context),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          library?.asData?.value?.title ??
+                              context.tr('Library defaults'),
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ),
+                    ),
+                    Expanded(child: editor),
+                  ],
+                );
               }
               return StreamBuilder<Map<String, ReadingOverrides>>(
                 stream: _defaults,

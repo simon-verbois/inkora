@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/router.dart';
 import 'package:inkora/features/library/data/cover_repository.dart';
 import 'package:inkora/features/library/domain/catalogue.dart';
+import 'package:inkora/features/library/domain/catalogue_filters.dart';
 import 'package:inkora/features/library/domain/catalogue_metadata.dart';
 import 'package:inkora/features/library/domain/resume_entry.dart';
 import 'package:inkora/features/settings/domain/ui_preferences.dart';
@@ -115,6 +116,9 @@ void main() {
             seriesId: series[index].id,
             number: index + 1,
             pageCount: 192,
+            readingStatus: index < 3
+                ? ReadingStatus.inProgress
+                : ReadingStatus.unread,
             modified: series[index].modified,
           ),
       ];
@@ -152,6 +156,16 @@ void main() {
           entry('library-b', kind: CatalogueKind.library, title: 'Comics'),
           ...series,
           ...books,
+          for (var number = 2; number <= 4; number++)
+            CatalogueItem(
+              kind: CatalogueKind.book,
+              id: 'demo-volume-$number',
+              title: '${demonstrationTitles.first} · Volume $number',
+              libraryId: 'library-a',
+              seriesId: 'series-0',
+              number: number.toDouble(),
+              pageCount: 192,
+            ),
         ],
       );
       addTearDown(() async {
@@ -187,6 +201,11 @@ void main() {
 
       expect(find.text('Continue reading'), findsOneWidget);
       await capture('phone-home');
+      await tester.tap(find.byKey(const Key('reading-quick-filter-menu')));
+      await tester.pumpAndSettle();
+      await capture('phone-quick-filters', public: false);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
       final router = harness.container.read(routerProvider);
       router.go('/');
       await tester.pumpAndSettle();
@@ -200,6 +219,24 @@ void main() {
       router.go('/settings/appearance');
       await tester.pumpAndSettle();
       await capture('phone-appearance');
+      router.go('/settings/transfer');
+      await tester.pumpAndSettle();
+      await capture('phone-transfer');
+      router.go('/settings/quality');
+      await tester.pumpAndSettle();
+      await capture('phone-quality', public: false);
+      await tester.tap(find.text('Upscaling'));
+      await tester.pumpAndSettle();
+      await capture('phone-upscaling', public: false);
+      router.go('/catalogue/series/series-0');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Download volumes'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next 3 unread volumes'));
+      await tester.pumpAndSettle();
+      await capture('phone-batch-download');
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpAndSettle();
       router.go('/');
       await tester.pumpAndSettle();
       tester.view.physicalSize = const Size(1280, 900);
@@ -215,7 +252,17 @@ void main() {
           .position
           .jumpTo(0);
       await tester.pumpAndSettle();
+      expect(find.text('Download selected ({0})'), findsNothing);
+      expect(find.byTooltip('Close'), findsNothing);
       await capture('tablet-home');
+      router.go('/settings/quality');
+      await tester.pumpAndSettle();
+      await capture('tablet-settings-header', public: false);
+      await tester.tap(find.byKey(const Key('settings-sidebar-search-toggle')));
+      await tester.pumpAndSettle();
+      await capture('tablet-settings-search', public: false);
+      await tester.tap(find.byKey(const Key('settings-sidebar-search-toggle')));
+      await tester.pumpAndSettle();
       tester.view.physicalSize = const Size(390, 844);
       router.go('/settings');
       await tester.pumpAndSettle();
@@ -230,7 +277,7 @@ void main() {
       await capture('phone-appearance-controls', public: false);
       router.go('/');
       await tester.pumpAndSettle();
-      router.push<void>('/search');
+      await tester.tap(find.byKey(const Key('catalogue-search-toggle')));
       await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const Key('catalogue-search')).last,

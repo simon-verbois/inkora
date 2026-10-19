@@ -10,6 +10,7 @@ import '../../features/connection/application/session_controller.dart';
 import '../data/reader_asset_store.dart';
 import '../data/reader_repository.dart';
 import '../data/reader_store.dart';
+import '../data/reading_history.dart';
 import '../data/tiered_page_source.dart';
 import '../domain/reading_settings.dart';
 import '../presentation/reader_image_provider.dart';
@@ -82,7 +83,14 @@ final openReaderProvider = FutureProvider.autoDispose
         if (opened != null) repository.release(opened);
       });
       opened = await repository.open(bookId);
-      if (!alive) repository.release(opened);
+      if (!alive) {
+        repository.release(opened);
+      } else {
+        await ReadingHistoryStore(
+          repository.store.database,
+          repository.store.accountId,
+        ).opened(opened.manifest);
+      }
       return opened;
     }, retry: (_, _) => null);
 final readingSettingsProvider = StreamProvider.autoDispose

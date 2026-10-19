@@ -1,5 +1,3 @@
-import 'package:inkora/features/library/presentation/catalogue_screen.dart';
-
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -127,7 +125,9 @@ void main() {
             expect(cards.any((card) => card.item.isEbook), isTrue);
             expect(cards.any((card) => card.item.id == 'author'), isFalse);
           }
-          router.go('/search');
+          router.go('/');
+          await tester.pumpAndSettle();
+          await tester.tap(find.byKey(const Key('catalogue-search-toggle')));
           await tester.pumpAndSettle();
           await tester.enterText(
             find.byKey(const Key('catalogue-search')),
@@ -136,7 +136,9 @@ void main() {
           await tester.pump(const Duration(milliseconds: 250));
           await tester.pumpAndSettle();
           final searchOverlay = find.byWidgetPredicate(
-            (widget) => widget is CatalogueScreen && widget.searchMode,
+            (widget) =>
+                widget.key == const Key('catalogue-grid') ||
+                widget.key == const Key('catalogue-list'),
           );
           expect(
             find.descendant(

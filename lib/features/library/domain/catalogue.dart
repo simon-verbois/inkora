@@ -11,6 +11,7 @@ final class CatalogueItem {
     required this.kind,
     required this.id,
     required this.title,
+    this.readingStatus = ReadingStatus.unread,
     this.sortTitle = '',
     this.summary = '',
     this.metadata = const CatalogueMetadata(),
@@ -30,6 +31,7 @@ final class CatalogueItem {
   final CatalogueKind kind;
   final String id;
   final String title;
+  final ReadingStatus readingStatus;
   final String sortTitle;
   final String summary;
   final CatalogueMetadata metadata;
@@ -70,6 +72,7 @@ final class CatalogueQuery {
     this.filters = const MetadataFilters(),
     this.page = 0,
     this.pageSize = 30,
+    this.initialWindowSize = 60,
   });
   final CatalogueKind kind;
   final String? libraryId;
@@ -86,6 +89,9 @@ final class CatalogueQuery {
   final int page;
   final int pageSize;
 
+  /// Retained feed prefix requested when changing sort without moving the view.
+  final int initialWindowSize;
+
   @override
   bool operator ==(Object other) =>
       other is CatalogueQuery &&
@@ -100,7 +106,8 @@ final class CatalogueQuery {
       showUnavailable == other.showUnavailable &&
       filters == other.filters &&
       page == other.page &&
-      pageSize == other.pageSize;
+      pageSize == other.pageSize &&
+      initialWindowSize == other.initialWindowSize;
   @override
   int get hashCode => Object.hash(
     kind,
@@ -115,6 +122,7 @@ final class CatalogueQuery {
     filters,
     page,
     pageSize,
+    initialWindowSize,
   );
 }
 

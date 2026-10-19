@@ -201,6 +201,24 @@ class ResumeSnapshots extends Table {
   Set<Column<Object>> get primaryKey => {accountId};
 }
 
+/// Only changes when effective unread/in-progress/completed state changes.
+class BookReadingStates extends Table {
+  TextColumn get accountId => text()();
+  TextColumn get bookId => text()();
+  TextColumn get status => text()();
+  @override
+  Set<Column<Object>> get primaryKey => {accountId, bookId};
+}
+
+class ReadingHistory extends Table {
+  TextColumn get accountId => text()();
+  TextColumn get bookId => text()();
+  TextColumn get title => text()();
+  DateTimeColumn get openedAt => dateTime()();
+  @override
+  Set<Column<Object>> get primaryKey => {accountId, bookId};
+}
+
 @DriftDatabase(
   tables: [
     ServerProfiles,
@@ -219,17 +237,23 @@ class ResumeSnapshots extends Table {
     ProgressEvents,
     AppPreferences,
     ResumeSnapshots,
+    ReadingHistory,
+    BookReadingStates,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (migrator, from, to) async {
+      if (from < 11) {
+        await migrator.createTable(readingHistory);
+        await migrator.createTable(bookReadingStates);
+      }
       if (from < 2) {
         await migrator.createTable(catalogueEntries);
         await migrator.createTable(catalogueMemberships);
@@ -301,6 +325,9 @@ class AppDatabase extends _$AppDatabase {
       }
     },
     beforeOpen: (_) async {
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS reading_history_recent ON reading_history(account_id, opened_at DESC, book_id)',
+      );
       await customStatement(
         'CREATE INDEX IF NOT EXISTS catalogue_browse ON catalogue_entries(account_id, generation, kind, library_id, sort_title, remote_id)',
       );

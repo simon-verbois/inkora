@@ -49,7 +49,7 @@ void main() {
         final version = await recovered
             .customSelect('PRAGMA user_version')
             .getSingle();
-        expect(version.read<int>('user_version'), 10);
+        expect(version.read<int>('user_version'), 11);
       } finally {
         await recovered.close();
       }
@@ -136,7 +136,7 @@ void main() {
       (await database.select(database.serverProfiles).getSingle()).id,
       'existing',
     );
-    expect(database.schemaVersion, 10);
+    expect(database.schemaVersion, 11);
     final store = CatalogueStore(database, 'account');
     await store.stage('durable', [entry('book')]);
     await store.publish('durable', DateTime.utc(2026, 10, 11), () => true);

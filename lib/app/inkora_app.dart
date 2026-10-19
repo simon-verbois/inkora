@@ -29,6 +29,8 @@ class InkoraApp extends ConsumerWidget {
         final value = data.asData?.value ?? const UiPreferences();
         return (
           appearance: value.appearance,
+          lightTheme: value.lightTheme,
+          darkTheme: value.darkTheme,
           locale: value.locale,
           reduceMotion: value.reduceMotion,
           textScale: value.textScale,
@@ -51,24 +53,21 @@ class InkoraApp extends ConsumerWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       debugShowCheckedModeBanner: false,
-      theme: preferences.appearance == AppAppearance.sepia
-          ? InkoraTheme.sepia()
-          : InkoraTheme.light(),
-      darkTheme: switch (preferences.appearance) {
-        AppAppearance.ocean => InkoraTheme.ocean(),
-        AppAppearance.forest => InkoraTheme.forest(),
-        _ => InkoraTheme.dark(
-          amoled: preferences.appearance == AppAppearance.amoled,
-        ),
-      },
-      themeMode: switch (preferences.appearance) {
-        AppAppearance.system => ThemeMode.system,
-        AppAppearance.light || AppAppearance.sepia => ThemeMode.light,
-        AppAppearance.dark ||
-        AppAppearance.amoled ||
-        AppAppearance.ocean ||
-        AppAppearance.forest => ThemeMode.dark,
-      },
+      theme: InkoraTheme.forAppearance(
+        preferences.appearance.isLight
+            ? preferences.appearance
+            : preferences.lightTheme,
+      ),
+      darkTheme: InkoraTheme.forAppearance(
+        preferences.appearance.isDark
+            ? preferences.appearance
+            : preferences.darkTheme,
+      ),
+      themeMode: preferences.appearance == AppAppearance.system
+          ? ThemeMode.system
+          : preferences.appearance.isLight
+          ? ThemeMode.light
+          : ThemeMode.dark,
       themeAnimationDuration: preferences.reduceMotion
           ? Duration.zero
           : const Duration(milliseconds: 180),
@@ -93,11 +92,16 @@ class InkoraApp extends ConsumerWidget {
 
 /// Keep nonlinear platform scaling, adding the user's optional multiplier.
 class _PreferenceTextScaler extends TextScaler {
-  const _PreferenceTextScaler(this.system, this.factor);
+  _PreferenceTextScaler(this.system, this.factor)
+    : _scaleSnapshot = system.scale(14) / 14 * factor;
   final TextScaler system;
   final double factor;
+  // Flutter's MediaQueryData equality uses this legacy scalar. SystemTextScaler
+  // reads live platform values, so a live getter would make old/new data equal
+  // during a font-size change and leave adaptive frames on their old layout.
+  final double _scaleSnapshot;
   @override
   double scale(double fontSize) => system.scale(fontSize) * factor;
   @override
-  double get textScaleFactor => system.scale(14) / 14 * factor;
+  double get textScaleFactor => _scaleSnapshot;
 }

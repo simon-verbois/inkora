@@ -119,6 +119,15 @@ final downloadedSeriesProvider = StreamProvider<List<DownloadedSeries>>((
     yield* coordinator.store.completedSeries();
   }
 });
+final downloadedReadingSeriesProvider =
+    StreamProvider.autoDispose<List<DownloadedSeries>>((ref) async* {
+      final coordinator = await ref.watch(offlineCoordinatorProvider.future);
+      if (coordinator == null) {
+        yield [];
+        return;
+      }
+      yield* coordinator.store.completedSeries(includeReadingStatus: true);
+    });
 final progressIntentsProvider = StreamProvider<List<ProgressIntent>>((
   ref,
 ) async* {

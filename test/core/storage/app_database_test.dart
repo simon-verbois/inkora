@@ -31,6 +31,6 @@ void main() {
           ),
       throwsA(isA<SqliteException>()),
     );
-    expect(database.schemaVersion, 10);
+    expect(database.schemaVersion, 11);
   });
 }

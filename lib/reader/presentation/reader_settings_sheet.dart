@@ -14,7 +14,14 @@ import '../domain/reader_manifest.dart';
 import '../domain/reading_settings.dart';
 import '../domain/webtoon_layout.dart';
 
-enum _PreferenceTab { layout, style, typography, rendering, preloading }
+enum _PreferenceTab {
+  layout,
+  style,
+  typography,
+  rendering,
+  upscaling,
+  preloading,
+}
 
 class ReaderSettingsSheet extends StatefulWidget {
   const ReaderSettingsSheet({
@@ -22,16 +29,20 @@ class ReaderSettingsSheet extends StatefulWidget {
     this.manifest,
     this.libraryId,
     this.onSaved,
+    this.showFooter = true,
+    this.showHeader = true,
     this.showSaveAction = true,
     this.qualityOnly = false,
-    this.qualityHeader,
+    this.upscalingControls,
     this.modal = false,
     super.key,
   });
   final VoidCallback? onSaved;
+  final bool showFooter;
+  final bool showHeader;
   final bool showSaveAction;
   final bool qualityOnly;
-  final Widget? qualityHeader;
+  final Widget? upscalingControls;
   final bool modal;
   final ReaderStore store;
   final ReaderManifest? manifest;
@@ -57,7 +68,11 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
       widget.manifest?.isDocument == false ||
       _effective.mode != ReadingMode.ebook;
   List<_PreferenceTab> get _tabs => widget.qualityOnly
-      ? [_PreferenceTab.rendering, _PreferenceTab.preloading]
+      ? [
+          _PreferenceTab.rendering,
+          if (widget.upscalingControls != null) _PreferenceTab.upscaling,
+          _PreferenceTab.preloading,
+        ]
       : [
           _PreferenceTab.layout,
           if (_supportsTypography) ...[
@@ -217,10 +232,6 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
   Widget _imageQuality() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      if (widget.qualityHeader != null) ...[
-        widget.qualityHeader!,
-        const SizedBox(height: 24),
-      ],
       const LText(
         'Choose how each image format is displayed. Archive files use the format of each page inside them.',
       ),
@@ -454,8 +465,8 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
   }
 
   /// Commit the editor through its owning setup footer or standalone action.
-  Future<void> savePreferences() async {
-    if (_loading) return;
+  Future<bool> savePreferences() async {
+    if (_loading) return false;
     setState(() => _loading = true);
     try {
       await widget.store.saveOverrides(_scope, _id(_scope), _overrides);
@@ -466,6 +477,8 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
           Navigator.of(context).pop();
         }
       }
+      if (mounted) setState(() => _loading = false);
+      return true;
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -473,6 +486,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
           _message = 'Unable to save reading preferences.';
         });
       }
+      return false;
     }
   }
 
@@ -670,6 +684,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
           _change('ebook', {...?_overrides.ebook, key: value}),
     ),
     _PreferenceTab.rendering => _imageQuality(),
+    _PreferenceTab.upscaling => widget.upscalingControls!,
     _PreferenceTab.preloading => _webtoonQuality(context),
   };
 
@@ -715,60 +730,65 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
             : preferredHeight;
         // Large type can make the header/actions taller than a phone sheet.
         // Let the whole editor scroll then; ordinary sizes keep actions pinned.
-        final short = scale > 1.3 || height < 420;
+        final short = scale > 1.3 || height < (widget.showHeader ? 420 : 180);
         final title = LText(
           widget.qualityOnly ? 'Quality' : 'Reading preferences',
           style: Theme.of(context).textTheme.titleLarge,
         );
-        final header = Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-          child: LayoutBuilder(
-            builder: (context, headerConstraints) {
-              final scope = widget.manifest != null && widget.libraryId == null;
-              final wide = headerConstraints.maxWidth >= 520 * scale;
-              final close = widget.modal
-                  ? IconButton(
-                      tooltip: MaterialLocalizations.of(context)
-                          .closeButtonTooltip,
-                      icon: const Icon(InkIcons.x),
-                      onPressed: () => Navigator.of(context).pop(),
-                    )
-                  : widget.manifest == null && widget.libraryId == null
-                  ? LText(
-                      'Global',
-                      style: Theme.of(context).textTheme.labelMedium,
-                    )
-                  : const SizedBox.shrink();
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(child: title),
-                      if (scope && wide) ...[
-                        const SizedBox(width: 16),
-                        SizedBox(width: 200, child: _scopeControl()),
-                        const SizedBox(width: 8),
+        final header = !widget.showHeader
+            ? (_loading
+                  ? const LinearProgressIndicator()
+                  : const SizedBox.shrink())
+            : Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+                child: LayoutBuilder(
+                  builder: (context, headerConstraints) {
+                    final scope =
+                        widget.manifest != null && widget.libraryId == null;
+                    final wide = headerConstraints.maxWidth >= 520 * scale;
+                    final close = widget.modal
+                        ? IconButton(
+                            tooltip: MaterialLocalizations.of(context)
+                                .closeButtonTooltip,
+                            icon: const Icon(InkIcons.x),
+                            onPressed: () => Navigator.of(context).pop(),
+                          )
+                        : widget.manifest == null && widget.libraryId == null
+                        ? LText(
+                            'Global',
+                            style: Theme.of(context).textTheme.labelMedium,
+                          )
+                        : const SizedBox.shrink();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(child: title),
+                            if (scope && wide) ...[
+                              const SizedBox(width: 16),
+                              SizedBox(width: 200, child: _scopeControl()),
+                              const SizedBox(width: 8),
+                            ],
+                            close,
+                          ],
+                        ),
+                        if (scope && !wide) ...[
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: SizedBox(
+                              width: 280 * scale,
+                              child: _scopeControl(),
+                            ),
+                          ),
+                        ],
+                        if (_loading) const LinearProgressIndicator(),
                       ],
-                      close,
-                    ],
-                  ),
-                  if (scope && !wide) ...[
-                    const SizedBox(height: 12),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: SizedBox(
-                        width: 280 * scale,
-                        child: _scopeControl(),
-                      ),
-                    ),
-                  ],
-                  if (_loading) const LinearProgressIndicator(),
-                ],
+                    );
+                  },
+                ),
               );
-            },
-          ),
-        );
         final navigation = tabs.length < 2
             ? const SizedBox.shrink()
             : TabBar(
@@ -788,6 +808,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
                         _PreferenceTab.style => 'Reading style',
                         _PreferenceTab.typography => 'Typography',
                         _PreferenceTab.rendering => 'Rendering',
+                        _PreferenceTab.upscaling => 'Upscaling',
                         _PreferenceTab.preloading => 'Preloading',
                       }),
                     ),
@@ -849,7 +870,14 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
                             _effective.webtoonQuality,
                           )),
                           mainAxisSize: MainAxisSize.min,
-                          children: [header, navigation, body, _footer()],
+                          children: [
+                            header,
+                            navigation,
+                            body,
+                            if (widget.showFooter &&
+                                _activeTab != _PreferenceTab.upscaling)
+                              _footer(),
+                          ],
                         ),
                       )
                     : Column(
@@ -866,7 +894,9 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
                               child: body,
                             ),
                           ),
-                          _footer(),
+                          if (widget.showFooter &&
+                              _activeTab != _PreferenceTab.upscaling)
+                            _footer(),
                         ],
                       ),
               ),

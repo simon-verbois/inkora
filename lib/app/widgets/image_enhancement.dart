@@ -17,7 +17,7 @@ final imageEnhancementProgramsProvider = FutureProvider(
   ),
 );
 
-/// Load two tiny programs only after opt-in. Images observe one inherited value,
+/// Load two tiny programs when display enhancement is enabled. Images observe one inherited value,
 /// not separate preference/asset futures; MaterialApp and themes stay untouched.
 class ImageEnhancementHost extends ConsumerWidget {
   const ImageEnhancementHost({required this.child, super.key});
@@ -27,7 +27,8 @@ class ImageEnhancementHost extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final level = ref.watch(
       uiPreferencesProvider.select(
-        (state) => state.asData?.value.imageEnhancement ?? ImageEnhancement.off,
+        (state) =>
+            state.asData?.value.imageEnhancement ?? ImageEnhancement.balanced,
       ),
     );
     final programs = level == ImageEnhancement.off

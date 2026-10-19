@@ -105,7 +105,21 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
                     } else activity.lifecycleScope.launch {
                         try {
                             result.success(ReadiumReader.epubEvaluateJavascript(
-                                "JSON.stringify({columns:getComputedStyle(document.documentElement).columnCount,rule:getComputedStyle(document.documentElement).columnRuleStyle,width:getComputedStyle(document.documentElement).columnRuleWidth,enhancedImages:document.querySelectorAll('.inkora-enhanced-image').length})"
+                                """(() => {
+                                  const root = document.documentElement, style = getComputedStyle(root);
+                                  const body = getComputedStyle(document.body);
+                                  const middle = innerWidth / 2;
+                                  const nodes = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+                                  let node, scanned = 0, crossingLines = 0;
+                                  while (scanned++ < 300 && (node = nodes.nextNode())) {
+                                    if (!node.textContent.trim()) continue;
+                                    const range = document.createRange(); range.selectNodeContents(node);
+                                    for (const rect of range.getClientRects()) {
+                                      if (rect.width > 0 && rect.left < middle - 1 && rect.right > middle + 1) crossingLines++;
+                                    }
+                                  }
+                                  return JSON.stringify({columns:style.columnCount,rule:style.columnRuleStyle,width:style.columnRuleWidth,paddingLeft:body.paddingLeft,paddingRight:body.paddingRight,crossingLines,viewportWidth:innerWidth,viewportHeight:innerHeight,enhancedImages:document.querySelectorAll('.inkora-enhanced-image').length});
+                                })()"""
                             ))
                         } catch (_: Exception) { result.success(null) }
                     }
@@ -126,6 +140,26 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
             navigator.evaluateJavascript(
                 """(() => {
                   document.documentElement.style.setProperty('column-rule', '$rule', 'important');
+                  // Keep Readium's zero-gap pagination geometry. Its body padding
+                  // repeats inside each column; retain a gutter even when outer
+                  // Flutter margins request zero native page margins.
+                  if (!document.getElementById('inkora-spread-style')) {
+                    const style = document.createElement('style');
+                    style.id = 'inkora-spread-style';
+                    style.textContent = ':root[data-inkora-spread="true"] body{padding-left:max(16px,calc(var(--RS__pageGutter,20px)*var(--USER__pageMargins,1)))!important;padding-right:max(16px,calc(var(--RS__pageGutter,20px)*var(--USER__pageMargins,1)))!important;overflow-wrap:anywhere!important}';
+                    document.documentElement.appendChild(style);
+                    const update = () => {
+                      const root = document.documentElement;
+                      const spread = Number(getComputedStyle(root).columnCount) >= 2;
+                      const value = String(spread);
+                      if (root.dataset.inkoraSpread !== value) root.dataset.inkoraSpread = value;
+                    };
+                    // Re-evaluate only on viewport/reflow changes, never on scroll.
+                    new ResizeObserver(update).observe(document.documentElement);
+                    new MutationObserver(update).observe(document.documentElement, {attributes:true,attributeFilter:['style']});
+                    window.__inkoraUpdateSpread = update;
+                  }
+                  window.__inkoraUpdateSpread();
                   window.__inkoraImageObserver?.disconnect();
                   document.querySelectorAll('.inkora-enhanced-image').forEach(i => i.classList.remove('inkora-enhanced-image'));
                   document.getElementById('inkora-enhancement-style')?.remove();

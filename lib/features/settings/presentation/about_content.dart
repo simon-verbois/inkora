@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app/l10n/app_strings.dart';
 import '../../../app/release_information.dart';
@@ -15,6 +16,7 @@ class AboutContent extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         InkPanel(
+          framed: false,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -43,6 +45,7 @@ class AboutContent extends ConsumerWidget {
         const SizedBox(height: 12),
         if (information.asData?.value case final info?) ...[
           InkPanel(
+            framed: false,
             child: ExpansionTile(
               key: const Key('about-changelog'),
               title: const LText('Changelog'),
@@ -58,6 +61,12 @@ class AboutContent extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
         ],
+        OutlinedButton(
+          key: const Key('about-guided-setup'),
+          onPressed: () => context.push('/setup?edit=true'),
+          child: const LText('Guided setup'),
+        ),
+        const SizedBox(height: 12),
         OutlinedButton(
           onPressed: information.asData == null
               ? null

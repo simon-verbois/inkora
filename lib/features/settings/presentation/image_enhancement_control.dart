@@ -38,10 +38,12 @@ class _ImageEnhancementControlState
   Widget build(BuildContext context) {
     final value = ref.watch(
       uiPreferencesProvider.select(
-        (state) => state.asData?.value.imageEnhancement ?? ImageEnhancement.off,
+        (state) =>
+            state.asData?.value.imageEnhancement ?? ImageEnhancement.balanced,
       ),
     );
     return InkPanel(
+      framed: false,
       title: context.tr('Upscaling and sharpening'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

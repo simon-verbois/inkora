@@ -1,3 +1,5 @@
+import '../../features/settings/domain/ui_preferences.dart';
+import 'appearance_palette.dart';
 import 'horizontal_page_transitions.dart';
 
 import 'package:flutter/material.dart';
@@ -69,55 +71,23 @@ abstract final class InkoraTheme {
   static const lightBrand = Color(0xFFD56A00);
   static const action = Color(0xFFFF9A2F);
   static const onAction = Color(0xFF21180E);
-  static ThemeData light() => _build(Brightness.light);
+  static ThemeData light() => forAppearance(AppAppearance.light);
   static ThemeData dark({bool amoled = false}) =>
-      _build(Brightness.dark, amoled: amoled);
+      forAppearance(amoled ? AppAppearance.amoled : AppAppearance.dark);
+  static ThemeData sepia() => forAppearance(AppAppearance.sepia);
+  static ThemeData ocean() => forAppearance(AppAppearance.ocean);
+  static ThemeData forest() => forAppearance(AppAppearance.forest);
 
-  static ThemeData sepia() => _build(
-    Brightness.light,
-    backgroundOverride: const Color(0xFFF0E3CA),
-    panelOverride: const Color(0xFFF8EDD9),
-    raisedOverride: const Color(0xFFE4D4B7),
-    accentOverride: const Color(0xFF8C3D00),
-  );
-  static ThemeData ocean() => _build(
-    Brightness.dark,
-    backgroundOverride: const Color(0xFF071B2B),
-    panelOverride: const Color(0xFF102A3D),
-    raisedOverride: const Color(0xFF1A394E),
-  );
-  static ThemeData forest() => _build(
-    Brightness.dark,
-    backgroundOverride: const Color(0xFF0C1C16),
-    panelOverride: const Color(0xFF162D23),
-    raisedOverride: const Color(0xFF234234),
-  );
-
-  static ThemeData _build(
-    Brightness brightness, {
-    bool amoled = false,
-    Color? backgroundOverride,
-    Color? panelOverride,
-    Color? raisedOverride,
-    Color? accentOverride,
-  }) {
-    final dark = brightness == Brightness.dark;
-    final background =
-        backgroundOverride ??
-        (dark
-            ? (amoled ? Colors.black : const Color(0xFF0D1115))
-            : const Color(0xFFFBF6ED));
-    final panel =
-        panelOverride ??
-        (dark ? const Color(0xFF151A20) : const Color(0xFFFFFAF2));
-    final raised =
-        raisedOverride ??
-        (dark ? const Color(0xFF20272F) : const Color(0xFFF1EADF));
+  static ThemeData forAppearance(AppAppearance appearance) {
+    final palette = AppearancePalette.of(appearance);
+    final dark = appearance.isDark;
+    final brightness = dark ? Brightness.dark : Brightness.light;
+    final background = palette.background;
+    final panel = palette.panel;
+    final raised = palette.raised;
     final text = dark ? const Color(0xFFF5EFE4) : const Color(0xFF242221);
     final secondary = dark ? const Color(0xFFBBC3CC) : const Color(0xFF625C55);
-    final amber =
-        accentOverride ??
-        (dark ? const Color(0xFFFFAD45) : const Color(0xFF9C4700));
+    final amber = palette.accent;
     final border = dark ? const Color(0xFF49535F) : const Color(0xFFBFAE95);
     final scheme =
         ColorScheme.fromSeed(seedColor: amber, brightness: brightness).copyWith(
@@ -147,7 +117,9 @@ abstract final class InkoraTheme {
           panel: panel,
           raised: raised,
           border: border,
-          heading: dark ? const Color(0xFFFFD98E) : const Color(0xFF613B14),
+          heading:
+              palette.heading ??
+              (dark ? const Color(0xFFFFD98E) : const Color(0xFF613B14)),
           success: dark ? const Color(0xFFBADA8A) : const Color(0xFF386324),
         ),
       ],
@@ -197,10 +169,12 @@ abstract final class InkoraTheme {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size(48, 48),
-          backgroundColor: action,
-          foregroundColor: onAction,
+          backgroundColor: palette.button ?? action,
+          foregroundColor: palette.onButton ?? onAction,
           shape: shape,
-          textStyle: const TextStyle(fontWeight: FontWeight.w700),
+          textStyle: base.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(

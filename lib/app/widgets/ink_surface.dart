@@ -45,7 +45,7 @@ class InkOverlaySurface extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) => InkSurface(
     opacity: ref.watch(
       uiPreferencesProvider.select(
-        (data) => data.asData?.value.panelOpacity ?? 1,
+        (data) => data.asData?.value.panelOpacity ?? .94,
       ),
     ),
     child: child,

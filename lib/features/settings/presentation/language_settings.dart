@@ -6,7 +6,8 @@ import '../../../app/icons/inkora_icons.dart';
 import '../application/ui_preferences_provider.dart';
 
 class LanguageSettings extends ConsumerWidget {
-  const LanguageSettings({super.key});
+  const LanguageSettings({super.key, this.showTitle = true});
+  final bool showTitle;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final preferences = ref.watch(uiPreferencesProvider).asData?.value;
@@ -16,7 +17,7 @@ class LanguageSettings extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const LText('Language', style: TextStyle(fontSize: 22)),
+        if (showTitle) const LText('Language', style: TextStyle(fontSize: 22)),
         const LText(
           'Use your device language, or choose an application language. Book titles and server metadata stay unchanged.',
         ),

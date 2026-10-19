@@ -10,6 +10,9 @@ off and keep books available offline.
 is under development and has not yet been validated on a native build. See
 [Releases](https://github.com/simon-verbois/inkora/releases) for Android APKs.
 
+**Current development features are described below.** Published APKs may lag
+behind this branch; see [the changelog](CHANGELOG.md).
+
 ## A home for your reading
 
 - **One library, every format.** Browse manga and comics, scroll through webtoons,
@@ -17,13 +20,21 @@ is under development and has not yet been validated on a native build. See
 - **Continue in one tap.** Open the exact book you were reading, with progress
   synchronized to Komga when you reconnect.
 - **Take books offline.** Download volumes, manage the transfer queue and set
-  storage and Wi-Fi preferences.
+  storage and Wi-Fi preferences. Select the next three unread volumes, all unread
+  volumes, or your own batch.
+- **Keep your place.** Preview page thumbnails, save bookmarks and notes, and
+  continue to the next volume from the completion screen. Reopen recent books
+  from device-local reading history.
 - **Make it yours.** Choose appearance palettes, reading direction, page layout,
   gestures, image quality and EPUB typography.
 - **Find your next read.** Search your catalogue and browse series, collections
-  and reading lists, with your current reads above the library grid.
+  and reading lists. Filter by format, reading status or downloaded availability.
 - **Choose what appears.** Connect multiple server accounts and filter their
   visible libraries. All libraries you can access are selected by default.
+- **Bring settings along.** Export settings and bookmarks to a file, preview an
+  import, or scan an existing settings QR code. Credentials,
+  books and reading progress are excluded. Account-specific files require the same
+  server/account; existing QR settings are portable.
 - **Read in your language.** The interface supports Czech, Dutch, English,
   French, German, Greek, Hungarian, Italian, Polish, Portuguese, Romanian and
   Spanish.
@@ -31,11 +42,16 @@ is under development and has not yet been validated on a native build. See
 ## Screenshots
 
 Real app screens in English, rendered with a fictional demonstration catalogue
-and original sample cover artwork.
+and original sample cover artwork. Captures show the development version and
+are rendered by Flutter; they are not device photographs.
 
-| Home | Library | Appearance |
+| Library home | Library | Appearance |
 | --- | --- | --- |
 | ![Library home with Continue reading above the cover grid](docs/screenshots/phone-home.png) | ![Library grid with illustrated sample covers](docs/screenshots/phone-library.png) | ![Appearance settings and reading palettes](docs/screenshots/phone-appearance.png) |
+
+| Batch downloads | Import / export |
+| --- | --- |
+| ![Series download selection with unread presets](docs/screenshots/phone-batch-download.png) | ![File backup and QR transfer settings](docs/screenshots/phone-transfer.png) |
 
 ![Inkora library home on a tablet with bottom navigation](docs/screenshots/tablet-home.png)
 
@@ -79,6 +95,12 @@ builds require macOS and Xcode; native iOS verification is still pending.
 Root [VERSION](VERSION) supplies the Android version. [CHANGELOG.md](CHANGELOG.md)
 records changes and development history. Both are bundled in the app and can be
 read offline from **Settings → About Inkora**.
+
+## Presentation website
+
+The Inkora-style static website lives in [site/](site/README.md), with local
+preview and manual GitHub Pages setup instructions. Its build uses only Python 3
+and the shared demonstration screenshots; no Flutter SDK is needed to build it.
 
 ## Credits
 

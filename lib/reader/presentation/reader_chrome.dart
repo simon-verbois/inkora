@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../app/icons/inkora_icons.dart';
@@ -98,12 +100,14 @@ class ReaderSeekBar extends StatefulWidget {
     required this.onPrevious,
     required this.onNext,
     this.previewLabel,
+    this.previewBuilder,
     this.trailing,
   });
   final int position, count;
   final ValueChanged<int> onSeek;
   final VoidCallback? onPrevious, onNext;
   final String Function(int)? previewLabel;
+  final Widget Function(int)? previewBuilder;
   final Widget? trailing;
 
   @override
@@ -111,40 +115,72 @@ class ReaderSeekBar extends StatefulWidget {
 }
 
 class _ReaderSeekBarState extends State<ReaderSeekBar> {
-  int? _draft;
+  int? _draft, _preview;
+  Widget? _previewWidget;
+  Timer? _previewTimer;
+  void _drag(double value) {
+    setState(() => _draft = value.round());
+    _previewTimer ??= Timer(const Duration(milliseconds: 160), () {
+      _previewTimer = null;
+      if (mounted && _draft != null && _preview != _draft) {
+        setState(() {
+          _preview = _draft;
+          _previewWidget = widget.previewBuilder?.call(_draft!);
+        });
+      }
+    });
+  }
+
   @override
-  Widget build(BuildContext context) => Row(
+  void dispose() {
+    _previewTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
     children: [
-      IconButton(
-        tooltip: context.tr('Previous page'),
-        onPressed: widget.onPrevious,
-        icon: const Icon(InkIcons.caretLeft),
-      ),
-      Expanded(
-        child: Slider(
-          key: const Key('reader-page-slider'),
-          min: 0,
-          max: (widget.count > 1 ? widget.count - 1 : 1).toDouble(),
-          value: (_draft ?? widget.position)
-              .clamp(0, widget.count > 1 ? widget.count - 1 : 1)
-              .toDouble(),
-          label: widget.previewLabel?.call(_draft ?? widget.position),
-          onChanged: widget.count > 1
-              ? (value) => setState(() => _draft = value.round())
-              : null,
-          onChangeEnd: widget.count > 1
-              ? (value) {
-                  setState(() => _draft = null);
-                  widget.onSeek(value.round());
-                }
-              : null,
-        ),
-      ),
-      if (widget.trailing != null) widget.trailing!,
-      IconButton(
-        tooltip: context.tr('Next page'),
-        onPressed: widget.onNext,
-        icon: const Icon(InkIcons.caretRight),
+      if (_draft != null && _preview != null && widget.previewBuilder != null)
+        _previewWidget!,
+      Row(
+        children: [
+          IconButton(
+            tooltip: context.tr('Previous page'),
+            onPressed: widget.onPrevious,
+            icon: const Icon(InkIcons.caretLeft),
+          ),
+          Expanded(
+            child: Slider(
+              key: const Key('reader-page-slider'),
+              min: 0,
+              max: (widget.count > 1 ? widget.count - 1 : 1).toDouble(),
+              value: (_draft ?? widget.position)
+                  .clamp(0, widget.count > 1 ? widget.count - 1 : 1)
+                  .toDouble(),
+              label: widget.previewLabel?.call(_draft ?? widget.position),
+              onChanged: widget.count > 1 ? _drag : null,
+              onChangeEnd: widget.count > 1
+                  ? (value) {
+                      _previewTimer?.cancel();
+                      _previewTimer = null;
+                      setState(() {
+                        _draft = null;
+                        _preview = null;
+                        _previewWidget = null;
+                      });
+                      widget.onSeek(value.round());
+                    }
+                  : null,
+            ),
+          ),
+          if (widget.trailing != null) widget.trailing!,
+          IconButton(
+            tooltip: context.tr('Next page'),
+            onPressed: widget.onNext,
+            icon: const Icon(InkIcons.caretRight),
+          ),
+        ],
       ),
     ],
   );

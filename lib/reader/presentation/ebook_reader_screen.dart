@@ -3,6 +3,7 @@ import 'reader_chrome.dart';
 import 'reader_details.dart';
 import 'ebook_presentation.dart';
 import 'ebook_selection.dart';
+import 'ebook_page_insets.dart';
 import 'reading_colors.dart';
 
 import 'dart:isolate';
@@ -119,7 +120,6 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _controls.addListener(_chromeChanged);
     _chromeChanged();
     _position.value = (
       widget.reader.locator.pageIndex,
@@ -128,10 +128,10 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
     unawaited(_open());
   }
 
+  // Controls overlay the publication. Changing system insets here would reflow
+  // EPUB text and shift PDF geometry on every control toggle.
   void _chromeChanged() => unawaited(
-    ReaderSystemUi.setImmersive(
-      !_controls.value && !widget.gestureZones.showSystemBars,
-    ),
+    ReaderSystemUi.setImmersive(!widget.gestureZones.showSystemBars),
   );
   Future<void> _open() async {
     try {
@@ -369,7 +369,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
             : ebook.font,
         fontSize: ebook.fontSize,
         lineHeight: ebook.lineHeight,
-        pageMargins: ebook.margins,
+        pageMargins: ebook.pageInsets == null ? ebook.margins : 0,
         scroll: ebook.scroll,
         columnCount: EpubColumnCount.values.byName(ebook.columns),
         publisherStyles: ebook.publisherStyles,
@@ -422,6 +422,10 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   @override
   void didUpdateWidget(EbookReaderScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.gestureZones.showSystemBars !=
+        widget.gestureZones.showSystemBars) {
+      _chromeChanged();
+    }
     if (oldWidget.settings != widget.settings && !_epub && _pdfPath != null) {
       setState(() => _surface = _pdfSurface());
     }
@@ -853,7 +857,6 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
     if (done != null && !done.isCompleted) {
       done.completeError(const FormatException('Reader closed'));
     }
-    _controls.removeListener(_chromeChanged);
     _controls.dispose();
     _position.dispose();
     if (_epub) unawaited(_native(_engine.closePublication));
@@ -877,8 +880,10 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
                         color: widget.settings.background.paperColor,
                         child: Padding(
                           key: const Key('ebook-page-margins'),
-                          padding: EdgeInsets.symmetric(
-                            vertical: widget.settings.ebook.margins * 24,
+                          padding: ebookPublicationInsets(
+                            widget.settings.ebook,
+                            MediaQuery.viewPaddingOf(context),
+                            MediaQuery.sizeOf(context),
                           ),
                           child: _surface,
                         ),

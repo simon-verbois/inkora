@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../core/network/komga/komga_client.dart';
 import '../../../core/network/komga/komga_models.dart';
 import '../domain/catalogue.dart';
+import '../domain/catalogue_filters.dart';
 import '../domain/catalogue_metadata.dart';
 
 CatalogueItem parseCatalogueItem(Object? value, CatalogueKind kind) {
@@ -99,6 +100,11 @@ CatalogueItem parseCatalogueItem(Object? value, CatalogueKind kind) {
     kind: kind,
     id: id,
     title: title,
+    readingStatus: json['readProgress'] is Map
+        ? ((json['readProgress'] as Map)['completed'] == true
+              ? ReadingStatus.completed
+              : ReadingStatus.inProgress)
+        : ReadingStatus.unread,
     sortTitle: sortTitle,
     summary: summary,
     metadata: descriptive,

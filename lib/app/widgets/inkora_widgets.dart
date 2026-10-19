@@ -30,12 +30,14 @@ class InkPanel extends StatelessWidget {
     super.key,
     this.title,
     this.icon,
+    this.action,
     required this.child,
     this.framed = true,
     this.padding,
   });
   final String? title;
   final IconData? icon;
+  final Widget? action;
   final Widget child;
   final bool framed;
   final EdgeInsetsGeometry? padding;
@@ -74,6 +76,7 @@ class InkPanel extends StatelessWidget {
                         ),
                       ),
                     ),
+                    ?action,
                   ],
                 ),
               ),
@@ -177,15 +180,13 @@ class InkSettingsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 8),
-    child: InkSurface(
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        leading: Icon(icon),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-        subtitle: subtitle == null ? null : LText(subtitle!),
-        onTap: onTap,
-        trailing: trailing ?? const Icon(InkIcons.caretRight),
-      ),
+    child: ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      leading: Icon(icon),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+      subtitle: subtitle == null ? null : LText(subtitle!),
+      onTap: onTap,
+      trailing: trailing ?? const Icon(InkIcons.caretRight),
     ),
   );
 }

@@ -1,3 +1,4 @@
+import 'settings_adaptive_layout.dart';
 import '../../../app/widgets/ink_surface.dart';
 import '../../../app/l10n/app_strings.dart';
 
@@ -84,7 +85,9 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     final state = ref.watch(sessionProvider);
     final saved = ref.watch(savedSessionsProvider);
     return Scaffold(
-      appBar: InkAppBar(title: const LText('Servers and account')),
+      appBar: SettingsPaneScope.wideOf(context)
+          ? null
+          : InkAppBar(title: const LText('Servers and account')),
       body: SafeArea(
         top: false,
         child: InkContent(

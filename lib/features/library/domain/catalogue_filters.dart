@@ -27,24 +27,39 @@ enum CatalogueFacet {
   };
 }
 
+enum ReadingStatus { any, unread, inProgress, completed }
+
 /// One exact value per dimension; different dimensions intersect.
 final class MetadataFilters {
-  const MetadataFilters() : values = const {};
-  MetadataFilters.from(Map<CatalogueFacet, String> values)
-    : values = Map.unmodifiable(values);
+  const MetadataFilters({
+    this.readingStatus = ReadingStatus.any,
+    this.downloadedOnly = false,
+  }) : values = const {};
+  MetadataFilters.from(
+    Map<CatalogueFacet, String> values, {
+    this.readingStatus = ReadingStatus.any,
+    this.downloadedOnly = false,
+  }) : values = Map.unmodifiable(values);
   final Map<CatalogueFacet, String> values;
-  bool get isEmpty => values.isEmpty;
+  final ReadingStatus readingStatus;
+  final bool downloadedOnly;
+  bool get isEmpty =>
+      values.isEmpty && readingStatus == ReadingStatus.any && !downloadedOnly;
   bool matches(CatalogueMetadata metadata) => values.entries.every(
     (entry) => entry.key.entries(metadata).contains(entry.value),
   );
   @override
   bool operator ==(Object other) =>
       other is MetadataFilters &&
+      readingStatus == other.readingStatus &&
+      downloadedOnly == other.downloadedOnly &&
       CatalogueFacet.values.every(
         (facet) => values[facet] == other.values[facet],
       );
   @override
   int get hashCode => Object.hashAll([
+    readingStatus,
+    downloadedOnly,
     for (final facet in CatalogueFacet.values) values[facet],
   ]);
 }

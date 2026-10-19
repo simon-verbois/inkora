@@ -12,7 +12,7 @@ void main() {
   for (final size in [const Size(320, 640), const Size(1024, 768)]) {
     for (final scale in [1.0, 2.0]) {
       testWidgets(
-        'six palettes and compact active server details fit $size/$scale',
+        'all palettes and compact active server details fit $size/$scale',
         (tester) async {
           tester.view.physicalSize = size;
           tester.view.devicePixelRatio = 1;
@@ -25,6 +25,8 @@ void main() {
           await harness.mount(tester);
           final router = harness.container.read(routerProvider);
           router.go('/settings/appearance');
+          await tester.pumpAndSettle();
+          await tester.tap(find.byKey(const Key('follow-system-theme')));
           await tester.pumpAndSettle();
           final colors = <Color>{};
           for (final appearance in AppAppearance.values.skip(1)) {
@@ -45,7 +47,7 @@ void main() {
             );
             expect(tester.takeException(), isNull);
           }
-          expect(colors, hasLength(6));
+          expect(colors, hasLength(10));
           expect(
             tester
                 .widget<SegmentedButton<CatalogueDensity>>(

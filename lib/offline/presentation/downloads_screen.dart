@@ -1,3 +1,4 @@
+import '../../features/library/presentation/reading_filter_chips.dart';
 import '../../../app/widgets/ink_surface.dart';
 
 import 'dart:async';
@@ -78,6 +79,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
     final result = await showInkSheet<CatalogueFilterResult>(
       context: context,
       child: CatalogueFiltersSheet(
+        downloadOptions: false,
         options: Future.value(options),
         filters: _metadataFilters,
       ),
@@ -106,7 +108,9 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final series = ref.watch(downloadedSeriesProvider);
+    final series = _metadataFilters.readingStatus == ReadingStatus.any
+        ? ref.watch(downloadedSeriesProvider)
+        : ref.watch(downloadedReadingSeriesProvider);
     final density =
         ref.watch(
           uiPreferencesProvider.select((value) => value.asData?.value.density),
@@ -150,13 +154,19 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
               final groups = {
                 for (final group in all)
                   if (title(group.item).contains(term) &&
-                      _metadataFilters.matches(group.item.metadata))
+                      _metadataFilters.matches(group.item.metadata) &&
+                      (_metadataFilters.readingStatus == ReadingStatus.any ||
+                          group.item.readingStatus ==
+                              _metadataFilters.readingStatus))
                     group.item.identity: group,
               };
               final volumes = {
                 for (final book in parent?.books ?? const <DownloadedBook>[])
                   if (title(book.item).contains(term) &&
-                      _metadataFilters.matches(book.item.metadata))
+                      _metadataFilters.matches(book.item.metadata) &&
+                      (_metadataFilters.readingStatus == ReadingStatus.any ||
+                          book.item.readingStatus ==
+                              _metadataFilters.readingStatus))
                     book.item.id: book,
               };
               final root = widget.seriesId == null;
@@ -204,6 +214,13 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         CatalogueToolbar(
+                          quickFilters: (compact) => ReadingFilterChips(
+                            compact: compact,
+                            filters: _metadataFilters,
+                            offline: true,
+                            onChanged: (filters) =>
+                                _change(() => _metadataFilters = filters),
+                          ),
                           controlPrefix: 'downloads',
                           leading: Text(
                             AppStrings.of(
@@ -223,7 +240,8 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
                             tooltip: context.tr('Sort catalogue'),
                             initialValue: _sort,
                             icon: const Icon(InkIcons.sortAscending, size: 20),
-                            onSelected: (value) => _change(() => _sort = value),
+                            onSelected: (value) =>
+                                setState(() => _sort = value),
                             itemBuilder: (_) => [
                               const PopupMenuItem(
                                 value: CatalogueSort.title,

@@ -40,5 +40,11 @@ const settingsSections = [
     'Text size and reduced motion',
     InkIcons.personArmsSpread,
   ),
+  (
+    'transfer',
+    'Import / export',
+    'Transfer settings and bookmarks',
+    InkIcons.arrowsLeftRight,
+  ),
   ('about', 'About Inkora', 'Version and open-source licenses', InkIcons.info),
 ];

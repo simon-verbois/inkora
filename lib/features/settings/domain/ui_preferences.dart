@@ -1,7 +1,25 @@
 import '../../../reader/domain/gesture_zones.dart';
 import '../../../core/images/image_enhancement.dart';
 
-enum AppAppearance { system, light, dark, amoled, sepia, ocean, forest }
+enum AppAppearance {
+  system,
+  light,
+  dark,
+  amoled,
+  sepia,
+  ocean,
+  forest,
+  pearl,
+  rose,
+  midnight,
+  plum;
+
+  bool get isLight => switch (this) {
+    light || sepia || pearl || rose => true,
+    _ => false,
+  };
+  bool get isDark => this != system && !isLight;
+}
 
 enum CatalogueDensity { comfortable, compact }
 
@@ -12,19 +30,26 @@ final class UiPreferences {
   static const maxTextScale = 1.3;
   const UiPreferences({
     this.appearance = AppAppearance.system,
+    this.systemLightTheme = AppAppearance.light,
+    this.systemDarkTheme = AppAppearance.dark,
     this.density = CatalogueDensity.comfortable,
     this.textScale = 1,
     this.reduceMotion = false,
     this.floatingNavigation = true,
-    this.panelOpacity = 1,
+    this.panelOpacity = .94,
     this.locale,
     this.setupCompleted = false,
     this.setupStep = 0,
     this.gestures = const GestureZones(),
-    this.imageEnhancement = ImageEnhancement.off,
+    this.imageEnhancement = ImageEnhancement.balanced,
   });
 
   final AppAppearance appearance;
+  final AppAppearance systemLightTheme, systemDarkTheme;
+  AppAppearance get lightTheme =>
+      systemLightTheme.isLight ? systemLightTheme : AppAppearance.light;
+  AppAppearance get darkTheme =>
+      systemDarkTheme.isDark ? systemDarkTheme : AppAppearance.dark;
   final CatalogueDensity density;
   final double textScale;
   final bool reduceMotion, setupCompleted;
@@ -37,6 +62,8 @@ final class UiPreferences {
 
   UiPreferences copyWith({
     AppAppearance? appearance,
+    AppAppearance? systemLightTheme,
+    AppAppearance? systemDarkTheme,
     CatalogueDensity? density,
     double? textScale,
     bool? reduceMotion,
@@ -50,6 +77,8 @@ final class UiPreferences {
     ImageEnhancement? imageEnhancement,
   }) => UiPreferences(
     appearance: appearance ?? this.appearance,
+    systemLightTheme: systemLightTheme ?? this.systemLightTheme,
+    systemDarkTheme: systemDarkTheme ?? this.systemDarkTheme,
     density: density ?? this.density,
     textScale: textScale ?? this.textScale,
     reduceMotion: reduceMotion ?? this.reduceMotion,
@@ -64,6 +93,8 @@ final class UiPreferences {
 
   Map<String, Object?> toJson() => {
     'appearance': appearance.name,
+    'systemLightTheme': lightTheme.name,
+    'systemDarkTheme': darkTheme.name,
     'density': density.name,
     'textScale': textScale,
     'reduceMotion': reduceMotion,
@@ -72,7 +103,7 @@ final class UiPreferences {
     'locale': locale,
     'setupCompleted': setupCompleted,
     'setupStep': setupStep,
-    'setupVersion': 2,
+    'setupVersion': 3,
     'gestures': gestures.toJson(),
     'imageEnhancement': imageEnhancement.name,
   };
@@ -83,16 +114,37 @@ final class UiPreferences {
     final savedStep = json['setupStep'] is int
         ? (json['setupStep'] as int).clamp(0, 8)
         : 0;
-    // Preserve the current section when adopting the shorter guided setup.
-    final step = json['setupVersion'] == 2
+    // Preserve the current section when inserting Quality after library defaults.
+    final previous = json['setupVersion'] == 2
         ? savedStep.clamp(0, 7)
         : const [0, 2, 3, 3, 4, 5, 6, 6, 7][savedStep];
+    final step = json['setupVersion'] == 3
+        ? savedStep
+        : previous >= 5
+        ? previous + 1
+        : previous;
     return UiPreferences(
       appearance:
           AppAppearance.values
               .where((value) => value.name == json['appearance'])
               .firstOrNull ??
           AppAppearance.system,
+      systemLightTheme:
+          AppAppearance.values
+              .where(
+                (value) =>
+                    value.isLight && value.name == json['systemLightTheme'],
+              )
+              .firstOrNull ??
+          AppAppearance.light,
+      systemDarkTheme:
+          AppAppearance.values
+              .where(
+                (value) =>
+                    value.isDark && value.name == json['systemDarkTheme'],
+              )
+              .firstOrNull ??
+          AppAppearance.dark,
       density:
           CatalogueDensity.values
               .where((value) => value.name == json['density'])
@@ -109,7 +161,7 @@ final class UiPreferences {
       floatingNavigation: json['floatingNavigation'] != false,
       panelOpacity: opacity is num && opacity.isFinite
           ? opacity.toDouble().clamp(minPanelOpacity, maxPanelOpacity)
-          : 1,
+          : .94,
       imageEnhancement: ImageEnhancement.parse(json['imageEnhancement']),
       locale: json['locale'] is String ? json['locale'] as String : null,
       setupCompleted: json['setupCompleted'] == true,

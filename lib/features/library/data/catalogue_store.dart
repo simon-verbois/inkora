@@ -51,7 +51,7 @@ final class CatalogueStore {
     if (active == null) return false;
     final rows = await database
         .customSelect(
-          "SELECT 1 FROM catalogue_entries WHERE account_id=? AND generation=? AND kind='book' AND available=1 AND json_type(descriptive_metadata, '\$.mediaType') IS NULL LIMIT 1",
+          "SELECT 1 FROM catalogue_entries WHERE account_id=? AND generation=? AND kind='book' AND available=1 AND (json_type(descriptive_metadata, '\$.mediaType') IS NULL OR json_type(descriptive_metadata, '\$.readingStatus') IS NULL) LIMIT 1",
           variables: [Variable(accountId), Variable(active.generation)],
         )
         .get();
@@ -214,6 +214,16 @@ final class CatalogueStore {
             kind: CatalogueKind.values.byName(row.read<String>('kind')),
             id: row.read<String>('remote_id'),
             title: row.read<String>('title'),
+            readingStatus:
+                ReadingStatus.values
+                    .where(
+                      (v) =>
+                          v.name ==
+                          (jsonDecode(row.read<String>('descriptive_metadata'))
+                              as Map)['readingStatus'],
+                    )
+                    .firstOrNull ??
+                ReadingStatus.unread,
             libraryId: row.readNullable<String>('library_id'),
             seriesId: row.readNullable<String>('series_id'),
             itemCount: row.read<int>('item_count'),
@@ -272,7 +282,12 @@ final class CatalogueStore {
                 deleted: item.deleted,
                 available: item.available,
                 ordered: item.ordered,
-                descriptiveMetadata: Value(jsonEncode(item.metadata.toJson())),
+                descriptiveMetadata: Value(
+                  jsonEncode({
+                    ...item.metadata.toJson(),
+                    'readingStatus': item.readingStatus.name,
+                  }),
+                ),
               ),
             );
             for (var i = 0; i < item.members.length; i++) {
@@ -377,14 +392,59 @@ final class CatalogueStore {
   });
 
   Stream<LocalCataloguePage> watch(CatalogueQuery query) =>
-      _changes().asyncMap((_) => read(query));
+      _queryChanges(query).asyncMap((_) => read(query));
 
   /// Re-reads the whole retained prefix only when a generation is published;
   /// [limit] is evaluated per publication so appended batches stay included.
   Stream<LocalCataloguePage> watchWindow(
     CatalogueQuery query,
     int Function() limit,
-  ) => _changes().asyncMap((_) => read(query, itemLimit: limit()));
+  ) => _queryChanges(query).asyncMap((_) => read(query, itemLimit: limit()));
+
+  Stream<void> _queryChanges(CatalogueQuery query) {
+    if (query.filters.readingStatus == ReadingStatus.any &&
+        !query.filters.downloadedOnly) {
+      return _changes();
+    }
+    return Stream<void>.multi((controller) {
+      final publication = _changes().listen(
+        controller.add,
+        onError: controller.addError,
+      );
+      final reading = database
+          .customSelect(
+            'SELECT 1',
+            readsFrom: {
+              if (query.filters.readingStatus != ReadingStatus.any) ...{
+                database.bookReadingStates,
+                database.resumeSnapshots,
+              },
+              if (query.filters.downloadedOnly) database.readerDownloads,
+            },
+          )
+          .watch()
+          .listen((_) => controller.add(null), onError: controller.addError);
+      controller.onCancel = () async {
+        await publication.cancel();
+        await reading.cancel();
+      };
+    });
+  }
+
+  /// Latest explicit local intent wins; then acknowledged state and server shelf.
+  /// Correlated lookups use account/book primary keys, before count/pagination.
+  static String readingState(
+    String alias, {
+    String id = 'remote_id',
+    String? metadata,
+  }) =>
+      """COALESCE(
+    (SELECT CASE WHEN v.operation='markUnread' THEN 'unread' WHEN v.operation='complete' OR (v.document_locator IS NOT NULL AND json_extract(v.document_locator, '\$.locations.totalProgression')>=0.99) OR (v.document_locator IS NULL AND v.page_index>=v.page_count-1) THEN 'completed' ELSE 'inProgress' END
+      FROM progress_events v WHERE v.account_id=$alias.account_id AND v.book_id=$alias.$id ORDER BY v.sequence DESC LIMIT 1),
+    (SELECT CASE WHEN json_extract(h.baseline, '\$.completed')=1 THEN 'completed' WHEN json_extract(h.baseline, '\$.page') IS NOT NULL THEN 'inProgress' ELSE 'unread' END
+      FROM progress_heads h WHERE h.account_id=$alias.account_id AND h.book_id=$alias.$id AND h.baseline IS NOT NULL),
+    (SELECT 'inProgress' FROM reader_positions p WHERE p.account_id=$alias.account_id AND p.book_id=$alias.$id),
+    (SELECT 'inProgress' FROM resume_snapshots r, json_each(r.payload, '\$.books') shelf_book WHERE r.account_id=$alias.account_id AND json_extract(shelf_book.value, '\$.id')=$alias.$id LIMIT 1), json_extract(${metadata ?? '$alias.descriptive_metadata'}, '\$.readingStatus'), 'unread')""";
 
   Future<LocalCataloguePage> read(
     CatalogueQuery query, {
@@ -496,8 +556,39 @@ final class CatalogueStore {
       args.add(Variable(term));
     }
     if (applyFilters) {
+      if (query.filters.readingStatus != ReadingStatus.any ||
+          query.filters.downloadedOnly) {
+        final child =
+            "b.account_id=e.account_id AND b.generation=e.generation AND b.kind='book' AND b.series_id=e.remote_id AND b.available=1 AND b.deleted=0 AND NOT ${ebookPredicate('b')}";
+        if (query.filters.readingStatus != ReadingStatus.any) {
+          final status = query.filters.readingStatus;
+          final book = readingState('e');
+          final state = readingState('b');
+          final series = switch (status) {
+            ReadingStatus.unread =>
+              "NOT EXISTS (SELECT 1 FROM catalogue_entries b WHERE $child AND $state<>'unread')",
+            ReadingStatus.completed =>
+              "EXISTS (SELECT 1 FROM catalogue_entries b WHERE $child) AND NOT EXISTS (SELECT 1 FROM catalogue_entries b WHERE $child AND $state<>'completed')",
+            _ =>
+              "EXISTS (SELECT 1 FROM catalogue_entries b WHERE $child AND $state<>'unread') AND EXISTS (SELECT 1 FROM catalogue_entries b WHERE $child AND $state<>'completed')",
+          };
+          where +=
+              " AND ((e.kind='book' AND $book=?) OR (e.kind='series' AND ($series)))";
+          args.add(Variable(status.name));
+        }
+        if (query.filters.downloadedOnly) {
+          where +=
+              " AND ((e.kind='book' AND EXISTS (SELECT 1 FROM reader_downloads d WHERE d.account_id=e.account_id AND d.book_id=e.remote_id)) OR (e.kind='series' AND EXISTS (SELECT 1 FROM catalogue_entries b JOIN reader_downloads d ON d.account_id=b.account_id AND d.book_id=b.remote_id WHERE $child)))";
+        }
+      }
       for (final entry in query.filters.values.entries) {
         final value = _facetValue(entry.key);
+        if (entry.key == CatalogueFacet.mediaType) {
+          where +=
+              " AND ((e.kind<>'series' AND CAST($value AS TEXT)=?) OR (e.kind='series' AND EXISTS (SELECT 1 FROM catalogue_entries format_book WHERE format_book.account_id=e.account_id AND format_book.generation=e.generation AND format_book.kind='book' AND format_book.series_id=e.remote_id AND json_extract(format_book.descriptive_metadata, '\$.mediaType')=?)))";
+          args.addAll([Variable(entry.value), Variable(entry.value)]);
+          continue;
+        }
         where += entry.key.multiple
             ? " AND EXISTS (SELECT 1 FROM json_each($value) f WHERE ${entry.key == CatalogueFacet.authors ? "json_extract(f.value, '\$.name')" : 'f.value'} = ?)"
             : ' AND CAST($value AS TEXT) = ?';
@@ -522,14 +613,22 @@ final class CatalogueStore {
     final result = <CatalogueFacet, List<String>>{};
     for (final facet in CatalogueFacet.values) {
       final expression = _facetValue(facet);
-      final value = facet.multiple
+      final formats =
+          "CASE WHEN e.kind='series' THEN (SELECT json_group_array(DISTINCT json_extract(format_book.descriptive_metadata, '\$.mediaType')) FROM catalogue_entries format_book WHERE format_book.account_id=e.account_id AND format_book.generation=e.generation AND format_book.kind='book' AND format_book.series_id=e.remote_id) ELSE json_array($expression) END";
+      final value = facet == CatalogueFacet.mediaType
+          ? 'f.value'
+          : facet.multiple
           ? facet == CatalogueFacet.authors
                 ? "json_extract(f.value, '\$.name')"
                 : 'f.value'
           : expression;
       final rows = await database
           .customSelect(
-            "SELECT DISTINCT CAST($value AS TEXT) AS value FROM catalogue_entries e $join ${facet.multiple ? 'JOIN json_each($expression) f' : ''} WHERE $where AND $value IS NOT NULL AND CAST($value AS TEXT) <> '' ORDER BY value COLLATE NOCASE",
+            "SELECT DISTINCT CAST($value AS TEXT) AS value FROM catalogue_entries e $join ${facet == CatalogueFacet.mediaType
+                ? 'JOIN json_each($formats) f'
+                : facet.multiple
+                ? 'JOIN json_each($expression) f'
+                : ''} WHERE $where AND $value IS NOT NULL AND CAST($value AS TEXT) <> '' ORDER BY value COLLATE NOCASE",
             variables: args,
           )
           .get();
@@ -544,6 +643,16 @@ final class CatalogueStore {
     kind: CatalogueKind.values.byName(row.read<String>('kind')),
     id: row.read<String>('remote_id'),
     title: row.read<String>('title'),
+    readingStatus:
+        ReadingStatus.values
+            .where(
+              (v) =>
+                  v.name ==
+                  (jsonDecode(row.read<String>('descriptive_metadata'))
+                      as Map)['readingStatus'],
+            )
+            .firstOrNull ??
+        ReadingStatus.unread,
     sortTitle: row.read<String>('sort_title'),
     summary: row.read<String>('summary'),
     metadata: CatalogueMetadata.fromJson({

@@ -76,6 +76,7 @@ class _DownloadSettingsPanelState extends ConsumerState<DownloadSettingsPanel> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   InkPanel(
+                    framed: false,
                     title: context.tr("Storage and network"),
                     icon: InkIcons.hardDrives,
                     child: Column(

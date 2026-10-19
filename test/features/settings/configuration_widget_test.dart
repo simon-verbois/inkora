@@ -68,7 +68,7 @@ void main({bool includeLifecycle = true}) {
         '/setup',
       );
       expect(find.text('Make Inkora yours'), findsOneWidget);
-      for (var step = 0; step < 7; step++) {
+      for (var step = 0; step < 8; step++) {
         await tester.tap(find.byKey(const Key('setup-next')));
         await tester.pumpAndSettle();
       }
@@ -87,7 +87,7 @@ void main({bool includeLifecycle = true}) {
         () => UiPreferencesStore(harness.database).watch().first,
       );
       expect(saved!.setupCompleted, true);
-      expect(saved.setupStep, 7);
+      expect(saved.setupStep, 8);
       await harness.close(tester);
     },
   );

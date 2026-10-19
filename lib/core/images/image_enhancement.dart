@@ -9,5 +9,5 @@ enum ImageEnhancement {
   final double strength;
 
   static ImageEnhancement parse(Object? value) =>
-      values.where((level) => level.name == value).firstOrNull ?? off;
+      values.where((level) => level.name == value).firstOrNull ?? balanced;
 }

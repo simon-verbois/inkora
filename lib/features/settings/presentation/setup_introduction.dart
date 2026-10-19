@@ -7,7 +7,8 @@ import '../../../app/widgets/inkora_widgets.dart';
 
 /// A short product introduction, with future capabilities explicitly labeled.
 class SetupIntroduction extends StatelessWidget {
-  const SetupIntroduction({super.key});
+  const SetupIntroduction({super.key, this.showTitle = true});
+  final bool showTitle;
 
   @override
   Widget build(BuildContext context) => InkContent(
@@ -15,11 +16,12 @@ class SetupIntroduction extends StatelessWidget {
     child: ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        LText(
-          'Welcome to Inkora',
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
-        const SizedBox(height: 16),
+        if (showTitle)
+          LText(
+            'Welcome to Inkora',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+        if (showTitle) const SizedBox(height: 16),
         for (final feature in const [
           (
             InkIcons.books,

@@ -10,12 +10,71 @@ import 'package:inkora/core/images/image_enhancement.dart';
 
 void main() {
   test(
+    'system theme defaults validate families and retain legacy fixed themes',
+    () {
+      for (final invalid in [null, 'unknown', 'system', 42]) {
+        final value = UiPreferences.fromJson({
+          'appearance': 'ocean',
+          'systemLightTheme': invalid,
+          'systemDarkTheme': invalid,
+        });
+        expect(value.appearance, AppAppearance.ocean);
+        expect(value.lightTheme, AppAppearance.light);
+        expect(value.darkTheme, AppAppearance.dark);
+      }
+      final invalid = UiPreferences.fromJson({
+        'systemLightTheme': 'plum',
+        'systemDarkTheme': 'pearl',
+      });
+      expect(invalid.lightTheme, AppAppearance.light);
+      expect(invalid.darkTheme, AppAppearance.dark);
+      for (final light in AppAppearance.values.where((a) => a.isLight)) {
+        for (final dark in AppAppearance.values.where((a) => a.isDark)) {
+          final original = UiPreferences(
+            systemLightTheme: light,
+            systemDarkTheme: dark,
+            locale: 'fr',
+            panelOpacity: .96,
+          );
+          final roundTrip = UiPreferences.fromJson(
+            original.copyWith(density: CatalogueDensity.compact).toJson(),
+          );
+          expect(roundTrip.lightTheme, light);
+          expect(roundTrip.darkTheme, dark);
+          expect(roundTrip.appearance, AppAppearance.system);
+          expect(roundTrip.locale, 'fr');
+          expect(roundTrip.panelOpacity, .96);
+          expect(roundTrip.density, CatalogueDensity.compact);
+        }
+      }
+    },
+  );
+
+  test('new defaults use balanced enhancement and 94 percent without replacing saved choices', () {
+    const fresh = UiPreferences();
+    expect(fresh.panelOpacity, .94);
+    expect(fresh.imageEnhancement, ImageEnhancement.balanced);
+    expect(
+      UiPreferences.fromJson({}).imageEnhancement,
+      ImageEnhancement.balanced,
+    );
+    final explicit = UiPreferences.fromJson({
+      'imageEnhancement': 'off',
+      'panelOpacity': 1,
+    });
+    expect(explicit.imageEnhancement, ImageEnhancement.off);
+    expect(explicit.panelOpacity, 1);
+  });
+  test(
     'legacy and malformed overlay values retain usable bounded preferences',
     () {
       expect(UiPreferences.fromJson({}).floatingNavigation, isTrue);
-      expect(UiPreferences.fromJson({}).panelOpacity, 1);
+      expect(UiPreferences.fromJson({}).panelOpacity, .94);
       for (final value in [double.nan, double.infinity, 'broken', null]) {
-        expect(UiPreferences.fromJson({'panelOpacity': value}).panelOpacity, 1);
+        expect(
+          UiPreferences.fromJson({'panelOpacity': value}).panelOpacity,
+          .94,
+        );
       }
       expect(UiPreferences.fromJson({'panelOpacity': 0}).panelOpacity, .88);
       expect(UiPreferences.fromJson({'panelOpacity': 2}).panelOpacity, 1);
@@ -149,8 +208,11 @@ void main() {
       });
       expect(preferences.textScale, 1);
       expect(preferences.appearance, AppAppearance.system);
-      expect(preferences.imageEnhancement, ImageEnhancement.off);
-      expect(UiPreferences.fromJson({}).imageEnhancement, ImageEnhancement.off);
+      expect(preferences.imageEnhancement, ImageEnhancement.balanced);
+      expect(
+        UiPreferences.fromJson({}).imageEnhancement,
+        ImageEnhancement.balanced,
+      );
     },
   );
 }

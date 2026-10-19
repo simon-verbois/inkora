@@ -46,7 +46,7 @@ void main() {
           final boundaryRect = tester.getRect(find.byKey(capture));
           final sample = Offset(
             pageRect.right - boundaryRect.left - 4,
-            pageRect.top - boundaryRect.top + 64,
+            pageRect.top - boundaryRect.top + 4,
           );
           final expected =
               (appearance == AppAppearance.light
@@ -64,8 +64,9 @@ void main() {
               final bytes = (await image.toByteData(
                 format: ui.ImageByteFormat.rawRgba,
               ))!;
-              // This gutter stays clear of moving form panels and title text;
-              // sampling the form's center would also measure legitimate cards.
+              // The top four-pixel gutter stays clear in compact pages and in
+              // wide panes without a second AppBar. The old 64px probe now
+              // intersects real theme cards while those panes slide in.
               final offset =
                   (sample.dy.floor() * image.width + sample.dx.floor()) * 4;
               final result = Color.fromARGB(

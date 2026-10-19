@@ -64,7 +64,11 @@ void main() {
           expect(tester.getTopLeft(back).dy, tester.getTopLeft(next).dy);
           final left = tester.getRect(back);
           final right = tester.getRect(next);
-          expect((left.left + right.right) / 2, closeTo(size.width / 2, 1));
+          if (size.width >= 1000 && size.width > size.height && scale <= 1.3) {
+            expect(right.right, closeTo(size.width - 24, 1));
+          } else {
+            expect((left.left + right.right) / 2, closeTo(size.width / 2, 1));
+          }
           expect(
             find.descendant(
               of: back,
@@ -132,7 +136,49 @@ void main() {
         await tester.pumpAndSettle();
         checkWrapper();
         expect(find.text(strings.text('Browse libraries')), findsNothing);
+        expect(find.byType(ReaderSettingsSheet), findsOneWidget);
+        expect(
+          find.text(strings.text('Upscaling and sharpening')),
+          findsNothing,
+        );
+        final upscaling = find.widgetWithText(Tab, strings.text('Upscaling'));
+        await tester.ensureVisible(upscaling);
+        await tester.pumpAndSettle();
+        await tester.tap(upscaling);
+        await tester.pumpAndSettle();
+        expect(
+          find.text(strings.text('Upscaling and sharpening')),
+          findsOneWidget,
+        );
+        final rendering = find.widgetWithText(Tab, strings.text('Rendering'));
+        await tester.ensureVisible(rendering);
+        await tester.pumpAndSettle();
+        await tester.tap(rendering);
+        await tester.pumpAndSettle();
+        expect(find.text(strings.text('Save')), findsNothing);
+        final sampling = find
+            .byType(DropdownButtonFormField<ImageSampling>)
+            .first;
+        await tester.ensureVisible(sampling);
+        await tester.pumpAndSettle();
+        await tester.tap(sampling);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(strings.text('Nearest neighbour')).last);
+        await tester.pumpAndSettle();
+        await tester.tap(next);
+        await tester.pumpAndSettle();
+        checkWrapper();
         expect(find.byType(DownloadSettingsPanel), findsOneWidget);
+        final quality = await tester.runAsync(
+          () => ReaderStore(
+            harness.database,
+            account,
+          ).overrides(SettingsScope.global, ''),
+        );
+        expect(
+          quality!.imageQuality![RasterFormat.jpeg]!.sampling,
+          ImageSampling.nearest,
+        );
         expect(tester.takeException(), isNull);
         await harness.close(tester);
       },
@@ -169,7 +215,15 @@ void main() {
     );
     await tester.tap(next);
     await tester.pumpAndSettle();
-    expect(find.text('Welcome to Inkora'), findsOneWidget);
+    expect(find.text('Welcome to Inkora'), findsWidgets);
+    if (find.byKey(const Key('setup-sidebar')).evaluate().isNotEmpty) {
+      expect(
+        tester
+            .widget<ListTile>(find.byKey(const ValueKey('setup-stage-1')))
+            .selected,
+        true,
+      );
+    }
     final ebookIntroduction = find.text(
       'Read EPUB and PDF books with adjustable text, bookmarks and synchronized progress.',
     );
@@ -185,13 +239,21 @@ void main() {
     );
     expect(ebookIntroduction, findsOneWidget);
     expect(find.byType(ReaderSettingsSheet), findsNothing);
-    for (var step = 1; step < 7; step++) {
+    for (var step = 1; step < 8; step++) {
       expect(find.text('Keep current reading settings'), findsNothing);
       expect(find.text('All saved progress is synchronized.'), findsNothing);
       await tester.tap(next);
       await tester.pumpAndSettle();
     }
-    expect(find.text('Ready to read'), findsOneWidget);
+    expect(find.text('Ready to read'), findsWidgets);
+    if (find.byKey(const Key('setup-sidebar')).evaluate().isNotEmpty) {
+      expect(
+        tester
+            .widget<ListTile>(find.byKey(const ValueKey('setup-stage-8')))
+            .selected,
+        true,
+      );
+    }
     expect(find.text('Start reading'), findsOneWidget);
     expect(find.text('Finish setup'), findsNothing);
     expect(

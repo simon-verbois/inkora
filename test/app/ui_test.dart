@@ -38,7 +38,7 @@ void main() {
           await harness.mount(tester);
           expect(find.byKey(const Key('library-selector')), findsOneWidget);
           expect(find.byTooltip('Refresh catalogue'), findsNothing);
-          expect(find.byTooltip('Search catalogue'), findsOneWidget);
+          expect(find.byTooltip('Search catalogue'), findsNothing);
           expect(find.byIcon(Icons.shield_outlined), findsNothing);
           final router = harness.container.read(routerProvider);
           for (final location in [
@@ -61,9 +61,7 @@ void main() {
             if (!location.startsWith('/catalogue/book/')) {
               expect(
                 find.byTooltip('Search catalogue'),
-                location == '/catalogue/series/series-a'
-                    ? findsNothing
-                    : findsOneWidget,
+                findsNothing,
                 reason: location,
               );
             }
@@ -71,7 +69,7 @@ void main() {
           }
           router.go('/');
           await tester.pumpAndSettle();
-          expect(find.byTooltip('Search catalogue'), findsOneWidget);
+          expect(find.byTooltip('Search catalogue'), findsNothing);
           expect(find.text('Favorites'), findsNothing);
           expect(find.byKey(const Key('navigation-downloads')), findsOneWidget);
           expect(find.byKey(const Key('navigation-settings')), findsOneWidget);
@@ -121,7 +119,7 @@ void main() {
       expect(find.byTooltip('Search catalogue'), findsNothing);
       harness.container.read(routerProvider).pop();
       await tester.pumpAndSettle();
-      expect(find.byTooltip('Search catalogue'), findsOneWidget);
+      expect(find.byTooltip('Search catalogue'), findsNothing);
       expect(tester.takeException(), isNull);
       await harness.close(tester);
     });
@@ -211,6 +209,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Appearance'));
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('follow-system-theme')));
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.byKey(const ValueKey('theme-dark')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('theme-dark')));
@@ -277,15 +277,39 @@ void main() {
       return (values.last + .05) / (values.first + .05);
     }
 
-    for (final theme in [
-      InkoraTheme.light(),
-      InkoraTheme.dark(),
-      InkoraTheme.dark(amoled: true),
-      InkoraTheme.sepia(),
-      InkoraTheme.ocean(),
-      InkoraTheme.forest(),
-    ]) {
+    for (final appearance in AppAppearance.values.skip(1)) {
+      final theme = InkoraTheme.forAppearance(appearance);
       final scheme = theme.colorScheme;
+      for (final surface in [
+        theme.scaffoldBackgroundColor,
+        scheme.surface,
+        scheme.surfaceContainerHighest,
+      ]) {
+        expect(
+          contrast(surface, scheme.onSurface),
+          greaterThanOrEqualTo(4.5),
+          reason: '${appearance.name}: body text',
+        );
+        expect(
+          contrast(surface, scheme.onSurfaceVariant),
+          greaterThanOrEqualTo(4.5),
+          reason: '${appearance.name}: secondary text',
+        );
+        expect(
+          contrast(surface, theme.extension<InkoraColors>()!.heading),
+          greaterThanOrEqualTo(4.5),
+          reason: '${appearance.name}: heading',
+        );
+      }
+      final button = theme.filledButtonTheme.style!;
+      expect(
+        contrast(
+          button.backgroundColor!.resolve({})!,
+          button.foregroundColor!.resolve({})!,
+        ),
+        greaterThanOrEqualTo(4.5),
+        reason: '${appearance.name}: action button',
+      );
       expect(
         contrast(scheme.primary, scheme.onPrimary),
         greaterThanOrEqualTo(4.5),

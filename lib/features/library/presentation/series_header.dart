@@ -79,7 +79,7 @@ SeriesVolume? currentVolume(
   return index == null ? null : progress.volumes[index];
 }
 
-/// Blurred cover behind the series hero. There is one instance per page,
+/// Blurred cover behind the compact header or wide hero. One instance per page,
 /// never inside list items: the artwork is decoded at the smallest cover
 /// bucket (64 px) and blurred inside a RepaintBoundary, so scrolling moves a
 /// cached layer and no BackdropFilter samples the screen. A gradient fades it
@@ -138,15 +138,15 @@ class SeriesBackdrop extends ConsumerWidget {
   }
 }
 
-/// Cover, title, credits and the volume/status/publisher chips over the
-/// blurred backdrop.
-class SeriesHero extends ConsumerWidget {
+/// Cover, title, credits and exactly two chips: book count and status.
+class SeriesHero extends StatelessWidget {
   const SeriesHero({
     super.key,
     required this.item,
     required this.volumeCount,
     this.coverWidth = 112,
     this.topInset = 0,
+    this.showBackdrop = true,
   });
   final CatalogueItem item;
   final int volumeCount;
@@ -154,17 +154,10 @@ class SeriesHero extends ConsumerWidget {
 
   /// Space inside the backdrop for an overlaying Back button and status bar.
   final double topInset;
+  final bool showBackdrop;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ebooks = ref.watch(
-      seriesProgressProvider(item.id).select((data) {
-        final volumes = data.asData?.value.volumes;
-        return volumes != null &&
-            volumes.isNotEmpty &&
-            volumes.every((v) => v.isEbook);
-      }),
-    );
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final metadata = item.metadata;
     final authors = metadata.authors.map((author) => author.name).toSet();
@@ -202,8 +195,7 @@ class SeriesHero extends ConsumerWidget {
           children: [
             _HeroChip(
               key: const Key('series-count'),
-              label: AppStrings.of(context)
-                  .quantity(volumeCount, ebooks ? 'book' : 'volume'),
+              label: AppStrings.of(context).quantity(volumeCount, 'book'),
             ),
             _HeroChip(
               key: const Key('series-status'),
@@ -211,15 +203,13 @@ class SeriesHero extends ConsumerWidget {
               color: colors.success,
               dot: true,
             ),
-            if (metadata.publisher.isNotEmpty)
-              _HeroChip(label: metadata.publisher),
           ],
         ),
       ],
     );
     return Stack(
       children: [
-        Positioned.fill(child: SeriesBackdrop(item: item)),
+        if (showBackdrop) Positioned.fill(child: SeriesBackdrop(item: item)),
         Padding(
           padding: EdgeInsets.fromLTRB(
             InkSpace.lg,
@@ -334,30 +324,29 @@ class SeriesReadAction extends ConsumerWidget {
             reading: reading?.item.id,
             next: resume.next?.item.id,
           ));
-    final readingState = current == null ? null : progress!.of(current.id);
     if (reading != null && (current == null || current.id == reading.item.id)) {
       target = reading.item;
-      label = strings.text('Continue - {0}', [
-        volumeDisplayName(strings, reading.item.title, reading.item.number) ??
-            '',
-      ]);
+      label =
+          volumeDisplayName(strings, reading.item.title, reading.item.number) ??
+          '';
     } else if (current != null) {
       target = current.item;
-      final name = volumeName(strings, current);
-      if (readingState!.reading) {
-        label = strings.text('Continue - {0}', [name]);
-      } else {
-        label = strings.text('Start reading · {0}', [name]);
-      }
+      label = volumeName(strings, current);
     } else if (progress != null) {
       final first = progress.volumes.where((v) => v.available).firstOrNull;
       if (first != null) {
         target = first.item;
-        label = strings.text('Read again · {0}', [volumeName(strings, first)]);
+        label = volumeName(strings, first);
       }
     } else if (resume.next != null) {
       target = resume.next!.item;
-      label = strings.text('Start reading · {0}', [resume.next!.item.title]);
+      label =
+          volumeDisplayName(
+            strings,
+            resume.next!.item.title,
+            resume.next!.item.number,
+          ) ??
+          '';
     }
     return Row(
       children: [

@@ -220,6 +220,11 @@ void main() {
       await capture('phone-library');
       router.go('/settings/appearance');
       await tester.pumpAndSettle();
+      await Scrollable.ensureVisible(
+        tester.element(find.byKey(const Key('home-portrait-columns'))),
+        alignment: .2,
+      );
+      await tester.pumpAndSettle();
       await capture('phone-appearance');
       router.go('/settings/transfer');
       await tester.pumpAndSettle();
@@ -232,6 +237,7 @@ void main() {
       await capture('phone-upscaling', public: false);
       router.go('/catalogue/series/series-0');
       await tester.pumpAndSettle();
+      await capture('phone-series');
       // The series download action opens confirmation; cancel preserves fixtures.
       await tester.tap(find.byKey(const Key('detail-download')));
       await tester.pumpAndSettle();
@@ -256,6 +262,9 @@ void main() {
       expect(find.text('Download selected ({0})'), findsNothing);
       expect(find.byTooltip('Close'), findsNothing);
       await capture('tablet-home');
+      router.go('/catalogue/series/series-0');
+      await tester.pumpAndSettle();
+      await capture('tablet-series');
       router.go('/settings/quality');
       await tester.pumpAndSettle();
       await capture('tablet-settings-header', public: false);
@@ -271,7 +280,7 @@ void main() {
       router.go('/settings/appearance');
       await tester.pumpAndSettle();
       await Scrollable.ensureVisible(
-        tester.element(find.byKey(const Key('panel-opacity'))),
+        tester.element(find.byKey(const Key('home-portrait-columns'))),
         alignment: .2,
       );
       await tester.pumpAndSettle();

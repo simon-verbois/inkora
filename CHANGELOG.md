@@ -10,6 +10,15 @@ remain in progress.
 
 ## [Unreleased]
 
+## [2026.43.4] - 2026-10-21
+
+- Redesign the GitHub Pages website in all twelve application languages, with static locale pages, project-relative navigation, current phone/tablet screenshots and a link to Komga Meta Manager.
+
+- Replace global catalogue density with independent Home cover counts: 2/3/4 in portrait and 5/6/7 in landscape, selected by window orientation, including Continue reading; keep other views independently sized and preserve saved choices and backups.
+- Fix framed header and modal-sheet opacity at 96% and remove the opacity setting.
+
+- Extend the phone series artwork backdrop from the screen top behind the Back button through the reading actions up to the tabs, keep the content below on a uniform background, show only the book title in reading buttons, and limit series hero pills to the localized book count and publication status on every screen size.
+
 ## [2026.43.3] - 2026-10-21
 
 - Give Settings, Downloads and History the same short horizontal fade when opened from Home, including the complete tablet settings menu, and preserve Home geometry during navigation.

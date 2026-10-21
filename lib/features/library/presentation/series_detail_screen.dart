@@ -461,40 +461,48 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
         if (!didPop) _browser.endSelection();
       },
       child: Scaffold(
-        body: InkFloatingHeader(
-          overlay: wide,
-          title: data.asData?.value == null
-              ? null
-              : Text(data.asData!.value!.title),
-          body: SafeArea(
-            top: false,
-            bottom: false,
-            child: data.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (_, _) => InkEmptyState(
-                icon: InkIcons.warningCircle,
-                title: 'Details unavailable',
-                message: 'Unable to open saved details.',
-                action: () => ref.invalidate(
-                  catalogueItemProvider((CatalogueKind.series, _id)),
+        body: Stack(
+          children: [
+            if (!wide && data.asData?.value != null)
+              Positioned.fill(child: SeriesBackdrop(item: data.asData!.value!)),
+            InkFloatingHeader(
+              overlay: wide,
+              transparentAtRest: !wide,
+              title: data.asData?.value == null
+                  ? null
+                  : Text(data.asData!.value!.title),
+              body: SafeArea(
+                top: false,
+                bottom: false,
+                child: data.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (_, _) => InkEmptyState(
+                    icon: InkIcons.warningCircle,
+                    title: 'Details unavailable',
+                    message: 'Unable to open saved details.',
+                    action: () => ref.invalidate(
+                      catalogueItemProvider((CatalogueKind.series, _id)),
+                    ),
+                    label: 'Retry',
+                  ),
+                  data: (item) {
+                    if (item == null) {
+                      return const InkEmptyState(
+                        icon: InkIcons.bookOpen,
+                        title: 'Item unavailable',
+                        message: 'This item is not in the saved catalogue.',
+                      );
+                    }
+                    final count = volumeCount ?? item.itemCount;
+                    return wide
+                        ? _panes(context, item, count)
+                        : _single(context, item, count);
+                  },
                 ),
-                label: 'Retry',
               ),
-              data: (item) {
-                if (item == null) {
-                  return const InkEmptyState(
-                    icon: InkIcons.bookOpen,
-                    title: 'Item unavailable',
-                    message: 'This item is not in the saved catalogue.',
-                  );
-                }
-                final count = volumeCount ?? item.itemCount;
-                return wide
-                    ? _panes(context, item, count)
-                    : _single(context, item, count);
-              },
             ),
-          ),
+          ],
         ),
         bottomNavigationBar: _selecting
             ? VolumeSelectionBar(
@@ -556,7 +564,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const CatalogueRefreshStatus(),
-                SeriesHero(item: item, volumeCount: count),
+                SeriesHero(item: item, volumeCount: count, showBackdrop: false),
                 _readingBlock(item),
                 const SizedBox(height: InkSpace.lg),
               ],
@@ -576,22 +584,33 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
               ),
             ),
           ),
-          if (_tabs.index == 0)
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(
-                InkSpace.lg,
-                InkSpace.lg,
-                InkSpace.lg,
-                0,
+          for (final sliver in <Widget>[
+            if (_tabs.index == 0)
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                  InkSpace.lg,
+                  InkSpace.lg,
+                  InkSpace.lg,
+                  0,
+                ),
+                sliver: SliverToBoxAdapter(
+                  key: const Key('series-about'),
+                  child: SeriesAbout(item: item),
+                ),
+              )
+            else if (item.canOpen)
+              ..._volumeSlivers(item, wide: false),
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: SizedBox(height: bottom),
+            ),
+          ])
+            DecoratedSliver(
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
               ),
-              sliver: SliverToBoxAdapter(
-                key: const Key('series-about'),
-                child: SeriesAbout(item: item),
-              ),
-            )
-          else if (item.canOpen)
-            ..._volumeSlivers(item, wide: false),
-          SliverToBoxAdapter(child: SizedBox(height: bottom)),
+              sliver: sliver,
+            ),
         ],
       ),
     );

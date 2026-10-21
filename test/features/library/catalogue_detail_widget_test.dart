@@ -136,7 +136,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const Key('detail-read')),
-        matching: find.text('Commencer la lecture · Volume 000'),
+        matching: find.text('Volume 000'),
       ),
       findsOneWidget,
     );
@@ -147,7 +147,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('2 tomes'), findsOneWidget);
+    expect(find.text('2 livres'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('Scénariste'),
       200,
@@ -207,11 +207,11 @@ void main() {
               )
               .first;
           final readButton = find.byKey(const Key('detail-read'));
-          final readLabel = find.text('Start reading · $targetTitle');
-          expect(
-            find.descendant(of: readButton, matching: readLabel),
-            findsOneWidget,
+          final readLabel = find.descendant(
+            of: readButton,
+            matching: find.text(targetTitle),
           );
+          expect(readLabel, findsOneWidget);
           final labelBounds = tester.getRect(readLabel);
           final buttonBounds = tester.getRect(readButton);
           expect(labelBounds.left, greaterThanOrEqualTo(buttonBounds.left));
@@ -224,7 +224,7 @@ void main() {
             ),
             findsOneWidget,
           );
-          expect(find.text('85 volumes'), findsOneWidget);
+          expect(find.text('85 books'), findsOneWidget);
           expect(find.text('Webtoon'), findsNothing);
           expect(find.text('16+'), findsNothing);
           {
@@ -508,12 +508,7 @@ void main() {
         final router = harness.container.read(routerProvider);
         router.go('/catalogue/series/series-a');
         await tester.pumpAndSettle();
-        expect(
-          find.text(
-            onDeck ? 'Start reading · Volume 001' : 'Continue - Volume 001',
-          ),
-          findsOneWidget,
-        );
+        expect(find.text('Volume 001'), findsOneWidget);
         await tester.tap(find.byKey(const Key('detail-read')));
         await tester.pumpAndSettle();
         expect(

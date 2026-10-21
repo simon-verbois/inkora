@@ -24,8 +24,6 @@ import '../../features/library/presentation/progress_format.dart';
 import '../../features/library/presentation/reading_filter_chips.dart';
 import '../../features/library/presentation/volume_actions.dart';
 import '../../features/library/presentation/volume_browser.dart';
-import '../../features/settings/application/ui_preferences_provider.dart';
-import '../../features/settings/domain/ui_preferences.dart';
 import '../application/offline_coordinator.dart';
 import '../data/download_store.dart';
 import 'download_book_action.dart';
@@ -238,11 +236,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
   @override
   Widget build(BuildContext context) {
     final series = ref.watch(downloadedReadingSeriesProvider);
-    final density =
-        ref.watch(
-          uiPreferencesProvider.select((value) => value.asData?.value.density),
-        ) ??
-        CatalogueDensity.comfortable;
+
     return Scaffold(
       appBar: InkScreenHeader(
         title: LText(_root ? 'Downloads' : 'Downloaded volumes'),
@@ -274,18 +268,14 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
                 ref.invalidate(downloadedReadingSeriesProvider);
               },
             ),
-            data: (all) => _content(context, all, density),
+            data: (all) => _content(context, all),
           ),
         ),
       ),
     );
   }
 
-  Widget _content(
-    BuildContext context,
-    List<DownloadedSeries> all,
-    CatalogueDensity density,
-  ) {
+  Widget _content(BuildContext context, List<DownloadedSeries> all) {
     final root = _root;
     final parent = all
         .where(
@@ -452,7 +442,6 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
         else if (grid)
           CatalogueGrid(
             key: const Key('downloads-grid'),
-            density: density,
             artwork: [for (final item in visible) groupFor(item).artwork],
             itemCount: visible.length,
             itemBuilder: (_, index) {

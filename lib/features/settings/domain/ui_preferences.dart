@@ -21,22 +21,18 @@ enum AppAppearance {
   bool get isDark => this != system && !isLight;
 }
 
-enum CatalogueDensity { comfortable, compact }
-
 final class UiPreferences {
-  static const minPanelOpacity = .88;
-  static const maxPanelOpacity = 1.0;
   static const minTextScale = .85;
   static const maxTextScale = 1.3;
   const UiPreferences({
     this.appearance = AppAppearance.system,
     this.systemLightTheme = AppAppearance.light,
     this.systemDarkTheme = AppAppearance.dark,
-    this.density = CatalogueDensity.comfortable,
+    this.homePortraitColumns = 3,
+    this.homeLandscapeColumns = 6,
     this.textScale = 1,
     this.reduceMotion = false,
     this.floatingNavigation = true,
-    this.panelOpacity = .94,
     this.locale,
     this.setupCompleted = false,
     this.setupStep = 0,
@@ -50,11 +46,13 @@ final class UiPreferences {
       systemLightTheme.isLight ? systemLightTheme : AppAppearance.light;
   AppAppearance get darkTheme =>
       systemDarkTheme.isDark ? systemDarkTheme : AppAppearance.dark;
-  final CatalogueDensity density;
+  final int homePortraitColumns, homeLandscapeColumns;
+
+  int homeColumnsFor(double width, double height) =>
+      width > height ? homeLandscapeColumns : homePortraitColumns;
   final double textScale;
   final bool reduceMotion, setupCompleted;
   final bool floatingNavigation;
-  final double panelOpacity;
   final String? locale;
   final int setupStep;
   final GestureZones gestures;
@@ -64,11 +62,11 @@ final class UiPreferences {
     AppAppearance? appearance,
     AppAppearance? systemLightTheme,
     AppAppearance? systemDarkTheme,
-    CatalogueDensity? density,
+    int? homePortraitColumns,
+    int? homeLandscapeColumns,
     double? textScale,
     bool? reduceMotion,
     bool? floatingNavigation,
-    double? panelOpacity,
     String? locale,
     bool systemLocale = false,
     bool? setupCompleted,
@@ -79,11 +77,11 @@ final class UiPreferences {
     appearance: appearance ?? this.appearance,
     systemLightTheme: systemLightTheme ?? this.systemLightTheme,
     systemDarkTheme: systemDarkTheme ?? this.systemDarkTheme,
-    density: density ?? this.density,
+    homePortraitColumns: homePortraitColumns ?? this.homePortraitColumns,
+    homeLandscapeColumns: homeLandscapeColumns ?? this.homeLandscapeColumns,
     textScale: textScale ?? this.textScale,
     reduceMotion: reduceMotion ?? this.reduceMotion,
     floatingNavigation: floatingNavigation ?? this.floatingNavigation,
-    panelOpacity: panelOpacity ?? this.panelOpacity,
     locale: systemLocale ? null : locale ?? this.locale,
     setupCompleted: setupCompleted ?? this.setupCompleted,
     setupStep: setupStep ?? this.setupStep,
@@ -95,11 +93,11 @@ final class UiPreferences {
     'appearance': appearance.name,
     'systemLightTheme': lightTheme.name,
     'systemDarkTheme': darkTheme.name,
-    'density': density.name,
+    'homePortraitColumns': homePortraitColumns,
+    'homeLandscapeColumns': homeLandscapeColumns,
     'textScale': textScale,
     'reduceMotion': reduceMotion,
     'floatingNavigation': floatingNavigation,
-    'panelOpacity': panelOpacity,
     'locale': locale,
     'setupCompleted': setupCompleted,
     'setupStep': setupStep,
@@ -110,7 +108,16 @@ final class UiPreferences {
 
   factory UiPreferences.fromJson(Map<String, dynamic> json) {
     final scale = json['textScale'];
-    final opacity = json['panelOpacity'];
+    final legacyCompact = json['density'] == 'compact';
+    int columns(String key, int min, int max, int fallback) {
+      final value =
+          json[key] ??
+          json[key == 'homePortraitColumns'
+              ? 'homePhoneColumns'
+              : 'homeTabletColumns'];
+      return value is int && value >= min && value <= max ? value : fallback;
+    }
+
     final savedStep = json['setupStep'] is int
         ? (json['setupStep'] as int).clamp(0, 8)
         : 0;
@@ -145,11 +152,18 @@ final class UiPreferences {
               )
               .firstOrNull ??
           AppAppearance.dark,
-      density:
-          CatalogueDensity.values
-              .where((value) => value.name == json['density'])
-              .firstOrNull ??
-          CatalogueDensity.comfortable,
+      homePortraitColumns: columns(
+        'homePortraitColumns',
+        2,
+        4,
+        legacyCompact ? 4 : 3,
+      ),
+      homeLandscapeColumns: columns(
+        'homeLandscapeColumns',
+        5,
+        7,
+        legacyCompact ? 7 : 6,
+      ),
       textScale:
           scale is num &&
               scale.isFinite &&
@@ -159,9 +173,6 @@ final class UiPreferences {
           : 1,
       reduceMotion: json['reduceMotion'] == true,
       floatingNavigation: json['floatingNavigation'] != false,
-      panelOpacity: opacity is num && opacity.isFinite
-          ? opacity.toDouble().clamp(minPanelOpacity, maxPanelOpacity)
-          : .94,
       imageEnhancement: ImageEnhancement.parse(json['imageEnhancement']),
       locale: json['locale'] is String ? json['locale'] as String : null,
       setupCompleted: json['setupCompleted'] == true,

@@ -271,8 +271,8 @@ enum InkFloatingHeaderState {
 /// above [body], so content starts below the bubbles at rest and is clipped
 /// at the band while scrolling: it can never pass under a bubble, and
 /// `ensureVisible`/accessibility focus never reveal content behind them. At
-/// rest the band is the plain page background, so the bubbles float over the
-/// page; once the primary (depth-0, vertical) scroll view in [body] scrolls,
+/// rest the band uses the plain page background, or reveals artwork when
+/// [transparentAtRest] is enabled; once the primary (depth-0, vertical) scroll view in [body] scrolls,
 /// the band becomes an opaque bar with a divider, and past [titleThreshold]
 /// it also shows [title]. These states change only on threshold crossings.
 ///
@@ -288,6 +288,7 @@ class InkFloatingHeader extends StatelessWidget {
     this.actions = const [],
     this.titleThreshold = defaultTitleThreshold,
     this.overlay = false,
+    this.transparentAtRest = false,
     this.onBack,
     this.notificationPredicate = primaryVerticalScroll,
   });
@@ -302,6 +303,10 @@ class InkFloatingHeader extends StatelessWidget {
   final List<Widget> actions;
   final double titleThreshold;
   final bool overlay;
+
+  /// Reveal page artwork behind the band without moving the clipped content
+  /// viewport. Scrolling still gives the band an opaque background.
+  final bool transparentAtRest;
 
   /// Defaults to popping the route, or Home when nothing can pop.
   final VoidCallback? onBack;
@@ -366,7 +371,9 @@ class InkFloatingHeader extends StatelessWidget {
         return DecoratedBox(
           key: ValueKey('floating-header-${state.name}'),
           decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
+            color: transparentAtRest && state == InkFloatingHeaderState.rest
+                ? Colors.transparent
+                : Theme.of(context).scaffoldBackgroundColor,
             border: state == InkFloatingHeaderState.rest
                 ? null
                 : Border(bottom: BorderSide(color: scheme.outlineVariant)),

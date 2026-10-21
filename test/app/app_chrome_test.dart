@@ -5,6 +5,7 @@ import 'package:inkora/features/library/presentation/catalogue_screen.dart';
 import 'package:inkora/features/library/presentation/catalogue_grid.dart';
 import 'package:inkora/features/settings/data/ui_preferences_store.dart';
 import 'package:inkora/features/settings/domain/ui_preferences.dart';
+import 'package:inkora/app/widgets/ink_surface.dart';
 
 import '../support/ui_harness.dart';
 
@@ -121,7 +122,7 @@ void main() {
   );
 
   testWidgets(
-    'opacity drafts write once on release and keep MaterialApp retained',
+    'Home counts save independently and opacity has a fixed surface',
     (tester) async {
       final harness = await UiHarness.create(tester);
       addTearDown(() => harness.close(tester));
@@ -129,39 +130,37 @@ void main() {
       harness.container.read(routerProvider).go('/settings/appearance');
       await tester.pumpAndSettle();
       final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
-      final slider = tester.widget<Slider>(
-        find.byKey(const Key('panel-opacity')),
-      );
       final store = UiPreferencesStore(harness.database);
-      final emissions = <double>[];
-      final subscription = store.watch().listen(
-        (p) => emissions.add(p.panelOpacity),
-      );
-      addTearDown(subscription.cancel);
-      await tester.runAsync(() async {
-        await store.watch().first;
-      });
-      slider.onChanged!(.94);
-      slider.onChanged!(.90);
-      slider.onChanged!(.88);
-      await tester.pump();
-      expect(
-        (await tester.runAsync(() => store.watch().first))!.panelOpacity,
-        .94,
-      );
-      slider.onChangeEnd!(.88);
+      SegmentedButton<int> selector(String name) =>
+          tester.widget<SegmentedButton<int>>(
+            find.descendant(
+              of: find.byKey(Key(name)),
+              matching: find.byType(SegmentedButton<int>),
+            ),
+          );
+      selector('home-portrait-columns').onSelectionChanged!({4});
       await tester.pumpAndSettle();
-      expect(
-        (await tester.runAsync(() => store.watch().first))!.panelOpacity,
-        .88,
-      );
-      expect(emissions, [.94, .88]);
+      var saved = (await tester.runAsync(() => store.watch().first))!;
+      expect(saved.homePortraitColumns, 4);
+      expect(saved.homeLandscapeColumns, 6);
+      selector('home-landscape-columns').onSelectionChanged!({7});
+      await tester.pumpAndSettle();
+      saved = (await tester.runAsync(() => store.watch().first))!;
+      expect(saved.homePortraitColumns, 4);
+      expect(saved.homeLandscapeColumns, 7);
+      expect(find.byKey(const Key('panel-opacity')), findsNothing);
+      for (final element in find.byType(InkOverlaySurface).evaluate()) {
+        final surface = tester.widget<InkSurface>(
+          find
+              .descendant(
+                of: find.byElementPredicate((e) => e == element),
+                matching: find.byType(InkSurface),
+              )
+              .first,
+        );
+        expect(surface.opacity, .96);
+      }
       expect(tester.widget<MaterialApp>(find.byType(MaterialApp)), same(app));
-      expect(
-        find.byKey(const Key('floating-navigation-setting')),
-        findsNothing,
-      );
-      expect(find.byKey(const Key('floating-navigation-panel')), findsNothing);
       expect(tester.takeException(), isNull);
       await harness.close(tester);
     },
@@ -172,7 +171,10 @@ void main() {
     (tester) async {
       final harness = await UiHarness.create(
         tester,
-        preferences: const UiPreferences(panelOpacity: .9),
+        preferences: const UiPreferences(
+          homePortraitColumns: 4,
+          homeLandscapeColumns: 5,
+        ),
       );
       addTearDown(() => harness.close(tester));
       await harness.mount(tester);
@@ -186,7 +188,8 @@ void main() {
         () => UiPreferencesStore(harness.database).watch().first,
       );
       expect(saved!.setupCompleted, isTrue);
-      expect(saved.panelOpacity, .9);
+      expect(saved.homePortraitColumns, 4);
+      expect(saved.homeLandscapeColumns, 5);
       router.go('/setup?edit=true');
       await tester.pumpAndSettle();
       await tester.binding.handlePopRoute();

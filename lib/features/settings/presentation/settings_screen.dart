@@ -220,41 +220,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     const SizedBox(height: 24),
                     const Divider(),
                     const SizedBox(height: 12),
-                    InkSlider(
-                      sliderKey: const Key('panel-opacity'),
-                      label: context.tr('Panel opacity'),
-                      value: preferences.panelOpacity,
-                      min: UiPreferences.minPanelOpacity,
-                      max: UiPreferences.maxPanelOpacity,
-                      divisions: 6,
-                      enabled: !_saving && data.hasValue,
-                      formatValue: (value) =>
-                          context.tr('{0} %', [(value * 100).round()]),
-                      onCommitted: (value) => _save(
-                        (current) => current.copyWith(panelOpacity: value),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const LText('Catalogue density'),
-                    const SizedBox(height: 8),
-                    SegmentedButton<CatalogueDensity>(
-                      showSelectedIcon: false,
-                      segments: const [
-                        ButtonSegment(
-                          value: CatalogueDensity.comfortable,
-                          label: LText('Comfortable'),
-                        ),
-                        ButtonSegment(
-                          value: CatalogueDensity.compact,
-                          label: LText('Compact'),
-                        ),
-                      ],
-                      selected: {preferences.density},
-                      onSelectionChanged: _saving
+                    const LText('Home covers per row'),
+                    const SizedBox(height: 12),
+                    _HomeCoverCount(
+                      key: const Key('home-portrait-columns'),
+                      label: 'Portrait',
+                      choices: const [2, 3, 4],
+                      selected: preferences.homePortraitColumns,
+                      onChanged: _saving || !data.hasValue
                           ? null
-                          : (values) => _save(
+                          : (value) => _save(
                               (current) =>
-                                  current.copyWith(density: values.single),
+                                  current.copyWith(homePortraitColumns: value),
+                            ),
+                    ),
+                    const SizedBox(height: 16),
+                    _HomeCoverCount(
+                      key: const Key('home-landscape-columns'),
+                      label: 'Landscape',
+                      choices: const [5, 6, 7],
+                      selected: preferences.homeLandscapeColumns,
+                      onChanged: _saving || !data.hasValue
+                          ? null
+                          : (value) => _save(
+                              (current) =>
+                                  current.copyWith(homeLandscapeColumns: value),
                             ),
                     ),
                     const SizedBox(height: 16),
@@ -323,4 +313,44 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
     );
   }
+}
+
+class _HomeCoverCount extends StatelessWidget {
+  const _HomeCoverCount({
+    super.key,
+    required this.label,
+    required this.choices,
+    required this.selected,
+    required this.onChanged,
+  });
+  final String label;
+  final List<int> choices;
+  final int selected;
+  final ValueChanged<int>? onChanged;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      LText(label),
+      const SizedBox(height: 8),
+      Semantics(
+        label: context.tr(label),
+        child: SegmentedButton<int>(
+          showSelectedIcon: false,
+          segments: [
+            for (final value in choices)
+              ButtonSegment(
+                value: value,
+                label: LText('{0}', arguments: [value]),
+              ),
+          ],
+          selected: {selected},
+          onSelectionChanged: onChanged == null
+              ? null
+              : (values) => onChanged!(values.single),
+        ),
+      ),
+    ],
+  );
 }

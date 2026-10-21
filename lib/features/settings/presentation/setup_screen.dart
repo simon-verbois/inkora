@@ -314,11 +314,6 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                                                         preferences.appearance,
                                                       ),
                                                     ),
-                                                    subtitle: LText(
-                                                      densityLabel(
-                                                        preferences.density,
-                                                      ),
-                                                    ),
                                                   ),
                                                   ListTile(
                                                     contentPadding:

@@ -23,26 +23,25 @@ void main() {
         await harness.mount(tester, textScale: 2);
         harness.container.read(routerProvider).go('/settings/appearance');
         await tester.pumpAndSettle();
-        final slider = find.byKey(const Key('panel-opacity'));
-        await Scrollable.ensureVisible(tester.element(slider), alignment: .2);
-        await tester.pumpAndSettle();
-        expect(slider.hitTestable(), findsOneWidget);
+        expect(find.byKey(const Key('panel-opacity')), findsNothing);
         expect(
-          find.text(AppStrings(language).text('Floating navigation')),
-          findsNothing,
-        );
-        expect(
-          find.text(AppStrings(language).text('Panel opacity')),
+          find.text(AppStrings(language).text('Home covers per row')),
           findsOneWidget,
         );
-        expect(
-          find.text(
-            AppStrings(language).text(
-              'Applies to navigation, headers and search. Text stays fully opaque.',
-            ),
-          ),
-          findsNothing,
-        );
+        for (final key in ['home-portrait-columns', 'home-landscape-columns']) {
+          final control = find.byKey(Key(key));
+          await Scrollable.ensureVisible(
+            tester.element(control),
+            alignment: .2,
+          );
+          await tester.pumpAndSettle();
+          expect(control.hitTestable(), findsOneWidget);
+          final choices = find.descendant(
+            of: control,
+            matching: find.byType(SegmentedButton<int>),
+          );
+          expect(tester.getSize(choices).width, lessThanOrEqualTo(320));
+        }
         expect(tester.takeException(), isNull);
         await harness.close(tester);
       },

@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/inkora_theme.dart';
 import '../../../reader/domain/page_source.dart';
-import '../../settings/domain/ui_preferences.dart';
 import '../application/cover_providers.dart';
 import '../data/cover_repository.dart';
 import '../domain/catalogue.dart';
@@ -20,12 +19,12 @@ class CatalogueGrid extends ConsumerStatefulWidget {
     super.key,
     required this.itemCount,
     required this.itemBuilder,
-    required this.density,
+    this.columns,
     this.artwork,
   });
   final int itemCount;
   final IndexedWidgetBuilder itemBuilder;
-  final CatalogueDensity density;
+  final int? columns;
   final List<CatalogueItem>? artwork;
   @override
   ConsumerState<CatalogueGrid> createState() => _CatalogueGridState();
@@ -151,14 +150,9 @@ class _CatalogueGridState extends ConsumerState<CatalogueGrid> {
 
   ({double extent, double width, double height, int columns, Widget sliver})
   _measure(double extent) {
-    final available = extent - 32;
-    final columns = extent < 600
-        ? 3
-        : (available / (widget.density == CatalogueDensity.compact ? 145 : 175))
-              .floor()
-              .clamp(3, 6);
+    final columns = catalogueColumnCount(extent, columns: widget.columns);
     final gap = extent < 600 ? 10.0 : 12.0;
-    final width = catalogueCoverWidth(extent, widget.density);
+    final width = catalogueCoverWidth(extent, columns: columns);
     // Inherited lookups use this State's context so theme/text-scale changes
     // rebuild the State and invalidate the cached geometry.
     final painter = TextPainter(

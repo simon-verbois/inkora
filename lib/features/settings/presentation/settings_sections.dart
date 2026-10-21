@@ -68,7 +68,7 @@ const settingsSections = [
   SettingsSection(
     'appearance',
     'Appearance',
-    'Theme and catalogue density',
+    'Theme and home covers',
     InkIcons.palette,
     SettingsGroup.application,
   ),

@@ -1,5 +1,3 @@
-import '../../settings/domain/ui_preferences.dart';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -44,10 +42,10 @@ class ResumeCarousel extends StatelessWidget {
     super.key,
     required this.entries,
     this.onViewAll,
-    this.density = CatalogueDensity.comfortable,
+    this.columns,
   });
   final List<ResumeEntry> entries;
-  final CatalogueDensity density;
+  final int? columns;
 
   /// Destination of the end card shown when more than
   /// [CatalogueShelf.maxItems] positions exist (reading history on Home).
@@ -59,7 +57,7 @@ class ResumeCarousel extends StatelessWidget {
     return CatalogueShelf(
       key: const PageStorageKey('resume-carousel'),
       onViewAll: onViewAll,
-      density: density,
+      columns: columns,
       viewAllLabel: 'Reading history',
       items: [for (final entry in reading.values) resumeShelfItem(entry)!],
       resumeEntries: reading,
@@ -77,20 +75,16 @@ class ResumeCarousel extends StatelessWidget {
 /// shelves other than Continue reading); their menu can open the volume
 /// directly. Ebook cards open the book.
 class UpNextShelf extends StatelessWidget {
-  const UpNextShelf({
-    super.key,
-    required this.entries,
-    this.density = CatalogueDensity.comfortable,
-  });
+  const UpNextShelf({super.key, required this.entries, this.columns});
   final List<ResumeEntry> entries;
-  final CatalogueDensity density;
+  final int? columns;
 
   @override
   Widget build(BuildContext context) {
     final reading = _byReadingUnit(entries);
     return CatalogueShelf(
       key: const PageStorageKey('up-next-shelf'),
-      density: density,
+      columns: columns,
       items: [for (final entry in reading.values) resumeShelfItem(entry)!],
       resumeEntries: reading,
       resumeOpensBook: false,

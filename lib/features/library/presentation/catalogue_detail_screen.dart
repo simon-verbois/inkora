@@ -8,8 +8,6 @@ import '../../../app/l10n/app_strings.dart';
 import '../../../app/theme/inkora_theme.dart';
 import '../../../app/widgets/ink_screen_header.dart';
 import '../../../app/widgets/inkora_widgets.dart';
-import '../../settings/application/ui_preferences_provider.dart';
-import '../../settings/domain/ui_preferences.dart';
 import '../application/catalogue_providers.dart';
 import '../domain/catalogue.dart';
 import 'catalogue_card.dart';
@@ -142,11 +140,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
         }
       });
     }
-    final density =
-        ref.watch(
-          uiPreferencesProvider.select((value) => value.asData?.value.density),
-        ) ??
-        CatalogueDensity.comfortable;
+
     final members = feed?.asData?.value.page.items ?? const <CatalogueItem>[];
     return Scaffold(
       body: InkFloatingHeader(
@@ -239,7 +233,6 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                       if (members.isNotEmpty)
                         CatalogueGrid(
                           key: const Key('detail-grid'),
-                          density: density,
                           itemCount: members.length,
                           artwork: members,
                           itemBuilder: (_, index) =>
@@ -249,7 +242,6 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                           state?.loading == true)
                         CatalogueGrid(
                           key: const Key('detail-grid-skeleton'),
-                          density: density,
                           itemCount: 6,
                           itemBuilder: coverSkeletonBuilder,
                         )

@@ -16,12 +16,10 @@ class InkoraShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final offline = ref.watch(sessionProvider.select((s) => s.offline));
-    // Wide series artwork and its pane divider extend behind the status bar.
+    // Series artwork extends behind the status bar at every window width.
     // Each pane/header keeps its own controls inside the relevant safe area.
     final fullBleedSeries =
-        !offline &&
-        MediaQuery.sizeOf(context).width >= 840 &&
-        currentPath.startsWith('/catalogue/series/');
+        !offline && currentPath.startsWith('/catalogue/series/');
     return Scaffold(
       body: Builder(
         builder: (context) => SafeArea(

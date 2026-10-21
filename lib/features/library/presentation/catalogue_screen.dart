@@ -271,11 +271,15 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
     final selectedLibrary = libraries.asData?.value.items
         .where((item) => item.id == _libraryId)
         .firstOrNull;
-    final density =
-        ref.watch(
-          uiPreferencesProvider.select((value) => value.asData?.value.density),
-        ) ??
-        CatalogueDensity.comfortable;
+    final window = MediaQuery.sizeOf(context);
+    final homeColumns = widget.embedded
+        ? ref.watch(
+            uiPreferencesProvider.select(
+              (value) => (value.asData?.value ?? const UiPreferences())
+                  .homeColumnsFor(window.width, window.height),
+            ),
+          )
+        : null;
     final volumesOnly =
         _kind == CatalogueKind.book && !items.any((item) => item.isEbook);
     final scale = MediaQuery.textScalerOf(context).scale(1);
@@ -397,7 +401,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
                   else
                     CatalogueGrid(
                       key: const Key('catalogue-grid'),
-                      density: density,
+                      columns: homeColumns,
                       itemCount: items.length,
                       artwork: items,
                       itemBuilder: (_, index) =>
@@ -412,7 +416,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
                   else
                     CatalogueGrid(
                       key: const Key('catalogue-skeleton'),
-                      density: density,
+                      columns: homeColumns,
                       itemCount: 12,
                       itemBuilder: coverSkeletonBuilder,
                     )

@@ -26,7 +26,8 @@ behind this branch; see [the changelog](CHANGELOG.md).
   continue to the next volume from the completion screen. Reopen recent books
   from device-local reading history.
 - **Make it yours.** Choose appearance palettes, reading direction, page layout,
-  gestures, image quality and EPUB typography.
+  gestures, image quality and EPUB typography. Set Home covers per row separately
+  for portrait and landscape windows.
 - **Find your next read.** Search your catalogue and browse series, collections
   and reading lists. Filter by format, reading status or downloaded availability.
 - **Choose what appears.** Connect multiple server accounts and filter their
@@ -47,7 +48,7 @@ are rendered by Flutter; they are not device photographs.
 
 | Library home | Library | Appearance |
 | --- | --- | --- |
-| ![Library home with Continue reading above the cover grid](docs/screenshots/phone-home.png) | ![Library grid with illustrated sample covers](docs/screenshots/phone-library.png) | ![Appearance settings and reading palettes](docs/screenshots/phone-appearance.png) |
+| ![Library home with Continue reading above the cover grid](docs/screenshots/phone-home.png) | ![Library grid with illustrated sample covers](docs/screenshots/phone-library.png) | ![Appearance themes and portrait/landscape Home cover counts](docs/screenshots/phone-appearance.png) |
 
 | Batch downloads | Import / export |
 | --- | --- |
@@ -98,9 +99,12 @@ read offline from **Settings → About Inkora**.
 
 ## Presentation website
 
-The Inkora-style static website lives in [docs/](docs/PAGES.md), with local
-preview and GitHub Pages setup instructions. Publish directly from the default
-branch’s `/docs` folder, or use the optional Python-only build and manual workflow.
+The [presentation website](https://simon-verbois.github.io/inkora/) has the same
+twelve languages as the app and introduces
+[Komga Meta Manager](https://simon-verbois.github.io/komga-meta-manager/), an
+independent metadata companion for Komga. See [the Pages guide](docs/PAGES.md)
+for local preview and hosting. Committed static locale pages support publishing
+from the default branch’s `/docs` folder or the optional Python build/workflow.
 
 ## Credits
 

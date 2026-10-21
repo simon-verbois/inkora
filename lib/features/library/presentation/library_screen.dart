@@ -134,11 +134,15 @@ class _ResumeSection extends ConsumerWidget {
             if (!entry.onDeck) entry,
         ];
         if (reading.isEmpty) return const SizedBox.shrink();
-        final density =
-            ref.watch(
-              uiPreferencesProvider.select((p) => p.asData?.value.density),
-            ) ??
-            CatalogueDensity.comfortable;
+        final window = MediaQuery.sizeOf(context);
+        final columns = ref.watch(
+          uiPreferencesProvider.select(
+            (p) => (p.asData?.value ?? const UiPreferences()).homeColumnsFor(
+              window.width,
+              window.height,
+            ),
+          ),
+        );
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
           child: InkPanel(
@@ -146,7 +150,7 @@ class _ResumeSection extends ConsumerWidget {
             title: 'Continue reading',
             child: ResumeCarousel(
               entries: reading,
-              density: density,
+              columns: columns,
               onViewAll: () => _openHistory(context),
             ),
           ),

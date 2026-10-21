@@ -226,6 +226,13 @@ void main() {
           );
         } else {
           expect(tester.getTopLeft(hero).dy, greaterThanOrEqualTo(inset));
+          // Artwork reaches behind the status bar and Back band; content
+          // keeps its own clipped viewport below the controls.
+          expect(tester.getTopLeft(find.byType(SeriesBackdrop)).dy, 0);
+          final band = tester.widget<DecoratedBox>(
+            find.byKey(const Key('floating-header-rest')),
+          );
+          expect((band.decoration as BoxDecoration).color, Colors.transparent);
         }
         if (wideSeries) {
           final pane = find.byKey(const Key('series-volumes-pane'));

@@ -70,6 +70,8 @@ void main() {
     await ui.save(
       const UiPreferences(
         appearance: AppAppearance.ocean,
+        homePortraitColumns: 2,
+        homeLandscapeColumns: 5,
         setupCompleted: true,
         setupStep: 4,
       ),
@@ -99,12 +101,17 @@ void main() {
     final transfer = SettingsTransfer(db, 'a');
     final bytes = await transfer.export();
     final value = await transfer.inspect(bytes);
+    expect((value['ui'] as Map)['homePortraitColumns'], 2);
+    expect((value['ui'] as Map)['homeLandscapeColumns'], 5);
+    expect((value['ui'] as Map).containsKey('panelOpacity'), isFalse);
     expect(value['bookmarks'], hasLength(2));
     expect(utf8.decode(bytes), isNot(contains('Private')));
     expect(utf8.decode(bytes), isNot(contains('setupCompleted')));
     await ui.save(const UiPreferences(setupCompleted: false));
     await transfer.apply(value);
     expect((await ui.watch().first).appearance, AppAppearance.ocean);
+    expect((await ui.watch().first).homePortraitColumns, 2);
+    expect((await ui.watch().first).homeLandscapeColumns, 5);
     expect((await ui.watch().first).setupCompleted, isFalse);
     await transfer.apply(value);
     expect(await RasterBookmarks(db, 'a', 'book').read(), hasLength(1));

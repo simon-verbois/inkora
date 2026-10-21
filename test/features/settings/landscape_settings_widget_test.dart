@@ -221,8 +221,8 @@ void main() {
         await tester.pumpAndSettle();
         final light = find.byKey(const Key('light-theme-group'));
         final dark = find.byKey(const Key('dark-theme-group'));
-        final opacity = find.byKey(const Key('panel-opacity'));
-        await tester.ensureVisible(opacity);
+        final coverCounts = find.byKey(const Key('home-portrait-columns'));
+        await tester.ensureVisible(coverCounts);
         await tester.pumpAndSettle();
         // The rail fits its longest localized word (the square test font
         // widens it), so pair the groups whenever the pane keeps 720px.

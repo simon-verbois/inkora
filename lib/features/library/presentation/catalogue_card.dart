@@ -15,19 +15,17 @@ import '../../../offline/presentation/download_book_action.dart';
 import '../domain/catalogue.dart';
 import '../domain/resume_entry.dart';
 import 'book_cover.dart';
-import '../../settings/domain/ui_preferences.dart';
 import 'catalogue_presentation.dart';
 import 'progress_format.dart';
 
-double catalogueCoverWidth(double extent, CatalogueDensity density) {
-  final available = extent - 32;
-  final columns = extent < 600
-      ? 3
-      : (available / (density == CatalogueDensity.compact ? 145 : 175))
-            .floor()
-            .clamp(3, 6);
+int catalogueColumnCount(double extent, {int? columns}) =>
+    columns?.clamp(2, 7) ??
+    (extent < 600 ? 3 : ((extent - 32) / 175).floor().clamp(3, 6));
+
+double catalogueCoverWidth(double extent, {int? columns}) {
+  final count = catalogueColumnCount(extent, columns: columns);
   final gap = extent < 600 ? 10.0 : 12.0;
-  return (available - (columns - 1) * gap) / columns;
+  return (extent - 32 - (count - 1) * gap) / count;
 }
 
 typedef _TileAction = ({String label, IconData icon, VoidCallback run});
@@ -430,7 +428,7 @@ class CatalogueShelf extends StatelessWidget {
     super.key,
     required this.items,
     this.cardWidth = 120,
-    this.density = CatalogueDensity.comfortable,
+    this.columns,
     this.resumeEntries = const {},
     this.onOpen,
     this.onViewAll,
@@ -439,7 +437,7 @@ class CatalogueShelf extends StatelessWidget {
   });
   final List<CatalogueItem> items;
   final double cardWidth;
-  final CatalogueDensity density;
+  final int? columns;
   final Map<String, ResumeEntry> resumeEntries;
   final ValueChanged<CatalogueItem>? onOpen;
   final VoidCallback? onViewAll;
@@ -452,8 +450,8 @@ class CatalogueShelf extends StatelessWidget {
     builder: (context, constraints) {
       final visible = items.take(maxItems).toList(growable: false);
       final scale = MediaQuery.textScalerOf(context).scale(1);
-      final width = constraints.maxWidth >= 600
-          ? catalogueCoverWidth(constraints.maxWidth + 32, density)
+      final width = columns != null || constraints.maxWidth >= 600
+          ? catalogueCoverWidth(constraints.maxWidth + 32, columns: columns)
           : scale > 1.3
           ? 160.0
           : math
@@ -491,6 +489,9 @@ class CatalogueShelf extends StatelessWidget {
         labelHeight = math.max(labelHeight, titleHeight + painter.height);
       }
       painter.dispose();
+      final gap = columns != null && constraints.maxWidth + 32 >= 600
+          ? 12.0
+          : 10.0;
       // The end card leads to the full list only when the shelf is truncated.
       final viewAll = onViewAll != null && items.length > maxItems;
       return SizedBox(
@@ -501,7 +502,7 @@ class CatalogueShelf extends StatelessWidget {
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: visible.length + (viewAll ? 1 : 0),
-          separatorBuilder: (_, _) => const SizedBox(width: 10),
+          separatorBuilder: (_, _) => SizedBox(width: gap),
           itemBuilder: (_, index) => SizedBox(
             width: width,
             child: index == visible.length

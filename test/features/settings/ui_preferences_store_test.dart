@@ -34,52 +34,69 @@ void main() {
             systemLightTheme: light,
             systemDarkTheme: dark,
             locale: 'fr',
-            panelOpacity: .96,
           );
           final roundTrip = UiPreferences.fromJson(
-            original.copyWith(density: CatalogueDensity.compact).toJson(),
+            original
+                .copyWith(homePortraitColumns: 4, homeLandscapeColumns: 7)
+                .toJson(),
           );
           expect(roundTrip.lightTheme, light);
           expect(roundTrip.darkTheme, dark);
           expect(roundTrip.appearance, AppAppearance.system);
           expect(roundTrip.locale, 'fr');
-          expect(roundTrip.panelOpacity, .96);
-          expect(roundTrip.density, CatalogueDensity.compact);
+          expect(roundTrip.homePortraitColumns, 4);
+          expect(roundTrip.homeLandscapeColumns, 7);
         }
       }
     },
   );
 
-  test('new defaults use balanced enhancement and 94 percent without replacing saved choices', () {
+  test('Home counts default to 3/6 and legacy opacity is retired', () {
     const fresh = UiPreferences();
-    expect(fresh.panelOpacity, .94);
+    expect(fresh.homePortraitColumns, 3);
+    expect(fresh.homeLandscapeColumns, 6);
     expect(fresh.imageEnhancement, ImageEnhancement.balanced);
-    expect(
-      UiPreferences.fromJson({}).imageEnhancement,
-      ImageEnhancement.balanced,
-    );
-    final explicit = UiPreferences.fromJson({
+    final old = UiPreferences.fromJson({
+      'panelOpacity': .88,
       'imageEnhancement': 'off',
-      'panelOpacity': 1,
     });
-    expect(explicit.imageEnhancement, ImageEnhancement.off);
-    expect(explicit.panelOpacity, 1);
+    expect(old.imageEnhancement, ImageEnhancement.off);
+    expect(old.toJson(), isNot(contains('panelOpacity')));
+    expect(old.toJson(), isNot(contains('density')));
   });
-  test(
-    'legacy and malformed overlay values retain usable bounded preferences',
-    () {
-      expect(UiPreferences.fromJson({}).floatingNavigation, isTrue);
-      expect(UiPreferences.fromJson({}).panelOpacity, .94);
-      for (final value in [double.nan, double.infinity, 'broken', null]) {
-        expect(
-          UiPreferences.fromJson({'panelOpacity': value}).panelOpacity,
-          .94,
-        );
-      }
-      expect(UiPreferences.fromJson({'panelOpacity': 0}).panelOpacity, .88);
-      expect(UiPreferences.fromJson({'panelOpacity': 2}).panelOpacity, 1);
-    },
-  );
+
+  test('legacy density migrates once to independent Home counts', () {
+    final compact = UiPreferences.fromJson({'density': 'compact'});
+    expect(compact.homePortraitColumns, 4);
+    expect(compact.homeLandscapeColumns, 7);
+    expect(compact.toJson(), isNot(contains('density')));
+    final explicit = UiPreferences.fromJson({
+      'density': 'compact',
+      'homePortraitColumns': 2,
+      'homeLandscapeColumns': 5,
+    });
+    expect(explicit.homePortraitColumns, 2);
+    expect(explicit.homeLandscapeColumns, 5);
+    expect(explicit.homeColumnsFor(599, 800), 2);
+    expect(explicit.homeColumnsFor(600, 400), 5);
+  });
+
+  test('malformed Home counts fall back to supported values', () {
+    for (final value in [null, '4', 3.5, 0, 1, 5, double.nan]) {
+      expect(
+        UiPreferences.fromJson({'homePortraitColumns': value})
+            .homePortraitColumns,
+        3,
+      );
+    }
+    for (final value in [null, '7', 6.5, 0, 4, 8, double.infinity]) {
+      expect(
+        UiPreferences.fromJson({'homeLandscapeColumns': value})
+            .homeLandscapeColumns,
+        6,
+      );
+    }
+  });
   test(
     'discovery writes do not re-emit unchanged appearance preferences',
     () async {
@@ -162,11 +179,11 @@ void main() {
     await store.save(
       const UiPreferences(
         appearance: AppAppearance.amoled,
-        density: CatalogueDensity.compact,
+        homePortraitColumns: 4,
+        homeLandscapeColumns: 7,
         textScale: 1.3,
         reduceMotion: true,
         floatingNavigation: false,
-        panelOpacity: .9,
         imageEnhancement: ImageEnhancement.balanced,
       ),
     );
@@ -175,12 +192,12 @@ void main() {
     try {
       final restored = await UiPreferencesStore(database).watch().first;
       expect(restored.appearance, AppAppearance.amoled);
-      expect(restored.density, CatalogueDensity.compact);
+      expect(restored.homePortraitColumns, 4);
+      expect(restored.homeLandscapeColumns, 7);
       expect(restored.textScale, 1.3);
       expect(restored.reduceMotion, isTrue);
       expect(restored.floatingNavigation, isFalse);
-      expect(restored.panelOpacity, .9);
-      expect(restored.copyWith(locale: 'fr').panelOpacity, .9);
+      expect(restored.copyWith(locale: 'fr').homePortraitColumns, 4);
       expect(restored.imageEnhancement, ImageEnhancement.balanced);
       expect(
         restored.copyWith(locale: 'fr').imageEnhancement,

@@ -37,3 +37,15 @@ if (typeof dialog?.showModal === "function") {
     opener?.focus({ preventScroll: true });
   });
 }
+
+/* Native details/links provide language navigation without scripting. */
+const languages = document.querySelector('.language-picker');
+languages?.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && languages.open) {
+    languages.open = false;
+    languages.querySelector('summary').focus();
+  }
+});
+document.addEventListener('click', (event) => {
+  if (languages?.open && !languages.contains(event.target)) languages.open = false;
+});

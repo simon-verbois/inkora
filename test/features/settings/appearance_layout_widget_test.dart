@@ -49,14 +49,16 @@ void main() {
             expect(tester.takeException(), isNull);
           }
           expect(colors, hasLength(10));
-          expect(
-            tester
-                .widget<SegmentedButton<CatalogueDensity>>(
-                  find.byType(SegmentedButton<CatalogueDensity>),
-                )
-                .showSelectedIcon,
-            false,
-          );
+          final selectors = tester
+              .widgetList<SegmentedButton<int>>(
+                find.byType(SegmentedButton<int>),
+              )
+              .toList();
+          expect(selectors, hasLength(2));
+          expect(selectors.every((s) => !s.showSelectedIcon), isTrue);
+          expect(selectors[0].segments.map((s) => s.value), [2, 3, 4]);
+          expect(selectors[1].segments.map((s) => s.value), [5, 6, 7]);
+          expect(find.byKey(const Key('panel-opacity')), findsNothing);
           router.go('/settings/servers');
           await tester.pumpAndSettle();
           expect(find.byType(ServersScreen), findsOneWidget);

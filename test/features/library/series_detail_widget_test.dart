@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inkora/app/l10n/app_strings.dart';
 import 'package:inkora/app/router.dart';
 import 'package:inkora/app/widgets/ink_screen_header.dart';
 import 'package:inkora/features/library/domain/catalogue.dart';
@@ -30,8 +31,9 @@ Future<void> seedSeries(
   String status = 'ONGOING',
   bool ebooks = false,
   int summaryRepeats = 14,
+  String generation = 'series-page',
 }) => tester.runAsync(() async {
-  await harness.repository.store.stage('series-page', [
+  await harness.repository.store.stage(generation, [
     const CatalogueItem(
       kind: CatalogueKind.library,
       id: 'library-a',
@@ -81,7 +83,7 @@ Future<void> seedSeries(
       ),
   ]);
   await harness.repository.store.publish(
-    'series-page',
+    generation,
     DateTime.now(),
     () => true,
   );
@@ -91,6 +93,7 @@ Future<UiHarness> openSeries(
   WidgetTester tester, {
   Size size = const Size(390, 844),
   double textScale = 1,
+  String locale = 'en',
   int volumes = 6,
   int read = 2,
   int? current = 3,
@@ -105,7 +108,7 @@ Future<UiHarness> openSeries(
   addTearDown(tester.view.resetDevicePixelRatio);
   final harness = await UiHarness.create(
     tester,
-    preferences: const UiPreferences(locale: 'en'),
+    preferences: UiPreferences(locale: locale),
     resumeEntries: resumeEntries,
     refreshCatalogue: false,
   );
@@ -208,8 +211,8 @@ void main() {
         tester.getTopLeft(find.byKey(const Key('series-title'))).dy,
         greaterThan(band.dy),
       );
-      // Identity chips: volume count, status (always) and publisher.
-      expect(find.text('6 volumes'), findsOneWidget);
+      // Identity chips contain only the book count and publication status.
+      expect(find.text('6 books'), findsOneWidget);
       expect(
         find.descendant(
           of: find.byKey(const Key('series-status')),
@@ -226,7 +229,13 @@ void main() {
       expect(find.byKey(const Key('series-progress')), findsNothing);
       expect(find.byKey(const Key('series-segments')), findsNothing);
       expect(find.text('2/6 read'), findsNothing);
-      expect(find.text('Continue - Moonlit District 03'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('detail-read')),
+          matching: find.text('Moonlit District 03'),
+        ),
+        findsOneWidget,
+      );
       // Publication facts with localized roles and server names.
       await tester.scrollUntilVisible(
         find.text('Writer'),
@@ -239,6 +248,83 @@ void main() {
       await harness.close(tester);
     },
   );
+
+  testWidgets('compact artwork ends at the tabs above the plain content', (
+    tester,
+  ) async {
+    final harness = await openSeries(tester, volumes: 30);
+    final backdrop = find.byType(SeriesBackdrop);
+    final viewport = find.byKey(const ValueKey('series-series-a'));
+    expect(backdrop, findsOneWidget);
+    final tabs = find.byKey(const Key('series-tabs'));
+    expect(tester.getRect(backdrop).top, 0);
+    final plainContent = tester.widget<DecoratedSliver>(
+      find
+          .descendant(of: viewport, matching: find.byType(DecoratedSliver))
+          .first,
+    );
+    final tabBackground = find
+        .ancestor(of: tabs, matching: find.byType(Material))
+        .first;
+    final background = Theme.of(tester.element(tabs)).scaffoldBackgroundColor;
+    expect((plainContent.decoration as BoxDecoration).color, background);
+    expect(tester.widget<Material>(tabBackground).color, background);
+    await tester.drag(viewport, const Offset(0, -240));
+    await tester.pumpAndSettle();
+    expect(tester.getRect(backdrop).top, 0);
+    await showVolumes(tester);
+    await tester.drag(viewport, const Offset(0, -600));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Material>(tabBackground).color, background);
+    expect(tester.takeException(), isNull);
+    await harness.close(tester);
+  });
+
+  for (final locale in languageNames.keys) {
+    for (final size in [const Size(390, 844), const Size(1280, 900)]) {
+      testWidgets('$locale book count and two hero pills at $size', (
+        tester,
+      ) async {
+        final harness = await openSeries(
+          tester,
+          locale: locale,
+          size: size,
+          volumes: 1,
+        );
+        final hero = find.byType(SeriesHero);
+        final strings = AppStrings(locale);
+        for (final count in [1, 2, 5, 12, 20]) {
+          if (count != 1) {
+            await seedSeries(
+              harness,
+              tester,
+              volumes: count,
+              generation: 'series-page-$count',
+            );
+            await tester.pumpAndSettle();
+          }
+          expect(
+            find.descendant(
+              of: find.byKey(const Key('series-count')),
+              matching: find.text(strings.quantity(count, 'book')),
+            ),
+            findsOneWidget,
+          );
+          final pills = tester.widget<Wrap>(
+            find.descendant(of: hero, matching: find.byType(Wrap)),
+          );
+          expect(pills.children, hasLength(2));
+          expect(find.byKey(const Key('series-status')), findsOneWidget);
+          expect(
+            find.descendant(of: hero, matching: find.text('Fixture Press')),
+            findsNothing,
+          );
+          expect(tester.takeException(), isNull);
+        }
+        await harness.close(tester);
+      });
+    }
+  }
 
   for (final status in ['ENDED', 'HIATUS', '']) {
     testWidgets('status chip is always shown ($status)', (tester) async {
@@ -280,7 +366,7 @@ void main() {
         ),
       ],
     );
-    expect(find.text('Continue - The Lantern Mystery'), findsOneWidget);
+    expect(find.text('The Lantern Mystery'), findsOneWidget);
     expect(find.textContaining('Vol. 03'), findsNothing);
     await harness.close(tester);
   });
@@ -868,10 +954,10 @@ void main() {
     await harness.mount(tester);
     harness.container.read(routerProvider).push('/catalogue/series/series-a');
     await tester.pumpAndSettle();
-    expect(find.text('6 tomes'), findsOneWidget);
+    expect(find.text('6 livres'), findsOneWidget);
     expect(find.text('À propos'), findsOneWidget);
     expect(find.text('Tomes (6)'), findsOneWidget);
-    expect(find.text('Reprendre - Moonlit District 03'), findsOneWidget);
+    expect(find.text('Moonlit District 03'), findsOneWidget);
     expect(find.text('2/6 lus'), findsNothing);
     expect(tester.takeException(), isNull);
     await harness.close(tester);

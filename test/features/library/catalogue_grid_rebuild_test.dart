@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/features/library/presentation/catalogue_grid.dart';
 import 'package:inkora/features/library/presentation/volume_list.dart';
-import 'package:inkora/features/settings/domain/ui_preferences.dart';
 
 void main() {
   Future<Map<int, int>> scrollAndCount(
@@ -38,20 +37,22 @@ void main() {
     return builds;
   }
 
-  testWidgets(
-    'catalogue grid does not rebuild visible cards on scroll frames',
-    (tester) async {
-      final builds = await scrollAndCount(
-        tester,
-        (builder) => CatalogueGrid(
-          itemCount: 200,
-          itemBuilder: builder,
-          density: CatalogueDensity.comfortable,
-        ),
-      );
-      expect(builds[0], 1);
-    },
-  );
+  for (final columns in <int?>[null, 2, 7]) {
+    testWidgets(
+      'catalogue grid does not rebuild visible cards on scroll frames ($columns)',
+      (tester) async {
+        final builds = await scrollAndCount(
+          tester,
+          (builder) => CatalogueGrid(
+            itemCount: 200,
+            itemBuilder: builder,
+            columns: columns,
+          ),
+        );
+        expect(builds[0], 1);
+      },
+    );
+  }
 
   testWidgets('volume list does not rebuild visible rows on scroll frames', (
     tester,

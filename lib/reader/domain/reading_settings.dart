@@ -22,7 +22,7 @@ enum ReadingLayout { single, doublePage, automatic }
 
 enum ReadingDirection { leftToRight, rightToLeft, vertical }
 
-enum ReadingFit { page, width, comfort }
+enum ReadingFit { page, width, comfort, content }
 
 enum ReadingBackground { black, white, sepia, ivory, sage, mist, slate }
 
@@ -163,7 +163,7 @@ final class ReadingSettings {
     bool? spreads,
     this.webtoonQuality = WebtoonQuality.sharp,
     this.customWebtoon = WebtoonQualityProfile.balanced,
-    this.spreadOffset = false,
+    bool? spreadOffset,
     this.pageAnimation = true,
     this.imageQuality = const {},
     this.ebook = const EbookSettings(),
@@ -182,6 +182,9 @@ final class ReadingSettings {
        fit =
            fit ??
            (mode == ReadingMode.webtoon ? ReadingFit.comfort : ReadingFit.page),
+       // Right-to-left manga volumes ship with the cover alone, so pairing
+       // starts one page late unless the user opts out.
+       spreadOffset = spreadOffset ?? mode == ReadingMode.manga,
        spacing = spacing ?? 0,
        layout =
            layout ??
@@ -303,6 +306,7 @@ final class ReadingSettings {
         fit = null;
         spacing = null;
         layout = null;
+        offset = null;
       }
       direction = layer.direction ?? direction;
       fit = layer.fit ?? fit;
@@ -328,7 +332,7 @@ final class ReadingSettings {
       layout: layout,
       webtoonQuality: quality ?? WebtoonQuality.sharp,
       imageQuality: Map.unmodifiable(images),
-      spreadOffset: offset ?? false,
+      spreadOffset: offset,
       pageAnimation: animation ?? true,
       customWebtoon: WebtoonQualityProfile(
         sharpness: sharpness ?? WebtoonQualityProfile.balanced.sharpness,

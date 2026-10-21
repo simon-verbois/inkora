@@ -3,6 +3,7 @@ import '../../app/l10n/app_strings.dart';
 import '../../app/widgets/image_enhancement.dart';
 
 import 'dart:math' as math;
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -18,6 +19,9 @@ import '../data/prefetch_session.dart';
 import '../data/page_network_gate.dart';
 import 'reader_image_provider.dart';
 import 'reader_image_effects.dart';
+import 'reader_content_bounds.dart';
+import '../domain/page_content_bounds.dart';
+import '../domain/content_key.dart';
 
 /// Zoomed pages get their own decoded allowance (per visible page), so a
 /// pinch re-decode never borrows from the normal reading budget.
@@ -62,6 +66,8 @@ class ReaderPageImage extends StatefulWidget {
     this.zoom = 1,
     this.edgeToEdge = false,
     this.imageQuality = const {},
+    this.contentBounds = PageContentBounds.full,
+    this.onContentBounds,
     super.key,
   });
   final ReaderManifest manifest;
@@ -81,6 +87,9 @@ class ReaderPageImage extends StatefulWidget {
   /// Fill that slot to avoid letterboxing from rounded codec dimensions.
   final bool edgeToEdge;
   final Map<RasterFormat, RasterQuality> imageQuality;
+  final PageContentBounds contentBounds;
+  final void Function(ContentKey key, PageContentBounds bounds)?
+  onContentBounds;
   @override
   State<ReaderPageImage> createState() => _ReaderPageImageState();
 }
@@ -92,6 +101,31 @@ class _ReaderPageImageState extends State<ReaderPageImage> {
   bool _presented = false;
   bool _placeholder = false;
   bool _hasFrame = false;
+  int _boundsGeneration = 0;
+  int _boundsResumeEpoch = 0;
+
+  Future<void> _prepareBounds() async {
+    final generation = ++_boundsGeneration;
+    _boundsResumeEpoch = ReaderContentBounds.cache.resumeEpoch;
+    if (widget.fit != ReadingFit.content || widget.onContentBounds == null) {
+      return;
+    }
+    try {
+      final page = await _page;
+      if (!mounted || generation != _boundsGeneration) return;
+      final bounds = await ReaderContentBounds.cache.request(
+        page,
+        visible: widget.visible,
+        cancellation: _cancellation!,
+      );
+      if (mounted && generation == _boundsGeneration) {
+        widget.onContentBounds?.call(page.key, bounds);
+      }
+    } catch (_) {
+      /* Optional detection keeps the original fit on failure. */
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -130,6 +164,10 @@ class _ReaderPageImageState extends State<ReaderPageImage> {
         oldWidget.manifest.key(oldWidget.index) !=
             widget.manifest.key(widget.index)) {
       _load();
+    } else if (_boundsResumeEpoch != ReaderContentBounds.cache.resumeEpoch ||
+        oldWidget.fit != widget.fit ||
+        (!oldWidget.visible && widget.visible)) {
+      unawaited(_prepareBounds());
     }
   }
 
@@ -167,6 +205,7 @@ class _ReaderPageImageState extends State<ReaderPageImage> {
             widget.manifest.key(widget.index),
             cancellation: cancellation,
           );
+    unawaited(_prepareBounds());
   }
 
   Future<void> _retryInvalidImage() async {
@@ -209,6 +248,7 @@ class _ReaderPageImageState extends State<ReaderPageImage> {
     ReaderTrace.sink?.call('unmount', widget.index, {'hasFrame': _hasFrame});
     _releaseZoom();
     _cancellation?.cancel();
+    _boundsGeneration++;
     super.dispose();
   }
 
@@ -219,7 +259,8 @@ class _ReaderPageImageState extends State<ReaderPageImage> {
       final zoomed = widget.zoom > 1;
       final decode = readerDecodeSize(
         page,
-        constraints.maxWidth *
+        constraints.maxWidth /
+            widget.contentBounds.width *
             MediaQuery.devicePixelRatioOf(context) *
             widget.zoom,
         budgetBytes: zoomed ? zoomDecodeBudget : widget.decodeBudget,
@@ -291,7 +332,7 @@ class _ReaderPageImageState extends State<ReaderPageImage> {
                 snapshot.data!.mediaType,
               )] ??
               const RasterQuality();
-          return Semantics(
+          final image = Semantics(
             image: true,
             label: context.tr('Page {0}', [widget.index + 1]),
             child: Image(
@@ -358,6 +399,30 @@ class _ReaderPageImageState extends State<ReaderPageImage> {
                 child: TextButton(
                   onPressed: _retryInvalidImage,
                   child: const LText('Invalid image — retry page'),
+                ),
+              ),
+            ),
+          );
+          final crop = widget.contentBounds;
+          if (!crop.cropped) return image;
+          // A rectangular clip needs no offscreen compositing layer. The
+          // source image/filters retain their usual decoded identity.
+          return ClipRect(
+            child: OverflowBox(
+              alignment: Alignment.topLeft,
+              minWidth: constraints.maxWidth / crop.width,
+              maxWidth: constraints.maxWidth / crop.width,
+              minHeight: constraints.maxHeight / crop.height,
+              maxHeight: constraints.maxHeight / crop.height,
+              child: Transform.translate(
+                offset: Offset(
+                  -crop.left * constraints.maxWidth / crop.width,
+                  -crop.top * constraints.maxHeight / crop.height,
+                ),
+                child: SizedBox(
+                  width: constraints.maxWidth / crop.width,
+                  height: constraints.maxHeight / crop.height,
+                  child: image,
                 ),
               ),
             ),

@@ -11,6 +11,7 @@ import 'package:inkora/reader/domain/paged_layout.dart';
 import 'package:inkora/reader/domain/reader_manifest.dart';
 import 'package:inkora/reader/domain/reading_settings.dart';
 import 'package:inkora/reader/presentation/reader_viewport.dart';
+import 'package:inkora/reader/presentation/reader_page_image.dart';
 
 import '../../support/reader_fakes.dart';
 import '../../support/reader_widget_support.dart';
@@ -30,6 +31,70 @@ class ProfileRasterSource implements PageSource {
 }
 
 void main() {
+  testWidgets(
+    'offset changes visible pages after a wide scan without moving the locator',
+    (tester) async {
+      tester.view.physicalSize = const Size(1024, 768);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final manifest = readerManifest(
+        book: 'mixed-scan-offset',
+        dimensions: [
+          for (var i = 0; i < 5; i++) PageDimensions(1920, 3005),
+          PageDimensions(3840, 3005),
+          for (var i = 0; i < 12; i++) PageDimensions(1920, 3005),
+        ],
+      );
+      final reader = OpenReader(
+        manifest,
+        FixturePageSource(),
+        ReaderLocator(11),
+      );
+      final saved = <ReaderLocator>[];
+      Future<void> show(bool offset) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ReaderViewport(
+                reader: reader,
+                settings: ReadingSettings(
+                  mode: ReadingMode.manga,
+                  spreadOffset: offset,
+                ),
+                saveLocator: (locator) async => saved.add(locator),
+                onToggleSpreadOffset: () {},
+              ),
+            ),
+          ),
+        );
+        await settleReaderImages(tester);
+      }
+
+      List<int> visible() =>
+          (tester
+              .widgetList<ReaderPageImage>(find.byType(ReaderPageImage))
+              .where((page) => page.visible)
+              .map((page) => page.index)
+              .toList()
+            ..sort());
+      await show(false);
+      final viewport = tester.state(find.byType(ReaderViewport));
+      expect(find.text('p. 11–12'), findsOneWidget);
+      expect(visible(), [10, 11]);
+      await show(true);
+      expect(find.text('p. 12–13'), findsOneWidget);
+      expect(visible(), [11, 12]);
+      expect(tester.state(find.byType(ReaderViewport)), same(viewport));
+      await show(false);
+      expect(find.text('p. 11–12'), findsOneWidget);
+      expect(visible(), [10, 11]);
+      expect(saved, isEmpty);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
   const captureKey = Key('profile-capture');
   final dimensions = [
     PageDimensions(100, 200),
@@ -111,7 +176,7 @@ void main() {
           ProfileRasterSource(rasters),
           ReaderLocator(0),
         ),
-        const ReadingSettings(mode: ReadingMode.manga),
+        const ReadingSettings(mode: ReadingMode.manga, spreadOffset: false),
         [],
       );
       await settleReaderImages(tester);
@@ -165,6 +230,7 @@ void main() {
           const ReadingSettings(
             mode: ReadingMode.manga,
             layout: ReadingLayout.doublePage,
+            spreadOffset: false,
           ),
           saved,
         );
@@ -393,7 +459,9 @@ void main() {
         await settleReaderImages(tester);
       }
 
-      await show(const ReadingSettings(mode: ReadingMode.manga));
+      await show(
+        const ReadingSettings(mode: ReadingMode.manga, spreadOffset: false),
+      );
       expect(find.text('p. 1–2'), findsOneWidget);
       await tester.tap(find.byKey(const Key('reader-spread-offset')));
       expect(toggles, 1);

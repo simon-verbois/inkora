@@ -4,6 +4,55 @@ import 'package:inkora/app/theme/inkora_theme.dart';
 import 'package:inkora/app/widgets/ink_filter_bar.dart';
 
 void main() {
+  for (final scale in [1.0, 2.0]) {
+    for (final prefix in [false, true]) {
+      testWidgets('search line is centered at scale $scale, prefix $prefix', (
+        tester,
+      ) async {
+        final controller = TextEditingController();
+        addTearDown(controller.dispose);
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: InkoraTheme.forest(),
+            home: MediaQuery(
+              data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+              child: Scaffold(
+                body: Align(
+                  child: SizedBox(
+                    height: kToolbarHeight,
+                    child: InkSearchField(
+                      controller: controller,
+                      hint: 'Search',
+                      showPrefixIcon: prefix,
+                      onChanged: (_) {},
+                      onClear: controller.clear,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.byKey(const Key('open-search')));
+        await tester.pumpAndSettle();
+        final field = find.byType(TextField);
+        final center = tester.getCenter(field).dy;
+        final hint = tester.getRect(find.text('Search'));
+        expect(hint.center.dy, closeTo(center, 1));
+        await tester.enterText(field, 'Atlas');
+        await tester.pump();
+        final editable = tester
+            .state<EditableTextState>(find.byType(EditableText))
+            .renderEditable;
+        final line = editable.getLocalRectForCaret(
+          const TextPosition(offset: 0),
+        );
+        expect(editable.localToGlobal(line.center).dy, closeTo(center, 2));
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
+
   for (final reduced in [false, true]) {
     testWidgets(
       'search expands, focuses and closes with reduced motion $reduced',

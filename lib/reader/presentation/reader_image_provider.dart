@@ -6,6 +6,7 @@ import 'package:flutter/painting.dart';
 import '../domain/content_key.dart';
 import '../domain/reader_trace.dart';
 import '../domain/page_source.dart';
+import 'reader_content_bounds.dart';
 
 /// Cache identity does not retain encoded bytes and includes codec dimensions.
 @immutable
@@ -39,6 +40,7 @@ final class ReaderDecodedCache {
   }
 
   static void invalidate(ContentKey content) {
+    ReaderContentBounds.cache.invalidate(content);
     for (final key in _keys.where((key) => key.content == content).toList()) {
       evict(key);
     }
@@ -50,6 +52,7 @@ final class ReaderDecodedCache {
   }
 
   static void retainRevision(String account, String book, String revision) {
+    ReaderContentBounds.cache.retainRevision(account, book, revision);
     for (final key
         in _keys
             .where(
@@ -64,6 +67,7 @@ final class ReaderDecodedCache {
   }
 
   static void clearAccount(String account) {
+    ReaderContentBounds.cache.clearAccount(account);
     for (final key
         in _keys.where((k) => k.content.accountId == account).toList()) {
       evict(key);

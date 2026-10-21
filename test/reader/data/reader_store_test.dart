@@ -20,6 +20,92 @@ void main() {
   });
   tearDown(() => database.close());
 
+  test(
+    'offset toggle uses inherited defaults and serializes rapid presses',
+    () async {
+      final manifest = readerManifest();
+      await store.saveOverrides(
+        SettingsScope.library,
+        'library',
+        const ReadingOverrides(mode: ReadingMode.manga, spreadOffset: false),
+      );
+      await store.saveOverrides(
+        SettingsScope.book,
+        manifest.bookId,
+        const ReadingOverrides(
+          spacing: 12,
+          pageAnimation: false,
+          libraryDefaults: true,
+        ),
+      );
+      expect((await store.settings(manifest).first).spreadOffset, false);
+      await store.toggleSpreadOffset(manifest);
+      expect((await store.settings(manifest).first).spreadOffset, true);
+      await Future.wait([
+        store.toggleSpreadOffset(manifest),
+        store.toggleSpreadOffset(manifest),
+      ]);
+      final book = await store.overrides(SettingsScope.book, manifest.bookId);
+      expect(book.spreadOffset, true);
+      expect(book.spacing, 12);
+      expect(book.pageAnimation, false);
+      expect(book.libraryDefaults, true);
+      final other = ReaderStore(database, 'other-account');
+      expect(
+        (await other.overrides(
+          SettingsScope.book,
+          manifest.bookId,
+        )).spreadOffset,
+        isNull,
+      );
+      expect(
+        (await store.overrides(SettingsScope.book, 'other-book')).spreadOffset,
+        isNull,
+      );
+      expect(
+        (await store.overrides(SettingsScope.library, 'library')).spreadOffset,
+        false,
+      );
+      await expectLater(
+        store.toggleSpreadOffset(readerManifest(account: 'other-account')),
+        throwsArgumentError,
+      );
+    },
+  );
+
+  test(
+    'book offset survives library changes and can return to inheritance',
+    () async {
+      final manifest = readerManifest();
+      await store.saveOverrides(
+        SettingsScope.library,
+        'library',
+        const ReadingOverrides(mode: ReadingMode.manga),
+      );
+      expect((await store.settings(manifest).first).spreadOffset, true);
+      await store.toggleSpreadOffset(manifest);
+      expect((await store.settings(manifest).first).spreadOffset, false);
+      await store.saveOverrides(
+        SettingsScope.library,
+        'library',
+        const ReadingOverrides(mode: ReadingMode.manga, spreadOffset: true),
+      );
+      expect((await store.settings(manifest).first).spreadOffset, false);
+      await store.saveOverrides(
+        SettingsScope.book,
+        manifest.bookId,
+        const ReadingOverrides(libraryDefaults: true),
+      );
+      expect((await store.settings(manifest).first).spreadOffset, true);
+      await store.saveOverrides(
+        SettingsScope.library,
+        'library',
+        const ReadingOverrides(mode: ReadingMode.manga, spreadOffset: false),
+      );
+      expect((await store.settings(manifest).first).spreadOffset, false);
+    },
+  );
+
   test('manual library application clears only owned descendants, including offline books', () async {
     final catalogue = CatalogueStore(database, store.accountId);
     await catalogue.stage('current', [

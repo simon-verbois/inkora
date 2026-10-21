@@ -223,6 +223,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
         'spacing',
         'spreads',
         'layout',
+        'spreadOffset',
       ]) {
         values[field] = null;
       }
@@ -632,7 +633,11 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
                     if (fit == ReadingFit.page)
                       'page': 'Comfortable width (legacy)',
                   }
-                : {'page': 'Fit page', 'width': 'Fit width'},
+                : {
+                    'page': 'Fit page',
+                    'width': 'Fit width',
+                    if (mode != ReadingMode.ebook) 'content': 'Fit content',
+                  },
           ),
           const SizedBox(height: 20),
         ],
@@ -649,6 +654,15 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
+          SwitchListTile.adaptive(
+            key: const Key('reader-spread-offset-default'),
+            contentPadding: EdgeInsets.zero,
+            title: const LText('Shift page pairing by one'),
+            value: _effective.spreadOffset,
+            onChanged: _loading
+                ? null
+                : (value) => _change('spreadOffset', value),
+          ),
           const SizedBox(height: 20),
         ],
         ReaderBackgroundSwatches(

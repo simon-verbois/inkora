@@ -124,7 +124,10 @@ void main() {
         expect(filters.hitTestable(), findsOneWidget);
         expect(
           find
-              .descendant(of: search, matching: find.byType(IconButton))
+              .descendant(
+                of: search,
+                matching: find.byKey(const Key('open-search')),
+              )
               .hitTestable(),
           findsOneWidget,
         );

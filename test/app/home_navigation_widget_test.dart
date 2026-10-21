@@ -117,11 +117,10 @@ void main() {
             find.byKey(const Key('expanded-search')),
             'Series',
           );
-          expect(
-            find.byKey(const Key('open-downloads')).hitTestable(),
-            findsOneWidget,
-          );
-          await tester.tap(find.byKey(const Key('open-downloads')));
+          // Search covers the actions. A route opened externally must still
+          // retain the query when Home is revealed again.
+          expect(find.byKey(const Key('open-downloads')), findsNothing);
+          router.push<void>('/downloads');
           await tester.pumpAndSettle();
           await tester.pageBack();
           await tester.pumpAndSettle();

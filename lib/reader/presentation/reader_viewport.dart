@@ -10,6 +10,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter/services.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../data/reader_repository.dart';
 import '../application/reader_network_policy.dart';
@@ -21,6 +22,9 @@ import '../domain/paged_layout.dart';
 import 'reader_page_image.dart';
 import 'webtoon_scroll_physics.dart';
 import 'reader_image_provider.dart';
+import 'reader_content_bounds.dart';
+import '../domain/page_content_bounds.dart';
+import '../domain/content_key.dart';
 
 class ReaderViewport extends StatefulWidget {
   const ReaderViewport({
@@ -106,6 +110,10 @@ class _ReaderViewportState extends State<ReaderViewport>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     widget.reader.prefetch?.suspend(state != AppLifecycleState.resumed);
+    if (state == AppLifecycleState.resumed &&
+        widget.settings.fit == ReadingFit.content) {
+      setState(() {});
+    }
     if (widget.reader.prefetch == null) return;
     if (state == AppLifecycleState.resumed) {
       if (_policy == null) _watchPolicy();
@@ -449,6 +457,8 @@ class _PagedViewportState extends State<_PagedViewport> {
     session.update(group.first, visiblePages: group.length);
     final target = (
       group.first,
+      widget.layout.offset,
+      widget.layout.doublePages,
       width,
       height,
       pixelRatio,
@@ -500,8 +510,22 @@ class _PagedViewportState extends State<_PagedViewport> {
         return;
       }
       final groupPages = widget.layout.groups[ready.target.group];
+      final crops = [
+        for (final index in groupPages)
+          widget.settings.fit == ReadingFit.content
+              ? ReaderContentBounds.cache.peek(
+                      widget.reader.manifest.key(index),
+                    ) ??
+                    PageContentBounds.full
+              : PageContentBounds.full,
+      ];
       final geometry = SpreadGeometry(
-        groupPages.map((i) => widget.reader.manifest.pages[i]).toList(),
+        [
+          for (var slot = 0; slot < groupPages.length; slot++)
+            crops[slot].dimensionsFor(
+              widget.reader.manifest.pages[groupPages[slot]],
+            ),
+        ],
         width,
         height,
         spacing: widget.settings.spacing,
@@ -510,7 +534,9 @@ class _PagedViewportState extends State<_PagedViewport> {
       // Same decode size/key as the mounted ReaderPageImage will request.
       final size = readerDecodeSize(
         widget.reader.manifest.pages[ready.target.page],
-        geometry.widths[groupPages.indexOf(ready.target.page)] * pixelRatio,
+        geometry.widths[groupPages.indexOf(ready.target.page)] *
+            pixelRatio /
+            crops[groupPages.indexOf(ready.target.page)].width,
       );
       final provider = ReaderImageProvider(
         ready.bytes!,
@@ -662,6 +688,38 @@ class _ZoomSpreadState extends State<_ZoomSpread> {
   /// Settled zoom step used for decode resolution; updated when a gesture
   /// ends (not per pinch frame) and reset when the transform returns to 1.
   double _decodeZoom = 1;
+  final _bounds = <ContentKey, PageContentBounds>{};
+  List<PageContentBounds>? _appliedBounds;
+
+  void _contentBounds(ContentKey key, PageContentBounds bounds) {
+    if (!mounted ||
+        widget.fit != ReadingFit.content ||
+        !widget.indexes.any(
+          (index) => widget.reader.manifest.key(index) == key,
+        )) {
+      return;
+    }
+    if (_bounds[key] == bounds) return;
+    _bounds[key] = bounds;
+    if (widget.indexes.every(
+          (index) => _bounds.containsKey(widget.reader.manifest.key(index)),
+        ) &&
+        _transform.value.getMaxScaleOnAxis() <= 1.01) {
+      void refresh() {
+        if (mounted && widget.fit == ReadingFit.content) setState(() {});
+      }
+
+      // Async completion normally happens between frames. A cache hit while
+      // mounting may arrive during build; defer only that case.
+      if (SchedulerBinding.instance.schedulerPhase ==
+          SchedulerPhase.persistentCallbacks) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => refresh());
+      } else {
+        refresh();
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -705,9 +763,26 @@ class _ZoomSpreadState extends State<_ZoomSpread> {
       }
       _viewportSize = size;
       _fittedMode = widget.fit;
-      final pages = widget.indexes
-          .map((i) => widget.reader.manifest.pages[i])
-          .toList();
+      final candidates = [
+        for (final index in widget.indexes)
+          _bounds[widget.reader.manifest.key(index)] ??
+              ReaderContentBounds.cache.peek(widget.reader.manifest.key(index)),
+      ];
+      if (widget.fit != ReadingFit.content) {
+        _appliedBounds = null;
+      } else if (_transform.value.getMaxScaleOnAxis() <= 1.01 &&
+          candidates.every((bounds) => bounds != null)) {
+        _appliedBounds = candidates.cast<PageContentBounds>();
+      }
+      final crops = _appliedBounds?.length == widget.indexes.length
+          ? _appliedBounds!
+          : [for (final _ in widget.indexes) PageContentBounds.full];
+      final pages = [
+        for (var slot = 0; slot < widget.indexes.length; slot++)
+          crops[slot].dimensionsFor(
+            widget.reader.manifest.pages[widget.indexes[slot]],
+          ),
+      ];
       final geometry = SpreadGeometry(
         pages,
         constraints.maxWidth,
@@ -740,6 +815,8 @@ class _ZoomSpreadState extends State<_ZoomSpread> {
                   prefetch: widget.reader.prefetch,
                   telemetry: widget.reader.telemetry,
                   fit: widget.fit,
+                  contentBounds: crops[order[slot]],
+                  onContentBounds: _contentBounds,
                   edgeToEdge: true,
                   zoom: widget.visible ? _decodeZoom : 1,
                 ),

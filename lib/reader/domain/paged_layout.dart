@@ -4,16 +4,20 @@ import 'reader_manifest.dart';
 
 /// Logical groups retain server order; presentation alone reverses for manga.
 final class PagedLayout {
-  /// [offset] leading pages stand alone before pairing starts, shifting every
-  /// spread by one page (covers/inserts that break the printed pairing).
+  /// [offset] leading portrait pages in each section stand alone before
+  /// pairing starts. Wide scans separate sections and stay alone: otherwise
+  /// greedy pairing after one would erase the difference between offsets.
   PagedLayout(this.dimensions, {required this.doublePages, this.offset = 0}) {
     final pages = dimensions;
     pageGroups = List.filled(pages.length, 0);
+    var leading = offset;
     for (var index = 0; index < pages.length;) {
       final group = [index++];
-      if (doublePages &&
-          group.first >= offset &&
-          pages[group.first].aspectRatio < 1 &&
+      if (pages[group.first].aspectRatio >= 1) {
+        leading = offset;
+      } else if (leading > 0) {
+        leading--;
+      } else if (doublePages &&
           index < pages.length &&
           pages[index].aspectRatio < 1) {
         group.add(index++);

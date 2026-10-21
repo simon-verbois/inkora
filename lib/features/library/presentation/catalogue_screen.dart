@@ -288,6 +288,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
       key: const Key('catalogue-search'),
       controller: _search,
       hint: 'Search saved catalogue',
+      actions: widget.headerActions,
       compact: widget.embedded && MediaQuery.sizeOf(context).width < 600,
       onChanged: _searchChanged,
       onClear: _clearSearch,
@@ -296,7 +297,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
       appBar: widget.embedded
           ? null
           : InkScreenHeader(
-              actions: [...widget.headerActions, search],
+              actions: [search],
               title: LText(
                 _kind == CatalogueKind.series ? 'Books' : catalogueLabel(_kind),
               ),
@@ -480,11 +481,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
       ),
     );
     return widget.embedded
-        ? InkHomeHeader(
-            pinned: true,
-            actions: [...widget.headerActions, search],
-            child: scaffold,
-          )
+        ? InkHomeHeader(pinned: true, actions: [search], child: scaffold)
         : scaffold;
   }
 

@@ -47,7 +47,9 @@ void main() {
                 ),
               ),
               readingSettingsProvider(manifest.bookId).overrideWith(
-                (ref) => Stream.value(ReadingSettings(mode: mode)),
+                (ref) => Stream.value(
+                  ReadingSettings(mode: mode, spreadOffset: false),
+                ),
               ),
               readerRepositoryProvider.overrideWith((ref) async => null),
             ],
@@ -81,8 +83,10 @@ void main() {
           expect(find.byType(ReaderTopBar), findsOneWidget);
           final doublePages =
               mode != ReadingMode.webtoon &&
-              ReadingSettings(mode: mode)
-                  .useDoublePages(size.width, size.height);
+              ReadingSettings(
+                mode: mode,
+                spreadOffset: false,
+              ).useDoublePages(size.width, size.height);
           expect(find.text(doublePages ? 'p. 1–2' : 'p. 2'), findsOneWidget);
           expect(tester.getRect(viewport), rect);
           expect(tester.state(viewport), same(originalState));

@@ -63,26 +63,15 @@ void main() {
         final list = tester.widget<ListView>(carousel);
         expect(
           list.childrenDelegate.estimatedChildCount,
-          21,
-        ); // 10 covers + the View all end card + separators.
-        // The truncated shelf ends with a View all card to the history; the
-        // top header carries the icon action.
-        expect(find.byKey(const Key('reading-history-action')), findsOneWidget);
-        final endCard = find.byKey(
-          const ValueKey('shelf-view-all-Reading history'),
+          19,
+        ); // 10 covers + separators; no trailing View all card.
+        expect(
+          find.byKey(const ValueKey('shelf-view-all-Reading history')),
+          findsNothing,
         );
         await tester.ensureVisible(find.byType(ResumeCarousel));
         await tester.pumpAndSettle();
-        await tester.scrollUntilVisible(
-          endCard,
-          300,
-          scrollable: find.descendant(
-            of: find.byType(ResumeCarousel),
-            matching: find.byType(Scrollable),
-          ),
-        );
-        await tester.pumpAndSettle();
-        await tester.tap(endCard);
+        await tester.tap(find.byKey(const Key('reading-history-action')));
         await tester.pumpAndSettle();
         expect(find.byType(ReadingHistoryScreen), findsOneWidget);
         harness.container.read(routerProvider).pop();

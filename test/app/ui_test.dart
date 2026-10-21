@@ -374,10 +374,11 @@ void registerCatalogueRetentionTest() {
     );
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
-    // On a device the soft keyboard hides the bottom navigation.
+    // A secondary route must retain the query even when expanded search
+    // covers the header actions.
     FocusManager.instance.primaryFocus?.unfocus();
     await tester.pumpAndSettle();
-    await openHomeDestination(tester, 'downloads');
+    harness.container.read(routerProvider).push<void>('/downloads');
     await tester.pumpAndSettle();
     await openHomeDestination(tester, 'libraries');
     await tester.pumpAndSettle();

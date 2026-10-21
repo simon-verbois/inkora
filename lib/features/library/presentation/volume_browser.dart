@@ -128,63 +128,140 @@ final class VolumeActions {
   final void Function(SeriesVolume volume)? select;
 }
 
-/// The shared [InkFilterBar] with volume filter chips plus list/grid, order
-/// and selection toggles. Chips scroll horizontally; the toggles stay visible.
-class VolumeToolbar extends StatelessWidget {
+IconData _volumeFilterIcon(VolumeFilter filter) => switch (filter) {
+  VolumeFilter.all => InkIcons.books,
+  VolumeFilter.unread => InkIcons.bookOpen,
+  VolumeFilter.inProgress => InkIcons.circleHalf,
+  VolumeFilter.downloaded => InkIcons.downloadSimple,
+};
+
+/// One row of quick filters and list/grid, order and selection actions. When
+/// the chips cannot fit beside the actions, a checked filter menu replaces them.
+class VolumeToolbar extends StatefulWidget {
   const VolumeToolbar({super.key, required this.controller});
   final VolumeBrowserController controller;
 
   @override
+  State<VolumeToolbar> createState() => _VolumeToolbarState();
+}
+
+class _VolumeToolbarState extends State<VolumeToolbar> {
+  final _inlineWidths = <VolumeFilter, double>{};
+  VolumeBrowserController get controller => widget.controller;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final theme = Theme.of(context);
+    // Measure localized labels only when inherited typography/locale changes,
+    // never while scrolling or on each controller notification.
+    final painter = TextPainter(
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    );
+    final style =
+        theme.filledButtonTheme.style?.textStyle?.resolve({}) ??
+        theme.textTheme.labelLarge;
+    for (final filter in VolumeFilter.values) {
+      painter.text = TextSpan(
+        text: context.tr(volumeFilterLabel(filter)),
+        style: style,
+      );
+      painter.layout();
+      // Active chip: 16 dp padding per side, 22 dp icon and 8 dp icon gap.
+      // The other choices keep 48 dp targets, separated by 6 dp gaps.
+      _inlineWidths[filter] =
+          math.max(
+            InkoraLayout.touchTarget,
+            (painter.width + 62).ceilToDouble(),
+          ) +
+          (VolumeFilter.values.length - 1) * (InkoraLayout.touchTarget + 6);
+    }
+    painter.dispose();
+  }
+
+  Widget _filters(BuildContext context, BoxConstraints bounds) {
+    if (bounds.maxWidth >= _inlineWidths[controller.filter]!) {
+      return InkChipRow(
+        key: const Key('volume-chips'),
+        children: [
+          for (final filter in VolumeFilter.values)
+            InkFilterChip(
+              key: ValueKey('volume-filter-${filter.name}'),
+              label: volumeFilterLabel(filter),
+              icon: _volumeFilterIcon(filter),
+              selected: controller.filter == filter,
+              onSelected: () => controller.filter = filter,
+            ),
+        ],
+      );
+    }
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: PopupMenuButton<VolumeFilter>(
+        key: const Key('volume-quick-filters'),
+        tooltip:
+            '${context.tr('Filters')} · ${context.tr(volumeFilterLabel(controller.filter))}',
+        initialValue: controller.filter,
+        onSelected: (filter) => controller.filter = filter,
+        popUpAnimationStyle: MediaQuery.disableAnimationsOf(context)
+            ? AnimationStyle.noAnimation
+            : null,
+        icon: Badge(
+          isLabelVisible: controller.filter != VolumeFilter.all,
+          child: const Icon(InkIcons.slidersHorizontal),
+        ),
+        itemBuilder: (_) => [
+          for (final filter in VolumeFilter.values)
+            CheckedPopupMenuItem<VolumeFilter>(
+              key: ValueKey('volume-filter-${filter.name}'),
+              value: filter,
+              checked: controller.filter == filter,
+              child: LText(volumeFilterLabel(filter)),
+            ),
+        ],
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: controller,
-    builder: (context, _) => InkFilterBar(
-      controlPrefix: 'volume',
+    builder: (context, _) => Padding(
       padding: const EdgeInsets.fromLTRB(
         InkSpace.lg,
         InkSpace.sm,
         InkSpace.sm,
         0,
       ),
-      chips: [
-        for (final filter in VolumeFilter.values)
-          InkFilterChip(
-            key: ValueKey('volume-filter-${filter.name}'),
-            label: volumeFilterLabel(filter),
-            icon: switch (filter) {
-              VolumeFilter.all => InkIcons.books,
-              VolumeFilter.unread => InkIcons.bookOpen,
-              VolumeFilter.inProgress => InkIcons.circleHalf,
-              VolumeFilter.downloaded => InkIcons.downloadSimple,
-            },
-            selected: controller.filter == filter,
-            onSelected: () => controller.filter = filter,
+      child: Row(
+        children: [
+          Expanded(child: LayoutBuilder(builder: _filters)),
+          IconButton(
+            key: const Key('volume-view'),
+            tooltip: context.tr(controller.grid ? 'Show list' : 'Show grid'),
+            onPressed: controller.toggleView,
+            icon: Icon(controller.grid ? InkIcons.list : InkIcons.squaresFour),
           ),
-      ],
-      actions: [
-        IconButton(
-          key: const Key('volume-view'),
-          tooltip: context.tr(controller.grid ? 'Show list' : 'Show grid'),
-          onPressed: controller.toggleView,
-          icon: Icon(controller.grid ? InkIcons.list : InkIcons.squaresFour),
-        ),
-        IconButton(
-          key: const Key('volume-order'),
-          tooltip: context.tr('Reverse order'),
-          isSelected: controller.descending,
-          onPressed: controller.toggleOrder,
-          icon: const Icon(InkIcons.sortAscending),
-          selectedIcon: const Icon(InkIcons.sortDescending),
-        ),
-        IconButton(
-          key: const Key('volume-select'),
-          tooltip: context.tr('Select volumes'),
-          isSelected: controller.selecting,
-          onPressed: controller.selecting
-              ? controller.endSelection
-              : controller.startSelection,
-          icon: const Icon(InkIcons.checkSquare),
-        ),
-      ],
+          IconButton(
+            key: const Key('volume-order'),
+            tooltip: context.tr('Reverse order'),
+            isSelected: controller.descending,
+            onPressed: controller.toggleOrder,
+            icon: const Icon(InkIcons.sortAscending),
+            selectedIcon: const Icon(InkIcons.sortDescending),
+          ),
+          IconButton(
+            key: const Key('volume-select'),
+            tooltip: context.tr('Select volumes'),
+            isSelected: controller.selecting,
+            onPressed: controller.selecting
+                ? controller.endSelection
+                : controller.startSelection,
+            icon: const Icon(InkIcons.checkSquare),
+          ),
+        ],
+      ),
     ),
   );
 }

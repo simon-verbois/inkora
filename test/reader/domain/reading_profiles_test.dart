@@ -4,6 +4,74 @@ import 'package:inkora/reader/domain/reader_manifest.dart';
 import 'package:inkora/reader/domain/reading_settings.dart';
 
 void main() {
+  test('offset stays effective after a double-width scan', () {
+    // Sanitized geometry of the reported book: five portrait files, a wide
+    // scan, then portrait files. The old greedy layout converged after page 6.
+    final pages = [
+      for (var i = 0; i < 5; i++) PageDimensions(1920, 3005),
+      PageDimensions(3840, 3005),
+      for (var i = 0; i < 12; i++) PageDimensions(1920, 3005),
+    ];
+    final plain = PagedLayout(pages, doublePages: true);
+    final shifted = PagedLayout(pages, doublePages: true, offset: 1);
+    expect(plain.pagesFor(11), [10, 11]);
+    expect(shifted.pagesFor(11), [11, 12]);
+    expect(plain.pagesFor(5), [5]);
+    expect(shifted.pagesFor(5), [5]);
+  });
+
+  test(
+    'each portrait section can shift after leading or consecutive wide scans',
+    () {
+      for (final leadingWide in [0, 1, 2]) {
+        for (final narrowCount in [2, 3, 4, 5]) {
+          final pages = [
+            for (var i = 0; i < leadingWide; i++) PageDimensions(300, 150),
+            for (var i = 0; i < narrowCount; i++) PageDimensions(100, 150),
+            PageDimensions(300, 150),
+            PageDimensions(300, 150),
+            for (var i = 0; i < narrowCount; i++) PageDimensions(100, 150),
+          ];
+          final plain = PagedLayout(pages, doublePages: true);
+          final shifted = PagedLayout(pages, doublePages: true, offset: 1);
+          for (final start in [leadingWide, leadingWide + narrowCount + 2]) {
+            expect(plain.pagesFor(start), [start, start + 1]);
+            expect(shifted.pagesFor(start), [start]);
+            expect(
+              shifted.pagesFor(start + 1),
+              narrowCount > 2 ? [start + 1, start + 2] : [start + 1],
+            );
+          }
+          for (final layout in [plain, shifted]) {
+            expect(
+              layout.groups.expand((group) => group),
+              List.generate(pages.length, (i) => i),
+            );
+            for (var i = 0; i < pages.length; i++) {
+              if (pages[i].aspectRatio >= 1) expect(layout.pagesFor(i), [i]);
+            }
+          }
+        }
+      }
+    },
+  );
+
+  test('manga pairs pages with the cover alone unless overridden', () {
+    expect(const ReadingSettings(mode: ReadingMode.manga).spreadOffset, isTrue);
+    expect(const ReadingSettings().spreadOffset, isFalse);
+    expect(
+      ReadingSettings.resolve(const [ReadingOverrides(mode: ReadingMode.manga)])
+          .spreadOffset,
+      isTrue,
+    );
+    expect(
+      ReadingSettings.resolve(const [
+        ReadingOverrides(mode: ReadingMode.manga, spreadOffset: false),
+      ]).spreadOffset,
+      isFalse,
+    );
+  });
+
   test('manga uses white and legacy dynamic backgrounds adopt white', () {
     expect(
       const ReadingSettings(mode: ReadingMode.manga).background,

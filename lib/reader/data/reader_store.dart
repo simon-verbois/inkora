@@ -223,6 +223,28 @@ final class ReaderStore {
           );
   }
 
+  /// Flip the effective pairing in a transaction so consecutive presses cannot
+  /// reuse an old settings-stream value. Preserve every other book override.
+  Future<void> toggleSpreadOffset(ReaderManifest manifest) async {
+    if (manifest.accountId != accountId) {
+      throw ArgumentError('Mismatched pairing account');
+    }
+    await database.transaction(() async {
+      final layers = await preferenceLayers(
+        libraryId: manifest.libraryId,
+        seriesId: manifest.seriesId,
+        bookId: manifest.bookId,
+      );
+      final book = layers[SettingsScope.book] ?? const ReadingOverrides();
+      final current = ReadingSettings.resolveScopes(layers).spreadOffset;
+      await saveOverrides(
+        SettingsScope.book,
+        manifest.bookId,
+        ReadingOverrides.fromJson({...book.toJson(), 'spreadOffset': !current}),
+      );
+    });
+  }
+
   Future<void> saveOverrides(
     SettingsScope scope,
     String scopeId,

@@ -4,7 +4,7 @@ import '../icons/inkora_icons.dart';
 import '../l10n/app_strings.dart';
 import '../theme/inkora_theme.dart';
 
-/// The shared browse tools of catalogue, Home, Downloads and series volumes:
+/// The shared browse tools of catalogue, Home and Downloads:
 /// an optional [leading] control (library selector or item count) beside a
 /// expandable local [search] control, then one horizontally scrollable row of
 /// filter [chips] followed by the active [sort], the advanced-filters button
@@ -355,12 +355,18 @@ class InkSearchField extends StatefulWidget {
     required this.onChanged,
     required this.onClear,
     this.showPrefixIcon = true,
+    this.expandedWidth = 280,
+    this.leadingActions = const [],
+    this.coverActions = false,
   });
   final TextEditingController controller;
   final String hint;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
   final bool showPrefixIcon;
+  final double expandedWidth;
+  final List<Widget> leadingActions;
+  final bool coverActions;
 
   @override
   State<InkSearchField> createState() => _InkSearchFieldState();
@@ -405,7 +411,7 @@ class _InkSearchFieldState extends State<InkSearchField> {
             icon: const Icon(InkIcons.magnifyingGlass),
           )
         : SizedBox(
-            width: 280,
+            width: widget.expandedWidth,
             child: ListenableBuilder(
               listenable: _focus,
               builder: (context, child) => Stack(
@@ -439,6 +445,7 @@ class _InkSearchFieldState extends State<InkSearchField> {
                 key: const Key('expanded-search'),
                 controller: widget.controller,
                 focusNode: _focus,
+                textAlignVertical: TextAlignVertical.center,
                 textInputAction: TextInputAction.search,
                 decoration: InputDecoration(
                   isDense: true,
@@ -450,10 +457,7 @@ class _InkSearchFieldState extends State<InkSearchField> {
                     minHeight: InkoraLayout.touchTarget,
                   ),
                   hintText: context.tr(widget.hint),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                   prefixIcon: widget.showPrefixIcon
                       ? const Icon(InkIcons.magnifyingGlass, size: 18)
                       : null,
@@ -467,21 +471,39 @@ class _InkSearchFieldState extends State<InkSearchField> {
               ),
             ),
           );
-    return Align(
-      alignment: AlignmentDirectional.centerEnd,
-      widthFactor: 1,
-      child: MediaQuery.disableAnimationsOf(context)
-          ? child
-          : AnimatedSize(
-              duration: const Duration(milliseconds: 200),
-              alignment: AlignmentDirectional.centerEnd,
-              child: child,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Keep the actions mounted across search/rotation, but remove covered
+        // controls from painting, hit testing and accessibility traversal.
+        for (final action in widget.leadingActions)
+          Offstage(
+            offstage: _open && widget.coverActions,
+            child: ExcludeFocus(
+              excluding: _open && widget.coverActions,
+              child: action,
             ),
+          ),
+        Flexible(
+          child: Align(
+            alignment: AlignmentDirectional.centerEnd,
+            widthFactor: 1,
+            child: MediaQuery.disableAnimationsOf(context)
+                ? child
+                : AnimatedSize(
+                    duration: const Duration(milliseconds: 200),
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: child,
+                  ),
+          ),
+        ),
+      ],
     );
   }
 }
 
 /// Search in a screen header, bounded to leave room for its title on phones.
+/// The expanded field takes the place of [actions] in both orientations.
 class InkHeaderSearch extends StatelessWidget {
   const InkHeaderSearch({
     super.key,
@@ -490,27 +512,43 @@ class InkHeaderSearch extends StatelessWidget {
     required this.onChanged,
     required this.onClear,
     this.compact = false,
+    this.actions = const [],
   });
   final TextEditingController controller;
   final String hint;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
   final bool compact;
+  final List<Widget> actions;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsetsDirectional.only(end: 8),
-    child: ConstrainedBox(
-      constraints: BoxConstraints(
-        maxWidth: (MediaQuery.sizeOf(context).width - 180).clamp(48, 280),
+  Widget build(BuildContext context) {
+    final window = MediaQuery.sizeOf(context);
+    final landscape = window.width > window.height;
+    final maxWidth = (window.width - 180).clamp(48.0, 640.0);
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(end: 8),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: landscape
+              ? maxWidth.clamp(
+                  (actions.length + 1) * InkoraLayout.touchTarget,
+                  double.infinity,
+                )
+              : (window.width - 180).clamp(48.0, 280.0) +
+                    actions.length * InkoraLayout.touchTarget,
+        ),
+        child: InkSearchField(
+          controller: controller,
+          hint: hint,
+          onChanged: onChanged,
+          onClear: onClear,
+          showPrefixIcon: !compact,
+          expandedWidth: landscape ? maxWidth : 280,
+          leadingActions: actions,
+          coverActions: true,
+        ),
       ),
-      child: InkSearchField(
-        controller: controller,
-        hint: hint,
-        onChanged: onChanged,
-        onClear: onClear,
-        showPrefixIcon: !compact,
-      ),
-    ),
-  );
+    );
+  }
 }

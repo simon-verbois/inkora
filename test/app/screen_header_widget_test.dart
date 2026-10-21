@@ -61,6 +61,88 @@ Future<UiHarness> _mount(
 }
 
 void main() {
+  testWidgets('short narrow landscape keeps header controls reachable', (
+    tester,
+  ) async {
+    final harness = await _mount(tester, const Size(320, 240));
+    for (final key in [
+      'open-settings',
+      'open-downloads',
+      'reading-history-action',
+    ]) {
+      expect(find.byKey(Key(key)).hitTestable(), findsOneWidget);
+    }
+    await tester.tap(find.byKey(const Key('open-search')));
+    await tester.pumpAndSettle();
+    final bounds = tester.getRect(find.byType(TextField));
+    expect(bounds.width, greaterThanOrEqualTo(48));
+    expect(bounds.left, greaterThanOrEqualTo(0));
+    expect(bounds.right, lessThanOrEqualTo(320));
+    expect(tester.takeException(), isNull);
+    await harness.close(tester);
+  });
+
+  for (final size in [
+    const Size(375, 844),
+    const Size(844, 390),
+    _tabletPortrait,
+    _tabletLandscape,
+  ]) {
+    testWidgets('header search covers actions and survives rotation $size', (
+      tester,
+    ) async {
+      final harness = await _mount(tester, size);
+      final settings = find.byKey(const Key('open-settings'));
+      final downloads = find.byKey(const Key('open-downloads'));
+      final history = find.byKey(const Key('reading-history-action'));
+      final header = find.byKey(const Key('home-header'));
+      final headerRect = tester.getRect(header);
+      final historyRect = tester.getRect(history);
+      expect(settings.hitTestable(), findsOneWidget);
+      expect(downloads.hitTestable(), findsOneWidget);
+      await tester.tap(find.byKey(const Key('open-search')));
+      await tester.pumpAndSettle();
+      final field = find.byType(TextField);
+      final fieldState = tester.state(field);
+      final bounds = tester.getRect(field);
+      expect(
+        bounds.width,
+        size.width > size.height ? greaterThan(280) : equals(280),
+      );
+      expect(bounds.contains(historyRect.center), true);
+      expect(headerRect.contains(bounds.topLeft), true);
+      expect(headerRect.contains(bounds.bottomRight), true);
+      expect(settings, findsNothing);
+      expect(downloads, findsNothing);
+      expect(history, findsNothing);
+      expect(tester.getRect(header), headerRect);
+      await tester.enterText(field, 'Moon');
+      await tester.pumpAndSettle();
+      final focus = tester.widget<TextField>(field).focusNode!;
+      tester.view.physicalSize = Size(size.height, size.width);
+      await tester.pumpAndSettle();
+      expect(tester.widget<TextField>(field).controller!.text, 'Moon');
+      expect(tester.state(field), same(fieldState));
+      expect(focus.hasFocus, true);
+      expect(settings, findsNothing);
+      expect(downloads, findsNothing);
+      expect(history, findsNothing);
+      tester.view.physicalSize = size;
+      await tester.pumpAndSettle();
+      expect(tester.state(field), same(fieldState));
+      expect(focus.hasFocus, true);
+      await tester.tap(find.byTooltip('Clear search'));
+      await tester.pumpAndSettle();
+      expect(find.byType(TextField), findsNothing);
+      expect(settings.hitTestable(), findsOneWidget);
+      expect(downloads.hitTestable(), findsOneWidget);
+      expect(history.hitTestable(), findsOneWidget);
+      expect(tester.getRect(history), historyRect);
+      expect(tester.takeException(), isNull);
+      await harness.close(tester);
+    });
+  }
+
   for (final size in [_phone, _tabletLandscape, _tabletPortrait]) {
     final wideSeries = size.width >= 840;
     final wideSettings = size.width >= 1000 && size.width > size.height;

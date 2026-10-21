@@ -74,15 +74,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
   Future<void> _toggleSpreadOffset(
     ReaderStore store,
     ReaderManifest manifest,
-    bool current,
   ) async {
     try {
-      final book = await store.overrides(SettingsScope.book, manifest.bookId);
-      await store.saveOverrides(
-        SettingsScope.book,
-        manifest.bookId,
-        ReadingOverrides.fromJson({...book.toJson(), 'spreadOffset': !current}),
-      );
+      await store.toggleSpreadOffset(manifest);
     } catch (_) {
       if (mounted) {
         notifyInk(context, 'Unable to save page pairing.');
@@ -450,11 +444,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
         onToggleSpreadOffset: repository == null
             ? null
             : () => unawaited(
-                _toggleSpreadOffset(
-                  repository.store,
-                  reader.manifest,
-                  preferences.asData?.value.spreadOffset ?? false,
-                ),
+                _toggleSpreadOffset(repository.store, reader.manifest),
               ),
       );
     },

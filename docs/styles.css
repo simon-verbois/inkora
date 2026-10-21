@@ -156,6 +156,8 @@ section {
   display:inline-flex;
   align-items:center;
   min-height:48px;
+  flex:none;
+  white-space:nowrap;
 }
 
 .wordmark span {

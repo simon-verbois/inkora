@@ -10,6 +10,18 @@ remain in progress.
 
 ## [Unreleased]
 
+## [2026.43.5] - 2026-10-21
+
+- Add optional Fit content for Manga and Comics: detect embedded white margins progressively, fit the drawing area in single/double-page layouts, and preserve original files and reading positions.
+
+- Keep page-pairing offset effective after double-width scans instead of returning to identical pairs with either offset state.
+
+- Make rapid page-pairing offset toggles reliable, expose the offset in library reading defaults, and let each book override the manga default of keeping the first page alone.
+
+- Keep series quick filters and view/sort/selection controls on one row, using a checked filter menu when the available width or text size cannot fit the chips.
+
+- Center search text vertically and widen header search in landscape, hiding the other header actions in both orientations until search is closed while preserving input and focus during rotation.
+
 ## [2026.43.4] - 2026-10-21
 
 - Redesign the GitHub Pages website in all twelve application languages, with static locale pages, project-relative navigation, current phone/tablet screenshots and a link to Komga Meta Manager.

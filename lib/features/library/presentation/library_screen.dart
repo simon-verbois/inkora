@@ -148,11 +148,7 @@ class _ResumeSection extends ConsumerWidget {
           child: InkPanel(
             framed: false,
             title: 'Continue reading',
-            child: ResumeCarousel(
-              entries: reading,
-              columns: columns,
-              onViewAll: () => _openHistory(context),
-            ),
+            child: ResumeCarousel(entries: reading, columns: columns),
           ),
         );
       },

@@ -132,13 +132,25 @@ class _HorizontalPageState extends State<_HorizontalPage>
   }
 
   @override
-  Widget build(BuildContext context) => FadeTransition(
-    opacity: widget.reveal && !_interactive
-        ? _opacity
-        : kAlwaysCompleteAnimation,
-    child: SlideTransition(
-      position: _interactive ? _interactivePosition : _position,
-      child: widget.child,
-    ),
-  );
+  Widget build(BuildContext context) {
+    final page = FadeTransition(
+      opacity: widget.reveal && !_interactive
+          ? _opacity
+          : kAlwaysCompleteAnimation,
+      child: SlideTransition(
+        position: _interactive ? _interactivePosition : _position,
+        child: widget.child,
+      ),
+    );
+    if (!widget.reveal || _interactive) return page;
+    // The fade must not expose the page underneath: the backdrop is opaque
+    // from the first frame while only the content fades in.
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ColoredBox(color: Theme.of(context).scaffoldBackgroundColor),
+        page,
+      ],
+    );
+  }
 }

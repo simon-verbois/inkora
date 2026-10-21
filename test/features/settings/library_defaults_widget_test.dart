@@ -68,6 +68,47 @@ void main() {
         expect(find.text('Inherit'), findsNothing);
         expect(find.text('Preference inheritance'), findsNothing);
         expect(find.text('Comics'), findsOneWidget);
+        await tester.tap(find.byKey(const Key('reader-choice-mode-manga')));
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
+        await tester.pumpAndSettle();
+        final contentFit = find.byKey(const Key('reader-choice-fit-content'));
+        await tester.ensureVisible(contentFit);
+        await tester.pumpAndSettle();
+        await tester.tap(contentFit);
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
+        await tester.pumpAndSettle();
+        final offset = find.byKey(const Key('reader-spread-offset-default'));
+        await tester.ensureVisible(offset);
+        await tester.pumpAndSettle();
+        expect(tester.widget<SwitchListTile>(offset).value, true);
+        await tester.tap(offset);
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.widget<SwitchListTile>(offset).value, false);
+        final offsetRow = (await tester.runAsync(
+          () => harness.database
+              .select(harness.database.readingPreferences)
+              .getSingle(),
+        ))!;
+        final offsetStore = ReaderStore(harness.database, offsetRow.accountId);
+        expect(
+          (await tester.runAsync(
+            () => offsetStore.overrides(SettingsScope.library, 'library-a'),
+          ))!.fit,
+          ReadingFit.content,
+        );
+        expect(
+          (await tester.runAsync(
+            () => offsetStore.overrides(SettingsScope.library, 'library-a'),
+          ))!.spreadOffset,
+          false,
+        );
         final mode = find.byKey(const Key('reader-choice-mode-webtoon'));
         await tester.ensureVisible(mode);
         await tester.pumpAndSettle();
@@ -86,6 +127,13 @@ void main() {
               .getSingle(),
         );
         final store = ReaderStore(harness.database, row!.accountId);
+        expect(
+          (await tester.runAsync(
+            () => store.overrides(SettingsScope.library, 'library-a'),
+          ))!.spreadOffset,
+          isNull,
+          reason: 'Changing profile clears local pairing',
+        );
         final manifest = ReaderManifest(
           accountId: row.accountId,
           bookId: 'new-volume',

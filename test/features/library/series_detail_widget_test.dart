@@ -171,6 +171,9 @@ Future<void> showVolumes(WidgetTester tester) async {
 
 Future<void> chooseFilter(WidgetTester tester, String name) async {
   final chip = find.byKey(ValueKey('volume-filter-$name'));
+  if (chip.evaluate().isEmpty) {
+    await tapVisible(tester, find.byKey(const Key('volume-quick-filters')));
+  }
   await tester.ensureVisible(chip);
   await tester.pumpAndSettle();
   await tester.tap(chip);
@@ -832,10 +835,7 @@ void main() {
       expect(tester.getTopLeft(find.byKey(const Key('series-title'))), title);
       expect(tester.getRect(find.byType(VolumeToolbar)), toolbar);
       expect(position.pixels, greaterThan(0));
-      final unread = find.byKey(const ValueKey('volume-filter-unread'));
-      expect(unread.hitTestable(), findsOneWidget);
-      await tester.tap(unread);
-      await tester.pumpAndSettle();
+      await chooseFilter(tester, 'unread');
       expect(
         tester
             .widget<VolumeToolbar>(find.byType(VolumeToolbar))

@@ -845,6 +845,7 @@ const Map<String, Map<String, String>> messages = {
     "Theme and home covers": "Theme and home covers",
     "Portrait": "Portrait",
     "Landscape": "Landscape",
+    "Fit content": "Fit content",
   },
   "fr": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Un conflit nécessite votre choix. Ouvrez le livre concerné et sélectionnez « Progression de lecture ».",
@@ -1697,6 +1698,7 @@ const Map<String, Map<String, String>> messages = {
     "Theme and home covers": "Thème et couvertures de l’accueil",
     "Portrait": "Portrait",
     "Landscape": "Paysage",
+    "Fit content": "Adapter au contenu",
   },
   "de": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Bei einem Konflikt müssen Sie eine Entscheidung treffen. Öffnen Sie das betroffene Buch und wählen Sie „Lesefortschritt“ aus.",
@@ -2532,6 +2534,7 @@ const Map<String, Map<String, String>> messages = {
     "Theme and home covers": "Design und Cover auf der Startseite",
     "Portrait": "Hochformat",
     "Landscape": "Querformat",
+    "Fit content": "An Inhalt anpassen",
   },
   "es": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Un conflicto requiere que usted elija. Abra el libro afectado y seleccione «Progreso de lectura».",
@@ -3383,6 +3386,7 @@ const Map<String, Map<String, String>> messages = {
     "Theme and home covers": "Tema y portadas de Inicio",
     "Portrait": "Vertical",
     "Landscape": "Horizontal",
+    "Fit content": "Ajustar al contenido",
   },
   "it": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Per risolvere un conflitto è necessaria una sua scelta. Apra il libro interessato e selezioni «Progresso di lettura».",
@@ -4233,6 +4237,7 @@ const Map<String, Map<String, String>> messages = {
     "Theme and home covers": "Tema e copertine della schermata iniziale",
     "Portrait": "Verticale",
     "Landscape": "Orizzontale",
+    "Fit content": "Adatta al contenuto",
   },
   "pl": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "W przypadku konfliktu należy dokonać wyboru. Proszę otworzyć daną książkę i wybrać opcję „Postęp czytania”.",
@@ -5076,6 +5081,7 @@ const Map<String, Map<String, String>> messages = {
     "Theme and home covers": "Motyw i okładki na ekranie głównym",
     "Portrait": "Pionowo",
     "Landscape": "Poziomo",
+    "Fit content": "Dopasuj do treści",
   },
   "nl": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Bij een conflict dient u een keuze te maken. Open het betreffende boek en selecteer ‘Leesvoortgang’.",
@@ -5932,6 +5938,7 @@ const Map<String, Map<String, String>> messages = {
     "Theme and home covers": "Thema en omslagen op het startscherm",
     "Portrait": "Staand",
     "Landscape": "Liggend",
+    "Fit content": "Aan inhoud aanpassen",
   },
   "pt": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Um conflito requer a sua escolha. Abra o livro afetado e selecione «Progresso de leitura».",
@@ -6780,6 +6787,7 @@ const Map<String, Map<String, String>> messages = {
     "Theme and home covers": "Tema e capas no ecrã inicial",
     "Portrait": "Vertical",
     "Landscape": "Horizontal",
+    "Fit content": "Ajustar ao conteúdo",
   },
   "ro": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Un conflict necesită alegerea dvs. Deschideți cartea afectată și selectați „Progresul lecturii”.",
@@ -7626,6 +7634,7 @@ const Map<String, Map<String, String>> messages = {
     "Theme and home covers": "Temă și coperți pe ecranul principal",
     "Portrait": "Portret",
     "Landscape": "Peisaj",
+    "Fit content": "Ajustare la conținut",
   },
   "el": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Μια διένεξη απαιτεί την επιλογή σας. Ανοίξτε το σχετικό βιβλίο και επιλέξτε «Πρόοδος ανάγνωσης».",
@@ -8487,6 +8496,7 @@ const Map<String, Map<String, String>> messages = {
     "Theme and home covers": "Θέμα και εξώφυλλα αρχικής οθόνης",
     "Portrait": "Κατακόρυφα",
     "Landscape": "Οριζόντια",
+    "Fit content": "Προσαρμογή στο περιεχόμενο",
   },
   "hu": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Egy ütközés esetén döntést kell hoznia. Nyissa meg az érintett könyvet, és válassza az Olvasási előrehaladás menüpontot.",
@@ -9327,6 +9337,7 @@ const Map<String, Map<String, String>> messages = {
     "Theme and home covers": "Téma és borítók a kezdőképernyőn",
     "Portrait": "Álló",
     "Landscape": "Fekvő",
+    "Fit content": "Tartalomhoz igazítás",
   },
   "cs": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Konflikt vyžaduje vaše rozhodnutí. Otevřete příslušnou knihu a vyberte „Průběh čtení“.",
@@ -10161,5 +10172,6 @@ const Map<String, Map<String, String>> messages = {
     "Theme and home covers": "Motiv a obálky na úvodní obrazovce",
     "Portrait": "Na výšku",
     "Landscape": "Na šířku",
+    "Fit content": "Přizpůsobit obsahu",
   },
 };

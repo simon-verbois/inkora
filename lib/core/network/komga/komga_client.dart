@@ -141,6 +141,7 @@ final class KomgaClient {
     CancelToken? cancelToken,
     bool inProgress = false,
     bool onDeck = false,
+    bool history = false,
     bool parseInBackground = false,
   }) async {
     final resource = switch (kind) {
@@ -156,6 +157,9 @@ final class KomgaClient {
     if (onDeck && (kind != 'book' || inProgress)) {
       throw ArgumentError('Invalid on-deck query');
     }
+    if (history && (kind != 'book' || inProgress || onDeck)) {
+      throw ArgumentError('Invalid reading-history query');
+    }
     final result = await _request<CataloguePage<T>>(
       'api/v1/$resource${onDeck ? '/ondeck' : ''}',
       parseInBackground
@@ -167,8 +171,13 @@ final class KomgaClient {
         'page': page,
         'size': size,
         if (!onDeck)
-          'sort': inProgress ? 'readProgress.lastModified,desc' : 'id,asc',
+          'sort': inProgress || history
+              ? 'readProgress.lastModified,desc'
+              : 'id,asc',
         if (inProgress) 'read_status': 'IN_PROGRESS',
+        // Verified 1.28.1 (2026-10-20): repeated read_status values select
+        // their union; Dio's default list format repeats the parameter.
+        if (history) 'read_status': const ['IN_PROGRESS', 'READ'],
       },
       cancelToken: cancelToken,
     );

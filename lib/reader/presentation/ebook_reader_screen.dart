@@ -1,4 +1,9 @@
-import '../../app/theme/inkora_motion.dart';
+import 'dart:math' as math;
+
+import '../../app/theme/inkora_theme.dart';
+import '../../app/widgets/inkora_widgets.dart';
+import '../../features/library/presentation/progress_format.dart';
+import '../../app/theme/appearance_palette.dart';
 import 'reader_chrome.dart';
 import 'reader_details.dart';
 import 'ebook_presentation.dart';
@@ -305,7 +310,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
                 locator: Locator.fromJson(_saved[i].value)!,
                 style: const ReaderDecorationStyle(
                   style: DecorationStyle.underline,
-                  tint: Color(0xffd39a32),
+                  tint: AppearancePalette.readerHighlight,
                 ),
               ),
         ]);
@@ -369,7 +374,13 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
             : ebook.font,
         fontSize: ebook.fontSize,
         lineHeight: ebook.lineHeight,
-        pageMargins: ebook.pageInsets == null ? ebook.margins : 0,
+        // Reserve the spread gutter before native pagination, including
+        // preloaded chapters. Late DOM padding used to visibly reflow text.
+        pageMargins: !ebook.scroll && ebook.columns != 'one'
+            ? math.max(.8, ebook.pageInsets == null ? ebook.margins : 0)
+            : ebook.pageInsets == null
+            ? ebook.margins
+            : 0,
         scroll: ebook.scroll,
         columnCount: EpubColumnCount.values.byName(ebook.columns),
         publisherStyles: ebook.publisherStyles,
@@ -512,10 +523,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   }
 
   void _showError(String message) {
-    if (mounted) {
-      ScaffoldMessenger.maybeOf(context)
-          ?.showSnackBar(SnackBar(content: LText(message)));
-    }
+    if (mounted) notifyInk(context, message);
   }
 
   Future<void> _jump(Locator locator) async {
@@ -593,118 +601,108 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
       add(await _pdfController.document.loadOutline());
     }
     if (!mounted) return;
-    await showModalBottomSheet<void>(
+    await showInkSheet<void>(
       context: context,
-      sheetAnimationStyle: InkoraMotion.sheetStyle(context),
-      isScrollControlled: true,
-      builder: (context) => SafeArea(
-        child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * .7,
-          child: Column(
-            children: [
-              const ListTile(title: LText('Table of contents')),
-              Expanded(
-                child: entries.isEmpty
-                    ? const Center(
-                        child: LText('No table of contents available.'),
-                      )
-                    : ListView.builder(
-                        itemCount: entries.length,
-                        itemBuilder: (context, i) => ListTile(
-                          title: Text(entries[i].$1),
-                          onTap: () {
-                            Navigator.pop(context);
-                            unawaited(_jump(entries[i].$2));
-                          },
-                        ),
-                      ),
+      title: 'Table of contents',
+      heightFactor: .7,
+      child: entries.isEmpty
+          ? const SingleChildScrollView(
+              child: InkEmptyState(
+                icon: InkIcons.list,
+                title: 'No table of contents available.',
               ),
-            ],
-          ),
-        ),
-      ),
+            )
+          : ListView.builder(
+              itemCount: entries.length,
+              itemBuilder: (context, i) => ListTile(
+                title: Text(entries[i].$1),
+                onTap: () {
+                  Navigator.pop(context);
+                  unawaited(_jump(entries[i].$2));
+                },
+              ),
+            ),
     );
   }
 
   Future<void> _bookmarkList() async {
-    await showModalBottomSheet<void>(
+    await showInkSheet<void>(
       context: context,
-      sheetAnimationStyle: InkoraMotion.sheetStyle(context),
-      isScrollControlled: true,
-      builder: (context) => StatefulBuilder(
-        builder: (context, update) => SafeArea(
-          child: SizedBox(
-            height: MediaQuery.sizeOf(context).height * .7,
-            child: Column(
-              children: [
-                ListTile(
-                  title: const LText('Bookmarks'),
-                  trailing: IconButton(
-                    tooltip: context.tr('Add bookmark'),
-                    icon: const Icon(Icons.add),
-                    onPressed: _current == null
-                        ? null
-                        : () async {
-                            await _addBookmark(_current!);
-                            if (context.mounted) update(() {});
-                          },
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: LText(
-                    'Hold a word or line, then choose Add bookmark.',
-                  ),
-                ),
-                Expanded(
-                  child: _saved.isEmpty
-                      ? const Center(child: LText('No bookmarks yet.'))
-                      : ListView.builder(
-                          itemCount: _saved.length,
-                          itemBuilder: (context, i) {
-                            final bookmark = _saved[i];
-                            return ListTile(
-                              title: Text(
-                                bookmark.value['title'] as String? ??
-                                    context.tr('Bookmark {0}', [i + 1]),
-                              ),
-                              subtitle: bookmark.excerpt.isEmpty
-                                  ? null
-                                  : Text(
-                                      bookmark.excerpt,
-                                      maxLines: 3,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                              onTap: () async {
-                                final route = ModalRoute.of(context);
-                                final locator = Locator.fromJson(
-                                  bookmark.value,
-                                );
-                                Navigator.pop(context);
-                                // Native layout restoration during sheet dismissal
-                                // can overwrite a jump within the same chapter.
-                                await route?.completed;
-                                if (mounted && locator != null) {
-                                  await _jump(locator);
-                                }
-                              },
-                              trailing: IconButton(
-                                tooltip: context.tr('Remove bookmark'),
-                                icon: const Icon(Icons.close),
-                                onPressed: () async {
-                                  await _mutateBookmarks(
-                                    () => _bookmarks.remove(bookmark),
-                                  );
-                                  if (context.mounted) update(() {});
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ],
+      heightFactor: .7,
+      child: StatefulBuilder(
+        builder: (context, update) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            InkSheetHeader(
+              title: 'Bookmarks',
+              action: IconButton(
+                tooltip: context.tr('Add bookmark'),
+                icon: const Icon(Icons.add),
+                onPressed: _current == null
+                    ? null
+                    : () async {
+                        await _addBookmark(_current!);
+                        if (context.mounted) update(() {});
+                      },
+              ),
             ),
-          ),
+            const Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: InkSpace.lg,
+                vertical: InkSpace.sm,
+              ),
+              child: LText('Hold a word or line, then choose Add bookmark.'),
+            ),
+            Expanded(
+              child: _saved.isEmpty
+                  ? const SingleChildScrollView(
+                      child: InkEmptyState(
+                        icon: InkIcons.bookmarks,
+                        title: 'No bookmarks yet.',
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: _saved.length,
+                      itemBuilder: (context, i) {
+                        final bookmark = _saved[i];
+                        return ListTile(
+                          title: Text(
+                            bookmark.value['title'] as String? ??
+                                context.tr('Bookmark {0}', [i + 1]),
+                          ),
+                          subtitle: bookmark.excerpt.isEmpty
+                              ? null
+                              : Text(
+                                  bookmark.excerpt,
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                          onTap: () async {
+                            final route = ModalRoute.of(context);
+                            final locator = Locator.fromJson(bookmark.value);
+                            Navigator.pop(context);
+                            // Native layout restoration during sheet dismissal
+                            // can overwrite a jump within the same chapter.
+                            await route?.completed;
+                            if (mounted && locator != null) {
+                              await _jump(locator);
+                            }
+                          },
+                          trailing: IconButton(
+                            tooltip: context.tr('Remove bookmark'),
+                            icon: const Icon(Icons.close),
+                            onPressed: () async {
+                              await _mutateBookmarks(
+                                () => _bookmarks.remove(bookmark),
+                              );
+                              if (context.mounted) update(() {});
+                            },
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
         ),
       ),
     );
@@ -783,11 +781,9 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   }
 
   Future<void> _search() async {
-    final locator = await showModalBottomSheet<Locator>(
+    final locator = await showInkSheet<Locator>(
       context: context,
-      sheetAnimationStyle: InkoraMotion.sheetStyle(context),
-      isScrollControlled: true,
-      builder: (context) => EbookSearchSheet(search: _searchBook),
+      child: EbookSearchSheet(search: _searchBook),
     );
     if (locator != null && mounted) await _jump(locator);
   }
@@ -796,11 +792,9 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
     _flush();
     await _writes;
     if (!mounted) return;
-    final changed = await showModalBottomSheet<bool>(
+    final changed = await showInkSheet<bool>(
       context: context,
-      sheetAnimationStyle: InkoraMotion.sheetStyle(context),
-      isScrollControlled: true,
-      builder: (context) => ProgressSheet(
+      child: ProgressSheet(
         manifest: _manifest,
         currentLocator: _lastLocator ?? widget.reader.locator,
         onChanging: () {
@@ -819,11 +813,9 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   }
 
   Future<void> _settings() async {
-    await showModalBottomSheet<void>(
+    await showInkSheet<void>(
       context: context,
-      sheetAnimationStyle: InkoraMotion.sheetStyle(context),
-      isScrollControlled: true,
-      builder: (context) => ReaderSettingsSheet(
+      child: ReaderSettingsSheet(
         store: widget.repository.store,
         manifest: _manifest,
         modal: true,
@@ -863,6 +855,27 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
     super.dispose();
   }
 
+  /// EPUB: "Chapter · 42 %" (or the percent alone); PDF: "p. 3/120".
+  String _positionSubtitle(AppStrings strings, int index) {
+    if (!_epub) {
+      return readerPositionLabel(
+        strings,
+        index: index,
+        count: _manifest.pages.length,
+      );
+    }
+    final positions = _manifest.positions;
+    if (positions.isEmpty) return strings.text('Reading progress');
+    final percent = percentLabel(
+      strings,
+      EbookLocator(positions[index.clamp(0, positions.length - 1)]).total,
+    );
+    final chapter = _current?.title;
+    return chapter == null || chapter.isEmpty
+        ? percent
+        : strings.text('{0} · {1}', [chapter, percent]);
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -889,35 +902,17 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
                         ),
                       )
                     : _surface) ??
-                Center(
-                  child: _message == null
-                      ? Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const CircularProgressIndicator(),
-                            const SizedBox(height: 16),
-                            const LText('Preparing ebook for offline reading…'),
-                            TextButton(
-                              onPressed: () => context.push('/downloads'),
-                              child: const LText('Downloads'),
-                            ),
-                          ],
-                        )
-                      : Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              LText(_message!),
-                              const SizedBox(height: 16),
-                              TextButton(
-                                onPressed: () => context.pop(),
-                                child: const LText('Back'),
-                              ),
-                            ],
-                          ),
-                        ),
-                ),
+                (_message == null
+                    ? ReaderLoadingView(
+                        message: 'Preparing ebook for offline reading…',
+                        actionLabel: 'Downloads',
+                        onAction: () => context.push('/downloads'),
+                      )
+                    : ReaderErrorView(
+                        message: _message!,
+                        actionLabel: 'Back',
+                        onAction: () => context.pop(),
+                      )),
           ),
         ),
         ValueListenableBuilder<bool>(
@@ -928,27 +923,19 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
                   child: ReaderTopBar(
                     title: _manifest.title,
                     onBack: () => context.pop(),
-                    actions: [
-                      ReaderDetailsButton(manifest: _manifest),
-                      if (_surface != null) ...[
-                        IconButton(
-                          tooltip: context.tr('Search in book'),
-                          icon: const Icon(InkIcons.magnifyingGlass),
-                          onPressed: _search,
-                        ),
-                        PopupMenuButton<String>(
-                          tooltip: context.tr('Reading controls'),
-                          icon: const Icon(InkIcons.dotsThreeVertical),
-                          itemBuilder: (_) => const [
-                            PopupMenuItem(
-                              value: 'progress',
-                              child: LText('Reading progress'),
+                    subtitle: _surface == null
+                        ? null
+                        : ValueListenableBuilder<(int, double)>(
+                            valueListenable: _position,
+                            builder: (context, position, _) => Text(
+                              _positionSubtitle(
+                                AppStrings.of(context),
+                                position.$1,
+                              ),
+                              key: const Key('reader-subtitle'),
                             ),
-                          ],
-                          onSelected: (_) => unawaited(_progress()),
-                        ),
-                      ],
-                    ],
+                          ),
+                    actions: [ReaderDetailsButton(manifest: _manifest)],
                   ),
                 )
               : const SizedBox.shrink(),
@@ -966,45 +953,29 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
                         final count = _epub
                             ? _manifest.positions.length
                             : _manifest.pages.length;
+                        final strings = AppStrings.of(context);
                         String progressLabel(int index) => _epub
-                            ? context.tr('{0}% read', [
-                                (EbookLocator(_manifest.positions[index])
-                                            .total *
-                                        100)
-                                    .round(),
-                              ])
-                            : context.tr('Page {0}/{1}', [index + 1, count]);
+                            ? percentLabel(
+                                strings,
+                                EbookLocator(_manifest.positions[index]).total,
+                              )
+                            : pagePositionLabel(strings, index, count);
                         return Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      _current?.title ??
-                                          context.tr('Reading progress'),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelMedium,
+                            ReaderProgressLine(
+                              position: count == 0
+                                  ? context.tr('Reading progress')
+                                  : _epub
+                                  ? progressLabel(position.$1)
+                                  : pageShortLabel(strings, position.$1),
+                              detail: _epub
+                                  ? _current?.title ?? ''
+                                  : readerRemainingLabel(
+                                      strings,
+                                      last: position.$1,
+                                      count: count,
                                     ),
-                                  ),
-                                  Text(
-                                    count == 0
-                                        ? context.tr('Reading progress')
-                                        : progressLabel(position.$1),
-                                    key: const Key('reader-position'),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelMedium,
-                                  ),
-                                ],
-                              ),
                             ),
                             ReaderSeekBar(
                               position: position.$1,
@@ -1019,29 +990,36 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
                               onSeek: _seek,
                             ),
                             const Divider(height: 1),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            ReaderActionRow(
                               children: [
-                                Expanded(
-                                  child: ReaderQuickAction(
-                                    label: 'Table of contents',
-                                    icon: InkIcons.list,
-                                    onPressed: _toc,
-                                  ),
+                                ReaderQuickAction(
+                                  label: 'Contents',
+                                  icon: InkIcons.list,
+                                  onPressed: _toc,
                                 ),
-                                Expanded(
-                                  child: ReaderQuickAction(
-                                    label: 'Bookmarks',
-                                    icon: InkIcons.bookmarks,
-                                    onPressed: _bookmarkList,
-                                  ),
+                                ReaderQuickAction(
+                                  label: 'Bookmarks',
+                                  icon: InkIcons.bookmarks,
+                                  onPressed: _bookmarkList,
                                 ),
-                                Expanded(
-                                  child: ReaderQuickAction(
-                                    label: 'Reading preferences',
-                                    icon: InkIcons.slidersHorizontal,
-                                    onPressed: _settings,
-                                  ),
+                                ReaderQuickAction(
+                                  label: 'Settings',
+                                  icon: InkIcons.slidersHorizontal,
+                                  onPressed: _settings,
+                                ),
+                                ReaderMoreAction(
+                                  entries: [
+                                    ReaderMenuEntry(
+                                      label: 'Search in book',
+                                      icon: InkIcons.magnifyingGlass,
+                                      onSelected: _search,
+                                    ),
+                                    ReaderMenuEntry(
+                                      label: 'Reading progress',
+                                      icon: InkIcons.clockCounterClockwise,
+                                      onSelected: () => unawaited(_progress()),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),

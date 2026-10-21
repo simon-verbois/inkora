@@ -1,3 +1,5 @@
+import '../../../app/widgets/inkora_widgets.dart';
+import '../../../app/theme/inkora_theme.dart';
 import 'settings_adaptive_layout.dart';
 import 'preference_labels.dart';
 import '../../../app/l10n/app_strings.dart';
@@ -24,9 +26,7 @@ class GestureSettings extends ConsumerWidget {
             .update((current) => current.copyWith(gestures: value));
       } catch (_) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: LText('Unable to save gesture settings.')),
-          );
+          notifyInk(context, 'Unable to save gesture settings.');
         }
       }
     }
@@ -35,7 +35,7 @@ class GestureSettings extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (showTitle)
-          const LText('Reading gestures', style: TextStyle(fontSize: 22)),
+          LText('Gestures', style: Theme.of(context).textTheme.screenTitle),
         const SizedBox(height: 12),
         const LText(
           'Reserve screen edges for system back. Swipes and zoom start only inside the reading area.',

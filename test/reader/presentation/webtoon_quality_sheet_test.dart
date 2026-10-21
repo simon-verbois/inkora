@@ -78,8 +78,9 @@ void main() {
     expect(find.text('95 %'), findsOneWidget);
     expect(find.text('96 MiB'), findsOneWidget);
 
-    await tester.ensureVisible(find.text('Save'));
-    await tester.tap(find.text('Save'));
+    // Live: the slider commits are already stored; closing needs no Save.
+    expect(find.text('Save'), findsNothing);
+    await tester.binding.handlePopRoute();
     await settle();
     final saved = (await tester.runAsync(
       () => store.preferenceLayers(),

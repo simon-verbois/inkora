@@ -27,7 +27,7 @@ void main() {
         router.go('/settings');
         await tester.pumpAndSettle();
         await tester.scrollUntilVisible(
-          find.text('Reading'),
+          find.text('Reading profiles'),
           200,
           scrollable: find
               .descendant(
@@ -37,7 +37,7 @@ void main() {
               .first,
         );
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Reading'));
+        await tester.tap(find.text('Reading profiles'));
         await tester.pumpAndSettle();
         await tester.scrollUntilVisible(
           find.text('Manga shelf'),
@@ -68,20 +68,17 @@ void main() {
         expect(find.text('Inherit'), findsNothing);
         expect(find.text('Preference inheritance'), findsNothing);
         expect(find.text('Comics'), findsOneWidget);
-        final mode = find.byWidgetPredicate(
-          (widget) =>
-              widget is DropdownButtonFormField<String> &&
-              widget.decoration.labelText == 'Mode',
-        );
+        final mode = find.byKey(const Key('reader-choice-mode-webtoon'));
         await tester.ensureVisible(mode);
         await tester.pumpAndSettle();
         await tester.tap(mode);
+        // Applied live: no Save; Back returns to the library list.
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Webtoon').last);
-        await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text('Save'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Save'));
+        expect(find.text('Save'), findsNothing);
+        router.pop();
         await tester.pumpAndSettle();
         final row = await tester.runAsync(
           () => harness.database
@@ -127,11 +124,19 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text('Reset to default'));
         await tester.pumpAndSettle();
-        expect(find.text('Comics'), findsOneWidget);
-        await tester.ensureVisible(find.text('Save'));
+        await tester.tap(find.text('Reset to default').last);
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Save'));
-        await tester.pumpAndSettle();
+        expect(
+          tester
+              .widget<ChoiceChip>(
+                find.byKey(const Key('reader-choice-mode-comics')),
+              )
+              .selected,
+          isTrue,
+        );
         expect(
           (await tester.runAsync(() => store.settings(manifest).first))!.mode,
           ReadingMode.comics,

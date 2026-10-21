@@ -23,11 +23,7 @@ class _ImageEnhancementControlState
           .update((current) => current.copyWith(imageEnhancement: value));
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: LText('Unable to save appearance settings. Try again.'),
-          ),
-        );
+        notifyInk(context, 'Unable to save appearance settings. Try again.');
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -44,7 +40,7 @@ class _ImageEnhancementControlState
     );
     return InkPanel(
       framed: false,
-      title: context.tr('Upscaling and sharpening'),
+      title: 'Upscaling and sharpening',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

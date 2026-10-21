@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/server_endpoint.dart';
 import '../../../core/network/komga/api_failure.dart';
+import '../../../app/widgets/ink_screen_header.dart';
 import '../../../app/widgets/inkora_widgets.dart';
 import '../application/session_controller.dart';
 import '../domain/session.dart';
@@ -85,7 +86,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
     final busy = _saving || session.phase == SessionPhase.authenticating;
     return Scaffold(
       appBar: widget.addServer
-          ? AppBar(title: const LText('Add server'))
+          ? const InkScreenHeader(title: LText('Add server'))
           : null,
       body: SafeArea(
         child: Center(

@@ -91,14 +91,31 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   }
 
   @override
-  Widget build(BuildContext context) => const CatalogueScreen(
-    kind: CatalogueKind.series,
-    embedded: true,
-    header: _ResumeSection(),
-  );
+  Widget build(BuildContext context) {
+    return const CatalogueScreen(
+      kind: CatalogueKind.series,
+      embedded: true,
+      header: _ResumeSection(),
+      headerActions: [
+        _HomeAction(
+          destination: 'settings',
+          label: 'Settings',
+          icon: InkIcons.gearSix,
+        ),
+        _HomeAction(
+          destination: 'downloads',
+          label: 'Downloads',
+          icon: InkIcons.downloadSimple,
+        ),
+        _HistoryAction(),
+      ],
+    );
+  }
 }
 
 /// Independent from the catalogue feed: resume updates never rebuild its grid.
+/// Continue reading shows in-progress positions from the existing account-scoped,
+/// library-visibility-filtered snapshot; On Deck is reserved for series actions.
 class _ResumeSection extends ConsumerWidget {
   const _ResumeSection();
 
@@ -107,58 +124,66 @@ class _ResumeSection extends ConsumerWidget {
     final resume = ref.watch(resumeEntriesProvider);
     return resume.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, _) => const Padding(
-        padding: EdgeInsets.all(16),
-        child: LText('Reading history unavailable'),
+      error: (_, _) => const InkEmptyState(
+        icon: InkIcons.cloudSlash,
+        title: 'Reading history unavailable',
       ),
-      data: (entries) => entries.isEmpty
-          ? const Align(
-              alignment: Alignment.centerRight,
-              child: _HistoryAction(),
-            )
-          : Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: InkPanel(
-                framed: false,
-                title: context.tr('Continue reading'),
-                action: const _HistoryAction(),
-                child: ResumeCarousel(
-                  entries: entries,
-                  density:
-                      ref.watch(
-                        uiPreferencesProvider.select(
-                          (p) => p.asData?.value.density,
-                        ),
-                      ) ??
-                      CatalogueDensity.comfortable,
-                ),
-              ),
+      data: (entries) {
+        final reading = [
+          for (final entry in entries)
+            if (!entry.onDeck) entry,
+        ];
+        if (reading.isEmpty) return const SizedBox.shrink();
+        final density =
+            ref.watch(
+              uiPreferencesProvider.select((p) => p.asData?.value.density),
+            ) ??
+            CatalogueDensity.comfortable;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: InkPanel(
+            framed: false,
+            title: 'Continue reading',
+            child: ResumeCarousel(
+              entries: reading,
+              density: density,
+              onViewAll: () => _openHistory(context),
             ),
+          ),
+        );
+      },
     );
   }
 }
 
+void _openHistory(BuildContext context) => context.go('/history');
+
+/// Always-available icon action, independent of the resume shelf state.
 class _HistoryAction extends StatelessWidget {
   const _HistoryAction();
   @override
-  Widget build(BuildContext context) {
-    void open() => context.push('/history');
-    final wide =
-        MediaQuery.sizeOf(context).width /
-            MediaQuery.textScalerOf(context).scale(1) >=
-        700;
-    return wide
-        ? TextButton.icon(
-            key: const Key('reading-history-action'),
-            onPressed: open,
-            icon: const Icon(InkIcons.clockCounterClockwise),
-            label: const LText('Reading history'),
-          )
-        : IconButton(
-            key: const Key('reading-history-action'),
-            tooltip: context.tr('Reading history'),
-            onPressed: open,
-            icon: const Icon(InkIcons.clockCounterClockwise),
-          );
-  }
+  Widget build(BuildContext context) => IconButton(
+    key: const Key('reading-history-action'),
+    tooltip: context.tr('Reading history'),
+    onPressed: () => _openHistory(context),
+    icon: const Icon(InkIcons.clockCounterClockwise),
+  );
+}
+
+/// Primary destinations open above Home so Back restores its retained catalogue.
+class _HomeAction extends StatelessWidget {
+  const _HomeAction({
+    required this.destination,
+    required this.label,
+    required this.icon,
+  });
+  final String destination, label;
+  final IconData icon;
+  @override
+  Widget build(BuildContext context) => IconButton(
+    key: ValueKey('open-$destination'),
+    tooltip: context.tr(label),
+    onPressed: () => context.go('/$destination'),
+    icon: Icon(icon),
+  );
 }

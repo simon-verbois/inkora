@@ -16,6 +16,26 @@ class AppearancePalette {
   final Color background, panel, raised, accent;
   final Color? button, onButton, heading;
 
+  /// Badge/control fill over cover artwork and reader pages, in every
+  /// appearance (artwork colours do not follow the application theme).
+  static const scrim = Color(0xB8000000);
+  static const onScrim = Colors.white;
+
+  /// Modal barrier behind sheets and dialogs.
+  static const barrier = Color(0x8A000000);
+
+  /// Bookmark highlight drawn on EPUB/PDF pages, independent of appearance.
+  static const readerHighlight = Color(0xFFD39A32);
+  static const readerHighlightLine = Color(0xFFB47D20);
+
+  /// Read/completed state and positive confirmation.
+  Color success(bool dark) =>
+      dark ? const Color(0xFFBADA8A) : const Color(0xFF386324);
+
+  /// Destructive actions and failures.
+  Color danger(bool dark) =>
+      dark ? const Color(0xFFFFB4AB) : const Color(0xFFA4221A);
+
   static AppearancePalette of(AppAppearance appearance) => switch (appearance) {
     AppAppearance.system || AppAppearance.light => const AppearancePalette(
       Color(0xFFFBF6ED),

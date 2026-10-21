@@ -1,5 +1,5 @@
+import '../../../app/widgets/ink_screen_header.dart';
 import 'settings_adaptive_layout.dart';
-import '../../../app/widgets/ink_surface.dart';
 import '../../../app/l10n/app_strings.dart';
 
 import 'package:flutter/material.dart';
@@ -99,11 +99,13 @@ class _LibraryDefaultsScreenState extends ConsumerState<LibraryDefaultsScreen> {
     return Scaffold(
       appBar: widget.embedded || SettingsPaneScope.wideOf(context)
           ? null
-          : InkAppBar(
+          : InkScreenHeader(
               title: Text(
                 library?.asData?.value?.title ??
                     context.tr(
-                      widget.includeGlobal ? 'Reading' : 'Library defaults',
+                      widget.includeGlobal
+                          ? 'Reading profiles'
+                          : 'Library defaults',
                     ),
               ),
             ),
@@ -117,8 +119,8 @@ class _LibraryDefaultsScreenState extends ConsumerState<LibraryDefaultsScreen> {
               if (snapshot.hasError) {
                 return InkEmptyState(
                   icon: InkIcons.warningCircle,
-                  title: context.tr("Settings unavailable"),
-                  message: context.tr("Unable to open saved reading settings."),
+                  title: "Settings unavailable",
+                  message: "Unable to open saved reading settings.",
                 );
               }
               if (!snapshot.hasData || account == null) {
@@ -135,8 +137,6 @@ class _LibraryDefaultsScreenState extends ConsumerState<LibraryDefaultsScreen> {
                   store: _store!,
                   libraryId: libraryId,
                   onSaved: widget.onSaved,
-                  showSaveAction: !widget.embedded,
-                  showHeader: !SettingsPaneScope.wideOf(context),
                 );
                 return Column(
                   children: [
@@ -174,11 +174,9 @@ class _LibraryDefaultsScreenState extends ConsumerState<LibraryDefaultsScreen> {
                               refresh?.asData?.value.message != null))) {
                     final error = InkEmptyState(
                       icon: InkIcons.warningCircle,
-                      title: context.tr("Library defaults unavailable"),
-                      message: context.tr(
-                        "Unable to load saved libraries or settings.",
-                      ),
-                      label: context.tr("Retry"),
+                      title: "Library defaults unavailable",
+                      message: "Unable to load saved libraries or settings.",
+                      label: "Retry",
                       action: () {
                         final repository = ref
                             .read(catalogueRepositoryProvider)
@@ -205,10 +203,8 @@ class _LibraryDefaultsScreenState extends ConsumerState<LibraryDefaultsScreen> {
                   if (items.isEmpty && !widget.includeGlobal) {
                     return InkEmptyState(
                       icon: InkIcons.books,
-                      title: context.tr("No saved libraries"),
-                      message: context.tr(
-                        "Refresh the catalogue to manage your library defaults.",
-                      ),
+                      title: "No saved libraries",
+                      message: "Refresh the catalogue to manage your library defaults.",
                     );
                   }
                   return ListView.builder(

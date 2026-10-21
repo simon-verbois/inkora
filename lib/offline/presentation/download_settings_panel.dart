@@ -17,32 +17,19 @@ class DownloadSettingsPanel extends ConsumerStatefulWidget {
 
 class _DownloadSettingsPanelState extends ConsumerState<DownloadSettingsPanel> {
   bool _busy = false;
-  Future<int>? _occupied;
-  Object? _occupiedFor;
-
-  /// Recompute occupied bytes only when the watched job list changes, not on
-  /// every rebuild (busy toggles, theme changes).
-  Future<int> _occupiedBytes(OfflineCoordinator service, Object? jobs) {
-    if (_occupied == null || !identical(jobs, _occupiedFor)) {
-      _occupiedFor = jobs;
-      _occupied = service.store.occupied();
-    }
-    return _occupied!;
-  }
 
   Future<void> _run(Future<void> Function(OfflineCoordinator) action) async {
     setState(() => _busy = true);
     try {
       final coordinator = await ref.read(offlineCoordinatorProvider.future);
       if (coordinator != null) await action(coordinator);
+      // The Downloads storage card shows the quota too.
+      ref.invalidate(downloadStorageProvider);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: LText(
-              'Unable to update downloads. Check free space and the selected quota.',
-            ),
-          ),
+        notifyInk(
+          context,
+          'Unable to update downloads. Check free space and the selected quota.',
         );
       }
     } finally {
@@ -53,55 +40,48 @@ class _DownloadSettingsPanelState extends ConsumerState<DownloadSettingsPanel> {
   @override
   Widget build(BuildContext context) {
     final coordinator = ref.watch(offlineCoordinatorProvider);
-    final jobs = ref.watch(downloadsProvider);
+    // Shared memoized summary: recomputed on job state changes only.
+    final storage = ref.watch(downloadStorageProvider).asData?.value;
+    final occupied = storage == null
+        ? 0
+        : storage.downloaded + storage.reserved;
     return InkContent(
       child: coordinator.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, _) => InkEmptyState(
           icon: InkIcons.warningCircle,
-          title: context.tr("Offline storage unavailable"),
-          message: context.tr("Unable to open offline storage."),
-          label: context.tr("Retry"),
+          title: "Offline storage unavailable",
+          message: "Unable to open offline storage.",
+          label: "Retry",
           action: () => ref.invalidate(offlineCoordinatorProvider),
         ),
         data: (service) => service == null
             ? InkEmptyState(
                 icon: InkIcons.checkCircle,
-                title: context.tr("Preparing your offline shelf"),
-                message: context.tr(
-                  "Offline storage becomes available with your active account.",
-                ),
+                title: "Preparing your offline shelf",
+                message: "Offline storage becomes available with your active account.",
               )
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   InkPanel(
                     framed: false,
-                    title: context.tr("Storage and network"),
+                    title: "Storage and network",
                     icon: InkIcons.hardDrives,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        FutureBuilder<int>(
-                          future: _occupiedBytes(service, jobs.asData?.value),
-                          builder: (_, bytes) => Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              LText(
-                                "{0} MiB downloaded or reserved",
-                                arguments: [(bytes.data ?? 0) ~/ (1024 * 1024)],
-                              ),
-                              const SizedBox(height: 8),
-                              LinearProgressIndicator(
-                                value: ((bytes.data ?? 0) / service.store.quota)
-                                    .clamp(0, 1),
-                              ),
-                              const SizedBox(height: 8),
-                              const LText(
-                                'Space includes downloads and temporary transfer reservations. Cover and page caches are separate.',
-                              ),
-                            ],
-                          ),
+                        LText(
+                          "{0} MiB downloaded or reserved",
+                          arguments: [occupied ~/ (1024 * 1024)],
+                        ),
+                        const SizedBox(height: 8),
+                        LinearProgressIndicator(
+                          value: (occupied / service.store.quota).clamp(0, 1),
+                        ),
+                        const SizedBox(height: 8),
+                        const LText(
+                          'Space includes downloads and temporary transfer reservations. Cover and page caches are separate.',
                         ),
                         const SizedBox(height: 12),
                         InkSlider(

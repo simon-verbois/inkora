@@ -1,101 +1,53 @@
 import 'package:flutter/material.dart';
 
-import '../../../app/l10n/app_strings.dart';
+import '../../../app/widgets/ink_filter_bar.dart';
 import '../../../app/icons/inkora_icons.dart';
 import '../domain/catalogue_filters.dart';
+import 'progress_format.dart';
 
-/// Wide inline choices and a compact popup share one immutable filter state.
-class ReadingFilterChips extends StatelessWidget {
-  const ReadingFilterChips({
-    super.key,
-    required this.filters,
-    required this.onChanged,
-    this.offline = false,
-    this.compact = false,
-  });
-  final MetadataFilters filters;
-  final ValueChanged<MetadataFilters> onChanged;
-  final bool offline, compact;
-  String _label(ReadingStatus status) => switch (status) {
-    ReadingStatus.any => 'Any',
-    ReadingStatus.unread => 'Unread',
-    ReadingStatus.inProgress => 'In progress',
-    ReadingStatus.completed => 'Completed',
-  };
-
-  void _select(ReadingStatus status) => onChanged(
-    MetadataFilters.from(
-      filters.values,
-      readingStatus: status,
-      downloadedOnly: filters.downloadedOnly,
-    ),
-  );
-
-  void _toggleOffline() => onChanged(
-    MetadataFilters.from(
-      filters.values,
-      readingStatus: filters.readingStatus,
-      downloadedOnly: !filters.downloadedOnly,
-    ),
-  );
-
-  @override
-  Widget build(BuildContext context) {
-    if (compact) {
-      final active =
-          filters.readingStatus != ReadingStatus.any || filters.downloadedOnly;
-      return PopupMenuButton<({ReadingStatus? status, bool offline})>(
-        key: const Key('reading-quick-filter-menu'),
-        tooltip: context.tr('Reading status'),
-        icon: Badge(
-          isLabelVisible: active,
-          child: Icon(
-            InkIcons.listChecks,
-            size: 20,
-            color: active ? Theme.of(context).colorScheme.primary : null,
-          ),
+/// Reading-status chips (All, Unread, In progress, Completed), then a
+/// separator and the independent Downloaded toggle, for [InkFilterBar].
+/// Offline views ([offline]) omit the redundant Downloaded toggle. Changes
+/// keep the advanced metadata selections.
+List<Widget> readingFilterChips({
+  required MetadataFilters filters,
+  required ValueChanged<MetadataFilters> onChanged,
+  bool offline = false,
+}) => [
+  for (final status in ReadingStatus.values)
+    InkFilterChip(
+      key: ValueKey('reading-filter-${status.name}'),
+      label: readingStatusLabel(status),
+      icon: switch (status) {
+        ReadingStatus.any => InkIcons.books,
+        ReadingStatus.unread => InkIcons.bookOpen,
+        ReadingStatus.inProgress => InkIcons.circleHalf,
+        ReadingStatus.completed => InkIcons.checkCircle,
+      },
+      selected: filters.readingStatus == status,
+      onSelected: () => onChanged(
+        MetadataFilters.from(
+          filters.values,
+          readingStatus: status,
+          downloadedOnly: filters.downloadedOnly,
         ),
-        onSelected: (choice) =>
-            choice.offline ? _toggleOffline() : _select(choice.status!),
-        itemBuilder: (context) => [
-          for (final status in ReadingStatus.values)
-            CheckedPopupMenuItem(
-              value: (status: status, offline: false),
-              checked: filters.readingStatus == status,
-              child: LText(_label(status)),
-            ),
-          if (!offline) ...[
-            const PopupMenuDivider(),
-            CheckedPopupMenuItem(
-              value: (status: null, offline: true),
-              checked: filters.downloadedOnly,
-              child: const LText('Downloaded only'),
-            ),
-          ],
-        ],
-      );
-    }
-    return Wrap(
-      key: const Key('reading-quick-filter-chips'),
-      alignment: WrapAlignment.center,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 8,
-      runSpacing: 4,
-      children: [
-        for (final status in ReadingStatus.values)
-          ChoiceChip(
-            showCheckmark: false,
-            label: LText(_label(status)),
-            selected: filters.readingStatus == status,
-            onSelected: (_) => _select(status),
-          ),
-        if (!offline)
-          FilterChip(
-            label: const LText('Downloaded only'),
-            selected: filters.downloadedOnly,
-            onSelected: (_) => _toggleOffline(),
-          ),
-      ],
-    );
-  }
-}
+      ),
+    ),
+  if (!offline) ...[
+    const InkChipDivider(),
+    InkFilterChip(
+      key: const ValueKey('reading-filter-downloaded'),
+      label: 'Downloaded',
+      icon: InkIcons.downloadSimple,
+      toggle: true,
+      selected: filters.downloadedOnly,
+      onSelected: () => onChanged(
+        MetadataFilters.from(
+          filters.values,
+          readingStatus: filters.readingStatus,
+          downloadedOnly: !filters.downloadedOnly,
+        ),
+      ),
+    ),
+  ],
+];

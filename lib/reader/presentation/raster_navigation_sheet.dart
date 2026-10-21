@@ -1,3 +1,6 @@
+import '../../app/widgets/inkora_widgets.dart';
+import '../../features/library/presentation/progress_format.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 
@@ -132,8 +135,11 @@ class _RasterNavigationSheetState extends State<RasterNavigationSheet> {
                       future: _values,
                       builder: (context, snapshot) {
                         if (snapshot.hasError) {
-                          return const Center(
-                            child: LText('Unable to load bookmarks.'),
+                          return const SingleChildScrollView(
+                            child: InkEmptyState(
+                              icon: InkIcons.warningCircle,
+                              title: 'Unable to load bookmarks.',
+                            ),
                           );
                         }
                         if (!snapshot.hasData) {
@@ -142,8 +148,11 @@ class _RasterNavigationSheetState extends State<RasterNavigationSheet> {
                           );
                         }
                         if (snapshot.data!.isEmpty) {
-                          return const Center(
-                            child: LText('No bookmarks yet.'),
+                          return const SingleChildScrollView(
+                            child: InkEmptyState(
+                              icon: InkIcons.bookmarks,
+                              title: 'No bookmarks yet.',
+                            ),
                           );
                         }
                         return ListView.builder(
@@ -156,12 +165,12 @@ class _RasterNavigationSheetState extends State<RasterNavigationSheet> {
                                 bookmark.page <
                                     widget.reader.manifest.pages.length;
                             return ListTile(
-                              title: LText(
-                                'Page {0}/{1}',
-                                arguments: [
-                                  bookmark.page + 1,
+                              title: Text(
+                                pagePositionLabel(
+                                  AppStrings.of(context),
+                                  bookmark.page,
                                   widget.reader.manifest.pages.length,
-                                ],
+                                ),
                               ),
                               subtitle: valid
                                   ? (bookmark.note.isEmpty
@@ -227,12 +236,12 @@ class _RasterNavigationSheetState extends State<RasterNavigationSheet> {
                                       decodeBudget: 256 * 1024,
                                     ),
                                   ),
-                                  LText(
-                                    'Page {0}/{1}',
-                                    arguments: [
-                                      index + 1,
+                                  Text(
+                                    pagePositionLabel(
+                                      AppStrings.of(context),
+                                      index,
                                       widget.reader.manifest.pages.length,
-                                    ],
+                                    ),
                                     maxLines: 2,
                                   ),
                                 ],
@@ -265,8 +274,8 @@ class _BookmarkNoteDialogState extends State<_BookmarkNoteDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const LText('Add bookmark'),
+  Widget build(BuildContext context) => InkDialog(
+    title: 'Add bookmark',
     content: TextField(
       controller: _note,
       maxLength: 500,

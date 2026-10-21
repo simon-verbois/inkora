@@ -379,3 +379,21 @@ Future<AppDatabase> openAppDatabase() async {
     ),
   );
 }
+
+/// Emits once, then after every write to [tables]. Drift shares the stream of
+/// identical SQL text regardless of `readsFrom`, so a constant `SELECT 1`
+/// with different table sets would silently reuse the first registration's
+/// tables. The statement therefore names its sorted table set.
+Stream<void> watchTables(
+  AppDatabase database,
+  Set<ResultSetImplementation<dynamic, dynamic>> tables,
+) {
+  final names = [for (final table in tables) table.entityName]..sort();
+  return database
+      .customSelect(
+        "SELECT '${names.join(',')}' AS watched_tables",
+        readsFrom: tables,
+      )
+      .watch()
+      .map((_) {});
+}

@@ -121,6 +121,56 @@ void main() {
   );
 
   testWidgets(
+    'live preference changes keep the viewport, acquisitions and decoded image identities',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(390, 844);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPhysicalSize);
+      final source = FixturePageSource();
+      final reader = OpenReader(
+        readerManifest(count: 8),
+        source,
+        ReaderLocator(2),
+      );
+      List<ImageProvider> providers() => tester
+          .widgetList<Image>(find.byType(Image, skipOffstage: false))
+          .map((image) => image.image)
+          .toList();
+      const base = ReadingSettings(layout: ReadingLayout.single);
+      await mount(tester, reader, base, []);
+      await settleReaderImages(tester);
+      final state = tester.state(find.byType(ReaderViewport));
+      final requests = source.requests.length;
+      final before = providers();
+      expect(before, isNotEmpty);
+      // Paint-only changes (background, page animation, image filter) reuse
+      // the mounted viewport, encoded bytes and decoded identities.
+      for (final settings in [
+        const ReadingSettings(
+          layout: ReadingLayout.single,
+          background: ReadingBackground.sepia,
+        ),
+        const ReadingSettings(
+          layout: ReadingLayout.single,
+          background: ReadingBackground.sepia,
+          pageAnimation: false,
+          imageQuality: {
+            RasterFormat.jpeg: RasterQuality(filter: VisualFilter.grayscale),
+          },
+        ),
+      ]) {
+        await mount(tester, reader, settings, []);
+        await settleReaderImages(tester);
+        expect(tester.state(find.byType(ReaderViewport)), same(state));
+        expect(source.requests.length, requests);
+        expect(providers(), before);
+      }
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
     'rotation refits the viewport and clears the previous zoom without moving pages',
     (tester) async {
       tester.view.devicePixelRatio = 1;
@@ -149,7 +199,7 @@ void main() {
       tester.view.physicalSize = const Size(1024, 768);
       await settleReaderImages(tester);
       expect(controller.value.getMaxScaleOnAxis(), 1);
-      expect(find.text('1 / 4'), findsOneWidget);
+      expect(find.text('p. 1'), findsOneWidget);
       expect(find.byKey(const ValueKey('page-image-0')), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
@@ -175,11 +225,11 @@ void main() {
           saved,
         );
         await settleReaderImages(tester);
-        expect(find.text('2 / 3'), findsOneWidget);
+        expect(find.text('p. 2'), findsOneWidget);
         expect(find.byKey(const ValueKey('page-image-1')), findsOneWidget);
         await tester.tap(find.byTooltip('Next page'));
         await settleReaderImages(tester);
-        expect(find.text('3 / 3'), findsOneWidget);
+        expect(find.text('p. 3'), findsOneWidget);
         expect(
           tester
               .widget<IconButton>(
@@ -190,7 +240,7 @@ void main() {
         );
         await tester.sendKeyEvent(LogicalKeyboardKey.home);
         await settleReaderImages(tester);
-        expect(find.text('1 / 3'), findsOneWidget);
+        expect(find.text('p. 1'), findsOneWidget);
         expect(
           tester
               .widget<IconButton>(
@@ -228,7 +278,7 @@ void main() {
       const Offset(600, 0),
     );
     await settleReaderImages(tester);
-    expect(find.text('2 / 4'), findsOneWidget);
+    expect(find.text('p. 2'), findsOneWidget);
     final viewer = tester.widget<InteractiveViewer>(
       find.byType(InteractiveViewer).first,
     );
@@ -259,9 +309,14 @@ void main() {
       await settleReaderImages(tester);
       expect(find.byKey(const ValueKey('page-image-2')), findsOneWidget);
       expect(find.byKey(const ValueKey('page-image-3')), findsOneWidget);
+      // Tablet portrait keeps the automatic spread; a phone-sized portrait
+      // window returns to single pages at the same position.
       tester.view.physicalSize = const Size(768, 1024);
       await settleReaderImages(tester);
-      expect(find.text('3 / 4'), findsOneWidget);
+      expect(find.text('p. 3–4'), findsOneWidget);
+      tester.view.physicalSize = const Size(390, 844);
+      await settleReaderImages(tester);
+      expect(find.text('p. 3'), findsOneWidget);
       expect(find.byKey(const ValueKey('page-image-2')), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
@@ -285,7 +340,7 @@ void main() {
         saved,
       );
       await settleReaderImages(tester);
-      expect(find.text('41 / 100'), findsOneWidget);
+      expect(find.text('p. 41'), findsOneWidget);
       expect(source.requests.length, lessThanOrEqualTo(12));
       expect(
         source.requests.every((k) => k.pageIndex >= 36 && k.pageIndex <= 46),
@@ -306,7 +361,24 @@ void main() {
       expect(after.fraction, closeTo(before.fraction, .005));
       await mount(tester, reader, const ReadingSettings(), saved);
       await settleReaderImages(tester);
-      expect(find.text('${after.pageIndex + 1} / 100'), findsOneWidget);
+      // Tablet portrait pairs comics pages; the spread contains the page.
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Text &&
+              widget.key == const Key('reader-position') &&
+              RegExp('p\\. (\\d+)(–(\\d+))?').hasMatch(widget.data ?? '') &&
+              () {
+                final match = RegExp('p\\. (\\d+)(–(\\d+))?')
+                    .firstMatch(widget.data!)!;
+                final first = int.parse(match[1]!);
+                final last = int.parse(match[3] ?? match[1]!);
+                return first <= after.pageIndex + 1 &&
+                    after.pageIndex + 1 <= last;
+              }(),
+        ),
+        findsOneWidget,
+      );
       await mount(
         tester,
         reader,

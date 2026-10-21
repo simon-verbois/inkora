@@ -57,7 +57,7 @@ void main() {
         void checkWrapper() {
           expect(router.routeInformationProvider.value.uri.path, '/setup');
           expect(find.text(strings.text('Make Inkora yours')), findsOneWidget);
-          expect(find.byKey(const Key('navigation-settings')), findsNothing);
+          expect(find.byKey(const Key('open-settings')), findsNothing);
           expect(tester.widget(back), isA<OutlinedButton>());
           expect(tester.widget(next), isA<FilledButton>());
           expect(tester.getSize(back), tester.getSize(next));
@@ -91,16 +91,13 @@ void main() {
         await tester.pumpAndSettle();
         checkWrapper();
         expect(find.byType(ReaderSettingsSheet), findsOneWidget);
-        final mode = find.byWidgetPredicate(
-          (widget) =>
-              widget is DropdownButtonFormField<String> &&
-              widget.decoration.labelText == strings.text('Mode'),
-        );
+        final mode = find.byKey(const Key('reader-choice-mode-webtoon'));
         await tester.ensureVisible(mode);
         await tester.pumpAndSettle();
         await tester.tap(mode);
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Webtoon').last);
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
         await tester.pumpAndSettle();
         await tester.tap(next);
         await tester.pumpAndSettle();
@@ -156,14 +153,15 @@ void main() {
         await tester.tap(rendering);
         await tester.pumpAndSettle();
         expect(find.text(strings.text('Save')), findsNothing);
-        final sampling = find
-            .byType(DropdownButtonFormField<ImageSampling>)
-            .first;
+        final sampling = find.byKey(
+          const Key('reader-choice-quality-jpeg-sampling-nearest'),
+        );
         await tester.ensureVisible(sampling);
         await tester.pumpAndSettle();
         await tester.tap(sampling);
-        await tester.pumpAndSettle();
-        await tester.tap(find.text(strings.text('Nearest neighbour')).last);
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
         await tester.pumpAndSettle();
         await tester.tap(next);
         await tester.pumpAndSettle();

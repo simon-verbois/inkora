@@ -6,7 +6,8 @@ import 'inkora_motion.dart';
 /// Full-size horizontal navigation on Android, including system edge gestures.
 /// InkoraPage owns eligibility; this observer only drives the accepted route.
 class HorizontalPageTransitionsBuilder extends PageTransitionsBuilder {
-  const HorizontalPageTransitionsBuilder();
+  const HorizontalPageTransitionsBuilder({this.reveal = false});
+  final bool reveal;
   @override
   Duration get transitionDuration => InkoraMotion.forward;
   @override
@@ -20,18 +21,25 @@ class HorizontalPageTransitionsBuilder extends PageTransitionsBuilder {
     Widget child,
   ) => MediaQuery.disableAnimationsOf(context)
       ? child
-      : _HorizontalPage(route: route, animation: animation, child: child);
+      : _HorizontalPage(
+          route: route,
+          animation: animation,
+          reveal: reveal,
+          child: child,
+        );
 }
 
 class _HorizontalPage extends StatefulWidget {
   const _HorizontalPage({
     required this.route,
     required this.animation,
+    required this.reveal,
     required this.child,
   });
   final PageRoute<dynamic> route;
   final Animation<double> animation;
   final Widget child;
+  final bool reveal;
   @override
   State<_HorizontalPage> createState() => _HorizontalPageState();
 }
@@ -39,15 +47,21 @@ class _HorizontalPage extends StatefulWidget {
 class _HorizontalPageState extends State<_HorizontalPage>
     with WidgetsBindingObserver {
   late Animation<Offset> _position;
+  late Animation<double> _opacity;
   late Animation<Offset> _interactivePosition;
   bool _accepted = false;
   bool _interactive = false;
   void _bind() {
     final tween = Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero);
     _interactivePosition = tween.animate(widget.animation);
-    _position = tween.animate(
-      widget.animation.drive(CurveTween(curve: Curves.easeOutCubic)),
-    );
+    _opacity = widget.animation.drive(CurveTween(curve: Curves.easeOutCubic));
+    _position = Tween<Offset>(
+      // Header destinations share a short horizontal fade, rather than moving
+      // a tablet-wide page across the entire viewport. Edge gestures retain
+      // their full-size, finger-driven horizontal preview below.
+      begin: widget.reveal ? const Offset(.04, 0) : const Offset(1, 0),
+      end: Offset.zero,
+    ).animate(_opacity);
     widget.animation.addStatusListener(_finished);
   }
 
@@ -69,7 +83,8 @@ class _HorizontalPageState extends State<_HorizontalPage>
   @override
   void didUpdateWidget(_HorizontalPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.animation != oldWidget.animation) {
+    if (widget.animation != oldWidget.animation ||
+        widget.reveal != oldWidget.reveal) {
       oldWidget.animation.removeStatusListener(_finished);
       _bind();
     }
@@ -117,8 +132,13 @@ class _HorizontalPageState extends State<_HorizontalPage>
   }
 
   @override
-  Widget build(BuildContext context) => SlideTransition(
-    position: _interactive ? _interactivePosition : _position,
-    child: widget.child,
+  Widget build(BuildContext context) => FadeTransition(
+    opacity: widget.reveal && !_interactive
+        ? _opacity
+        : kAlwaysCompleteAnimation,
+    child: SlideTransition(
+      position: _interactive ? _interactivePosition : _position,
+      child: widget.child,
+    ),
   );
 }

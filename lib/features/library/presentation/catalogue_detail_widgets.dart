@@ -8,110 +8,79 @@ import '../../../app/theme/inkora_theme.dart';
 import '../../../app/widgets/inkora_widgets.dart';
 import '../domain/catalogue.dart';
 import '../domain/catalogue_metadata.dart';
-import '../domain/resume_entry.dart';
-import 'book_cover.dart';
 import 'catalogue_presentation.dart';
 
-class CatalogueDetailHeader extends StatelessWidget {
-  const CatalogueDetailHeader({
-    super.key,
-    required this.item,
-    required this.actions,
-    required this.metadata,
-    required this.details,
-    this.resume,
-  });
+/// Lighter hero of library, collection and reading-list pages: kind icon,
+/// title, member count and synopsis, matching the series hero layout.
+class GroupHero extends StatelessWidget {
+  const GroupHero({super.key, required this.item});
   final CatalogueItem item;
-  final CatalogueMetadata metadata;
-  final ResumeEntry? resume;
-  final Widget actions, details;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      final scale = MediaQuery.textScalerOf(context).scale(1);
-      final wide = constraints.maxWidth >= 640;
-      final stacked = constraints.maxWidth < 280 || scale > 1.5;
-      final coverWidth = wide ? 180.0 : 104.0;
-      final theme = Theme.of(context);
-      final information = Column(
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = InkoraColors.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        InkSpace.lg,
+        InkSpace.sm,
+        InkSpace.lg,
+        InkSpace.lg,
+      ),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Semantics(
-            header: true,
-            child: Text(
-              item.title,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                fontSize: wide ? 30 : 24,
-                height: 1.2,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
           Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              Flexible(
-                child: Text(
-                  catalogueDescription(item, context: context),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colors.raised,
+                  borderRadius: InkRadius.medium,
+                ),
+                child: SizedBox.square(
+                  dimension: 64,
+                  child: Icon(
+                    catalogueIcon(item.kind),
+                    size: 30,
+                    color: theme.colorScheme.primary,
                   ),
                 ),
               ),
-              if (item.kind == CatalogueKind.series &&
-                  metadata.status.toUpperCase() == 'ENDED') ...[
-                const SizedBox(width: 8),
-                Flexible(child: _Label(context.tr('Ended'))),
-              ],
-            ],
-          ),
-          if (resume != null && !resume!.onDeck) ...[
-            const SizedBox(height: 12),
-            LText(
-              resume!.pageKnown ? 'Page {0}/{1}' : 'In progress',
-              arguments: [resume!.pageIndex + 1, resume!.pageCount],
-              style: theme.textTheme.bodySmall,
-            ),
-            if (resume!.pageKnown) ...[
-              const SizedBox(height: 6),
-              LinearProgressIndicator(
-                value: resume!.progress,
-                semanticsLabel: context.tr("Reading progress"),
-                semanticsValue: '${(resume!.progress * 100).round()}%',
+              const SizedBox(width: InkSpace.lg),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Semantics(
+                      header: true,
+                      child: Text(
+                        item.title,
+                        style: theme.textTheme.screenTitle?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          height: 1.2,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: InkSpace.xs),
+                    Text(
+                      catalogueDescription(item, context: context),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
+          ),
+          if (item.summary.isNotEmpty) ...[
+            const SizedBox(height: InkSpace.lg),
+            CatalogueSummary(key: ValueKey(item.id), summary: item.summary),
           ],
-          if (wide && !stacked) ...[const SizedBox(height: 16), actions],
         ],
-      );
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (stacked) ...[
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: BookCover(item: item, width: coverWidth),
-            ),
-            const SizedBox(height: 16),
-            information,
-          ] else
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                BookCover(item: item, width: coverWidth),
-                SizedBox(width: wide ? 24 : 16),
-                Expanded(child: information),
-              ],
-            ),
-          if (!wide || stacked) ...[const SizedBox(height: 16), actions],
-          const SizedBox(height: 4),
-          details,
-        ],
-      );
-    },
-  );
+      ),
+    );
+  }
 }
 
 class CatalogueSummary extends StatefulWidget {
@@ -149,11 +118,7 @@ class _CatalogueSummaryState extends State<CatalogueSummary> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            LText(
-              'Synopsis',
-              style: Theme.of(context).textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w700),
-            ),
+            LText('Synopsis', style: Theme.of(context).textTheme.sectionTitle),
             const SizedBox(height: 6),
             if (_expanded)
               SelectableText(widget.summary, style: style)
@@ -169,9 +134,12 @@ class _CatalogueSummaryState extends State<CatalogueSummary> {
                 key: const Key('detail-summary-toggle'),
                 onPressed: () {
                   if (_expanded) {
-                    // Reposition before shrinking the sliver so the collapse
-                    // frame cannot jump into the volumes below the synopsis.
-                    Scrollable.ensureVisible(context, alignment: 0);
+                    // Do not reposition a synopsis that is already visible.
+                    Scrollable.ensureVisible(
+                      context,
+                      alignmentPolicy:
+                          ScrollPositionAlignmentPolicy.keepVisibleAtStart,
+                    );
                   }
                   setState(() => _expanded = !_expanded);
                 },
@@ -261,16 +229,13 @@ class CatalogueMetadataSection extends StatelessWidget {
                 title: Text(
                   link.label.isEmpty ? context.tr('Reference') : link.label,
                 ),
-                subtitle: SelectableText(link.url),
                 trailing: IconButton(
                   tooltip: context.tr("Copy link"),
                   icon: const Icon(InkIcons.copy),
                   onPressed: () async {
                     await Clipboard.setData(ClipboardData(text: link.url));
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: LText('Link copied')),
-                      );
+                      notifyInk(context, 'Link copied');
                     }
                   },
                 ),
@@ -372,7 +337,7 @@ class _Label extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
     decoration: BoxDecoration(
       color: InkoraColors.of(context).raised,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: InkRadius.small,
     ),
     child: Text(label, style: Theme.of(context).textTheme.labelMedium),
   );

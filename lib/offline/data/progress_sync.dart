@@ -166,6 +166,22 @@ final class KomgaProgressRemote implements ProgressRemote {
     final token = CancelToken();
     cancellation?.whenCancelled.then((_) => token.cancel());
     if (cancellation?.isCancelled ?? false) token.cancel();
+    final content = _revisions[book];
+    // A catalogue completion of an EPUB has no locator: complete it at the
+    // last Readium position read just before this write.
+    if (target.documentLocator == null &&
+        target.completed &&
+        target.pageIndex == null &&
+        content != null &&
+        content.epub &&
+        content.positions.isNotEmpty) {
+      return client.updateEbookProgression(
+        book,
+        content.positions.last,
+        cancelToken: token,
+        modifiedAfter: target.version,
+      );
+    }
     if (target.documentLocator != null) {
       return client.updateEbookProgression(
         book,
@@ -185,6 +201,26 @@ final class KomgaProgressRemote implements ProgressRemote {
             cancelToken: token,
           );
   }
+}
+
+/// Whether [observed] is still the server state an explicit intent was based
+/// on. A catalogue baseline ([ProgressIntent.anyRevision]) has no content
+/// revision and, for ebooks, no locator: it matches the same completion and
+/// raster page (and server version when both are known); for an ebook only
+/// completion and whether progress exists. Other baselines need the exact
+/// observed version.
+bool matchesBaseline(ProgressSnapshot observed, ProgressSnapshot baseline) {
+  if (baseline.revision != ProgressIntent.anyRevision) {
+    return observed.sameVersion(baseline);
+  }
+  if (observed.completed != baseline.completed) return false;
+  if (observed.documentLocator != null) {
+    return (observed.pageIndex == null) == (baseline.pageIndex == null);
+  }
+  return observed.pageIndex == baseline.pageIndex &&
+      (baseline.version == null ||
+          observed.version == null ||
+          observed.version == baseline.version);
 }
 
 /// A single account worker preserves book ordering; a sent sequence is never
@@ -247,17 +283,25 @@ final class ProgressSync {
         await store.state(event, 'sending');
         final observed = await remote.read(event.bookId, cancellation: signal);
         if (!current) return;
-        if (observed.revision != event.revision) {
+        // Catalogue intents carry no revision: bind them to the server's.
+        final any = event.anyContent;
+        if (!any && observed.revision != event.revision) {
           await store.state(event, 'conflict', remote: observed);
           blocked.add(event.bookId);
           continue;
         }
+        final revision = any ? observed.revision : event.revision;
         final explicit =
             event.operation == ProgressOperation.rewind ||
             event.operation == ProgressOperation.markUnread;
         final target = switch (event.operation) {
-          ProgressOperation.markUnread => ProgressSnapshot(
-            revision: event.revision,
+          ProgressOperation.markUnread => ProgressSnapshot(revision: revision),
+          // A catalogue completion sends completed=true without a page, so a
+          // stale catalogue page count can never exceed the current content.
+          ProgressOperation.complete when any => ProgressSnapshot(
+            revision: revision,
+            version: observed.version,
+            completed: true,
           ),
           ProgressOperation.rewind => ProgressSnapshot(
             revision: event.revision,
@@ -309,7 +353,7 @@ final class ProgressSync {
         }
         if (explicit &&
             (event.baseline == null ||
-                !observed.sameVersion(event.baseline!))) {
+                !matchesBaseline(observed, event.baseline!))) {
           await store.state(event, 'conflict', remote: observed);
           blocked.add(event.bookId);
           continue;

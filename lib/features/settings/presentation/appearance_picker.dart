@@ -138,7 +138,7 @@ class _PaletteTile extends StatelessWidget {
             ? scheme.primary.withValues(alpha: .08)
             : Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: InkRadius.medium,
           side: BorderSide(
             color: selected ? scheme.primary : InkoraColors.of(context).border,
             width: selected ? 2 : 1,
@@ -154,7 +154,7 @@ class _PaletteTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: InkRadius.small,
                   child: SizedBox(
                     height: 48,
                     child: CustomPaint(painter: _ThemePreview(appearance)),
@@ -212,7 +212,7 @@ class _ThemePreview extends CustomPainter {
               size.width * w,
               size.height * h,
             ),
-            const Radius.circular(3),
+            const Radius.circular(InkRadius.s),
           ),
           Paint()..color = color,
         );

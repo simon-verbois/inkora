@@ -1,3 +1,5 @@
+import '../../app/widgets/inkora_widgets.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../app/l10n/app_strings.dart';
@@ -33,8 +35,8 @@ class _EbookMarginsDialogState extends State<EbookMarginsDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const LText('Page margins'),
+  Widget build(BuildContext context) => InkDialog(
+    title: 'Page margins',
     content: SizedBox(
       width: 560,
       child: SingleChildScrollView(

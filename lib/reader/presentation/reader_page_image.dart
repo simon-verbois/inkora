@@ -1,3 +1,4 @@
+import '../../app/theme/inkora_theme.dart';
 import '../../app/l10n/app_strings.dart';
 import '../../app/widgets/image_enhancement.dart';
 
@@ -243,7 +244,7 @@ class _ReaderPageImageState extends State<ReaderPageImage> {
             }
             return Center(
               child: ColoredBox(
-                color: Colors.black87,
+                color: InkoraColors.of(context).scrim,
                 child: Padding(
                   padding: const EdgeInsets.all(8),
                   child: SingleChildScrollView(
@@ -252,7 +253,9 @@ class _ReaderPageImageState extends State<ReaderPageImage> {
                       children: [
                         LText(
                           text,
-                          style: const TextStyle(color: Colors.white),
+                          style: TextStyle(
+                            color: InkoraColors.of(context).onScrim,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                         TextButton(

@@ -1,3 +1,5 @@
+import '../../app/theme/inkora_theme.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../app/l10n/app_strings.dart';
@@ -49,7 +51,7 @@ class EbookStylePicker extends StatelessWidget {
                         ),
                         padding: const EdgeInsets.all(16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: InkRadius.medium,
                         ),
                       ),
                       onPressed: () => onSelected(style),
@@ -58,17 +60,18 @@ class EbookStylePicker extends StatelessWidget {
                         children: [
                           Text(
                             'Aa',
-                            style: TextStyle(
-                              fontFamily:
-                                  style.font == 'baskerville' ||
-                                      style.font == 'serif'
-                                  ? 'LibreBaskerville'
-                                  : Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.fontFamily,
-                              fontSize: 28,
-                            ),
+                            style: Theme.of(context).textTheme.headlineMedium
+                                ?.copyWith(
+                                  color: style.background.inkColor,
+                                  fontFamily:
+                                      style.font == 'baskerville' ||
+                                          style.font == 'serif'
+                                      ? 'LibreBaskerville'
+                                      : Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.fontFamily,
+                                ),
                           ),
                           const SizedBox(height: 8),
                           LText(style.label),

@@ -1,6 +1,5 @@
 import '../features/library/presentation/reading_history_screen.dart';
 import 'inkora_page.dart';
-import 'widgets/branch_transition.dart';
 import '../app/l10n/app_strings.dart';
 import '../features/settings/presentation/setup_screen.dart';
 import 'icons/inkora_icons.dart';
@@ -15,10 +14,12 @@ import '../features/library/presentation/library_screen.dart';
 import '../features/library/presentation/catalogue_screen.dart';
 import '../features/library/presentation/catalogue_detail_screen.dart';
 import '../features/library/domain/catalogue.dart';
+import '../features/library/domain/catalogue_filters.dart';
 import '../features/settings/application/ui_preferences_provider.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/settings/presentation/servers_screen.dart';
 import '../features/settings/presentation/library_defaults_screen.dart';
+import '../features/settings/presentation/settings_workspace.dart';
 import '../reader/presentation/configured_reader_screen.dart';
 import '../offline/presentation/downloads_screen.dart';
 import 'widgets/inkora_shell.dart';
@@ -36,11 +37,22 @@ final routerProvider = Provider<GoRouter>((ref) {
     uiPreferencesProvider.select((value) => value.asData?.value.setupCompleted),
     (_, _) => refresh.notify(),
   );
-  Page<void> page(GoRouterState state, Widget child, {bool primary = false}) =>
+  Page<void> page(
+    GoRouterState state,
+    Widget child, {
+    bool primary = false,
+    bool reveal = false,
+    bool canPop = true,
+  }) =>
       (primary ||
           ref.read(uiPreferencesProvider).asData?.value.reduceMotion == true)
       ? NoTransitionPage(key: state.pageKey, child: child)
-      : InkoraPage(key: state.pageKey, child: child);
+      : InkoraPage(
+          key: state.pageKey,
+          reveal: reveal,
+          canPop: canPop,
+          child: child,
+        );
   final router = GoRouter(
     navigatorKey: rootNavigator,
     refreshListenable: refresh,
@@ -107,8 +119,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/connections',
         pageBuilder: (_, state) => page(state, const ConnectionScreen()),
       ),
-      // Old links share the same home branch, instead of creating a second
-      // catalogue navigator with independent filters/scroll/history.
+      // Old links share the retained Home catalogue and its filters/scroll.
       GoRoute(
         path: '/libraries',
         redirect: (_, state) => Uri(
@@ -116,29 +127,23 @@ final routerProvider = Provider<GoRouter>((ref) {
           query: state.uri.hasQuery ? state.uri.query : null,
         ).toString(),
       ),
-      StatefulShellRoute(
-        navigatorContainerBuilder: (_, shell, children) =>
-            BranchTransition(index: shell.currentIndex, children: children),
-        builder: (_, state, shell) =>
-            InkoraShell(navigationShell: shell, currentPath: state.uri.path),
-        branches: [
-          StatefulShellBranch(
+      ShellRoute(
+        builder: (_, state, child) =>
+            InkoraShell(currentPath: state.uri.path, child: child),
+        routes: [
+          GoRoute(
+            path: '/',
+            pageBuilder: (_, state) =>
+                page(state, const LibraryScreen(), primary: true),
             routes: [
               GoRoute(
-                path: '/',
+                path: 'history',
                 pageBuilder: (_, state) =>
-                    page(state, const LibraryScreen(), primary: true),
-                routes: [
-                  GoRoute(
-                    path: 'history',
-                    pageBuilder: (_, state) =>
-                        page(state, const ReadingHistoryScreen()),
-                  ),
-                ],
+                    page(state, const ReadingHistoryScreen(), reveal: true),
               ),
               GoRoute(
                 name: 'catalogue',
-                path: '/catalogue/:kind',
+                path: 'catalogue/:kind',
                 redirect: (_, state) {
                   if (state.pathParameters['kind'] != 'book') return null;
                   final series = state.uri.queryParameters['series'];
@@ -154,7 +159,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                   if (kind == null) {
                     return page(
                       state,
-                      const Center(child: LText('Unknown catalogue section.')),
+                      const Center(
+                        child: InkEmptyState(
+                          icon: InkIcons.compass,
+                          title: 'Unknown catalogue section.',
+                        ),
+                      ),
                     );
                   }
                   final query = state.uri.queryParameters;
@@ -178,13 +188,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                       initialSort: CatalogueSort.values
                           .where((value) => value.name == query['sort'])
                           .firstOrNull,
+                      initialFilters: query['genre'] == null
+                          ? const MetadataFilters()
+                          : MetadataFilters.from({
+                              CatalogueFacet.genres: query['genre']!,
+                            }),
                     ),
                   );
                 },
               ),
               GoRoute(
                 name: 'catalogue-detail',
-                path: '/catalogue/:kind/:id',
+                path: 'catalogue/:kind/:id',
                 routes: [
                   GoRoute(
                     name: 'series-reader',
@@ -210,7 +225,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                   return page(
                     state,
                     kind == null
-                        ? const Center(child: LText('Unknown catalogue item.'))
+                        ? const Center(
+                            child: InkEmptyState(
+                              icon: InkIcons.compass,
+                              title: 'Unknown catalogue item.',
+                            ),
+                          )
                         : CatalogueDetailScreen(
                             kind: kind,
                             id: state.pathParameters['id']!,
@@ -218,15 +238,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                   );
                 },
               ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
               GoRoute(
                 name: 'downloads',
-                path: '/downloads',
+                path: 'downloads',
                 pageBuilder: (_, state) =>
-                    page(state, const DownloadsScreen(), primary: true),
+                    page(state, const DownloadsScreen(), reveal: true),
                 routes: [
                   GoRoute(path: 'queue', redirect: (_, _) => '/downloads'),
                   GoRoute(
@@ -238,79 +254,97 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ),
                 ],
               ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/settings',
-                pageBuilder: (_, state) =>
-                    page(state, const SettingsScreen(), primary: true),
+              ShellRoute(
+                // The entire settings workspace belongs to this page. Keeping
+                // its sidebar outside the settings route resizes Home before
+                // the transition and leaves the sidebar outside its animation.
+                pageBuilder: (_, state, child) => page(
+                  state,
+                  SettingsWorkspace(
+                    path: state.uri.path,
+                    active: true,
+                    child: child,
+                  ),
+                  reveal: true,
+                  // Only the visible category may accept predictive Back when
+                  // the inner Navigator has a page above its settings root.
+                  canPop: state.uri.path == '/settings',
+                ),
                 routes: [
                   GoRoute(
-                    path: 'servers',
+                    path: 'settings',
                     pageBuilder: (_, state) =>
-                        page(state, const ServersScreen()),
+                        page(state, const SettingsScreen(), primary: true),
                     routes: [
                       GoRoute(
-                        path: 'add',
-                        pageBuilder: (_, state) => page(
-                          state,
-                          const ConnectionScreen(addServer: true),
-                        ),
-                      ),
-                    ],
-                  ),
-                  GoRoute(
-                    path: 'library-defaults',
-                    redirect: (_, state) =>
-                        state.uri.path == '/settings/library-defaults'
-                        ? '/settings/reading'
-                        : null,
-                    pageBuilder: (_, state) =>
-                        page(state, const LibraryDefaultsScreen()),
-                    routes: [
-                      GoRoute(
-                        path: ':id',
-                        pageBuilder: (_, state) => page(
-                          state,
-                          LibraryDefaultsScreen(
-                            libraryId: state.pathParameters['id'],
+                        path: 'servers',
+                        pageBuilder: (_, state) =>
+                            page(state, const ServersScreen()),
+                        routes: [
+                          GoRoute(
+                            path: 'add',
+                            pageBuilder: (_, state) => page(
+                              state,
+                              const ConnectionScreen(addServer: true),
+                            ),
                           ),
-                        ),
+                        ],
+                      ),
+                      GoRoute(
+                        path: 'library-defaults',
+                        redirect: (_, state) =>
+                            state.uri.path == '/settings/library-defaults'
+                            ? '/settings/reading'
+                            : null,
+                        pageBuilder: (_, state) =>
+                            page(state, const LibraryDefaultsScreen()),
+                        routes: [
+                          GoRoute(
+                            path: ':id',
+                            pageBuilder: (_, state) => page(
+                              state,
+                              LibraryDefaultsScreen(
+                                libraryId: state.pathParameters['id'],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      GoRoute(
+                        path: ':section',
+                        redirect: (_, state) =>
+                            state.pathParameters['section'] == 'sync'
+                            ? '/settings'
+                            : state.pathParameters['section'] == 'account'
+                            ? '/settings/servers'
+                            : null,
+                        pageBuilder: (_, state) {
+                          final section = state.pathParameters['section'];
+                          return page(
+                            state,
+                            const {
+                                  'transfer',
+                                  'appearance',
+                                  'language',
+                                  'gestures',
+                                  'reading',
+                                  'reading-defaults',
+                                  'quality',
+                                  'downloads',
+                                  'accessibility',
+                                  'about',
+                                }.contains(section)
+                                ? SettingsScreen(section: section)
+                                : const Center(
+                                    child: InkEmptyState(
+                                      icon: InkIcons.compass,
+                                      title: 'Unknown settings section.',
+                                    ),
+                                  ),
+                          );
+                        },
                       ),
                     ],
-                  ),
-                  GoRoute(
-                    path: ':section',
-                    redirect: (_, state) =>
-                        state.pathParameters['section'] == 'sync'
-                        ? '/settings'
-                        : state.pathParameters['section'] == 'account'
-                        ? '/settings/servers'
-                        : null,
-                    pageBuilder: (_, state) {
-                      final section = state.pathParameters['section'];
-                      return page(
-                        state,
-                        const {
-                              'transfer',
-                              'appearance',
-                              'language',
-                              'gestures',
-                              'reading',
-                              'reading-defaults',
-                              'quality',
-                              'downloads',
-                              'accessibility',
-                              'about',
-                            }.contains(section)
-                            ? SettingsScreen(section: section)
-                            : const Center(
-                                child: LText('Unknown settings section.'),
-                              ),
-                      );
-                    },
                   ),
                 ],
               ),

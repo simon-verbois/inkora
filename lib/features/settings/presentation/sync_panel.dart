@@ -20,7 +20,7 @@ class _SyncPanelState extends ConsumerState<SyncPanel> {
     final events = ref.watch(progressIntentsProvider);
     final pending = events.asData?.value ?? [];
     return InkPanel(
-      title: context.tr("Reading progress"),
+      title: "Reading progress",
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -59,12 +59,9 @@ class _SyncPanelState extends ConsumerState<SyncPanel> {
                           .replay();
                     } catch (_) {
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: LText(
-                              'Sync could not finish. Your progress remains saved locally.',
-                            ),
-                          ),
+                        notifyInk(
+                          context,
+                          'Sync could not finish. Your progress remains saved locally.',
                         );
                       }
                     } finally {

@@ -1,3 +1,4 @@
+import '../../features/library/presentation/progress_format.dart';
 import 'reader_chrome.dart';
 import 'reading_colors.dart';
 import '../../app/l10n/app_strings.dart';
@@ -256,30 +257,34 @@ class _ReaderViewportState extends State<ReaderViewport>
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: widget.onToggleControls,
-                child: ColoredBox(
-                  color: background,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return settings.mode == ReadingMode.webtoon
-                          ? _WebtoonViewport(
-                              key: ValueKey(
-                                'webtoon-${widget.reader.manifest.revision}',
-                              ),
-                              reader: widget.reader,
-                              settings: settings,
-                              locator: _locator,
-                              onPosition: _position,
-                            )
-                          : _PagedViewport(
-                              key: _pagedKey,
-                              reader: widget.reader,
-                              settings: settings,
-                              locator: _locator,
-                              layout: _pagedLayout!,
-                              onPosition: _position,
-                              onTap: widget.onToggleControls,
-                            );
-                    },
+                // Screen readers announce what the page tap does.
+                child: Semantics(
+                  label: context.tr('Reading controls'),
+                  child: ColoredBox(
+                    color: background,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return settings.mode == ReadingMode.webtoon
+                            ? _WebtoonViewport(
+                                key: ValueKey(
+                                  'webtoon-${widget.reader.manifest.revision}',
+                                ),
+                                reader: widget.reader,
+                                settings: settings,
+                                locator: _locator,
+                                onPosition: _position,
+                              )
+                            : _PagedViewport(
+                                key: _pagedKey,
+                                reader: widget.reader,
+                                settings: settings,
+                                locator: _locator,
+                                layout: _pagedLayout!,
+                                onPosition: _position,
+                                onTap: widget.onToggleControls,
+                              );
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -311,45 +316,25 @@ class _ReaderViewportState extends State<ReaderViewport>
                                 const LText(
                                   'Reading position could not be saved.',
                                 ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
+                              ReaderProgressLine(
+                                position: pageShortLabel(
+                                  AppStrings.of(context),
+                                  pages.first,
+                                  pages.last,
                                 ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: LText(
-                                        'Reading progress',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelMedium,
-                                      ),
-                                    ),
-                                    Text(
-                                      pages.length > 1
-                                          ? context.tr('{0}–{1} / {2}', [
-                                              pages.first + 1,
-                                              pages.last + 1,
-                                              count,
-                                            ])
-                                          : context.tr('{0} / {1}', [
-                                              position.pageIndex + 1,
-                                              count,
-                                            ]),
-                                      key: const Key('reader-position'),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelMedium,
-                                    ),
-                                  ],
+                                detail: readerRemainingLabel(
+                                  AppStrings.of(context),
+                                  last: pages.last,
+                                  count: count,
                                 ),
                               ),
                               ReaderSeekBar(
                                 position: position.pageIndex,
                                 count: count,
-                                previewLabel: (page) => context.tr(
-                                  'Page {0}/{1}',
-                                  [page + 1, count],
+                                previewLabel: (page) => pagePositionLabel(
+                                  AppStrings.of(context),
+                                  page,
+                                  count,
                                 ),
                                 onSeek: _jump,
                                 onPrevious: hasPrevious
@@ -803,10 +788,13 @@ class _ZoomSpreadState extends State<_ZoomSpread> {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: widget.onTap,
-          child: SizedBox.expand(
-            child: widget.fit == ReadingFit.width
-                ? SingleChildScrollView(child: spread)
-                : Center(child: spread),
+          child: Semantics(
+            label: context.tr('Reading controls'),
+            child: SizedBox.expand(
+              child: widget.fit == ReadingFit.width
+                  ? SingleChildScrollView(child: spread)
+                  : Center(child: spread),
+            ),
           ),
         ),
       );

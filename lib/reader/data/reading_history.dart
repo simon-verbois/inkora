@@ -30,15 +30,18 @@ final class ReadingHistoryStore {
     });
   }
 
-  Stream<List<ReadingHistoryData>> watch(int limit) =>
-      (database.select(database.readingHistory)
-            ..where((r) => r.accountId.equals(account))
-            ..orderBy([
-              (r) => OrderingTerm.desc(r.openedAt),
-              (r) => OrderingTerm.asc(r.bookId),
-            ])
-            ..limit(limit))
-          .watch();
+  SimpleSelectStatement<$ReadingHistoryTable, ReadingHistoryData> _recent(
+    int limit,
+  ) => database.select(database.readingHistory)
+    ..where((r) => r.accountId.equals(account))
+    ..orderBy([
+      (r) => OrderingTerm.desc(r.openedAt),
+      (r) => OrderingTerm.asc(r.bookId),
+    ])
+    ..limit(limit);
+
+  /// The newest [limit] opens (reading_history_recent index).
+  Future<List<ReadingHistoryData>> recent(int limit) => _recent(limit).get();
   Future<void> clear() => (database.delete(
     database.readingHistory,
   )..where((r) => r.accountId.equals(account))).go();

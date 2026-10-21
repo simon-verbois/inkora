@@ -6,12 +6,58 @@ import 'package:flutter/material.dart';
 
 import '../icons/inkora_icons.dart';
 
+/// Spacing scale (multiples of 4). Odd historical values (6, 10, 20) round to
+/// the nearest step; see docs/design/UI_STANDARDS.md.
+abstract final class InkSpace {
+  static const double xs = 4;
+  static const double sm = 8;
+  static const double md = 12;
+  static const double lg = 16;
+  static const double xl = 24;
+  static const double xxl = 32;
+}
+
+/// Four corner radii: covers/badges [s], tiles/menus [m], panels/sheets [l],
+/// chips/buttons [pill].
+abstract final class InkRadius {
+  static const double s = 6;
+  static const double m = 12;
+  static const double l = 20;
+  static const double pill = 999;
+  static const small = BorderRadius.all(Radius.circular(s));
+  static const medium = BorderRadius.all(Radius.circular(m));
+  static const large = BorderRadius.all(Radius.circular(l));
+  static const round = BorderRadius.all(Radius.circular(pill));
+}
+
+/// Type roles over the Material text theme. Widgets pick a role instead of an
+/// inline font size or weight.
+extension InkTextRoles on TextTheme {
+  /// Screen and detail-page titles.
+  TextStyle? get screenTitle => headlineSmall;
+
+  /// Section and panel headings.
+  TextStyle? get sectionTitle =>
+      titleMedium?.copyWith(fontWeight: FontWeight.w700);
+
+  /// Sheet and dialog titles.
+  TextStyle? get sheetTitle => titleLarge;
+
+  /// Running text.
+  TextStyle? get body => bodyMedium;
+
+  /// Metadata and progress lines.
+  TextStyle? get meta => bodySmall;
+}
+
 /// Shared geometry. Screens use these tokens rather than independent constants.
 abstract final class InkoraLayout {
-  static const double space = 12;
-  static const double pagePadding = 16;
-  static const double radius = 20;
+  static const double radius = InkRadius.l;
   static const double touchTarget = 48;
+
+  /// Painted button/chip height; Material keeps a separate 48 dp hit region.
+  /// A minimum rather than a fixed height lets scaled labels grow.
+  static const double controlHeight = 40;
   static const double maxContentWidth = 1200;
   static const double maxSettingsWidth = 760;
   static const double coverRatio = 0.7;
@@ -25,8 +71,22 @@ class InkoraColors extends ThemeExtension<InkoraColors> {
     required this.border,
     required this.heading,
     required this.success,
+    required this.danger,
+    required this.scrim,
+    required this.onScrim,
   });
-  final Color panel, raised, border, heading, success;
+  final Color panel, raised, border, heading;
+
+  /// Completed/read state and positive confirmation.
+  final Color success;
+
+  /// Destructive actions and failures.
+  final Color danger;
+
+  /// Overlay fill for badges and controls drawn over cover artwork or reader
+  /// pages; [onScrim] is its foreground. Artwork is theme independent, so the
+  /// scrim stays dark in every appearance.
+  final Color scrim, onScrim;
 
   static InkoraColors of(BuildContext context) {
     final theme = Theme.of(context);
@@ -37,6 +97,9 @@ class InkoraColors extends ThemeExtension<InkoraColors> {
           border: theme.colorScheme.outline,
           heading: theme.colorScheme.onSurface,
           success: theme.colorScheme.primary,
+          danger: theme.colorScheme.error,
+          scrim: AppearancePalette.scrim,
+          onScrim: AppearancePalette.onScrim,
         );
   }
 
@@ -47,12 +110,18 @@ class InkoraColors extends ThemeExtension<InkoraColors> {
     Color? border,
     Color? heading,
     Color? success,
+    Color? danger,
+    Color? scrim,
+    Color? onScrim,
   }) => InkoraColors(
     panel: panel ?? this.panel,
     raised: raised ?? this.raised,
     border: border ?? this.border,
     heading: heading ?? this.heading,
     success: success ?? this.success,
+    danger: danger ?? this.danger,
+    scrim: scrim ?? this.scrim,
+    onScrim: onScrim ?? this.onScrim,
   );
 
   @override
@@ -64,6 +133,9 @@ class InkoraColors extends ThemeExtension<InkoraColors> {
           border: Color.lerp(border, other.border, t)!,
           heading: Color.lerp(heading, other.heading, t)!,
           success: Color.lerp(success, other.success, t)!,
+          danger: Color.lerp(danger, other.danger, t)!,
+          scrim: Color.lerp(scrim, other.scrim, t)!,
+          onScrim: Color.lerp(onScrim, other.onScrim, t)!,
         );
 }
 
@@ -89,6 +161,7 @@ abstract final class InkoraTheme {
     final secondary = dark ? const Color(0xFFBBC3CC) : const Color(0xFF625C55);
     final amber = palette.accent;
     final border = dark ? const Color(0xFF49535F) : const Color(0xFFBFAE95);
+    final danger = palette.danger(dark);
     final scheme =
         ColorScheme.fromSeed(seedColor: amber, brightness: brightness).copyWith(
           primary: amber,
@@ -102,10 +175,10 @@ abstract final class InkoraTheme {
           onSurfaceVariant: secondary,
           outline: border,
           surfaceContainerHighest: raised,
+          error: danger,
+          onError: dark ? const Color(0xFF3B0907) : Colors.white,
         );
-    final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(InkoraLayout.radius),
-    );
+    const shape = RoundedRectangleBorder(borderRadius: InkRadius.large);
     final base = ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
@@ -120,7 +193,10 @@ abstract final class InkoraTheme {
           heading:
               palette.heading ??
               (dark ? const Color(0xFFFFD98E) : const Color(0xFF613B14)),
-          success: dark ? const Color(0xFFBADA8A) : const Color(0xFF386324),
+          success: palette.success(dark),
+          danger: danger,
+          scrim: AppearancePalette.scrim,
+          onScrim: AppearancePalette.onScrim,
         ),
       ],
     );
@@ -158,20 +234,18 @@ abstract final class InkoraTheme {
           horizontal: 14,
           vertical: 14,
         ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(InkoraLayout.radius),
-        ),
+        border: const OutlineInputBorder(borderRadius: InkRadius.large),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(InkoraLayout.radius),
+          borderRadius: InkRadius.large,
           borderSide: BorderSide(color: border),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(48, 48),
+          minimumSize: const Size(48, InkoraLayout.controlHeight),
           backgroundColor: palette.button ?? action,
           foregroundColor: palette.onButton ?? onAction,
-          shape: shape,
+          shape: const StadiumBorder(),
           textStyle: base.textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.w700,
           ),
@@ -179,25 +253,32 @@ abstract final class InkoraTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size(48, 48),
+          minimumSize: const Size(48, InkoraLayout.controlHeight),
           foregroundColor: text,
           side: BorderSide(color: border),
-          shape: shape,
+          shape: const StadiumBorder(),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+        style: TextButton.styleFrom(
+          minimumSize: const Size(48, InkoraLayout.controlHeight),
+        ),
       ),
       iconButtonTheme: IconButtonThemeData(
-        style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
+        style: IconButton.styleFrom(
+          minimumSize: const Size.square(InkoraLayout.controlHeight),
+          tapTargetSize: MaterialTapTargetSize.padded,
+        ),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: panel,
         surfaceTintColor: Colors.transparent,
         showDragHandle: true,
-        modalBarrierColor: Colors.black54,
+        modalBarrierColor: AppearancePalette.barrier,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(InkRadius.l),
+          ),
         ),
       ),
       dividerTheme: DividerThemeData(
@@ -207,11 +288,17 @@ abstract final class InkoraTheme {
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: amber,
         linearTrackColor: raised,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: InkRadius.small,
       ),
       chipTheme: base.chipTheme.copyWith(
+        padding: const EdgeInsets.all(InkSpace.xs),
+        labelPadding: const EdgeInsets.symmetric(
+          horizontal: InkSpace.sm,
+          vertical: InkSpace.xs,
+        ),
         backgroundColor: raised,
         side: BorderSide(color: border),
+        shape: const StadiumBorder(),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: panel,
@@ -221,7 +308,7 @@ abstract final class InkoraTheme {
       popupMenuTheme: PopupMenuThemeData(
         color: panel,
         surfaceTintColor: Colors.transparent,
-        shape: shape,
+        shape: const RoundedRectangleBorder(borderRadius: InkRadius.medium),
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: raised,

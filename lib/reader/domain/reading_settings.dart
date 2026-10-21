@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'ebook_settings.dart';
 export 'ebook_settings.dart';
 import 'webtoon_quality.dart';
@@ -185,9 +187,8 @@ final class ReadingSettings {
            layout ??
            (spreads != null
                ? (spreads ? ReadingLayout.automatic : ReadingLayout.single)
-               : mode == ReadingMode.manga
-               ? ReadingLayout.doublePage
-               : mode == ReadingMode.comics
+               : mode == ReadingMode.manga || mode == ReadingMode.comics
+               // Two pages only where they stay legible (see useDoublePages).
                ? ReadingLayout.automatic
                : ReadingLayout.single);
   final ReadingMode mode;
@@ -216,8 +217,14 @@ final class ReadingSettings {
   bool useDoublePages(double width, double height) => switch (layout) {
     ReadingLayout.single => false,
     ReadingLayout.doublePage => true,
-    ReadingLayout.automatic => width >= 600 && width > height,
+    ReadingLayout.automatic => automaticSpreads(width, height),
   };
+
+  /// Default two-page rule: a landscape window at least 600 wide, or a
+  /// tablet-sized window (shortest side at least 600) in either orientation.
+  /// Phone portrait windows, including split screens, show single pages.
+  static bool automaticSpreads(double width, double height) =>
+      (width >= 600 && width > height) || math.min(width, height) >= 600;
 
   @override
   bool operator ==(Object other) =>

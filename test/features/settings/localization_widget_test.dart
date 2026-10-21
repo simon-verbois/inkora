@@ -1,3 +1,5 @@
+import '../../support/home_navigation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/l10n/app_strings.dart';
@@ -29,12 +31,16 @@ void main() {
         addTearDown(() => harness.close(tester));
         await harness.mount(tester);
         final strings = AppStrings(language);
-        expect(find.text(strings.text('Libraries')), findsOneWidget);
+        expect(find.byTooltip(strings.text('Settings')), findsOneWidget);
+        expect(find.byTooltip(strings.text('Downloads')), findsOneWidget);
         expect(find.text('Moonlit District'), findsWidgets);
-        await tester.tap(find.byKey(const Key('navigation-settings')));
+        await openHomeDestination(tester, 'settings');
         await tester.pumpAndSettle();
         expect(find.text(strings.text('Settings')), findsWidgets);
-        expect(find.text(strings.text('Reading gestures')), findsOneWidget);
+        expect(find.text(strings.text('Gestures')), findsOneWidget);
+        for (final group in ['Account', 'Application', 'Data']) {
+          expect(find.text(strings.text(group)), findsOneWidget);
+        }
         expect(find.text(strings.text('Language')), findsOneWidget);
         harness.container.read(routerProvider).push<void>('/settings/language');
         await tester.pumpAndSettle();
@@ -67,5 +73,12 @@ void main() {
     expect(AppStrings('cs').quantity(3, 'screen'), '3 obrazovky');
     expect(AppStrings('ro').quantity(20, 'update'), '20 de actualizări');
     expect(AppStrings('hu').quantity(4, 'screen'), '4 képernyő');
+    // Reader "pages left" phrases agree with their own count.
+    expect(AppStrings('en').quantity(1, 'pageLeft'), '1 page left');
+    expect(AppStrings('fr').quantity(15, 'pageLeft'), '15 pages restantes');
+    expect(polish.quantity(3, 'pageLeft'), '3 strony do końca');
+    expect(polish.quantity(15, 'pageLeft'), '15 stron do końca');
+    expect(AppStrings('cs').quantity(2, 'pageLeft'), '2 strany do konce');
+    expect(AppStrings('ro').quantity(20, 'pageLeft'), '20 de pagini rămase');
   });
 }

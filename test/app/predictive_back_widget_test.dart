@@ -1,3 +1,5 @@
+import '../support/home_navigation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -51,11 +53,11 @@ void main() {
             addTearDown(() => harness.close(tester));
             await harness.mount(tester);
             final router = harness.container.read(routerProvider);
-            // Keep a poppable inactive branch. Only the top reader may accept
-            // the gesture, whether its origin is Home or series details.
+            // Visit another secondary page first. Only the root reader may
+            // accept gestures over the covered Home or series navigator.
             router.go('/settings/appearance');
             await tester.pumpAndSettle();
-            router.go(fromHome ? '/' : '/');
+            router.go('/');
             await tester.pumpAndSettle();
             if (fromHome) {
               await tester.tap(find.byKey(const ValueKey('resume-book-a')));
@@ -104,12 +106,11 @@ void main() {
               await tester.pumpAndSettle();
             }
             expect(find.byType(CatalogueDetailScreen), findsNothing);
-            await tester.tap(find.byKey(const Key('navigation-settings')));
+            await openHomeDestination(tester, 'settings');
             await tester.pumpAndSettle();
             expect(
               find.byWidgetPredicate(
-                (widget) =>
-                    widget is SettingsScreen && widget.section == 'appearance',
+                (widget) => widget is SettingsScreen && widget.section == null,
               ),
               findsOneWidget,
             );

@@ -109,16 +109,21 @@ final downloadedBooksProvider = StreamProvider<List<DownloadedBook>>((
     yield* coordinator.store.completedBooks();
   }
 });
-final downloadedSeriesProvider = StreamProvider<List<DownloadedSeries>>((
-  ref,
-) async* {
+
+/// Identities with a completed download, for cover badges. Widgets select a
+/// single `contains` result so unrelated downloads do not rebuild them.
+final downloadedIdentitiesProvider = StreamProvider<Set<String>>((ref) async* {
   final coordinator = await ref.watch(offlineCoordinatorProvider.future);
   if (coordinator == null) {
-    yield [];
+    yield const <String>{};
   } else {
-    yield* coordinator.store.completedSeries();
+    yield* coordinator.store.completedIdentities();
   }
 });
+
+/// Completed downloads grouped by series (ebooks individually), with each
+/// book's effective reading state and committed bytes. Re-queried only when a
+/// job changes state or a book's reading classification changes.
 final downloadedReadingSeriesProvider =
     StreamProvider.autoDispose<List<DownloadedSeries>>((ref) async* {
       final coordinator = await ref.watch(offlineCoordinatorProvider.future);
@@ -128,6 +133,26 @@ final downloadedReadingSeriesProvider =
       }
       yield* coordinator.store.completedSeries(includeReadingStatus: true);
     });
+
+/// Storage summary of the Downloads page and download settings. Recomputed
+/// only when a job is added, removed or changes state: staged-page progress
+/// writes do not re-run the aggregate query.
+final downloadStorageProvider = FutureProvider.autoDispose<DownloadStorage?>((
+  ref,
+) async {
+  ref.watch(
+    downloadsProvider.select(
+      (jobs) =>
+          jobs.asData?.value
+              .map((job) => '${job.id}:${job.state.name}')
+              .join(',') ??
+          '',
+    ),
+  );
+  final coordinator = await ref.watch(offlineCoordinatorProvider.future);
+  return coordinator?.store.storage();
+});
+
 final progressIntentsProvider = StreamProvider<List<ProgressIntent>>((
   ref,
 ) async* {

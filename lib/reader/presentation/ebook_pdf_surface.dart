@@ -1,3 +1,4 @@
+import '../../app/theme/appearance_palette.dart';
 import '../domain/ebook_locator.dart';
 import 'reading_colors.dart';
 import '../../app/l10n/app_strings.dart';
@@ -89,7 +90,7 @@ class _EbookPdfSurfaceState extends State<EbookPdfSurface>
 
   void _paintBookmarks(Canvas canvas, Rect pageRect, PdfPage page) {
     final paint = Paint()
-      ..color = const Color(0xffb47d20)
+      ..color = AppearancePalette.readerHighlightLine
       ..strokeWidth = 2;
     for (final rect in _bookmarkRects[page.pageNumber] ?? const <PdfRect>[]) {
       final marker = rect.toRectInDocument(page: page, pageRect: pageRect);

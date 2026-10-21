@@ -50,16 +50,13 @@ class ReaderDetailsButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => IconButton(
     key: const Key('reader-details'),
+    // One details glyph for both destinations; the tooltip names the target.
     tooltip: context.tr(
       !manifest.isDocument && manifest.seriesId?.isNotEmpty == true
-          ? 'Open series'
+          ? 'Series details'
           : 'Book details',
     ),
-    icon: Icon(
-      !manifest.isDocument && manifest.seriesId?.isNotEmpty == true
-          ? InkIcons.books
-          : InkIcons.info,
-    ),
+    icon: const Icon(InkIcons.info),
     onPressed: onPressed ?? () => openReaderDetails(context, manifest),
   );
 }

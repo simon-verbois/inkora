@@ -17,7 +17,21 @@ import '../../features/library/domain/catalogue_metadata.dart';
 
 const defaultDownloadQuota = 2 * 1024 * 1024 * 1024;
 
-typedef DownloadedBook = ({DownloadJob job, CatalogueItem item});
+/// Device storage used by offline reading. [downloaded] and [reserved] count
+/// against the download [quota]; [cached] (reader page cache) does not.
+typedef DownloadStorage = ({
+  int downloaded,
+  int reserved,
+  int cached,
+  int quota,
+});
+
+/// Committed download bytes of job `j`, through the reader_assets_book index.
+const _jobBytes =
+    "(SELECT COALESCE(SUM(a.byte_length), 0) FROM reader_assets a WHERE a.tier='download' AND a.account_id=j.account_id AND a.book_id=j.book_id AND a.revision=j.revision)";
+
+/// One completed download: its job, catalogue item and committed bytes.
+typedef DownloadedBook = ({DownloadJob job, CatalogueItem item, int bytes});
 typedef DownloadedSeries = ({
   CatalogueItem item,
   CatalogueItem artwork,
@@ -170,6 +184,23 @@ final class DownloadStore {
     return committed.read<int>('n') + reserved.read<int>('n');
   }
 
+  /// Storage summary in one aggregate query (no directory scan). Download and
+  /// reservation totals use the same device-wide scope as [occupied].
+  Future<DownloadStorage> storage() async {
+    final row = await database.customSelect(
+      '''SELECT
+        (SELECT COALESCE(SUM(byte_length), 0) FROM reader_assets WHERE tier = 'download') AS downloaded,
+        (SELECT COALESCE(SUM(reserved_bytes), 0) FROM download_jobs WHERE state NOT IN ('complete', 'cancelled')) AS reserved,
+        (SELECT COALESCE(SUM(byte_length), 0) FROM reader_assets WHERE tier = 'cache') AS cached''',
+    ).getSingle();
+    return (
+      downloaded: row.read<int>('downloaded'),
+      reserved: row.read<int>('reserved'),
+      cached: row.read<int>('cached'),
+      quota: quota,
+    );
+  }
+
   Future<String> enqueue(ReaderManifest manifest) =>
       database.transaction(() async {
         if (manifest.accountId != accountId) {
@@ -240,9 +271,34 @@ final class DownloadStore {
 
   /// One published, account-scoped snapshot; covers reuse catalogue cache keys.
   /// Saved manifests still identify books removed from the remote catalogue.
+  /// Catalogue identities (`book:ID`, `series:ID`) with at least one
+  /// completed download. Reads two columns through SQL (no manifest decode)
+  /// and emits only when the set changes, so job progress writes do not
+  /// rebuild cover badges.
+  Stream<Set<String>> completedIdentities() => database
+      .customSelect(
+        """SELECT DISTINCT j.book_id AS book_id, json_extract(j.manifest, '\$.seriesId') AS series_id
+        FROM download_jobs j WHERE j.account_id=? AND j.state='complete'""",
+        variables: [Variable(accountId)],
+        readsFrom: {database.downloadJobs},
+      )
+      .watch()
+      .map(
+        (rows) => {
+          for (final row in rows) ...[
+            'book:${row.read<String>('book_id')}',
+            if (row.readNullable<String>('series_id') case final String id
+                when id.isNotEmpty)
+              'series:$id',
+          ],
+        },
+      )
+      .distinct((a, b) => a.length == b.length && a.containsAll(b));
+
   Stream<List<DownloadedBook>> completedBooks() => database
       .customSelect(
-        '''SELECT j.*, e.modified AS cover_modified, e.descriptive_metadata AS book_metadata
+        '''SELECT j.*, e.modified AS cover_modified, e.descriptive_metadata AS book_metadata,
+          $_jobBytes AS download_bytes
         FROM download_jobs j
         LEFT JOIN catalogue_snapshots s ON s.account_id=j.account_id
         LEFT JOIN catalogue_entries e ON e.account_id=j.account_id
@@ -286,10 +342,17 @@ final class DownloadStore {
       libraryId: manifest.libraryId,
       seriesId: manifest.seriesId,
       pageCount: manifest.pages.length,
+      number: row.data['book_number'] is num
+          ? (row.data['book_number'] as num).toDouble()
+          : 0,
       modified:
           row.readNullable<int>('cover_modified') ?? manifest.revision.hashCode,
     );
-    return (job: job, item: item);
+    return (
+      job: job,
+      item: item,
+      bytes: row.readNullable<int>('download_bytes') ?? 0,
+    );
   }
 
   /// Group completed volumes using only the account's published generation.
@@ -301,7 +364,8 @@ final class DownloadStore {
         '''SELECT j.*, ${includeReadingStatus ? CatalogueStore.readingState('j', id: 'book_id', metadata: 'b.descriptive_metadata') : 'NULL'} AS reading_state, b.modified AS cover_modified,
       COALESCE(b.series_id, json_extract(j.manifest, '\$.seriesId')) AS parent_id,
       b.number AS book_number, b.descriptive_metadata AS book_metadata, p.descriptive_metadata AS series_metadata, p.title AS series_title,
-      p.modified AS series_modified, p.library_id AS series_library
+      p.modified AS series_modified, p.library_id AS series_library,
+      $_jobBytes AS download_bytes
     FROM download_jobs j
     LEFT JOIN catalogue_snapshots s ON s.account_id=j.account_id
     LEFT JOIN catalogue_entries b ON b.account_id=j.account_id

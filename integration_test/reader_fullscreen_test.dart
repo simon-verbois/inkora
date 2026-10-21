@@ -49,7 +49,7 @@ void main() {
       expect(await hidden(), true);
       await tester.tapAt(tester.getCenter(find.byType(ReaderScreen)));
       await settleBars();
-      expect(find.byTooltip('Reading preferences'), findsOneWidget);
+      expect(find.byTooltip('Settings'), findsOneWidget);
       expect(find.byKey(const Key('reader-page-slider')), findsOneWidget);
       expect(await hidden(), false);
       await tester.tapAt(tester.getCenter(find.byType(ReaderScreen)));

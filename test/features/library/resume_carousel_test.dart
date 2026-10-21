@@ -57,7 +57,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(
-        tester.widget<CatalogueCard>(find.byType(CatalogueCard)).item.canOpen,
+        tester.widget<InkCoverTile>(find.byType(InkCoverTile)).item.canOpen,
         isFalse,
       );
       await tester.tap(find.byKey(const ValueKey('resume-removed')));
@@ -117,6 +117,7 @@ void main() {
                 'book-$index',
                 title: 'A long saved book title for volume ${index + 1}',
                 seriesId: 'series-$index',
+                number: index + 1.0,
               ),
               seriesTitle: 'A long saved series title ${index + 1}',
               pageIndex: index + 1,
@@ -173,8 +174,22 @@ void main() {
             ),
           );
           await tester.pumpAndSettle();
-          expect(find.text('In progress').hitTestable(), findsOneWidget);
-          expect(find.text('0/10 pages').hitTestable(), findsOneWidget);
+          expect(
+            find
+                .text(
+                  scale == 1
+                      ? 'A long saved book title for volume 2 · In progress'
+                      : 'In progress',
+                )
+                .hitTestable(),
+            findsOneWidget,
+          );
+          expect(
+            find
+                .text('A long saved book title for volume 1 · Up next')
+                .hitTestable(),
+            findsOneWidget,
+          );
           expect(
             find.descendant(
               of: find.byKey(const ValueKey('resume-book-0')),
@@ -212,28 +227,26 @@ void main() {
             ),
           );
           await tester.pumpAndSettle();
-          expect(
-            find.text(scale == 1 ? 'Page 5/10' : '40% read').hitTestable(),
-            findsOneWidget,
+          final pages = find.text(
+            scale == 1 ? 'A long saved book title for volume 4 · 40 %' : '40 %',
           );
+          expect(pages.hitTestable(), findsOneWidget);
           final series = find.text('A long saved series title 4');
-          final volume = find.text('A long saved book title for volume 4');
-          final pages = find.text(scale == 1 ? 'Page 5/10' : '40% read');
+          // Comic progress includes the server book title; ebooks keep their title.
+          expect(
+            find.text('A long saved book title for volume 4'),
+            scale == 1 ? findsNothing : findsOneWidget,
+          );
           expect(
             series.hitTestable(),
             scale == 1 ? findsOneWidget : findsNothing,
           );
-          expect(volume.hitTestable(), findsOneWidget);
           if (scale == 1) {
             expect(
               tester.getBottomLeft(series).dy,
-              lessThanOrEqualTo(tester.getTopLeft(volume).dy),
+              lessThanOrEqualTo(tester.getTopLeft(pages).dy),
             );
           }
-          expect(
-            tester.getBottomLeft(volume).dy,
-            lessThanOrEqualTo(tester.getTopLeft(pages).dy),
-          );
           final progress = find.descendant(
             of: find.byKey(const ValueKey('resume-book-3')),
             matching: find.byType(LinearProgressIndicator),

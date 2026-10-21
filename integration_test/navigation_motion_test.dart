@@ -1,3 +1,5 @@
+import '../test/support/home_navigation.dart';
+
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -150,7 +152,7 @@ void main() {
         for (var i = 0; i < 12; i++) {
           if (phase == 'tabs') {
             for (final destination in ['downloads', 'settings', 'libraries']) {
-              await tester.tap(find.byKey(ValueKey('navigation-$destination')));
+              await openHomeDestination(tester, destination);
               await tester.pump(const Duration(milliseconds: 280));
             }
           } else if (phase == 'details') {

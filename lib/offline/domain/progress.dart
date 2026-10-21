@@ -54,6 +54,11 @@ final class ProgressSnapshot {
 }
 
 final class ProgressIntent {
+  /// Revision of an intent queued from the catalogue without a local manifest
+  /// (mark read/unread). Replay binds it to the server's current revision and
+  /// never compares pages across revisions for it.
+  static const anyRevision = '*';
+
   const ProgressIntent({
     required this.accountId,
     required this.bookId,
@@ -76,4 +81,21 @@ final class ProgressIntent {
   final String? documentLocator;
   final ProgressOperation operation;
   final ProgressSnapshot? baseline, remote;
+
+  /// Catalogue intent without a content revision ([anyRevision]).
+  bool get anyContent => revision == anyRevision;
+}
+
+/// A volume marked read or unread from the catalogue. [server] is the
+/// snapshot state the user saw ([ProgressIntent.anyRevision]); it becomes the
+/// intent's conflict baseline only when this device never observed the book.
+final class ProgressMark {
+  const ProgressMark({
+    required this.bookId,
+    required this.pageCount,
+    this.server = const ProgressSnapshot(revision: ProgressIntent.anyRevision),
+  });
+  final String bookId;
+  final int pageCount;
+  final ProgressSnapshot server;
 }

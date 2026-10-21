@@ -1,3 +1,4 @@
+import 'package:inkora/app/icons/inkora_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/router.dart';
@@ -61,10 +62,8 @@ void main() {
           expect(find.byType(ServersScreen), findsOneWidget);
           expect(find.text('Connection'), findsNothing);
           expect(find.text('Server connected'), findsNothing);
-          final server = tester.getTopLeft(find.text('Server'));
-          final account = tester.getTopLeft(find.text('Active account'));
-          expect(server.dy, account.dy);
-          expect(account.dx, greaterThan(server.dx));
+          expect(find.text('Active account'), findsOneWidget);
+          expect(find.byIcon(InkIcons.checkCircle), findsWidgets);
           expect(find.text('Sign out'), findsOneWidget);
           await tester.scrollUntilVisible(
             find.text('Add server'),

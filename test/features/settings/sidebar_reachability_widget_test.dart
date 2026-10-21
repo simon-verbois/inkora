@@ -37,6 +37,9 @@ void main() {
       180,
       scrollable: scrollable,
     );
+    // Scroll to the end so the last row clears the floating navigation bar.
+    await tester.drag(scrollable, const Offset(0, -400));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('About Inkora'));
     await tester.pumpAndSettle();
     final setup = find.byKey(const Key('about-guided-setup'));
@@ -110,10 +113,25 @@ void main() {
       await tester.tap(toggle);
       await tester.pumpAndSettle();
       expect(field, findsNothing);
+      // The bottom overlay reduces the available category height; long
+      // localized rows may be lazily built below the first viewport.
+      final categories = find
+          .descendant(
+            of: find.byKey(const Key('settings-sidebar')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('settings-category-appearance')),
+        100,
+        scrollable: categories,
+      );
       expect(
         find.byKey(const ValueKey('settings-category-appearance')),
         findsOneWidget,
       );
+      tester.state<ScrollableState>(categories).position.jumpTo(0);
+      await tester.pumpAndSettle();
       await tester.tap(toggle);
       await tester.pumpAndSettle();
       expect(tester.widget<TextField>(field).controller!.text, isEmpty);

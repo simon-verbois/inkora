@@ -96,7 +96,7 @@ void main() {
         Offset(20, tester.getCenter(find.byType(ReaderScreen)).dy),
       );
       await settleReaderImages(tester);
-      expect(find.text('1 / 1'), findsOneWidget);
+      expect(find.text('p. 1'), findsOneWidget);
       expect(
         find.text('This book has no supported raster pages.'),
         findsNothing,

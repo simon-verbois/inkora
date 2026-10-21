@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:inkora/features/library/application/catalogue_providers.dart';
 import 'package:inkora/features/library/data/catalogue_repository.dart';
 import 'package:inkora/features/library/data/catalogue_store.dart';
@@ -112,7 +114,7 @@ void main() {
         await mount(await store.settings(restored).first);
         await tester.pumpAndSettle();
         expect(find.byKey(const Key('webtoon-reader')), findsOneWidget);
-        expect(find.text('2 / 4'), findsOneWidget);
+        expect(find.text('p. 2'), findsOneWidget);
         await tester.drag(
           find.byKey(const Key('webtoon-reader')),
           const Offset(0, -240),
@@ -225,7 +227,7 @@ void main() {
     await tester.ensureVisible(find.text('Sign in'));
     await tester.tap(find.text('Sign in'));
     await tester.pumpAndSettle();
-    expect(find.text('Your next great read'), findsOneWidget);
+    expect(find.byKey(const Key('library-selector')), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     first.dispose();
     final offline = FixtureAdapter(
@@ -251,7 +253,7 @@ void main() {
       UncontrolledProviderScope(container: second, child: const InkoraApp()),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Your next great read'), findsOneWidget);
+    expect(find.byKey(const Key('library-selector')), findsOneWidget);
     expect(find.textContaining('Offline · saved catalogue'), findsOneWidget);
     second.read(routerProvider).go('/settings/account');
     await tester.pumpAndSettle();
@@ -382,8 +384,6 @@ void main() {
       await tester.pumpAndSettle();
       container.read(routerProvider).go('/catalogue/book');
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('catalogue-search-toggle')));
-      await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const Key('catalogue-search')),
         'native',
@@ -391,7 +391,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
       await tester.pumpAndSettle();
       expect(find.text('Offline native book'), findsOneWidget);
-      await tester.tap(find.byTooltip('Refresh catalogue'));
+      // Pull to refresh (the refresh action has no toolbar button).
+      unawaited(
+        tester
+            .state<RefreshIndicatorState>(find.byType(RefreshIndicator))
+            .show(),
+      );
       await tester.pumpAndSettle();
       expect(
         find.textContaining('Saved catalogue remains available.'),

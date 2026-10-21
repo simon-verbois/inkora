@@ -201,9 +201,11 @@ void main() {
 
       expect(find.text('Continue reading'), findsOneWidget);
       await capture('phone-home');
-      await tester.tap(find.byKey(const Key('reading-quick-filter-menu')));
+      await tester.ensureVisible(find.byKey(const Key('catalogue-sort')));
       await tester.pumpAndSettle();
-      await capture('phone-quick-filters', public: false);
+      await tester.tap(find.byKey(const Key('catalogue-sort')));
+      await tester.pumpAndSettle();
+      await capture('phone-sort-menu', public: false);
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       final router = harness.container.read(routerProvider);
@@ -230,12 +232,11 @@ void main() {
       await capture('phone-upscaling', public: false);
       router.go('/catalogue/series/series-0');
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Download volumes'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Next 3 unread volumes'));
+      // The series download action opens confirmation; cancel preserves fixtures.
+      await tester.tap(find.byKey(const Key('detail-download')));
       await tester.pumpAndSettle();
       await capture('phone-batch-download');
-      await tester.tap(find.byTooltip('Close'));
+      await tester.tap(find.byKey(const Key('ink-confirm-cancel')));
       await tester.pumpAndSettle();
       router.go('/');
       await tester.pumpAndSettle();
@@ -277,12 +278,9 @@ void main() {
       await capture('phone-appearance-controls', public: false);
       router.go('/');
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('catalogue-search-toggle')));
+      await tester.tap(find.byKey(const Key('open-search')));
       await tester.pumpAndSettle();
-      await tester.enterText(
-        find.byKey(const Key('catalogue-search')).last,
-        'Atlas',
-      );
+      await tester.enterText(find.byKey(const Key('expanded-search')), 'Atlas');
       await tester.pump(const Duration(milliseconds: 200));
       await tester.pumpAndSettle();
       await capture('phone-search', public: false);

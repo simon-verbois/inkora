@@ -91,13 +91,16 @@ void registerSettingsCaptures() {
           await tester.pumpAndSettle();
         }
         expect(tester.takeException(), isNull);
-        expect(find.text('Enregistrer').hitTestable(), findsOneWidget);
+        expect(
+          find.byKey(const Key('reader-settings-reset')).hitTestable(),
+          findsOneWidget,
+        );
         debugPrint('SETTINGS_CAPTURE_READY: $kind-$label');
         if (const bool.fromEnvironment('SETTINGS_NATIVE_CAPTURE')) {
           await tester.pump(const Duration(seconds: 6));
         }
       }
-      await tester.tap(find.byTooltip('Fermer'));
+      await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
     }
     await tester.pumpWidget(const SizedBox.shrink());

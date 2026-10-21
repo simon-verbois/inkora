@@ -5,7 +5,7 @@ import '../../../app/icons/inkora_icons.dart';
 import '../../../app/l10n/app_strings.dart';
 import '../../../app/theme/inkora_motion.dart';
 import 'settings_adaptive_layout.dart';
-import 'settings_sections.dart';
+import 'settings_navigation.dart';
 
 String settingsSectionForPath(String path) {
   final section = path.split('/').elementAtOrNull(2);
@@ -16,18 +16,25 @@ String settingsSectionForPath(String path) {
   };
 }
 
-/// Keep the branch Navigator in one stable slot on every destination and resize.
-/// Only the settings branch reveals its local navigation pane.
+/// Keep the settings Navigator in one stable slot across categories and resize.
+/// Settings routes reveal their local navigation pane. In wide windows
+/// its local category pane remains beside the selected page and its heading is the
+/// page's only header level, so category pages there have no screen header.
 class SettingsWorkspace extends StatefulWidget {
   const SettingsWorkspace({
     super.key,
     required this.path,
     required this.active,
     required this.child,
+    this.wide,
   });
   final String path;
   final bool active;
   final Widget child;
+
+  /// The shell's [useWideSettings] decision for the whole window; null
+  /// derives it from this workspace's own width.
+  final bool? wide;
   @override
   State<SettingsWorkspace> createState() => _SettingsWorkspaceState();
 }
@@ -69,7 +76,9 @@ class _SettingsWorkspaceState extends State<SettingsWorkspace> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, bounds) {
-      final wide = widget.active && useWideSettings(context, bounds.maxWidth);
+      final wide =
+          widget.active &&
+          (widget.wide ?? useWideSettings(context, bounds.maxWidth));
       final selected = settingsSectionForPath(widget.path);
       final heading = Padding(
         padding: const EdgeInsets.only(bottom: 8),
@@ -78,6 +87,13 @@ class _SettingsWorkspaceState extends State<SettingsWorkspace> {
           child: Row(
             key: const Key('settings-sidebar-heading'),
             children: [
+              IconButton(
+                key: const Key('settings-sidebar-back'),
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                onPressed: () =>
+                    context.canPop() ? context.pop() : context.go('/'),
+                icon: const Icon(InkIcons.caretLeft),
+              ),
               Expanded(
                 child: Stack(
                   fit: StackFit.expand,
@@ -114,13 +130,11 @@ class _SettingsWorkspaceState extends State<SettingsWorkspace> {
                             ignoring: !_searchOpen,
                             child: ColoredBox(
                               color: Theme.of(context).scaffoldBackgroundColor,
-                              child: TextField(
-                                key: const Key('settings-sidebar-search'),
+                              child: SettingsSearchField(
+                                fieldKey: const Key('settings-sidebar-search'),
+                                showIcon: false,
                                 controller: _searchController,
                                 focusNode: _searchFocus,
-                                decoration: InputDecoration(
-                                  hintText: context.tr('Search'),
-                                ),
                                 onChanged: (value) {
                                   final query = value.toLowerCase().trim();
                                   if (query != _query) {
@@ -158,7 +172,6 @@ class _SettingsWorkspaceState extends State<SettingsWorkspace> {
               child: ExcludeFocus(
                 excluding: !wide,
                 child: SafeArea(
-                  top: false,
                   child: SizedBox(
                     width: 248,
                     child: Padding(
@@ -177,42 +190,27 @@ class _SettingsWorkspaceState extends State<SettingsWorkspace> {
                               padding: const EdgeInsets.only(bottom: 8),
                               children: [
                                 heading,
-                                for (final entry in settingsSections.where(
-                                  (entry) =>
-                                      '${context.tr(entry.$2)} ${context.tr(entry.$3)}'
-                                          .toLowerCase()
-                                          .contains(_query),
-                                ))
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 2),
-                                    child: ListTile(
-                                      minTileHeight: 48,
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                          ),
-                                      key: ValueKey(
-                                        'settings-category-${entry.$1}',
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      selected: selected == entry.$1,
-                                      selectedTileColor: Theme.of(context)
-                                          .colorScheme
-                                          .secondaryContainer,
-                                      leading: Icon(entry.$4, size: 22),
-                                      title: LText(entry.$2),
-                                      onTap: () {
-                                        if (widget.path !=
-                                                '/settings/${entry.$1}' &&
-                                            !(widget.path == '/settings' &&
-                                                entry.$1 == 'appearance')) {
-                                          context.go('/settings/${entry.$1}');
-                                        }
-                                      },
+                                ...settingsMenu(
+                                  context,
+                                  query: _query,
+                                  entry: (entry, path) => SettingsNavTile(
+                                    key: ValueKey(
+                                      'settings-category-${entry.id}',
                                     ),
+                                    selected: selected == entry.id,
+                                    leading: Icon(entry.icon, size: 22),
+                                    title: LText(entry.title),
+                                    subtitle: path == null ? null : Text(path),
+                                    onTap: () {
+                                      if (widget.path !=
+                                              '/settings/${entry.id}' &&
+                                          !(widget.path == '/settings' &&
+                                              entry.id == 'appearance')) {
+                                        context.go('/settings/${entry.id}');
+                                      }
+                                    },
                                   ),
+                                ),
                               ],
                             ),
                           ),
@@ -233,7 +231,15 @@ class _SettingsWorkspaceState extends State<SettingsWorkspace> {
                 color: Theme.of(context).colorScheme.outlineVariant,
               ),
             Expanded(
-              child: SettingsPaneScope(wide: wide, child: widget.child),
+              // Wide category pages have no header, so the pane applies the
+              // status-bar inset; the SafeArea stays mounted in both states.
+              child: SafeArea(
+                top: wide,
+                left: false,
+                right: false,
+                bottom: false,
+                child: SettingsPaneScope(wide: wide, child: widget.child),
+              ),
             ),
           ],
         ),

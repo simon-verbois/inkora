@@ -1,3 +1,4 @@
+import '../../app/widgets/inkora_widgets.dart';
 import '../../app/l10n/app_strings.dart';
 
 import 'package:flutter/material.dart';
@@ -7,6 +8,78 @@ import 'package:go_router/go_router.dart';
 import '../../app/icons/inkora_icons.dart';
 import '../application/offline_coordinator.dart';
 import '../data/download_store.dart';
+import 'download_status.dart';
+
+/// Queues [bookId], or resumes its paused/failed [job]. Throws when the
+/// account's download manager is unavailable or changed.
+Future<void> queueBookDownload(
+  WidgetRef ref,
+  String bookId, {
+  DownloadJob? job,
+}) async {
+  final coordinator = await ref.read(offlineCoordinatorProvider.future);
+  if (coordinator == null ||
+      !coordinator.current ||
+      job != null && job.accountId != coordinator.store.accountId) {
+    throw StateError('Download manager unavailable');
+  }
+  if (job != null) {
+    await coordinator.downloads.resume(job.id);
+  } else {
+    await coordinator.enqueue(bookId);
+  }
+}
+
+/// Asks before removing a downloaded volume; reading progress is kept.
+Future<bool> confirmRemoveDownload(BuildContext context, String title) =>
+    confirmInk(
+      context,
+      title: 'Remove this download?',
+      message: "Remove “{0}” from this device? Your reading progress is kept.",
+      messageArguments: [title],
+      cancelLabel: 'Keep download',
+      confirmLabel: 'Remove download',
+      destructive: true,
+    );
+
+/// Removes every completed copy of [bookId] in the current account. [job],
+/// when known, pins the account; [onRemoveDownload] replaces the coordinator
+/// (tests and callers that own removal).
+Future<void> removeBookDownload(
+  WidgetRef ref,
+  String bookId, {
+  DownloadJob? job,
+  Future<void> Function(String jobId)? onRemoveDownload,
+}) async {
+  final coordinator = await ref.read(offlineCoordinatorProvider.future);
+  if (coordinator == null && onRemoveDownload == null ||
+      coordinator != null &&
+          (!coordinator.current ||
+              job != null && coordinator.store.accountId != job.accountId)) {
+    throw StateError('Download manager unavailable');
+  }
+  final account = job?.accountId ?? coordinator?.store.accountId;
+  final jobs = coordinator == null
+      ? ref.read(downloadsProvider).asData?.value ?? [?job]
+      : await coordinator.store.jobs();
+  final copies = jobs
+      .where(
+        (copy) =>
+            copy.accountId == account &&
+            copy.bookId == bookId &&
+            copy.state == DownloadState.complete,
+      )
+      .toList();
+  if (copies.isEmpty && job != null) copies.add(job);
+  for (final copy in copies) {
+    if (onRemoveDownload != null) {
+      await onRemoveDownload(copy.id);
+    } else {
+      if (!coordinator!.current) throw StateError('Account changed');
+      await coordinator.cancel(copy.id);
+    }
+  }
+}
 
 /// One trailing volume action, backed by the account's persistent job state.
 class DownloadBookAction extends ConsumerStatefulWidget {
@@ -32,26 +105,12 @@ class _DownloadBookActionState extends ConsumerState<DownloadBookAction> {
   Future<void> _download(DownloadJob? job) async {
     setState(() => _busy = true);
     try {
-      final coordinator = await ref.read(offlineCoordinatorProvider.future);
-      if (!mounted ||
-          coordinator == null ||
-          !coordinator.current ||
-          job != null && job.accountId != coordinator.store.accountId) {
-        throw StateError('Download manager unavailable');
-      }
-      if (job != null) {
-        await coordinator.downloads.resume(job.id);
-      } else {
-        await coordinator.enqueue(widget.bookId);
-      }
+      await queueBookDownload(ref, widget.bookId, job: job);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: LText(
-              'Unable to queue this download. Check connection and storage quota.',
-            ),
-          ),
+        notifyInk(
+          context,
+          'Unable to queue this download. Check connection and storage quota.',
         );
       }
     } finally {
@@ -62,64 +121,19 @@ class _DownloadBookActionState extends ConsumerState<DownloadBookAction> {
   Future<void> _remove(DownloadJob job) async {
     if (_busy) return;
     try {
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const LText('Remove this download?'),
-          content: LText(
-            "Remove “{0}” from this device? Your reading progress is kept.",
-            arguments: [widget.title],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const LText('Keep download'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const LText('Remove download'),
-            ),
-          ],
-        ),
-      );
-      if (confirmed != true || !mounted) return;
+      if (!await confirmRemoveDownload(context, widget.title) || !mounted) {
+        return;
+      }
       setState(() => _busy = true);
-      final coordinator = await ref.read(offlineCoordinatorProvider.future);
-      if (!mounted) return;
-      if (coordinator == null && widget.onRemoveDownload == null ||
-          coordinator != null &&
-              (!coordinator.current ||
-                  coordinator.store.accountId != job.accountId)) {
-        throw StateError('Download manager unavailable');
-      }
-      final jobs = coordinator == null
-          ? ref.read(downloadsProvider).asData?.value ?? [job]
-          : await coordinator.store.jobs();
-      final copies = jobs
-          .where(
-            (copy) =>
-                copy.accountId == job.accountId &&
-                copy.bookId == widget.bookId &&
-                copy.state == DownloadState.complete,
-          )
-          .toList();
-      if (copies.isEmpty) copies.add(job);
-      if (!mounted) return;
-      for (final copy in copies) {
-        if (widget.onRemoveDownload != null) {
-          await widget.onRemoveDownload!(copy.id);
-        } else {
-          if (!coordinator!.current) throw StateError('Account changed');
-          await coordinator.cancel(copy.id);
-        }
-      }
+      await removeBookDownload(
+        ref,
+        widget.bookId,
+        job: job,
+        onRemoveDownload: widget.onRemoveDownload,
+      );
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: LText('Unable to remove this download. Try again.'),
-          ),
-        );
+        notifyInk(context, 'Unable to remove this download. Try again.');
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -160,11 +174,7 @@ class _DownloadBookActionState extends ConsumerState<DownloadBookAction> {
         ? 'Remove download'
         : pending
         ? context.tr('Manage download · {0}', [
-            context.tr(switch (job.state) {
-              DownloadState.queued => 'Queued',
-              DownloadState.running => 'Downloading',
-              _ => 'Checking downloaded pages',
-            }),
+            context.tr(downloadStateLabel(job.state)),
           ])
         : job?.state == DownloadState.paused
         ? 'Resume download'
@@ -191,7 +201,7 @@ class _DownloadBookActionState extends ConsumerState<DownloadBookAction> {
               completed != null
                   ? InkIcons.trash
                   : pending
-                  ? InkIcons.clockCounterClockwise
+                  ? InkIcons.hourglassMedium
                   : InkIcons.downloadSimple,
             ),
     );

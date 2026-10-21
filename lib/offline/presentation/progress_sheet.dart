@@ -1,5 +1,7 @@
+import '../../app/widgets/inkora_widgets.dart';
 import '../../reader/domain/ebook_locator.dart';
 import '../../app/l10n/app_strings.dart';
+import '../../features/library/presentation/progress_format.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,9 +59,7 @@ class _ProgressSheetState extends ConsumerState<ProgressSheet> {
       if (mounted) Navigator.pop(context, true);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: LText('Unable to save reading progress.')),
-        );
+        notifyInk(context, 'Unable to save reading progress.');
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -77,12 +77,9 @@ class _ProgressSheetState extends ConsumerState<ProgressSheet> {
       if (mounted) Navigator.pop(context, true);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: LText(
-              'Refresh this book before remapping a changed revision.',
-            ),
-          ),
+        notifyInk(
+          context,
+          'Refresh this book before remapping a changed revision.',
         );
       }
     } finally {
@@ -99,6 +96,11 @@ class _ProgressSheetState extends ConsumerState<ProgressSheet> {
             .toList() ??
         [];
     final conflict = events.where((e) => e.state == 'conflict').firstOrNull;
+    // A catalogue intent (mark read/unread) has no revision to remap.
+    final changedContent =
+        conflict != null &&
+        !conflict.anyContent &&
+        conflict.remote?.revision != conflict.revision;
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -133,21 +135,20 @@ class _ProgressSheetState extends ConsumerState<ProgressSheet> {
                   }),
                   conflict.pageIndex + 1,
                   conflict.remote?.completed == true
-                      ? context.tr('Completed')
+                      ? context.tr(readingStateLabel(ReadingState.read))
                       : conflict.remote?.pageIndex == null
-                      ? context.tr('Unread')
+                      ? context.tr(readingStateLabel(ReadingState.unread))
                       : context.tr('Page {0}', [
                           conflict.remote!.pageIndex! + 1,
                         ]),
                 ],
               ),
-              if (conflict.remote?.revision != conflict.revision)
+              if (changedContent)
                 const LText(
                   'Book content changed. Refresh before choosing a new local position.',
                 ),
               FilledButton(
-                onPressed:
-                    _busy || conflict.remote?.revision != conflict.revision
+                onPressed: _busy || changedContent
                     ? null
                     : () => _resolve(conflict, true),
                 child: const LText('Use my saved intent'),

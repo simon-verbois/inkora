@@ -1,3 +1,5 @@
+import '../support/home_navigation.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -24,7 +26,7 @@ void main() {
           addTearDown(() => harness.close(tester));
           await harness.mount(tester);
           final router = harness.container.read(routerProvider);
-          // Retain nested history in another branch, just as on a normal tablet.
+          // Visit nested settings before opening the root reader from Home.
           router.go('/settings/appearance');
           await tester.pumpAndSettle();
           router.go('/');
@@ -62,14 +64,14 @@ void main() {
             'libraries',
             'downloads',
           ]) {
-            await tester.tap(find.byKey(ValueKey('navigation-$branch')));
+            await openHomeDestination(tester, branch);
             await tester.pumpAndSettle();
             expect(tester.takeException(), isNull, reason: branch);
             expect(
               router.routeInformationProvider.value.uri.path,
               switch (branch) {
                 'libraries' => '/',
-                'settings' => '/settings/appearance',
+                'settings' => '/settings',
                 _ => '/$branch',
               },
             );

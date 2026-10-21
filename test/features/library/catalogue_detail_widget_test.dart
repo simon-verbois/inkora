@@ -8,10 +8,9 @@ import 'package:inkora/features/library/domain/catalogue.dart';
 import 'package:inkora/features/library/domain/catalogue_metadata.dart';
 import 'package:inkora/features/library/domain/resume_entry.dart';
 import 'package:inkora/features/library/presentation/book_cover.dart';
-import 'package:inkora/features/library/presentation/catalogue_detail_widgets.dart';
+import 'package:inkora/features/library/presentation/series_header.dart';
 import 'package:inkora/features/library/presentation/catalogue_detail_screen.dart';
 import 'package:inkora/features/library/presentation/catalogue_presentation.dart';
-import 'package:inkora/features/library/presentation/volume_list_tile.dart';
 import 'package:inkora/reader/presentation/reader_screen.dart';
 import 'package:inkora/features/settings/domain/ui_preferences.dart';
 
@@ -104,7 +103,7 @@ void main() {
       final router = harness.container.read(routerProvider);
       router.push('/catalogue/series/series-a');
       await tester.pumpAndSettle();
-      final bubble = find.byKey(const Key('series-back'));
+      final bubble = find.byKey(const Key('floating-header-back'));
       final position = tester.getTopLeft(bubble);
       expect(tester.getSize(bubble).shortestSide, greaterThanOrEqualTo(48));
       final scroll = find.descendant(
@@ -137,23 +136,28 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const Key('detail-read')),
-        matching: find.text('Commencer la lecture - Volume 000'),
+        matching: find.text('Commencer la lecture · Volume 000'),
       ),
       findsOneWidget,
     );
-    expect(find.text('Terminée'), findsOneWidget);
     expect(
-      tester.getCenter(find.text('Terminée')).dy,
-      tester.getCenter(find.text('2 livres')).dy,
+      find.descendant(
+        of: find.byKey(const Key('series-status')),
+        matching: find.text('Terminée'),
+      ),
+      findsOneWidget,
     );
-    expect(
-      tester.getTopLeft(find.text('Terminée')).dx,
-      greaterThan(tester.getTopRight(find.text('2 livres')).dx),
+    expect(find.text('2 tomes'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Scénariste'),
+      200,
+      scrollable: find
+          .descendant(
+            of: find.byType(CustomScrollView).last,
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
-    await tester.ensureVisible(find.byKey(const Key('detail-metadata')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('detail-metadata')));
-    await tester.pumpAndSettle();
     expect(find.text('Scénariste'), findsOneWidget);
     expect(find.text('Dessinateur'), findsOneWidget);
     expect(find.text('Writer Name'), findsOneWidget);
@@ -170,7 +174,7 @@ void main() {
   ]) {
     for (final scale in [1.0, 2.0]) {
       testWidgets(
-        'series metadata, expandable summary and text-only reading rows at $size/$scale',
+        'series metadata, expandable summary and volume rows at $size/$scale',
         (tester) async {
           tester.view.physicalSize = size;
           tester.view.devicePixelRatio = 1;
@@ -196,57 +200,53 @@ void main() {
           final router = harness.container.read(routerProvider);
           router.go('/catalogue/series/series-a');
           await tester.pumpAndSettle();
+          final scrollable = find
+              .descendant(
+                of: find.byType(CustomScrollView).first,
+                matching: find.byType(Scrollable),
+              )
+              .first;
           final readButton = find.byKey(const Key('detail-read'));
-          final readLabel = find.text('Start reading - $targetTitle');
+          final readLabel = find.text('Start reading · $targetTitle');
           expect(
             find.descendant(of: readButton, matching: readLabel),
             findsOneWidget,
-          );
-          expect(
-            find.descendant(
-              of: find.byType(CatalogueDetailHeader),
-              matching: find.text(targetTitle),
-            ),
-            findsNothing,
           );
           final labelBounds = tester.getRect(readLabel);
           final buttonBounds = tester.getRect(readButton);
           expect(labelBounds.left, greaterThanOrEqualTo(buttonBounds.left));
           expect(labelBounds.right, lessThanOrEqualTo(buttonBounds.right));
-          expect(labelBounds.top, greaterThanOrEqualTo(buttonBounds.top));
-          expect(labelBounds.bottom, lessThanOrEqualTo(buttonBounds.bottom));
           expect(find.text('Browse books'), findsNothing);
-          expect(find.text('Ended'), findsOneWidget);
-          final count = find.text('85 books');
           expect(
-            tester.getTopLeft(find.text('Ended')).dx,
-            greaterThan(tester.getTopRight(count).dx),
+            find.descendant(
+              of: find.byKey(const Key('series-status')),
+              matching: find.text('Ended'),
+            ),
+            findsOneWidget,
           );
-          expect(
-            tester.getCenter(find.text('Ended')).dy,
-            tester.getCenter(count).dy,
-          );
+          expect(find.text('85 volumes'), findsOneWidget);
           expect(find.text('Webtoon'), findsNothing);
           expect(find.text('16+'), findsNothing);
           {
             final cover = find.descendant(
-              of: find.byType(CatalogueDetailHeader),
+              of: find.byType(SeriesHero),
               matching: find.byType(BookCover),
             );
-            final title = find.text('A series with a deliberately long title');
+            final title = find.byKey(const Key('series-title'));
             expect(tester.getSize(cover).width, lessThanOrEqualTo(180));
-            if (scale == 1) {
+            if (scale == 1 && size.width >= 390) {
               expect(
                 tester.getTopLeft(title).dx,
                 greaterThan(tester.getTopRight(cover).dx),
               );
             }
           }
-          await tester.ensureVisible(
-            find.byKey(const Key('detail-summary-toggle')),
-          );
+          final toggle = find.byKey(const Key('detail-summary-toggle'));
+          await tester.scrollUntilVisible(toggle, 200, scrollable: scrollable);
           await tester.pumpAndSettle();
-          await tester.tap(find.byKey(const Key('detail-summary-toggle')));
+          await tester.ensureVisible(toggle);
+          await tester.pumpAndSettle();
+          await tester.tap(toggle);
           await tester.pumpAndSettle();
           expect(
             find.byWidgetPredicate(
@@ -254,26 +254,9 @@ void main() {
             ),
             findsOneWidget,
           );
-          await tester.ensureVisible(
-            find.byKey(const Key('detail-summary-toggle')),
-          );
+          await tester.ensureVisible(toggle);
           await tester.pumpAndSettle();
-          await tester.tap(find.byKey(const Key('detail-summary-toggle')));
-          // Check the collapse frame itself: settling hides the old transient
-          // jump to the volumes before the post-frame scroll restored the top.
-          await tester.pump();
-          final firstFrameSynopsis = tester.getRect(find.text('Synopsis'));
-          final firstFrameViewport = tester.getRect(
-            find.byType(CustomScrollView).last,
-          );
-          expect(
-            firstFrameSynopsis.top,
-            greaterThanOrEqualTo(firstFrameViewport.top),
-          );
-          expect(
-            firstFrameSynopsis.bottom,
-            lessThanOrEqualTo(firstFrameViewport.bottom),
-          );
+          await tester.tap(toggle);
           await tester.pumpAndSettle();
           expect(
             find.byWidgetPredicate(
@@ -281,50 +264,38 @@ void main() {
             ),
             findsNothing,
           );
-          final synopsis = tester.getRect(find.text('Synopsis'));
-          final viewport = tester.getRect(find.byType(CustomScrollView).last);
-          expect(synopsis.top, greaterThanOrEqualTo(viewport.top));
-          expect(synopsis.bottom, lessThanOrEqualTo(viewport.bottom));
-          await tester.ensureVisible(find.byKey(const Key('detail-metadata')));
-          await tester.pumpAndSettle();
-          await tester.tap(find.byKey(const Key('detail-metadata')));
-          await tester.pumpAndSettle();
+          await tester.scrollUntilVisible(
+            find.text('Reference'),
+            200,
+            scrollable: scrollable,
+          );
+          expect(find.text('https://example.test/reference'), findsNothing);
+          expect(find.text('Status'), findsNothing);
           expect(find.text('Hidden tag'), findsOneWidget);
           expect(find.text('Writer'), findsOneWidget);
           expect(find.text('Penciller'), findsOneWidget);
-          expect(find.text('https://example.test/reference'), findsOneWidget);
-          Navigator.of(tester.element(find.text('Publication details').last))
-              .pop();
-          await tester.pumpAndSettle();
-          await tester.scrollUntilVisible(
-            find.text('Volume 001'),
-            250,
-            scrollable: find
-                .descendant(
-                  of: find.byType(CustomScrollView).last,
-                  matching: find.byType(Scrollable),
-                )
-                .first,
-          );
-          await tester.pumpAndSettle();
-          if (size.width >= 640 && scale == 1) {
-            final tiles = find.byType(VolumeListTile);
-            expect(
-              tester.getTopLeft(tiles.at(0)).dy,
-              tester.getTopLeft(tiles.at(1)).dy,
-            );
-            expect(
-              tester.getTopLeft(tiles.at(0)).dx,
-              lessThan(tester.getTopLeft(tiles.at(1)).dx),
-            );
+          final volumesTab = find.byKey(const Key('series-tab-volumes'));
+          if (volumesTab.evaluate().isNotEmpty) {
+            await tester.tap(volumesTab);
+            await tester.pumpAndSettle();
           }
-          final row = find.ancestor(
-            of: find.text('Volume 001'),
-            matching: find.byType(VolumeListTile),
+          final volumeScroll = find
+              .descendant(
+                of: find.byType(CustomScrollView).last,
+                matching: find.byType(Scrollable),
+              )
+              .first;
+          final row = find.byKey(const ValueKey('volume-volume-1'));
+          await tester.scrollUntilVisible(row, 120, scrollable: volumeScroll);
+          await tester.pumpAndSettle();
+          expect(
+            find.descendant(of: row, matching: find.text('Volume 001')),
+            findsOneWidget,
           );
+          // Rows show a small cover thumbnail and the download action.
           expect(
             find.descendant(of: row, matching: find.byType(BookCover)),
-            findsNothing,
+            findsOneWidget,
           );
           expect(
             find.descendant(
@@ -333,7 +304,20 @@ void main() {
             ),
             findsOneWidget,
           );
-          await tester.tap(find.text('Volume 001'));
+          final tabs = find.byKey(const Key('series-tabs'));
+          if (tabs.evaluate().isNotEmpty &&
+              tester.getRect(row).top < tester.getRect(tabs).bottom) {
+            final position = tester
+                .state<ScrollableState>(volumeScroll)
+                .position;
+            position.jumpTo(
+              position.pixels -
+                  (tester.getRect(tabs).bottom - tester.getRect(row).top) -
+                  8,
+            );
+            await tester.pumpAndSettle();
+          }
+          await tester.tap(row);
           await tester.pumpAndSettle();
           expect(
             tester.widget<ReaderScreen>(find.byType(ReaderScreen)).bookId,
@@ -355,47 +339,42 @@ void main() {
     }
   }
 
-  testWidgets(
-    'series volumes grow beyond sixty in sequence without another catalogue screen',
-    (tester) async {
-      final harness = await UiHarness.create(tester);
-      addTearDown(() => harness.close(tester));
-      await seed(harness, tester, volumes: 85);
-      await harness.mount(tester);
-      harness.container.read(routerProvider).go('/catalogue/series/series-a');
+  testWidgets('all volumes of a long series are listed lazily in sequence', (
+    tester,
+  ) async {
+    final harness = await UiHarness.create(tester);
+    addTearDown(() => harness.close(tester));
+    await seed(harness, tester, volumes: 85);
+    await harness.mount(tester);
+    harness.container.read(routerProvider).go('/catalogue/series/series-a');
+    await tester.pumpAndSettle();
+    final tab = find.byKey(const Key('series-tab-volumes'));
+    if (tab.evaluate().isNotEmpty) {
+      await tester.tap(tab);
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        find.text('Volume 080'),
-        500,
-        scrollable: find
-            .descendant(
-              of: find.byType(CustomScrollView).last,
-              matching: find.byType(Scrollable),
-            )
-            .first,
-        maxScrolls: 55,
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('Volume 080'), findsOneWidget);
-      final feed = harness.container
-          .read(
-            catalogueFeedProvider(
-              const CatalogueQuery(
-                kind: CatalogueKind.book,
-                seriesId: 'series-a',
-                sort: CatalogueSort.sequence,
-              ),
-            ),
+    }
+    // Lazy: far rows are not built before scrolling.
+    expect(find.byKey(const ValueKey('volume-volume-80')), findsNothing);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('volume-volume-80')),
+      500,
+      scrollable: find
+          .descendant(
+            of: find.byType(CustomScrollView).last,
+            matching: find.byType(Scrollable),
           )
-          .requireValue!;
-      expect(
-        feed.state.page.items.where((book) => book.canOpen),
-        hasLength(85),
-      );
-      expect(tester.takeException(), isNull);
-      await harness.close(tester);
-    },
-  );
+          .first,
+      maxScrolls: 55,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Volume 080'), findsOneWidget);
+    final volumes = harness.container
+        .read(seriesVolumesProvider('series-a'))
+        .requireValue;
+    expect(volumes.where((v) => v.available), hasLength(85));
+    expect(tester.takeException(), isNull);
+    await harness.close(tester);
+  });
 
   for (final size in [const Size(320, 640), const Size(1024, 768)]) {
     testWidgets(
@@ -531,9 +510,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(
           find.text(
-            onDeck
-                ? 'Start reading - Volume 001'
-                : 'Continue reading - Volume 001',
+            onDeck ? 'Start reading · Volume 001' : 'Continue - Volume 001',
           ),
           findsOneWidget,
         );

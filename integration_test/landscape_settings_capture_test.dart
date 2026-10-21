@@ -5,7 +5,6 @@ import 'package:integration_test/integration_test.dart';
 import 'package:inkora/app/router.dart';
 import 'package:inkora/features/settings/data/ui_preferences_store.dart';
 import 'package:inkora/features/settings/domain/ui_preferences.dart';
-import 'package:inkora/reader/domain/reading_settings.dart';
 import 'package:inkora/reader/presentation/reader_settings_sheet.dart';
 
 import '../test/support/ui_harness.dart';
@@ -37,11 +36,11 @@ void main() {
       final editor = tester.state<ReaderSettingsSheetState>(
         find.byType(ReaderSettingsSheet),
       );
-      final sampler = find.byType(DropdownButtonFormField<ImageSampling>).first;
+      final sampler = find.byKey(
+        const Key('reader-choice-quality-jpeg-sampling-nearest'),
+      );
       await tester.ensureVisible(sampler);
       await tester.tap(sampler);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Plus proche voisin').last);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('settings-sidebar-search')));
       await tester.pump(const Duration(milliseconds: 700));
@@ -50,7 +49,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       // Shell layout already consumes IME insets before the editor sees them.
       expect(tester.view.viewInsets.bottom, greaterThan(0));
-      expect(find.text('Enregistrer').hitTestable(), findsOneWidget);
+      expect(
+        find.byKey(const Key('reader-settings-reset')).hitTestable(),
+        findsOneWidget,
+      );
       FocusManager.instance.primaryFocus?.unfocus();
       await SystemChannels.textInput.invokeMethod<void>('TextInput.hide');
       await tester.pump(const Duration(milliseconds: 800));
@@ -59,12 +61,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('settings-sidebar')), findsNothing);
       expect(tester.state(find.byType(ReaderSettingsSheet)), same(editor));
-      expect(
-        tester
-            .widget<DropdownButtonFormField<ImageSampling>>(sampler)
-            .initialValue,
-        ImageSampling.nearest,
-      );
+      expect(tester.widget<ChoiceChip>(sampler).selected, isTrue);
       debugPrint('LANDSCAPE_ROTATE_READY: landscape');
       await Future<void>.delayed(const Duration(seconds: 5));
       await tester.pumpAndSettle();

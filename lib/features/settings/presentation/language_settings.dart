@@ -1,3 +1,6 @@
+import '../../../app/widgets/inkora_widgets.dart';
+import '../../../app/theme/inkora_theme.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -17,7 +20,8 @@ class LanguageSettings extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (showTitle) const LText('Language', style: TextStyle(fontSize: 22)),
+        if (showTitle)
+          LText('Language', style: Theme.of(context).textTheme.screenTitle),
         const LText(
           'Use your device language, or choose an application language. Book titles and server metadata stay unchanged.',
         ),
@@ -52,9 +56,7 @@ class LanguageSettings extends ConsumerWidget {
               );
             } catch (_) {
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: LText('Unable to save language.')),
-                );
+                notifyInk(context, 'Unable to save language.');
               }
             }
           },

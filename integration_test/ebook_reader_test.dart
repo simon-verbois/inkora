@@ -272,27 +272,37 @@ void main() {
           );
           await tester.pump(const Duration(milliseconds: 900));
           final layout = await epubLayout();
-          expect(layout['columns'], '2');
-          expect(
-            double.parse(
-              (layout['paddingLeft'] as String).replaceAll('px', ''),
-            ),
-            greaterThanOrEqualTo(16),
-          );
-          expect(
-            double.parse(
-              (layout['paddingRight'] as String).replaceAll('px', ''),
-            ),
-            greaterThanOrEqualTo(16),
-          );
-          expect(layout['crossingLines'], 0);
+          // Readium keeps a single column on narrow (phone portrait)
+          // viewports; the separator is drawn only between real columns.
+          final view = tester.view;
+          final wide =
+              view.physicalSize.shortestSide / view.devicePixelRatio >= 600;
+          expect(layout['columns'], wide ? '2' : '1');
+          // The center gutter exists only between real columns.
+          if (wide) {
+            expect(
+              double.parse(
+                (layout['paddingLeft'] as String).replaceAll('px', ''),
+              ),
+              greaterThanOrEqualTo(16),
+            );
+            expect(
+              double.parse(
+                (layout['paddingRight'] as String).replaceAll('px', ''),
+              ),
+              greaterThanOrEqualTo(16),
+            );
+            expect(layout['crossingLines'], 0);
+          }
 
-          expect(layout['rule'], 'solid');
-          // WebView quantizes a CSS pixel to its physical-pixel grid.
-          expect(
-            double.parse((layout['width'] as String).replaceAll('px', '')),
-            allOf(greaterThan(0), lessThanOrEqualTo(1)),
-          );
+          if (wide) {
+            expect(layout['rule'], 'solid');
+            // WebView quantizes a CSS pixel to its physical-pixel grid.
+            expect(
+              double.parse((layout['width'] as String).replaceAll('px', '')),
+              allOf(greaterThan(0), lessThanOrEqualTo(1)),
+            );
+          }
           expect(await EbookPresentation.turn(1, animated: false), isTrue);
           tester
                   .widget<ReadiumReaderWidget>(find.byType(ReadiumReaderWidget))
@@ -422,8 +432,8 @@ void main() {
         if (epub) {
           await tester.tapAt(tester.getCenter(find.byType(EbookReaderScreen)));
           await tester.pump(const Duration(milliseconds: 400));
-          expect(find.byTooltip('Table of contents'), findsOneWidget);
-          await tester.tap(find.byTooltip('Table of contents'));
+          expect(find.byTooltip('Contents'), findsOneWidget);
+          await tester.tap(find.byTooltip('Contents'));
           await tester.pumpAndSettle();
           expect(find.text('Second chapter'), findsOneWidget);
           await tester.tap(find.text('Second chapter'));
@@ -431,6 +441,18 @@ void main() {
             tester,
             () => location?.href.contains('chapter2') ?? false,
           );
+          // Entry into a different resource must not add layout CSS after
+          // the native navigator publishes its ready location.
+          final entered = await epubLayout();
+          expect(entered['lateLayoutStyle'], false);
+          expect(entered['fontsLoaded'], true);
+          for (var sample = 0; sample < 4; sample++) {
+            await tester.pump(const Duration(milliseconds: 50));
+            final frame = await epubLayout();
+            expect(frame['firstText'], entered['firstText']);
+            expect(frame['paddingLeft'], entered['paddingLeft']);
+            expect(frame['paddingRight'], entered['paddingRight']);
+          }
           await engine.setEPUBPreferences(
             const EPUBPreferences(fontSize: 1.6, lineHeight: 1.8),
           );
@@ -483,7 +505,9 @@ void main() {
         } else {
           await tester.tapAt(tester.getCenter(find.byType(EbookReaderScreen)));
           await tester.pump(const Duration(milliseconds: 400));
-          await tester.tap(find.byTooltip('Search in book'));
+          await tester.tap(find.byKey(const Key('reader-more')));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Search in book'));
           await tester.pumpAndSettle();
           await tester.enterText(find.byType(TextField), 'lantern');
           await tester.testTextInput.receiveAction(TextInputAction.search);
@@ -504,7 +528,7 @@ void main() {
         expect(find.text(manifest.title), findsWidgets);
         await tester.tap(find.byTooltip('Close'));
         await tester.pumpAndSettle();
-        await tester.tap(find.byTooltip('Reading preferences'));
+        await tester.tap(find.byTooltip('Settings'));
         await tester.pumpAndSettle();
         expect(find.text('Typography'), epub ? findsOneWidget : findsNothing);
         if (epub) {
@@ -512,7 +536,8 @@ void main() {
           await tester.pumpAndSettle();
           expect(find.byKey(const ValueKey('ebook-fontSize')), findsOneWidget);
         }
-        await tester.tap(find.byTooltip('Close'));
+        // The live settings sheet has no Close button: system Back closes it.
+        await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();
         expect(
           find.byType(epub ? ReadiumReaderWidget : PdfViewer),
@@ -612,7 +637,7 @@ void main() {
                   .value =
               true;
           await tester.pump(const Duration(milliseconds: 400));
-        } else if (!tester.any(find.byTooltip('Reading controls'))) {
+        } else if (!tester.any(find.byKey(const Key('reader-more')))) {
           await tester.tapAt(tester.getCenter(find.byType(EbookReaderScreen)));
           await tester.pump(const Duration(milliseconds: 400));
         }

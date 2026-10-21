@@ -1,3 +1,5 @@
+import '../../support/home_navigation.dart';
+
 import 'package:inkora/features/settings/data/ui_preferences_store.dart';
 import 'package:inkora/features/settings/domain/ui_preferences.dart';
 import 'package:inkora/features/library/presentation/volume_list_tile.dart';
@@ -105,7 +107,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byKey(const Key('library-selector')), findsOneWidget);
         expect(find.text('Continue reading'), findsNothing);
-        await tester.tap(find.text('Libraries'));
+        await openHomeDestination(tester, 'libraries');
         await tester.pumpAndSettle();
         container.read(routerProvider).go('/catalogue/library');
         await tester.pumpAndSettle();
@@ -116,11 +118,13 @@ void main() {
         await tester.tap(find.text('Series Alpha'));
         await tester.pumpAndSettle();
         expect(find.text('Browse books'), findsNothing);
+        if (find.byKey(const Key('series-tabs')).evaluate().isNotEmpty) {
+          await tester.tap(find.byKey(const Key('series-tab-volumes')));
+          await tester.pumpAndSettle();
+        }
+        final bookAlpha = find.byKey(const ValueKey('volume-book-a'));
         await tester.scrollUntilVisible(
-          find.descendant(
-            of: find.byType(VolumeListTile),
-            matching: find.text('Book Alpha'),
-          ),
+          bookAlpha,
           250,
           scrollable: find
               .descendant(
@@ -130,12 +134,11 @@ void main() {
               .first,
         );
         await tester.pumpAndSettle();
-        await tester.tap(
-          find.descendant(
-            of: find.byType(VolumeListTile),
-            matching: find.text('Book Alpha'),
-          ),
+        expect(
+          find.descendant(of: bookAlpha, matching: find.text('Book Alpha')),
+          findsOneWidget,
         );
+        await tester.tap(bookAlpha);
         await tester.pumpAndSettle();
         expect(
           tester.widget<ReaderScreen>(find.byType(ReaderScreen)).bookId,
@@ -171,6 +174,13 @@ void main() {
               (first.dy == second.dy && first.dx < second.dx),
           isTrue,
         );
+        expect(find.text('Unavailable or removed'), findsNothing);
+        expect(find.text('Unavailable item'), findsNothing);
+        await tester.tap(find.byKey(const Key('catalogue-filters')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Show unavailable items'));
+        await tester.tap(find.byKey(const Key('filters-apply')));
+        await tester.pumpAndSettle();
         expect(find.text('Unavailable or removed'), findsOneWidget);
         await tester.tap(find.text('Unavailable item'));
         await tester.pumpAndSettle();
@@ -255,8 +265,16 @@ void main() {
         const Offset(0, 4000),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('catalogue-search-toggle')));
-      await tester.pumpAndSettle();
+      if (find
+          .byKey(const Key('open-search'))
+          .hitTestable()
+          .evaluate()
+          .isNotEmpty) {
+        await tester.tap(
+          find.byKey(const Key('open-search')).hitTestable().last,
+        );
+        await tester.pumpAndSettle();
+      }
       await tester.enterText(
         find.byKey(const Key('catalogue-search')),
         'Book 03',

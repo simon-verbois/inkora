@@ -162,6 +162,8 @@ void main() {
         await _asyncFrames(tester);
         await tester.tapAt(const Offset(195, 420));
         await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('reader-more')));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('Finish volume'));
         await _asyncFrames(tester);
         if (available) {
@@ -179,6 +181,8 @@ void main() {
           await tester.runAsync(() => db.select(db.progressEvents).get()),
           isEmpty,
         );
+        await tester.tap(find.byKey(const Key('reader-more')));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('Finish volume'));
         await _asyncFrames(tester);
         await tester.tap(

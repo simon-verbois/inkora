@@ -1,4 +1,4 @@
-import '../../../app/widgets/ink_surface.dart';
+import '../../../app/widgets/ink_screen_header.dart';
 import '../../../app/widgets/inkora_widgets.dart';
 import '../../../app/icons/inkora_icons.dart';
 import 'preference_labels.dart';
@@ -16,6 +16,7 @@ import 'package:go_router/go_router.dart';
 import '../application/ui_preferences_provider.dart';
 import 'settings_screen.dart';
 import 'settings_adaptive_layout.dart';
+import 'settings_navigation.dart';
 
 class SetupScreen extends ConsumerStatefulWidget {
   const SetupScreen({super.key, this.editing = false});
@@ -29,9 +30,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     ('language', 'Language'),
     ('introduction', 'Welcome to Inkora'),
     ('appearance', 'Appearance'),
-    ('gestures', 'Reading gestures'),
+    ('gestures', 'Gestures'),
     ('library-defaults', 'Library defaults'),
-    ('quality', 'Quality'),
+    ('quality', 'Image quality'),
     ('downloads', 'Downloads'),
     ('accessibility', 'Accessibility'),
   ];
@@ -138,7 +139,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
             if (!didPop) _back(step);
           },
           child: Scaffold(
-            appBar: InkAppBar(
+            appBar: InkScreenHeader(
               automaticallyImplyLeading: false,
               title: LText(wide ? stepTitle : 'Make Inkora yours'),
               actions: [
@@ -180,36 +181,21 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                                     index <= _sections.length;
                                     index++
                                   )
-                                    Semantics(
+                                    SettingsNavTile(
+                                      key: ValueKey('setup-stage-$index'),
                                       selected: index == step,
-                                      child: ListTile(
-                                        key: ValueKey('setup-stage-$index'),
-                                        selected: index == step,
-                                        selectedTileColor: Theme.of(context)
-                                            .colorScheme
-                                            .secondaryContainer,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                            ),
-                                        leading: ExcludeSemantics(
-                                          child: index < step
-                                              ? const Icon(
-                                                  InkIcons.checkCircle,
-                                                  size: 22,
-                                                )
-                                              : Text('${index + 1}'),
-                                        ),
-                                        title: LText(
-                                          index < _sections.length
-                                              ? _sections[index].$2
-                                              : 'Ready to read',
-                                        ),
+                                      leading: ExcludeSemantics(
+                                        child: index < step
+                                            ? const Icon(
+                                                InkIcons.checkCircle,
+                                                size: 22,
+                                              )
+                                            : Text('${index + 1}'),
+                                      ),
+                                      title: LText(
+                                        index < _sections.length
+                                            ? _sections[index].$2
+                                            : 'Ready to read',
                                       ),
                                     ),
                                 ],

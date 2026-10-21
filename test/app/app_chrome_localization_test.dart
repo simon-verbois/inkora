@@ -29,7 +29,7 @@ void main() {
         expect(slider.hitTestable(), findsOneWidget);
         expect(
           find.text(AppStrings(language).text('Floating navigation')),
-          findsOneWidget,
+          findsNothing,
         );
         expect(
           find.text(AppStrings(language).text('Panel opacity')),
@@ -41,7 +41,7 @@ void main() {
               'Applies to navigation, headers and search. Text stays fully opaque.',
             ),
           ),
-          findsOneWidget,
+          findsNothing,
         );
         expect(tester.takeException(), isNull);
         await harness.close(tester);

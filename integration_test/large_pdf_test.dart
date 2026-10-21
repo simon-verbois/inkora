@@ -120,7 +120,9 @@ void main() {
       // Search scans the complete document and must reach its final text layer.
       await tester.tapAt(tester.getCenter(find.byType(EbookReaderScreen)));
       await tester.pump(const Duration(milliseconds: 400));
-      await tester.tap(find.byTooltip('Search in book'));
+      await tester.tap(find.byKey(const Key('reader-more')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Search in book'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), 'LANTERN00500');
       await tester.testTextInput.receiveAction(TextInputAction.search);

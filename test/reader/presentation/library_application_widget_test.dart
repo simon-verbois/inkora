@@ -62,16 +62,13 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text('Preferences'));
         await tester.pumpAndSettle();
-        final mode = find.byWidgetPredicate(
-          (w) =>
-              w is DropdownButtonFormField<String> &&
-              w.decoration.labelText == 'Mode',
-        );
+        final mode = find.byKey(const Key('reader-choice-mode-webtoon'));
         await tester.ensureVisible(mode);
         await tester.pumpAndSettle();
         await tester.tap(mode);
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Webtoon').last);
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
         await tester.pumpAndSettle();
         expect(find.text('Direction'), findsNothing);
         expect(find.text('Page layout'), findsNothing);
@@ -80,6 +77,12 @@ void main() {
         await tester.ensureVisible(apply);
         await tester.pumpAndSettle();
         await tester.tap(apply);
+        await tester.pumpAndSettle();
+        // The library-wide replacement is confirmed first.
+        await tester.tap(find.text('Apply to all series and books').last);
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
         await tester.pumpAndSettle();
         final settings = await tester.runAsync(
           () => store.settings(manifest).first,

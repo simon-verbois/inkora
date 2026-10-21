@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/router.dart';
-import 'package:inkora/app/widgets/ink_surface.dart';
 import 'package:inkora/features/library/presentation/catalogue_screen.dart';
 import 'package:inkora/features/library/presentation/catalogue_grid.dart';
 import 'package:inkora/features/settings/data/ui_preferences_store.dart';
@@ -16,8 +15,6 @@ void main() {
     final harness = await UiHarness.create(tester);
     addTearDown(() => harness.close(tester));
     await harness.mount(tester);
-    await tester.tap(find.byKey(const Key('catalogue-search-toggle')));
-    await tester.pumpAndSettle();
     final search = find.byType(CatalogueScreen);
     expect(
       find.descendant(
@@ -36,6 +33,14 @@ void main() {
     await tester.tap(find.text('Graphic novels').last);
     await tester.pumpAndSettle();
     final field = find.byKey(const Key('catalogue-search')).last;
+    if (find
+        .byKey(const Key('open-search'))
+        .hitTestable()
+        .evaluate()
+        .isNotEmpty) {
+      await tester.tap(find.byKey(const Key('open-search')).hitTestable().last);
+      await tester.pumpAndSettle();
+    }
     await tester.enterText(field, 'Moonlit');
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
@@ -43,6 +48,14 @@ void main() {
       find.descendant(of: search, matching: find.text('Moonlit District')),
       findsNothing,
     );
+    if (find
+        .byKey(const Key('open-search'))
+        .hitTestable()
+        .evaluate()
+        .isNotEmpty) {
+      await tester.tap(find.byKey(const Key('open-search')).hitTestable().last);
+      await tester.pumpAndSettle();
+    }
     await tester.enterText(field, 'Atlas');
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
@@ -60,18 +73,26 @@ void main() {
       final harness = await UiHarness.create(tester);
       addTearDown(() => harness.close(tester));
       await harness.mount(tester);
-      await tester.tap(find.byKey(const Key('catalogue-search-toggle')));
-      await tester.pumpAndSettle();
       final search = find.byType(CatalogueScreen);
       final field = find.byKey(const Key('catalogue-search')).last;
       final grid = find.descendant(
         of: search,
         matching: find.byType(CatalogueGrid),
       );
-      await tester.enterText(field, 'A');
-      await tester.pump();
+      // Not even the first keystroke rebuilds the screen: the search field
+      // owns its clear button (no empty/non-empty setState on the screen).
       final before = tester.widget<CatalogueGrid>(grid);
-      for (final term in ['At', 'Atl', 'Atlas']) {
+      for (final term in ['A', 'At', 'Atl', 'Atlas']) {
+        if (find
+            .byKey(const Key('open-search'))
+            .hitTestable()
+            .evaluate()
+            .isNotEmpty) {
+          await tester.tap(
+            find.byKey(const Key('open-search')).hitTestable().last,
+          );
+          await tester.pumpAndSettle();
+        }
         await tester.enterText(field, term);
         await tester.pump(const Duration(milliseconds: 20));
         expect(tester.widget<CatalogueGrid>(grid), same(before));
@@ -80,6 +101,16 @@ void main() {
       await tester.pumpAndSettle();
       final after = tester.widget<CatalogueGrid>(grid);
       expect(after, isNot(same(before)));
+      if (find
+          .byKey(const Key('open-search'))
+          .hitTestable()
+          .evaluate()
+          .isNotEmpty) {
+        await tester.tap(
+          find.byKey(const Key('open-search')).hitTestable().last,
+        );
+        await tester.pumpAndSettle();
+      }
       await tester.enterText(field, ' Atlas ');
       await tester.pump(const Duration(milliseconds: 200));
       await tester.pumpAndSettle();
@@ -126,20 +157,11 @@ void main() {
       );
       expect(emissions, [.94, .88]);
       expect(tester.widget<MaterialApp>(find.byType(MaterialApp)), same(app));
-      final panel = tester.widget<InkSurface>(
-        find.byKey(const Key('floating-navigation-panel')),
-      );
-      expect(panel.opacity, .88);
-      final toggle = tester.widget<SwitchListTile>(
-        find.byKey(const Key('floating-navigation-setting')),
-      );
-      toggle.onChanged!(false);
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('floating-navigation-panel')), findsNothing);
       expect(
-        (await tester.runAsync(() => store.watch().first))!.floatingNavigation,
-        isFalse,
+        find.byKey(const Key('floating-navigation-setting')),
+        findsNothing,
       );
+      expect(find.byKey(const Key('floating-navigation-panel')), findsNothing);
       expect(tester.takeException(), isNull);
       await harness.close(tester);
     },

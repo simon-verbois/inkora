@@ -19,7 +19,7 @@ void main() {
   for (final size in [const Size(320, 640), const Size(1024, 768)]) {
     for (final scale in [1.0, 2.0]) {
       testWidgets(
-        'manual ebook styles keep scoped font size and only persist on Save at $size / $scale',
+        'manual ebook styles keep scoped font size and apply immediately at $size / $scale',
         (tester) async {
           if (const bool.fromEnvironment('CAPTURE_READER_SETTINGS')) {
             await tester.runAsync(() async {
@@ -72,7 +72,7 @@ void main() {
           await openSheet(tester, store, manifest);
           // An existing explicit background must not be replaced on opening.
           expect(
-            find.byKey(const ValueKey('book-background-white')),
+            find.byKey(const Key('reader-background-white')),
             findsOneWidget,
           );
           await tester.ensureVisible(find.text('Reading style'));
@@ -101,15 +101,8 @@ void main() {
             });
           }
 
-          expect(
-            await tester.runAsync(
-              () async => (await store.overrides(
-                SettingsScope.book,
-                manifest.bookId,
-              )).toJson(),
-            ),
-            const ReadingOverrides().toJson(),
-          );
+          // The style applies at once; the other tabs show its values.
+          await settle(tester);
           await tester.ensureVisible(find.text('Typography'));
           await tester.tap(find.text('Typography'));
           await tester.pumpAndSettle();
@@ -119,9 +112,7 @@ void main() {
                 .value,
             1.8,
           );
-          await tester.ensureVisible(find.text('Save'));
-          await tester.tap(find.text('Save'));
-          await settle(tester);
+          expect(find.text('Save'), findsNothing);
           final saved = (await tester.runAsync(
             () => store.settings(manifest).first,
           ))!;
@@ -129,6 +120,8 @@ void main() {
           expect(saved.ebook.fontSize, 1.8);
           expect(saved.ebook.scroll, true);
           expect(saved.ebook.columns, 'one');
+          await tester.binding.handlePopRoute();
+          await tester.pumpAndSettle();
           await openSheet(tester, store, manifest);
           await tester.ensureVisible(find.text('Reading style'));
           await tester.tap(find.text('Reading style'));
@@ -136,13 +129,12 @@ void main() {
           final fantasy = find.byKey(const ValueKey('ebook-style-fantasy'));
           await tester.ensureVisible(fantasy);
           await tester.tap(fantasy);
-          await tester.ensureVisible(find.byTooltip('Close'));
-          await tester.tap(find.byTooltip('Close'));
+          await settle(tester);
+          await tester.binding.handlePopRoute();
           await tester.pumpAndSettle();
           expect(find.text('Reading style'), findsNothing);
-          await tester.pumpAndSettle();
           expect(
-            EbookStyle.scienceFiction.matches(
+            EbookStyle.fantasy.matches(
               (await tester.runAsync(() => store.settings(manifest).first))!,
             ),
             true,

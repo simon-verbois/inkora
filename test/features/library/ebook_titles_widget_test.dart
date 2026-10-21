@@ -83,7 +83,7 @@ void main() {
             'book:a',
             'book:b',
           ]);
-          expect(find.text('25% read').hitTestable(), findsWidgets);
+          expect(find.text('25 %').hitTestable(), findsWidgets);
           await tester.tap(find.byKey(const ValueKey('resume-a')));
           await tester.pumpAndSettle();
           expect(
@@ -118,8 +118,8 @@ void main() {
             findsWidgets,
           ); // Credits, never an author card.
           expect(find.byKey(const ValueKey('series:author')), findsNothing);
-          final cards = tester.widgetList<CatalogueCard>(
-            find.byType(CatalogueCard),
+          final cards = tester.widgetList<InkCoverTile>(
+            find.byType(InkCoverTile),
           );
           if (scale == 1) {
             expect(cards.any((card) => card.item.isEbook), isTrue);
@@ -127,8 +127,16 @@ void main() {
           }
           router.go('/');
           await tester.pumpAndSettle();
-          await tester.tap(find.byKey(const Key('catalogue-search-toggle')));
-          await tester.pumpAndSettle();
+          if (find
+              .byKey(const Key('open-search'))
+              .hitTestable()
+              .evaluate()
+              .isNotEmpty) {
+            await tester.tap(
+              find.byKey(const Key('open-search')).hitTestable().last,
+            );
+            await tester.pumpAndSettle();
+          }
           await tester.enterText(
             find.byKey(const Key('catalogue-search')),
             'Novel c',
@@ -214,7 +222,7 @@ void main() {
           ProviderScope(
             overrides: [
               coverRepositoryProvider.overrideWith((ref) async => null),
-              downloadedSeriesProvider.overrideWith(
+              downloadedReadingSeriesProvider.overrideWith(
                 (ref) => Stream.value(groups),
               ),
               downloadsProvider.overrideWith(
@@ -237,10 +245,19 @@ void main() {
         expect(find.text('Reader a'), findsOneWidget);
         router.pop();
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const ValueKey('volume-download-a')));
+        // List rows (the default) keep the shared trailing remove action and
+        // offer removal in their long-press menu too.
+        expect(find.byKey(const ValueKey('volume-download-a')), findsOneWidget);
+        expect(find.byType(PopupMenuButton<String>), findsNothing);
+        await tester.longPress(
+          find.byKey(const ValueKey('download-row-book:a')),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Read offline'), findsOneWidget);
+        await tester.tap(find.text('Remove download'));
         await tester.pumpAndSettle();
         expect(find.text('Remove this download?'), findsOneWidget);
-        await tester.tap(find.text('Remove download').last);
+        await tester.tap(find.byKey(const Key('ink-confirm-accept')));
         await tester.pumpAndSettle();
         expect(removed, [
           groups

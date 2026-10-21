@@ -1,5 +1,3 @@
-import '../../support/settings_qr_fixture.dart';
-
 import 'dart:typed_data';
 import 'dart:io';
 
@@ -57,15 +55,15 @@ void main() {
     final a = ReadingHistoryStore(db, 'reader-account');
     await a.opened(readerManifest());
     await a.opened(readerManifest());
-    expect(await a.watch(500).first, hasLength(1));
+    expect(await a.recent(500), hasLength(1));
     await ReadingHistoryStore(db, 'b').opened(readerManifest(account: 'b'));
     for (var i = 0; i < 503; i++) {
       await a.opened(readerManifest(book: 'b-$i'));
     }
-    expect(await a.watch(500).first, hasLength(500));
+    expect(await a.recent(500), hasLength(500));
     await a.clear();
-    expect(await a.watch(500).first, isEmpty);
-    expect(await ReadingHistoryStore(db, 'b').watch(500).first, hasLength(1));
+    expect(await a.recent(500), isEmpty);
+    expect(await ReadingHistoryStore(db, 'b').recent(500), hasLength(1));
   });
   test('files round trip preferences and both bookmark kinds without setup, secrets or progress', () async {
     final ui = UiPreferencesStore(db);
@@ -117,39 +115,43 @@ void main() {
       throwsFormatException,
     );
   });
-  test(
-    'QR settings are portable, bounded and reject unrelated data/version',
-    () async {
-      await ReaderStore(db, 'a').saveOverrides(
-        SettingsScope.global,
-        '',
-        const ReadingOverrides(mode: ReadingMode.webtoon),
-      );
-      await ReaderStore(db, 'a').saveOverrides(
-        SettingsScope.book,
-        'book',
-        const ReadingOverrides(mode: ReadingMode.manga),
-      );
-      final transfer = SettingsTransfer(db, 'a');
-      final qr = await legacySettingsQr(transfer);
-      expect(qr.length, lessThanOrEqualTo(SettingsTransfer.maxQrLength));
-      final value = await transfer.inspectQr(qr);
-      expect(value['bookmarks'], isEmpty);
-      expect(value['preferences'], hasLength(1));
-      await SettingsTransfer(db, 'b').apply(value);
-      expect(
-        (await ReaderStore(db, 'b').overrides(SettingsScope.global, '')).mode,
-        ReadingMode.webtoon,
-      );
-      await expectLater(
-        transfer.inspectQr('https://example.com'),
-        throwsFormatException,
-      );
-      final invalid = {...value, 'version': 2};
-      await expectLater(transfer.apply(invalid), throwsFormatException);
-      expect(await db.select(db.readerPositions).get(), isEmpty);
-    },
-  );
+  test('portable file settings retain global preferences and reject unrelated versions', () async {
+    await ReaderStore(db, 'a').saveOverrides(
+      SettingsScope.global,
+      '',
+      const ReadingOverrides(mode: ReadingMode.webtoon),
+    );
+    await ReaderStore(db, 'a').saveOverrides(
+      SettingsScope.book,
+      'book',
+      const ReadingOverrides(mode: ReadingMode.manga),
+    );
+    final transfer = SettingsTransfer(db, 'a');
+    final backup = await transfer.inspect(await transfer.export());
+    final value = {
+      ...backup,
+      'portable': true,
+      'preferences': [
+        for (final preference in backup['preferences'] as List)
+          if (preference['scope'] == 'global') preference,
+      ],
+      'bookmarks': <Object>[],
+    }..remove('account');
+    expect(value['bookmarks'], isEmpty);
+    expect(value['preferences'], hasLength(1));
+    await SettingsTransfer(db, 'b').apply(value);
+    expect(
+      (await ReaderStore(db, 'b').overrides(SettingsScope.global, '')).mode,
+      ReadingMode.webtoon,
+    );
+    await expectLater(
+      transfer.inspect(Uint8List.fromList(utf8.encode('https://example.com'))),
+      throwsFormatException,
+    );
+    final invalid = {...value, 'version': 2};
+    await expectLater(transfer.apply(invalid), throwsFormatException);
+    expect(await db.select(db.readerPositions).get(), isEmpty);
+  });
   test(
     'malformed entries roll back UI/settings and bookmark writes together',
     () async {
@@ -267,7 +269,7 @@ void main() {
       throwsFormatException,
     );
     await expectLater(
-      transfer.inspectQr('${SettingsTransfer.qrPrefix}not-gzip'),
+      transfer.inspect(Uint8List.fromList(utf8.encode('not-json'))),
       throwsFormatException,
     );
     final ui = UiPreferencesStore(db);

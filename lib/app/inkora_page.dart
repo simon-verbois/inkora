@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'theme/horizontal_page_transitions.dart';
+
 /// Material transitions with predictive back limited to the visible navigator.
 class InkoraPage<T> extends MaterialPage<T> {
   const InkoraPage({
@@ -11,9 +13,13 @@ class InkoraPage<T> extends MaterialPage<T> {
     super.maintainState,
     super.fullscreenDialog,
     super.allowSnapshotting,
+    this.reveal = false,
     super.canPop,
     super.onPopInvoked,
   });
+
+  /// Short horizontal fade for the three destinations opened from Home's header.
+  final bool reveal;
 
   @override
   Route<T> createRoute(BuildContext context) => _InkoraPageRoute<T>(this);
@@ -31,6 +37,25 @@ class _InkoraPageRoute<T> extends PageRoute<T>
   bool get maintainState => _page.maintainState;
   @override
   bool get fullscreenDialog => _page.fullscreenDialog;
+
+  @override
+  Widget buildTransitions(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    if (!_page.reveal) {
+      return super.buildTransitions(
+        context,
+        animation,
+        secondaryAnimation,
+        child,
+      );
+    }
+    return const HorizontalPageTransitionsBuilder(reveal: true)
+        .buildTransitions(this, context, animation, secondaryAnimation, child);
+  }
 
   @override
   bool get popGestureEnabled {

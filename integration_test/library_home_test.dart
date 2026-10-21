@@ -1,3 +1,4 @@
+import '../test/support/home_navigation.dart';
 import 'support/ui_fixture_binding.dart';
 
 import 'package:flutter/material.dart';
@@ -7,7 +8,6 @@ import 'package:inkora/features/library/presentation/catalogue_detail_screen.dar
 import 'package:inkora/features/settings/presentation/settings_screen.dart';
 
 import '../test/support/ui_harness.dart';
-import '../test/app/branch_transition_test.dart' as branches;
 import '../test/app/predictive_back_widget_test.dart' as predictive;
 import '../test/app/reader_shortcut_shell_test.dart' as shortcut;
 import '../test/features/library/library_home_navigation_test.dart'
@@ -18,7 +18,6 @@ import '../test/features/library/discovery_widget_test.dart' as removed;
 void main() {
   final binding = UiFixtureIntegrationBinding();
   if (!const bool.fromEnvironment('NATIVE_NAV_EDGE_ONLY')) {
-    branches.main();
     navigation.main();
     home.main();
     removed.main();
@@ -55,7 +54,7 @@ void main() {
         // departing widget and allow the native reverse animation to complete.
         await tester.pumpAndSettle();
         expect(find.byType(CatalogueDetailScreen), findsNothing);
-        await tester.tap(find.byKey(const Key('navigation-settings')));
+        await openHomeDestination(tester, 'settings');
         await tester.pumpAndSettle();
         expect(
           tester.widget<SettingsScreen>(find.byType(SettingsScreen)).section,

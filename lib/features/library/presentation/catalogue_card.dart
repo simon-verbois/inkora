@@ -4,13 +4,20 @@ import '../../../app/icons/inkora_icons.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/inkora_theme.dart';
+import '../../../app/widgets/inkora_widgets.dart';
+import '../../../offline/application/offline_coordinator.dart';
+import '../../../offline/data/download_store.dart';
+import '../../../offline/presentation/download_book_action.dart';
 import '../domain/catalogue.dart';
 import '../domain/resume_entry.dart';
 import 'book_cover.dart';
 import '../../settings/domain/ui_preferences.dart';
 import 'catalogue_presentation.dart';
+import 'progress_format.dart';
 
 double catalogueCoverWidth(double extent, CatalogueDensity density) {
   final available = extent - 32;
@@ -23,158 +30,392 @@ double catalogueCoverWidth(double extent, CatalogueDensity density) {
   return (available - (columns - 1) * gap) / columns;
 }
 
-class CatalogueCard extends StatelessWidget {
-  const CatalogueCard({
+typedef _TileAction = ({String label, IconData icon, VoidCallback run});
+
+/// The shared cover tile of shelves and grids: artwork with the standard
+/// badges (volume number, read, reading progress, offline, unavailable), the
+/// title and one metadata/progress line. A tap runs the primary action; a
+/// long press opens a context menu when there is more than one action. Screen
+/// readers hear one combined label and get the menu entries as custom actions.
+class InkCoverTile extends ConsumerWidget {
+  const InkCoverTile({
     super.key,
     required this.item,
-    this.showMenu = true,
     this.resume,
     this.titleMaxLines = 2,
-    this.onRemoveDownload,
     this.onOpen,
     this.coverItem,
-    this.coverAction,
+    this.openLabel,
+    this.downloadedJob,
+    this.onRemoveDownload,
+    this.offlineBadge = true,
+    this.resumeOpensBook = true,
   });
   final CatalogueItem item;
   final CatalogueItem? coverItem;
-  final Widget? coverAction;
-  final bool showMenu;
   final ResumeEntry? resume;
   final int titleMaxLines;
-  final ValueChanged<CatalogueItem>? onRemoveDownload;
   final ValueChanged<CatalogueItem>? onOpen;
+
+  /// Menu label of the tap action. Defaults to Read book, Continue reading or
+  /// View details depending on the item.
+  final String? openLabel;
+
+  /// Completed download already known by the caller (Downloads gallery).
+  final DownloadJob? downloadedJob;
+  final Future<void> Function(String jobId)? onRemoveDownload;
+
+  /// Whether to show the offline badge (redundant inside Downloads).
+  final bool offlineBadge;
+
+  /// Whether a series card with a [resume] position opens that book (Continue
+  /// reading) or the series details (Up next, which then offers the book in
+  /// its context menu).
+  final bool resumeOpensBook;
+
+  void _open(BuildContext context) =>
+      onOpen == null ? openCatalogueItem(context, item) : onOpen!(item);
+
+  Future<void> _download(BuildContext context, WidgetRef ref) async {
+    DownloadJob? job;
+    for (final candidate
+        in ref.read(downloadsProvider).asData?.value ?? const <DownloadJob>[]) {
+      if (candidate.bookId == item.id &&
+          candidate.state != DownloadState.cancelled) {
+        job = candidate;
+      }
+    }
+    try {
+      await queueBookDownload(
+        ref,
+        item.id,
+        job:
+            job?.state == DownloadState.paused ||
+                job?.state == DownloadState.failed
+            ? job
+            : null,
+      );
+      if (context.mounted) notifyInk(context, 'Queued');
+    } catch (_) {
+      if (context.mounted) {
+        notifyInk(
+          context,
+          'Unable to queue this download. Check connection and storage quota.',
+        );
+      }
+    }
+  }
+
+  Future<void> _remove(BuildContext context, WidgetRef ref) async {
+    if (!await confirmRemoveDownload(context, item.title) || !context.mounted) {
+      return;
+    }
+    try {
+      await removeBookDownload(
+        ref,
+        item.id,
+        job: downloadedJob,
+        onRemoveDownload: onRemoveDownload,
+      );
+    } catch (_) {
+      if (context.mounted) {
+        notifyInk(context, 'Unable to remove this download. Try again.');
+      }
+    }
+  }
+
+  List<_TileAction> _actions(
+    BuildContext context,
+    WidgetRef ref,
+    bool downloaded,
+  ) {
+    if (!item.canOpen) return const [];
+    final book = item.kind == CatalogueKind.book;
+    final continues = !book && resume != null && resumeOpensBook;
+    final actions = <_TileAction>[
+      (
+        label:
+            openLabel ??
+            (book
+                ? 'Read book'
+                : continues
+                ? 'Continue reading'
+                : 'View details'),
+        icon: book || continues ? InkIcons.bookOpen : InkIcons.info,
+        run: () => _open(context),
+      ),
+      if (!book && resume != null)
+        continues
+            ? (
+                label: 'View details',
+                icon: InkIcons.info,
+                run: () => openCatalogueItem(context, item),
+              )
+            : (
+                label: 'Read book',
+                icon: InkIcons.bookOpen,
+                run: () => openCatalogueItem(context, resume!.item),
+              ),
+      if (book && downloaded)
+        (
+          label: 'Remove download',
+          icon: InkIcons.trash,
+          run: () => _remove(context, ref),
+        )
+      else if (book && item.pageCount > 0)
+        (
+          label: 'Download volume',
+          icon: InkIcons.downloadSimple,
+          run: () => _download(context, ref),
+        ),
+    ];
+    // A single entry would only repeat the tap.
+    return actions.length < 2 ? const [] : actions;
+  }
+
+  Future<void> _menu(
+    BuildContext context,
+    List<_TileAction> actions,
+    Offset? position,
+  ) async {
+    final overlay =
+        Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final box = context.findRenderObject() as RenderBox?;
+    final anchor =
+        position ??
+        (box == null
+            ? overlay.size.center(Offset.zero)
+            : box.localToGlobal(box.size.center(Offset.zero)));
+    final selected = await showMenu<_TileAction>(
+      context: context,
+      position: RelativeRect.fromRect(
+        anchor & Size.zero,
+        Offset.zero & overlay.size,
+      ),
+      items: [
+        for (final action in actions)
+          PopupMenuItem(
+            value: action,
+            child: Row(
+              children: [
+                Icon(action.icon, size: 20),
+                const SizedBox(width: InkSpace.md),
+                Flexible(child: LText(action.label)),
+              ],
+            ),
+          ),
+      ],
+    );
+    selected?.run();
+  }
+
   @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) => Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(InkoraLayout.radius),
-          key: resume == null ? null : ValueKey('resume-${resume!.item.id}'),
-          onTap: item.canOpen
-              ? () => onOpen == null
-                    ? openCatalogueItem(context, item)
-                    : onOpen!(item)
-              : null,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Stack(
-                children: [
-                  BookCover(item: coverItem ?? item),
-                  if (resume != null && !resume!.onDeck)
-                    Positioned(
-                      left: 6,
-                      right: 6,
-                      bottom: 6,
-                      child: LinearProgressIndicator(
-                        value: resume!.progress,
-                        minHeight: 5,
-                        backgroundColor: Colors.black.withValues(alpha: .75),
-                        borderRadius: BorderRadius.circular(6),
-                        semanticsLabel: context.tr("Reading progress"),
-                        semanticsValue: '${(resume!.progress * 100).round()}%',
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = AppStrings.of(context);
+    final theme = Theme.of(context);
+    final colors = InkoraColors.of(context);
+    final identity = item.identity;
+    final downloaded =
+        downloadedJob != null ||
+        offlineBadge &&
+            ref.watch(
+              downloadedIdentitiesProvider.select(
+                (value) => value.asData?.value.contains(identity) ?? false,
+              ),
+            );
+    final progress = resume == null
+        ? formatItemProgress(strings, item)
+        : formatResumeProgress(strings, resume!);
+    final title = item.kind == CatalogueKind.book
+        ? item.title
+        : resume?.seriesTitle ?? item.title;
+    final description = resume == null
+        ? catalogueDescription(item, context: context)
+        : progress.label;
+    final read = resume == null && progress.state == ReadingState.read;
+    final ratio = resume == null ? null : progress.ratio;
+    final actions = _actions(context, ref, downloaded);
+    final semantics = [
+      title,
+      description,
+      if (resume == null && progress.state != ReadingState.unread)
+        progress.label,
+      if (resume != null) strings.text(readingStateLabel(progress.state)),
+      if (downloaded) strings.text('Ready offline'),
+    ].join(', ');
+    Offset? pressed;
+    void longPress() => _menu(context, actions, pressed);
+    return Semantics(
+      container: true,
+      button: true,
+      enabled: item.canOpen,
+      label: semantics,
+      onTap: item.canOpen ? () => _open(context) : null,
+      onLongPress: actions.isEmpty ? null : longPress,
+      customSemanticsActions: {
+        for (final action in actions.skip(1))
+          CustomSemanticsAction(label: strings.text(action.label)): action.run,
+      },
+      excludeSemantics: true,
+      child: LayoutBuilder(
+        builder: (context, constraints) => Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            borderRadius: InkRadius.medium,
+            key: resume == null ? null : ValueKey('resume-${resume!.item.id}'),
+            onTap: item.canOpen ? () => _open(context) : null,
+            onTapDown: (details) => pressed = details.globalPosition,
+            onLongPress: actions.isEmpty ? null : longPress,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Stack(
+                  children: [
+                    BookCover(item: coverItem ?? item),
+                    PositionedDirectional(
+                      top: InkSpace.xs,
+                      end: InkSpace.xs,
+                      child: Column(
+                        children: [
+                          if (!item.canOpen)
+                            const InkCoverIconBadge(
+                              key: Key('cover-unavailable'),
+                              icon: InkIcons.prohibit,
+                            )
+                          else if (read)
+                            InkCoverIconBadge(
+                              key: const Key('cover-read'),
+                              icon: InkIcons.check,
+                              background: colors.success,
+                              foreground: theme.colorScheme.surface,
+                            ),
+                          if (downloaded && item.canOpen)
+                            const Padding(
+                              padding: EdgeInsets.only(top: InkSpace.xs),
+                              child: InkCoverIconBadge(
+                                key: Key('cover-offline'),
+                                icon: InkIcons.downloadSimple,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                  if (coverAction != null)
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: Material(
-                        color: Colors.black.withValues(alpha: .7),
-                        borderRadius: BorderRadius.circular(24),
-                        child: IconTheme(
-                          data: const IconThemeData(color: Colors.white),
-                          child: coverAction!,
+                    if (ratio != null)
+                      Positioned(
+                        left: InkSpace.sm,
+                        right: InkSpace.sm,
+                        bottom: InkSpace.sm,
+                        child: LinearProgressIndicator(
+                          key: const Key('cover-progress'),
+                          value: ratio,
+                          minHeight: 5,
+                          backgroundColor: colors.scrim,
+                          borderRadius: InkRadius.small,
                         ),
                       ),
-                    )
-                  else if (showMenu &&
-                      (onRemoveDownload != null || item.canOpen))
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: PopupMenuButton<String>(
-                        tooltip: context.tr('Actions for {0}', [item.title]),
-                        icon: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: .6),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            InkIcons.dotsThreeVertical,
-                            size: 18,
-                            color: Colors.white,
-                          ),
-                        ),
-                        onSelected: (value) {
-                          if (value == 'remove') {
-                            onRemoveDownload?.call(item);
-                          } else if (value == 'read') {
-                            onOpen?.call(item);
-                          } else if (value == 'details') {
-                            openCatalogueItem(context, item);
-                          }
-                        },
-                        itemBuilder: (_) => onRemoveDownload != null
-                            ? const [
-                                PopupMenuItem(
-                                  value: 'read',
-                                  child: LText('Read offline'),
-                                ),
-                                PopupMenuItem(
-                                  value: 'remove',
-                                  child: LText('Remove download'),
-                                ),
-                              ]
-                            : [
-                                if (item.canOpen)
-                                  PopupMenuItem(
-                                    value: 'details',
-                                    child: LText(
-                                      item.kind == CatalogueKind.book
-                                          ? 'Read book'
-                                          : 'View details',
-                                    ),
-                                  ),
-                              ],
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                item.kind == CatalogueKind.book
-                    ? item.title
-                    : resume?.seriesTitle ?? item.title,
-                maxLines: titleMaxLines,
-                overflow: TextOverflow.ellipsis,
-                style: catalogueTitleStyle(context, constraints.maxWidth),
-              ),
-              if (resume != null && item.kind != CatalogueKind.book)
+                  ],
+                ),
+                const SizedBox(height: InkSpace.xs),
                 Text(
-                  resume!.item.title,
+                  title,
+                  maxLines: titleMaxLines,
+                  overflow: TextOverflow.ellipsis,
+                  style: catalogueTitleStyle(context, constraints.maxWidth),
+                ),
+                Text(
+                  description,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  style: theme.textTheme.meta?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
-              Text(
-                _description(context, item, resume),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+/// Small scrim pill drawn over artwork (volume number); no shadow or
+/// compositing layer. Shared by cover tiles and volume grids.
+class InkCoverBadge extends StatelessWidget {
+  const InkCoverBadge({super.key, required this.child});
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: InkoraColors.of(context).scrim,
+      borderRadius: InkRadius.round,
+    ),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: InkSpace.sm, vertical: 2),
+      child: child,
+    ),
+  );
+}
+
+/// Round scrim (or [background]) icon badge over artwork: read, offline,
+/// unavailable.
+class InkCoverIconBadge extends StatelessWidget {
+  const InkCoverIconBadge({
+    super.key,
+    required this.icon,
+    this.background,
+    this.foreground,
+  });
+  final IconData icon;
+  final Color? background, foreground;
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: background ?? InkoraColors.of(context).scrim,
+      shape: BoxShape.circle,
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(InkSpace.xs),
+      child: Icon(
+        icon,
+        size: 14,
+        color: foreground ?? InkoraColors.of(context).onScrim,
+      ),
+    ),
+  );
+}
+
+/// Grid item builder for first loads; the first tile announces loading once.
+Widget coverSkeletonBuilder(BuildContext context, int index) => index == 0
+    ? Semantics(
+        label: context.tr('Loading'),
+        excludeSemantics: true,
+        child: const CoverTileSkeleton(),
+      )
+    : const ExcludeSemantics(child: CoverTileSkeleton());
+
+/// Static first-load placeholder with the cover tile geometry.
+class CoverTileSkeleton extends StatelessWidget {
+  const CoverTileSkeleton({super.key});
+  @override
+  Widget build(BuildContext context) => const Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      AspectRatio(aspectRatio: InkoraLayout.coverRatio, child: InkSkeleton()),
+      SizedBox(height: InkSpace.sm),
+      FractionallySizedBox(
+        alignment: AlignmentDirectional.centerStart,
+        widthFactor: .8,
+        child: InkSkeleton(height: 10),
+      ),
+      SizedBox(height: InkSpace.xs),
+      FractionallySizedBox(
+        alignment: AlignmentDirectional.centerStart,
+        widthFactor: .5,
+        child: InkSkeleton(height: 8),
+      ),
+    ],
+  );
 }
 
 TextStyle? catalogueTitleStyle(BuildContext context, double width) =>
@@ -194,6 +435,7 @@ class CatalogueShelf extends StatelessWidget {
     this.onOpen,
     this.onViewAll,
     this.viewAllLabel = 'Browse all books',
+    this.resumeOpensBook = true,
   });
   final List<CatalogueItem> items;
   final double cardWidth;
@@ -202,6 +444,9 @@ class CatalogueShelf extends StatelessWidget {
   final ValueChanged<CatalogueItem>? onOpen;
   final VoidCallback? onViewAll;
   final String viewAllLabel;
+
+  /// See [InkCoverTile.resumeOpensBook].
+  final bool resumeOpensBook;
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
@@ -215,6 +460,7 @@ class CatalogueShelf extends StatelessWidget {
                 .min(cardWidth, (constraints.maxWidth - 30) / 3.2)
                 .clamp(72.0, 160.0);
       final theme = Theme.of(context);
+      final strings = AppStrings.of(context);
       final painter = TextPainter(
         textDirection: Directionality.of(context),
         textScaler: MediaQuery.textScalerOf(context),
@@ -233,48 +479,40 @@ class CatalogueShelf extends StatelessWidget {
           ..maxLines = 1
           ..layout(maxWidth: width);
         final titleHeight = painter.height;
-        double volumeHeight = 0;
-        if (resume != null && item.kind != CatalogueKind.book) {
-          painter
-            ..text = TextSpan(
-              text: item.title,
-              style: theme.textTheme.bodySmall,
-            )
-            ..maxLines = 1
-            ..layout(maxWidth: width);
-          volumeHeight = painter.height;
-        }
         painter
           ..text = TextSpan(
-            text: _description(context, item, resume),
-            style: theme.textTheme.bodySmall,
+            text: resume == null
+                ? catalogueDescription(item, context: context)
+                : formatResumeProgress(strings, resume).label,
+            style: theme.textTheme.meta,
           )
           ..maxLines = 1
           ..layout(maxWidth: width);
-        labelHeight = math.max(
-          labelHeight,
-          titleHeight + volumeHeight + painter.height,
-        );
+        labelHeight = math.max(labelHeight, titleHeight + painter.height);
       }
       painter.dispose();
+      // The end card leads to the full list only when the shelf is truncated.
+      final viewAll = onViewAll != null && items.length > maxItems;
       return SizedBox(
         height:
-            width / InkoraLayout.coverRatio + 4 + labelHeight.ceilToDouble(),
+            width / InkoraLayout.coverRatio +
+            InkSpace.xs +
+            labelHeight.ceilToDouble(),
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
-          itemCount: visible.length + (onViewAll == null ? 0 : 1),
+          itemCount: visible.length + (viewAll ? 1 : 0),
           separatorBuilder: (_, _) => const SizedBox(width: 10),
           itemBuilder: (_, index) => SizedBox(
             width: width,
             child: index == visible.length
                 ? _ShelfViewAllCard(label: viewAllLabel, onTap: onViewAll!)
-                : CatalogueCard(
+                : InkCoverTile(
                     item: visible[index],
-                    showMenu: false,
                     titleMaxLines: 1,
                     resume:
                         resumeEntries[visible[index].identity] ??
                         resumeEntries[visible[index].id],
+                    resumeOpensBook: resumeOpensBook,
                     onOpen: onOpen,
                   ),
           ),
@@ -303,7 +541,7 @@ class _ShelfViewAllCard extends StatelessWidget {
           type: MaterialType.transparency,
           child: InkWell(
             key: ValueKey('shelf-view-all-$label'),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: InkRadius.small,
             onTap: onTap,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -317,7 +555,7 @@ class _ShelfViewAllCard extends StatelessWidget {
                       border: Border.all(
                         color: InkoraColors.of(context).border,
                       ),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: InkRadius.small,
                     ),
                     child: Center(
                       child: Icon(
@@ -328,7 +566,7 @@ class _ShelfViewAllCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: InkSpace.xs),
                 LText(
                   'View all',
                   maxLines: 1,
@@ -343,19 +581,3 @@ class _ShelfViewAllCard extends StatelessWidget {
     ),
   );
 }
-
-String _description(
-  BuildContext context,
-  CatalogueItem item,
-  ResumeEntry? resume,
-) => resume == null
-    ? catalogueDescription(item, context: context)
-    : resume.onDeck
-    ? resume.pageCount > 0
-          ? context.tr('0/{0} pages', [resume.pageCount])
-          : context.tr('Up next')
-    : !resume.raster && (resume.pageKnown || resume.totalProgression != null)
-    ? context.tr('{0}% read', [(resume.progress * 100).round()])
-    : resume.pageKnown
-    ? context.tr('Page {0}/{1}', [resume.pageIndex + 1, resume.pageCount])
-    : context.tr('In progress');

@@ -1,5 +1,5 @@
+import '../../../app/widgets/ink_screen_header.dart';
 import 'settings_adaptive_layout.dart';
-import '../../../app/widgets/ink_surface.dart';
 import '../../../app/l10n/app_strings.dart';
 
 import 'package:flutter/material.dart';
@@ -32,11 +32,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
       await ref.read(sessionProvider.notifier).selectServer(saved.accountId);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: LText('Unable to open this saved connection. Try again.'),
-          ),
-        );
+        notifyInk(context, 'Unable to open this saved connection. Try again.');
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -44,36 +40,20 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
   }
 
   Future<void> _remove(SavedSession saved) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const LText('Remove this server?'),
-        content: const LText(
-          'The saved connection will be removed. Downloads and reading progress stay on this device.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const LText('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const LText('Remove server'),
-          ),
-        ],
-      ),
+    final confirmed = await confirmInk(
+      context,
+      title: 'Remove this server?',
+      message: 'The saved connection will be removed. Downloads and reading progress stay on this device.',
+      confirmLabel: 'Remove server',
+      destructive: true,
     );
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
     setState(() => _busy = true);
     try {
       await ref.read(sessionProvider.notifier).removeServer(saved.accountId);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: LText('Unable to remove this connection. Try again.'),
-          ),
-        );
+        notifyInk(context, 'Unable to remove this connection. Try again.');
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -87,7 +67,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     return Scaffold(
       appBar: SettingsPaneScope.wideOf(context)
           ? null
-          : InkAppBar(title: const LText('Servers and account')),
+          : InkScreenHeader(title: const LText('Servers and account')),
       body: SafeArea(
         top: false,
         child: InkContent(
@@ -96,56 +76,41 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
             padding: const EdgeInsets.all(16),
             children: [
               if (state.session != null) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                InkPanel(
+                  title: 'Active account',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            LText(
-                              'Server',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            SelectableText(
-                              state.session!.endpoint.uri.toString(),
-                            ),
-                          ],
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(InkIcons.checkCircle),
+                        title: Text(
+                          state.session!.endpoint.uri.host,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        subtitle: Text(state.session!.user.email),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 56, bottom: 12),
+                        child: SelectableText(
+                          state.session!.endpoint.uri.toString(),
+                          style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            LText(
-                              'Active account',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            SelectableText(state.session!.user.email),
-                          ],
+                      Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: OutlinedButton.icon(
+                          icon: const Icon(InkIcons.signOut),
+                          label: const LText('Sign out'),
+                          onPressed: _busy ? null : _signOut,
                         ),
                       ),
                     ],
                   ),
                 ),
-                Center(
-                  child: TextButton.icon(
-                    icon: const Icon(InkIcons.signOut),
-                    label: const LText('Sign out'),
-                    onPressed: _busy ? null : _signOut,
-                  ),
-                ),
-                const Divider(height: 32),
+                const SizedBox(height: 24),
                 LibraryVisibilityPanel(key: ValueKey(state.session!.accountId)),
-                const Divider(height: 32),
+                const SizedBox(height: 24),
               ],
               LText(
                 'Saved servers',
@@ -169,11 +134,14 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                             : InkIcons.books,
                       ),
                       title: Text(session.endpoint.uri.host),
-                      subtitle: LText(
-                        "{0}\n{1}",
-                        arguments: [session.endpoint.uri, session.user.email],
+                      subtitle: Text(session.user.email),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: InkRadius.medium,
                       ),
-                      isThreeLine: true,
+                      selectedTileColor: Theme.of(context)
+                          .colorScheme
+                          .primaryContainer
+                          .withValues(alpha: .25),
                       selected: session.accountId == state.session?.accountId,
                       onTap: _busy ? null : () => _select(session),
                       trailing: IconButton(
@@ -187,14 +155,16 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              ListTile(
-                key: const Key('add-server'),
-                leading: const Icon(InkIcons.books),
-                title: const LText('Add server'),
-                trailing: const Icon(InkIcons.caretRight),
-                onTap: _busy
-                    ? null
-                    : () => context.push('/settings/servers/add'),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: OutlinedButton.icon(
+                  key: const Key('add-server'),
+                  icon: const Icon(InkIcons.books),
+                  label: const LText('Add server'),
+                  onPressed: _busy
+                      ? null
+                      : () => context.push('/settings/servers/add'),
+                ),
               ),
             ],
           ),
@@ -204,26 +174,14 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
   }
 
   Future<void> _signOut() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const LText('Sign out of Inkora?'),
-        content: const LText(
+    final confirmed = await confirmInk(
+      context,
+      title: 'Sign out of Inkora?',
+      message:
           'Your downloaded books and saved preferences remain on this device.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const LText('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const LText('Sign out'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Sign out',
     );
-    if (confirmed == true && mounted) {
+    if (confirmed && mounted) {
       await ref.read(sessionProvider.notifier).logout();
     }
   }

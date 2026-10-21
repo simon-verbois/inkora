@@ -3,11 +3,12 @@ import '../data/raster_bookmarks.dart';
 import '../../offline/data/progress_store.dart';
 import '../../offline/domain/progress.dart';
 import '../../features/library/application/catalogue_providers.dart';
+import '../../features/library/data/catalogue_store.dart';
 import '../../features/library/domain/catalogue.dart';
 import '../../features/library/presentation/book_cover.dart';
+import '../../features/library/presentation/progress_format.dart';
 import '../../offline/application/offline_coordinator.dart';
 import '../../app/widgets/inkora_widgets.dart';
-import '../../app/theme/inkora_motion.dart';
 import 'reader_chrome.dart';
 import 'reader_details.dart';
 import 'ebook_reader_screen.dart';
@@ -20,6 +21,7 @@ import 'dart:async';
 
 import '../../offline/presentation/progress_sheet.dart';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -51,6 +53,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
   ReaderLocator? _currentLocator;
   int _positionRevision = 0;
   final _navigation = ValueNotifier<ReaderLocator?>(null);
+
+  /// Visible page for the top-bar subtitle. Only the subtitle listens; the
+  /// int comparison makes repeated same-page reports free.
+  final _page = ValueNotifier<int>(0);
   bool _ending = false;
   bool _refreshing = false;
   bool _changingChapter = false;
@@ -79,11 +85,25 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
       );
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          const SnackBar(content: LText('Unable to save page pairing.')),
-        );
+        notifyInk(context, 'Unable to save page pairing.');
       }
     }
+  }
+
+  OpenReader? _headingOwner;
+  Future<ReaderHeading>? _heading;
+
+  /// Memoized per opened book; created when the controls first appear.
+  Future<ReaderHeading>? _headingFor(
+    OpenReader reader,
+    ReaderRepository? repository,
+  ) {
+    if (repository == null) return null;
+    if (!identical(_headingOwner, reader)) {
+      _headingOwner = reader;
+      _heading = loadReaderHeading(repository, reader.manifest);
+    }
+    return _heading;
   }
 
   void _toggleControls() {
@@ -122,6 +142,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
   @override
   void dispose() {
     _navigation.dispose();
+    _page.dispose();
     WidgetsBinding.instance.removeObserver(this);
     unawaited(ReaderSystemUi.setImmersive(false));
     super.dispose();
@@ -138,14 +159,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
       if (mounted) ref.invalidate(openReaderProvider(bookId));
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: LText(
-              error is ReaderFailure
-                  ? error.message
-                  : 'Unable to refresh this book.',
-            ),
-          ),
+        notifyInk(
+          context,
+          error is ReaderFailure
+              ? error.message
+              : 'Unable to refresh this book.',
         );
       }
     } finally {
@@ -160,9 +178,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
       final next = await repository?.nextChapterId(reader.manifest);
       if (!mounted) return false;
       if (next == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: LText('No next chapter is available.')),
-        );
+        notifyInk(context, 'No next chapter is available.');
         return false;
       }
       reader.prefetch?.suspend(true);
@@ -182,9 +198,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
       return true;
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: LText('Unable to open the next chapter.')),
-        );
+        notifyInk(context, 'Unable to open the next chapter.');
       }
       return false;
     } finally {
@@ -249,11 +263,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: LText('Unable to finish this volume. Try again.'),
-          ),
-        );
+        notifyInk(context, 'Unable to finish this volume. Try again.');
       }
     } finally {
       _ending = false;
@@ -263,11 +273,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
   Future<void> _settings(OpenReader reader) async {
     final repository = await ref.read(readerRepositoryProvider.future);
     if (!mounted || repository == null) return;
-    await showModalBottomSheet<void>(
+    await showInkSheet<void>(
       context: context,
-      sheetAnimationStyle: InkoraMotion.sheetStyle(context),
-      isScrollControlled: true,
-      builder: (_) => ReaderSettingsSheet(
+      child: ReaderSettingsSheet(
         modal: true,
         store: repository.store,
         manifest: reader.manifest,
@@ -288,11 +296,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
 
   Future<void> _progress(OpenReader reader) async {
     final previousSuppression = _suppressedReader;
-    final changed = await showModalBottomSheet<bool>(
+    final changed = await showInkSheet<bool>(
       context: context,
-      sheetAnimationStyle: InkoraMotion.sheetStyle(context),
-      isScrollControlled: true,
-      builder: (_) => ProgressSheet(
+      child: ProgressSheet(
         manifest: reader.manifest,
         currentLocator: _currentLocator ?? reader.locator,
         onChanging: () {
@@ -337,40 +343,19 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
           if (_controlsVisible || data.hasError || preferences.hasError)
             Align(
               alignment: Alignment.topCenter,
-              child: ReaderTopBar(
-                title: opened?.manifest.title ?? context.tr('Reader'),
-                onBack: () => context.pop(),
-                actions: [
-                  if (opened != null)
-                    ReaderDetailsButton(
+              child: opened == null
+                  ? ReaderTopBar(
+                      title: context.tr('Reader'),
+                      onBack: () => context.pop(),
+                      actions: const [],
+                    )
+                  : _RasterTopBar(
                       manifest: opened.manifest,
-                      onPressed: () => _details(opened),
+                      heading: _headingFor(opened, repository),
+                      page: _page,
+                      onBack: () => context.pop(),
+                      onDetails: () => _details(opened),
                     ),
-                  PopupMenuButton<String>(
-                    tooltip: context.tr('Reading controls'),
-                    icon: const Icon(InkIcons.dotsThreeVertical),
-                    itemBuilder: (_) => [
-                      if (opened != null)
-                        const PopupMenuItem(
-                          value: 'progress',
-                          child: LText('Reading progress'),
-                        ),
-                      PopupMenuItem(
-                        value: 'refresh',
-                        enabled: !_refreshing,
-                        child: const LText('Refresh book'),
-                      ),
-                    ],
-                    onSelected: (value) {
-                      if (value == 'progress' && opened != null) {
-                        unawaited(_progress(opened));
-                      } else if (value == 'refresh') {
-                        unawaited(_refresh());
-                      }
-                    },
-                  ),
-                ],
-              ),
             ),
         ],
       ),
@@ -382,44 +367,25 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
     AsyncValue<ReadingSettings> preferences,
     ReaderRepository? repository,
   ) => data.when(
-    loading: () => Center(
-      child: CircularProgressIndicator(
-        semanticsLabel: context.tr("Opening book"),
-      ),
-    ),
-    error: (error, _) => Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            LText(
-              error is ReaderFailure
-                  ? error.message
-                  : 'Unable to open this book.',
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () =>
-                  ref.invalidate(openReaderProvider(widget.bookId)),
-              child: const LText('Retry'),
-            ),
-          ],
-        ),
-      ),
+    loading: () => const ReaderLoadingView(),
+    error: (error, _) => ReaderErrorView(
+      message: error is ReaderFailure
+          ? error.message
+          : 'Unable to open this book.',
+      actionLabel: 'Retry',
+      onAction: () => ref.invalidate(openReaderProvider(widget.bookId)),
     ),
     data: (reader) {
       if (preferences.hasError) {
-        return const Center(
-          child: LText('Unable to load reading preferences.'),
+        return const ReaderErrorView(
+          message: 'Unable to load reading preferences.',
         );
       }
-      if (!preferences.hasValue) {
-        return const Center(child: CircularProgressIndicator());
-      }
+      if (!preferences.hasValue) return const ReaderLoadingView();
       if (!identical(_locatorOwner, reader)) {
         _locatorOwner = reader;
         _currentLocator = reader.locator;
+        _page.value = reader.locator.pageIndex;
       }
       return ReaderViewport(
         key: ValueKey((
@@ -430,19 +396,17 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
         )),
         navigation: _navigation,
         onEnd: () => _end(reader),
-        onLocatorChanged: (locator) => _currentLocator = locator,
+        onLocatorChanged: (locator) {
+          _currentLocator = locator;
+          _page.value = locator.pageIndex;
+        },
         reader: reader,
         settings: preferences.asData?.value ?? const ReadingSettings(),
         controlsVisible: _controlsVisible,
-        controlsActions: _ReaderActions(
+        controlsActions: ReaderActionRow(
           children: [
             ReaderQuickAction(
-              label: 'Finish volume',
-              icon: InkIcons.skipForward,
-              onPressed: _changingChapter ? null : () => _end(reader),
-            ),
-            ReaderQuickAction(
-              label: 'Page overview',
+              label: 'Pages',
               icon: InkIcons.squaresFour,
               onPressed: () => _navigate(reader),
             ),
@@ -452,9 +416,28 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
               onPressed: () => _navigate(reader, bookmarks: true),
             ),
             ReaderQuickAction(
-              label: 'Reading preferences',
+              label: 'Settings',
               icon: InkIcons.slidersHorizontal,
               onPressed: () => _settings(reader),
+            ),
+            ReaderMoreAction(
+              entries: [
+                ReaderMenuEntry(
+                  label: 'Finish volume',
+                  icon: InkIcons.checkCircle,
+                  onSelected: _changingChapter ? null : () => _end(reader),
+                ),
+                ReaderMenuEntry(
+                  label: 'Reading progress',
+                  icon: InkIcons.clockCounterClockwise,
+                  onSelected: () => unawaited(_progress(reader)),
+                ),
+                ReaderMenuEntry(
+                  label: 'Refresh book',
+                  icon: InkIcons.arrowsClockwise,
+                  onSelected: _refreshing ? null : () => unawaited(_refresh()),
+                ),
+              ],
             ),
           ],
         ),
@@ -473,6 +456,85 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
                   preferences.asData?.value.spreadOffset ?? false,
                 ),
               ),
+      );
+    },
+  );
+}
+
+/// Series title and volume number for the top bar.
+typedef ReaderHeading = ({String? series, String title, double number});
+
+/// One local catalogue lookup per opened book (titles do not change while
+/// reading): no per-page or per-frame query, and no network request.
+Future<ReaderHeading> loadReaderHeading(
+  ReaderRepository repository,
+  ReaderManifest manifest,
+) async {
+  try {
+    final store = CatalogueStore(
+      repository.store.database,
+      manifest.accountId,
+      applyLibraryVisibility: false,
+    );
+    final seriesId = manifest.seriesId;
+    final (book, series) = await (
+      store.item(CatalogueKind.book, manifest.bookId).first,
+      seriesId == null || seriesId.isEmpty
+          ? Future<CatalogueItem?>.value()
+          : store.item(CatalogueKind.series, seriesId).first,
+    ).wait;
+    return (
+      series: series?.title,
+      title: book?.title ?? manifest.title,
+      number: book?.number ?? 0.0,
+    );
+  } catch (_) {
+    return (series: null, title: manifest.title, number: 0.0);
+  }
+}
+
+/// Series (or book) title with the volume/page subtitle.
+class _RasterTopBar extends StatelessWidget {
+  const _RasterTopBar({
+    required this.manifest,
+    required this.heading,
+    required this.page,
+    required this.onBack,
+    required this.onDetails,
+  });
+  final ReaderManifest manifest;
+  final Future<ReaderHeading>? heading;
+  final ValueListenable<int> page;
+  final VoidCallback onBack, onDetails;
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<ReaderHeading>(
+    future: heading,
+    builder: (context, snapshot) {
+      final seriesTitle = snapshot.data?.series;
+      final volume = seriesTitle == null ? 0.0 : snapshot.data!.number;
+      final count = manifest.pages.length;
+      return ReaderTopBar(
+        title: seriesTitle ?? manifest.title,
+        onBack: onBack,
+        subtitle: ValueListenableBuilder<int>(
+          valueListenable: page,
+          builder: (context, index, _) => Text(
+            readerPositionLabel(
+              AppStrings.of(context),
+              index: index,
+              count: count,
+              volume: volume,
+              lead: seriesTitle == null
+                  ? null
+                  : snapshot.data?.title ?? manifest.title,
+            ),
+            key: const Key('reader-subtitle'),
+          ),
+        ),
+        actions: [
+          ReaderDetailsButton(manifest: manifest, onPressed: onDetails),
+        ],
       );
     },
   );
@@ -541,25 +603,4 @@ class _VolumeEndSheet extends ConsumerWidget {
       ),
     );
   }
-}
-
-class _ReaderActions extends StatelessWidget {
-  const _ReaderActions({required this.children});
-  final List<Widget> children;
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, bounds) {
-      final columns =
-          bounds.maxWidth < 480 ||
-              MediaQuery.textScalerOf(context).scale(1) > 1.5
-          ? 2
-          : 4;
-      return Wrap(
-        children: [
-          for (final child in children)
-            SizedBox(width: bounds.maxWidth / columns, child: child),
-        ],
-      );
-    },
-  );
 }

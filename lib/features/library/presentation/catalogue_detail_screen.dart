@@ -1,22 +1,27 @@
-import '../../../app/l10n/app_strings.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/icons/inkora_icons.dart';
+import '../../../app/l10n/app_strings.dart';
+import '../../../app/theme/inkora_theme.dart';
+import '../../../app/widgets/ink_screen_header.dart';
 import '../../../app/widgets/inkora_widgets.dart';
+import '../../settings/application/ui_preferences_provider.dart';
+import '../../settings/domain/ui_preferences.dart';
 import '../application/catalogue_providers.dart';
 import '../domain/catalogue.dart';
-import '../domain/resume_entry.dart';
+import 'catalogue_card.dart';
 import 'catalogue_detail_widgets.dart';
+import 'catalogue_grid.dart';
 import 'catalogue_widgets.dart';
-import 'volume_list_tile.dart';
-import 'volume_list.dart';
-import '../../../offline/presentation/batch_download_sheet.dart';
+import 'series_detail_screen.dart';
 
-class CatalogueDetailScreen extends ConsumerStatefulWidget {
+/// Detail page of a catalogue item. Series use [SeriesDetailScreen]; library,
+/// collection and reading-list pages share its structure: floating Back
+/// bubble, a lighter hero, the primary Browse action and a cover grid.
+class CatalogueDetailScreen extends StatelessWidget {
   const CatalogueDetailScreen({
     required this.kind,
     required this.id,
@@ -24,18 +29,49 @@ class CatalogueDetailScreen extends ConsumerStatefulWidget {
   });
   final CatalogueKind kind;
   final String id;
+
   @override
-  ConsumerState<CatalogueDetailScreen> createState() =>
-      _CatalogueDetailScreenState();
+  Widget build(BuildContext context) => kind == CatalogueKind.series
+      ? SeriesDetailScreen(id: id)
+      : GroupDetailScreen(kind: kind, id: id);
 }
 
-class _CatalogueDetailScreenState extends ConsumerState<CatalogueDetailScreen> {
+/// Library, collection and reading-list details.
+class GroupDetailScreen extends ConsumerStatefulWidget {
+  const GroupDetailScreen({required this.kind, required this.id, super.key});
+  final CatalogueKind kind;
+  final String id;
+  @override
+  ConsumerState<GroupDetailScreen> createState() => _GroupDetailScreenState();
+}
+
+class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
   final _scroll = ScrollController();
-  CatalogueQuery get _volumes => CatalogueQuery(
-    kind: CatalogueKind.book,
-    seriesId: widget.id,
-    sort: CatalogueSort.sequence,
-  );
+
+  /// Members shown in the grid: a library's series (with ebooks as reading
+  /// units, like the catalogue), a collection's series, a list's books.
+  CatalogueQuery _members(CatalogueItem item) => switch (widget.kind) {
+    CatalogueKind.library => CatalogueQuery(
+      kind: CatalogueKind.series,
+      readingUnits: true,
+      libraryId: widget.id,
+    ),
+    CatalogueKind.collection => CatalogueQuery(
+      kind: CatalogueKind.series,
+      readingUnits: true,
+      groupKind: CatalogueKind.collection,
+      groupId: widget.id,
+      sort: item.ordered ? CatalogueSort.sequence : CatalogueSort.title,
+    ),
+    _ => CatalogueQuery(
+      kind: CatalogueKind.book,
+      groupKind: CatalogueKind.readlist,
+      groupId: widget.id,
+      sort: item.ordered ? CatalogueSort.sequence : CatalogueSort.title,
+    ),
+  };
+
+  CatalogueQuery? _query;
 
   @override
   void initState() {
@@ -44,7 +80,7 @@ class _CatalogueDetailScreenState extends ConsumerState<CatalogueDetailScreen> {
   }
 
   @override
-  void didUpdateWidget(CatalogueDetailScreen oldWidget) {
+  void didUpdateWidget(GroupDetailScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if ((oldWidget.id != widget.id || oldWidget.kind != widget.kind) &&
         _scroll.hasClients) {
@@ -53,13 +89,14 @@ class _CatalogueDetailScreenState extends ConsumerState<CatalogueDetailScreen> {
   }
 
   void _more() {
-    if (widget.kind != CatalogueKind.series ||
+    final query = _query;
+    if (query == null ||
         !_scroll.hasClients ||
         !TickerMode.valuesOf(context).enabled) {
       return;
     }
     if (_scroll.position.extentAfter < _scroll.position.viewportDimension * 2) {
-      ref.read(catalogueFeedProvider(_volumes)).asData?.value?.loadMore();
+      ref.read(catalogueFeedProvider(query)).asData?.value?.loadMore();
     }
   }
 
@@ -69,38 +106,35 @@ class _CatalogueDetailScreenState extends ConsumerState<CatalogueDetailScreen> {
     super.dispose();
   }
 
-  void _browse(CatalogueKind target, Map<String, String> query) =>
-      context.pushNamed(
-        'catalogue',
-        pathParameters: {'kind': target.name},
-        queryParameters: query,
-      );
-
-  void _open(CatalogueItem book) => openCatalogueItem(context, book);
+  void _browse(CatalogueItem item) => context.pushNamed(
+    'catalogue',
+    pathParameters: {
+      'kind': widget.kind == CatalogueKind.readlist
+          ? CatalogueKind.book.name
+          : CatalogueKind.series.name,
+    },
+    queryParameters: widget.kind == CatalogueKind.library
+        ? {'library': widget.id}
+        : {
+            'groupKind': widget.kind.name,
+            'group': widget.id,
+            'ordered': item.ordered.toString(),
+          },
+  );
 
   @override
   Widget build(BuildContext context) {
     final kind = widget.kind;
     final id = widget.id;
     final data = ref.watch(catalogueItemProvider((kind, id)));
-    // The details screen stays mounted under the reader. Rebuild only when
-    // this series' resume choice changes, not on every saved page turn.
-    ref.watch(
-      resumeEntriesProvider.select(
-        (state) => [
-          for (final entry in state.asData?.value ?? const <ResumeEntry>[])
-            if (entry.item.seriesId == id)
-              '${entry.item.id}:${entry.onDeck}:${entry.raster}:${entry.item.canOpen}',
-        ].join('|'),
-      ),
-    );
-    final entries =
-        ref.read(resumeEntriesProvider).asData?.value ?? const <ResumeEntry>[];
-    final volumes = kind == CatalogueKind.series
-        ? ref.watch(catalogueFeedStateProvider(_volumes))
-        : null;
-    if (kind == CatalogueKind.series) {
-      ref.listen(catalogueFeedStateProvider(_volumes), (_, next) {
+    final item = data.asData?.value;
+    final query = item == null ? null : _members(item);
+    _query = query;
+    final feed = query == null
+        ? null
+        : ref.watch(catalogueFeedStateProvider(query));
+    if (query != null) {
+      ref.listen(catalogueFeedStateProvider(query), (_, next) {
         if (next.asData?.value.loading == false) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) _more();
@@ -108,281 +142,138 @@ class _CatalogueDetailScreenState extends ConsumerState<CatalogueDetailScreen> {
         }
       });
     }
-    final books = volumes?.asData?.value.page.items ?? const <CatalogueItem>[];
+    final density =
+        ref.watch(
+          uiPreferencesProvider.select((value) => value.asData?.value.density),
+        ) ??
+        CatalogueDensity.comfortable;
+    final members = feed?.asData?.value.page.items ?? const <CatalogueItem>[];
     return Scaffold(
-      body: Stack(
-        children: [
-          SafeArea(
-            top: false,
-            child: InkContent(
-              child: data.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (_, _) => InkEmptyState(
-                  icon: InkIcons.warningCircle,
-                  title: context.tr("Details unavailable"),
-                  message: context.tr("Unable to open saved details."),
-                  action: () =>
-                      ref.invalidate(catalogueItemProvider((kind, id))),
-                  label: context.tr("Retry"),
-                ),
-                data: (item) {
-                  if (item == null) {
-                    return InkEmptyState(
-                      icon: InkIcons.bookOpen,
-                      title: context.tr("Item unavailable"),
-                      message: context.tr(
-                        "This item is not in the saved catalogue.",
-                      ),
-                    );
-                  }
-                  final metadata = item.metadata;
-                  final eligible = entries.where(
-                    (entry) => entry.item.canOpen && entry.item.seriesId == id,
+      body: InkFloatingHeader(
+        title: item == null ? null : Text(item.title),
+        body: SafeArea(
+          top: false,
+          bottom: false,
+          child: InkContent(
+            child: data.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (_, _) => InkEmptyState(
+                icon: InkIcons.warningCircle,
+                title: 'Details unavailable',
+                message: 'Unable to open saved details.',
+                action: () => ref.invalidate(catalogueItemProvider((kind, id))),
+                label: 'Retry',
+              ),
+              data: (item) {
+                if (item == null) {
+                  return const InkEmptyState(
+                    icon: InkIcons.bookOpen,
+                    title: 'Item unavailable',
+                    message: 'This item is not in the saved catalogue.',
                   );
-                  final resume =
-                      eligible.where((entry) => !entry.onDeck).firstOrNull ??
-                      eligible.firstOrNull;
-                  final nextBook =
-                      resume?.item ??
-                      books.where((book) => book.canOpen).firstOrNull;
-                  final actions = ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 600),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        if (item.canOpen &&
-                            kind == CatalogueKind.series &&
-                            nextBook != null)
-                          Row(
-                            children: [
-                              Expanded(
-                                child: FilledButton.icon(
-                                  key: const Key('detail-read'),
-                                  onPressed: () => _open(nextBook),
-                                  icon: const Icon(InkIcons.play, size: 20),
-                                  label: LText(
-                                    resume == null || resume.onDeck
-                                        ? 'Start reading - {0}'
-                                        : 'Continue reading - {0}',
-                                    arguments: [nextBook.title],
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        if (item.canOpen && kind == CatalogueKind.series)
-                          TextButton.icon(
-                            onPressed: () => showInkSheet<void>(
-                              context: context,
-                              child: BatchDownloadSheet(seriesId: id),
+                }
+                final memberKind = kind == CatalogueKind.readlist
+                    ? CatalogueKind.book
+                    : CatalogueKind.series;
+                final state = feed?.asData?.value;
+                return CustomScrollView(
+                  key: ValueKey('detail-$kind-$id'),
+                  controller: _scroll,
+                  scrollCacheExtent: const ScrollCacheExtent.viewport(1),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const CatalogueRefreshStatus(),
+                          GroupHero(item: item),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: InkSpace.lg,
                             ),
-                            icon: const Icon(InkIcons.downloadSimple),
-                            label: const LText('Download volumes'),
-                          ),
-                        if (item.canOpen && kind == CatalogueKind.library)
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              FilledButton.icon(
-                                onPressed: () => _browse(CatalogueKind.series, {
-                                  'library': id,
-                                }),
-                                icon: const Icon(InkIcons.list),
-                                label: const LText('Browse all books'),
-                              ),
-                            ],
-                          ),
-                        if (item.canOpen &&
-                            (kind == CatalogueKind.collection ||
-                                kind == CatalogueKind.readlist))
-                          FilledButton(
-                            onPressed: () => _browse(
-                              kind == CatalogueKind.collection
-                                  ? CatalogueKind.series
-                                  : CatalogueKind.book,
-                              {
-                                'groupKind': kind.name,
-                                'group': id,
-                                'ordered': item.ordered.toString(),
-                              },
-                            ),
-                            child: LText(
-                              kind == CatalogueKind.collection
-                                  ? 'Browse all books'
-                                  : 'Browse reading list',
-                            ),
-                          ),
-                      ],
-                    ),
-                  );
-                  return CustomScrollView(
-                    key: ValueKey('detail-$kind-$id'),
-                    controller: _scroll,
-                    scrollCacheExtent: const ScrollCacheExtent.viewport(1),
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(
-                            16,
-                            kind == CatalogueKind.series
-                                ? 64 + MediaQuery.paddingOf(context).top
-                                : 8,
-                            16,
-                            0,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const CatalogueRefreshStatus(),
-                              CatalogueDetailHeader(
-                                item: item,
-                                metadata: metadata,
-                                resume: resume,
-                                actions: actions,
-                                details: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (item.summary.isNotEmpty) ...[
-                                      const SizedBox(height: 20),
-                                      CatalogueSummary(
-                                        key: ValueKey(item.id),
-                                        summary: item.summary,
+                            child: item.canOpen
+                                ? Align(
+                                    alignment: AlignmentDirectional.centerStart,
+                                    child: ConstrainedBox(
+                                      constraints: const BoxConstraints(
+                                        maxWidth: 600,
                                       ),
-                                    ],
-                                    const SizedBox(height: 12),
-                                    CatalogueMetadataSection(
-                                      metadata: metadata,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (!item.canOpen)
-                                const Padding(
-                                  padding: EdgeInsets.only(top: 16),
-                                  child: LText(
-                                    'Unavailable or removed. Saved metadata is retained.',
-                                  ),
-                                ),
-                              if (kind == CatalogueKind.series && item.canOpen)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: Wrap(
-                                    spacing: 12,
-                                    crossAxisAlignment:
-                                        WrapCrossAlignment.center,
-                                    children: [
-                                      Semantics(
-                                        header: true,
-                                        child: LText(
-                                          'Volumes and chapters',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleLarge
-                                              ?.copyWith(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.w700,
-                                              ),
+                                      child: FilledButton.icon(
+                                        key: const Key('detail-browse'),
+                                        onPressed: () => _browse(item),
+                                        icon: const Icon(InkIcons.list),
+                                        label: LText(
+                                          kind == CatalogueKind.readlist
+                                              ? 'Browse reading list'
+                                              : 'Browse all books',
                                         ),
                                       ),
-                                    ],
+                                    ),
+                                  )
+                                : const LText(
+                                    'Unavailable or removed. Saved metadata is retained.',
                                   ),
+                          ),
+                          if (item.canOpen)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                InkSpace.lg,
+                                InkSpace.xl,
+                                InkSpace.lg,
+                                0,
+                              ),
+                              child: Semantics(
+                                header: true,
+                                child: LText(
+                                  catalogueLabel(memberKind),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .sectionTitle,
                                 ),
-                            ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    if (item.canOpen)
+                      if (members.isNotEmpty)
+                        CatalogueGrid(
+                          key: const Key('detail-grid'),
+                          density: density,
+                          itemCount: members.length,
+                          artwork: members,
+                          itemBuilder: (_, index) =>
+                              InkCoverTile(item: members[index]),
+                        )
+                      else if (feed?.isLoading == true ||
+                          state?.loading == true)
+                        CatalogueGrid(
+                          key: const Key('detail-grid-skeleton'),
+                          density: density,
+                          itemCount: 6,
+                          itemBuilder: coverSkeletonBuilder,
+                        )
+                      else
+                        SliverToBoxAdapter(
+                          child: InkEmptyState(
+                            icon: feed?.hasError == true || state?.error == true
+                                ? InkIcons.cloudSlash
+                                : InkIcons.magnifyingGlassMinus,
+                            title:
+                                feed?.hasError == true || state?.error == true
+                                ? 'Catalogue unavailable'
+                                : 'Nothing here yet',
                           ),
                         ),
-                      ),
-                      if (kind == CatalogueKind.series && item.canOpen) ...[
-                        if (books.isNotEmpty)
-                          SliverPadding(
-                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                            sliver: VolumeList(
-                              itemCount: books.length,
-                              itemBuilder: (_, index) =>
-                                  VolumeListTile(item: books[index]),
-                            ),
-                          )
-                        else if (volumes?.isLoading == true ||
-                            volumes?.asData?.value.loading == true)
-                          const SliverToBoxAdapter(
-                            child: Padding(
-                              padding: EdgeInsets.all(16),
-                              child: LinearProgressIndicator(),
-                            ),
-                          )
-                        else if (volumes?.hasError != true &&
-                            volumes?.asData?.value.error != true)
-                          const SliverToBoxAdapter(
-                            child: Padding(
-                              padding: EdgeInsets.all(16),
-                              child: LText('No saved books in this series.'),
-                            ),
-                          ),
-                        if (volumes?.hasError == true ||
-                            volumes?.asData?.value.error == true)
-                          SliverToBoxAdapter(
-                            child: InkEmptyState(
-                              icon: InkIcons.warningCircle,
-                              title: context.tr("Saved volumes unavailable"),
-                              message: context.tr(
-                                "Unable to load this series’ saved volumes.",
-                              ),
-                              action: () => ref
-                                  .read(catalogueFeedProvider(_volumes))
-                                  .asData
-                                  ?.value
-                                  ?.retry(),
-                              label: context.tr("Retry"),
-                            ),
-                          ),
-                        if (volumes?.asData?.value.hasMore == true)
-                          SliverToBoxAdapter(
-                            child: Center(
-                              child: TextButton(
-                                onPressed: () => ref
-                                    .read(catalogueFeedProvider(_volumes))
-                                    .asData
-                                    ?.value
-                                    ?.loadMore(),
-                                child: const LText('Load more volumes'),
-                              ),
-                            ),
-                          ),
-                      ],
-                      const SliverToBoxAdapter(child: SizedBox(height: 24)),
-                    ],
-                  );
-                },
-              ),
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: InkSpace.xl),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
-          if (kind == CatalogueKind.series)
-            Positioned(
-              top: 8,
-              left: 16,
-              child: SafeArea(
-                child: Material(
-                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                  shape: const CircleBorder(),
-                  clipBehavior: Clip.antiAlias,
-                  child: IconButton(
-                    key: const Key('series-back'),
-                    tooltip: MaterialLocalizations.of(context)
-                        .backButtonTooltip,
-                    icon: const Icon(InkIcons.caretLeft, size: 22),
-                    onPressed: () {
-                      if (context.canPop()) {
-                        context.pop();
-                      } else {
-                        context.go('/');
-                      }
-                    },
-                  ),
-                ),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }

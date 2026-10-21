@@ -73,12 +73,8 @@ class _EbookSearchSheetState extends State<EbookSearchSheet>
   @override
   Widget build(BuildContext context) => SafeArea(
     child: Padding(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        16,
-        16,
-        MediaQuery.viewInsetsOf(context).bottom,
-      ),
+      // The shared sheet already lifts its panel above the keyboard.
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: SizedBox(
         height:
             (MediaQuery.sizeOf(context).height -

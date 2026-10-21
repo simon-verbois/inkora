@@ -96,15 +96,21 @@ CatalogueItem parseCatalogueItem(Object? value, CatalogueKind kind) {
       }
     }
   }
+  final progress = json['readProgress'];
+  final readPage = progress is Map ? progress['page'] : null;
+  final readModified = progress is Map ? progress['lastModified'] : null;
   return CatalogueItem(
     kind: kind,
     id: id,
     title: title,
-    readingStatus: json['readProgress'] is Map
-        ? ((json['readProgress'] as Map)['completed'] == true
+    readingStatus: progress is Map
+        ? (progress['completed'] == true
               ? ReadingStatus.completed
               : ReadingStatus.inProgress)
         : ReadingStatus.unread,
+    // Komga pages are one-based; the snapshot keeps zero-based indexes.
+    readPage: readPage is int && readPage >= 1 ? readPage - 1 : null,
+    readModified: readModified is String ? readModified : null,
     sortTitle: sortTitle,
     summary: summary,
     metadata: descriptive,

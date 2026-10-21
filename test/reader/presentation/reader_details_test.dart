@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inkora/reader/domain/reader_manifest.dart';
 import 'package:inkora/reader/presentation/reader_details.dart';
-import 'package:inkora/features/library/presentation/catalogue_detail_widgets.dart';
+import 'package:inkora/features/library/presentation/series_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../support/reader_fakes.dart';
@@ -101,7 +101,7 @@ void main() {
       expect(find.text('Book details'), findsOneWidget);
       expect(find.text('Moonlit District · Volume 3'), findsOneWidget);
       expect(find.text('Fallback title'), findsNothing);
-      expect(find.byType(CatalogueDetailHeader), findsNothing);
+      expect(find.byType(SeriesHero), findsNothing);
       expect(tester.takeException(), isNull);
       await harness.close(tester);
     });

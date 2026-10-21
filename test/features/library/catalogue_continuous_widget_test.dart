@@ -10,6 +10,52 @@ import '../../support/catalogue_fakes.dart';
 import '../../support/ui_harness.dart';
 
 void main() {
+  testWidgets(
+    'pull to refresh removes retired duplicates and updates metadata',
+    (tester) async {
+      final harness = await UiHarness.create(
+        tester,
+        catalogue: [
+          entry('library-a', kind: CatalogueKind.library),
+          entry('old-series', kind: CatalogueKind.series, title: 'Stone'),
+          entry('new-series', kind: CatalogueKind.series, title: 'Stone'),
+        ],
+      );
+      addTearDown(() => harness.close(tester));
+      await harness.mount(tester);
+      harness.container.read(routerProvider).go('/catalogue/series');
+      await tester.pumpAndSettle();
+      expect(find.text('Stone'), findsNWidgets(2));
+      final remote = harness.repository.remote as FakeCatalogueRemote;
+      remote.items[CatalogueKind.series] = [
+        entry('new-series', kind: CatalogueKind.series, title: 'Stone revised'),
+      ];
+      final refresh = tester.widget<RefreshIndicator>(
+        find.byType(RefreshIndicator).last,
+      );
+      await tester.runAsync(refresh.onRefresh);
+      await tester.pumpAndSettle();
+      expect(find.text('Stone'), findsNothing);
+      expect(find.text('Stone revised'), findsOneWidget);
+      // The old identity remains available to historical/offline references.
+      final retired = await tester.runAsync(
+        () => harness.repository.store
+            .item(CatalogueKind.series, 'old-series')
+            .first,
+      );
+      expect(retired!.available, isFalse);
+      await tester.tap(find.byKey(const Key('catalogue-filters')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Show unavailable items'));
+      await tester.tap(find.byKey(const Key('filters-apply')));
+      await tester.pumpAndSettle();
+      expect(find.text('Stone'), findsOneWidget);
+      expect(find.text('Stone revised'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await harness.close(tester);
+    },
+  );
+
   for (final size in [
     const Size(320, 640),
     const Size(390, 844),
@@ -43,12 +89,20 @@ void main() {
         await harness.mount(tester);
         harness.container.read(routerProvider).go('/catalogue/series');
         await tester.pumpAndSettle();
-        expect(find.byKey(const Key('catalogue-search')), findsNothing);
+        // The local search field is visible, not behind an icon toggle.
+        expect(find.byKey(const Key('catalogue-search')), findsOneWidget);
         expect(find.byTooltip('Next page'), findsNothing);
         await tester.tap(find.byKey(const Key('catalogue-filters')));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Show unavailable items'));
-        await tester.tap(find.text('Apply filters'));
+        expect(
+          tester
+              .widget<SwitchListTile>(
+                find.widgetWithText(SwitchListTile, 'Show unavailable items'),
+              )
+              .value,
+          isFalse,
+        );
+        await tester.tap(find.byKey(const Key('filters-apply')));
         await tester.pumpAndSettle();
         final covers = find.byType(BookCover);
         final third = tester.getTopLeft(covers.at(2));
@@ -56,7 +110,7 @@ void main() {
         if (size.width < 600) {
           expect(tester.getTopLeft(covers.at(3)).dy, greaterThan(third.dy));
         }
-        final card = find.byType(CatalogueCard).first;
+        final card = find.byType(InkCoverTile).first;
         final title = find.descendant(
           of: card,
           matching: find.text('Volume 000'),

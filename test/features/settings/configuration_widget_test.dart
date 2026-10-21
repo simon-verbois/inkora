@@ -32,7 +32,7 @@ void main({bool includeLifecycle = true}) {
         await tester.tap(find.byKey(const Key('detail-read')));
         await tester.pumpAndSettle();
         expect(find.byType(ReaderScreen), findsOneWidget);
-        expect(find.byKey(const Key('navigation-settings')), findsNothing);
+        expect(find.byKey(const Key('open-settings')), findsNothing);
         await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();
         expect(find.byType(ReaderScreen), findsNothing);

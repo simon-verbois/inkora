@@ -83,10 +83,7 @@ void main() {
               mode != ReadingMode.webtoon &&
               ReadingSettings(mode: mode)
                   .useDoublePages(size.width, size.height);
-          expect(
-            find.text(doublePages ? '1–2 / 10' : '2 / 10'),
-            findsOneWidget,
-          );
+          expect(find.text(doublePages ? 'p. 1–2' : 'p. 2'), findsOneWidget);
           expect(tester.getRect(viewport), rect);
           expect(tester.state(viewport), same(originalState));
           expect(position(), closeTo(initial, .01));
@@ -94,10 +91,7 @@ void main() {
           // Controls have their own tap handlers and do not toggle the overlay.
           await tester.tap(find.byTooltip('Next page'));
           await settleReaderImages(tester);
-          expect(
-            find.text(doublePages ? '3–4 / 10' : '3 / 10'),
-            findsOneWidget,
-          );
+          expect(find.text(doublePages ? 'p. 3–4' : 'p. 3'), findsOneWidget);
           expect(calls.last, false);
           final advanced = position();
           TransformationController? transform;

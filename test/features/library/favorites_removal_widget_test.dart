@@ -1,3 +1,5 @@
+import '../../support/home_navigation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/router.dart';
@@ -23,7 +25,7 @@ void main() {
           'settings',
           'libraries',
         ]) {
-          await tester.tap(find.byKey(ValueKey('navigation-$destination')));
+          await openHomeDestination(tester, destination);
           await tester.pumpAndSettle();
           expect(
             harness.container
@@ -36,21 +38,14 @@ void main() {
           );
         }
         expect(find.byKey(const Key('navigation-favorites')), findsNothing);
-        await tester.tap(find.byKey(const Key('navigation-libraries')));
+        await openHomeDestination(tester, 'libraries');
         await tester.pumpAndSettle();
         final series = find.byWidgetPredicate(
-          (widget) => widget is CatalogueCard && widget.item.id == 'series-a',
+          (widget) => widget is InkCoverTile && widget.item.id == 'series-a',
         );
-        await tester.tap(
-          find.descendant(
-            of: series,
-            matching: find.byType(PopupMenuButton<String>),
-          ),
-        );
-        await tester.pumpAndSettle();
-        expect(find.byType(PopupMenuItem<String>), findsOneWidget);
-        expect(find.text('View details'), findsOneWidget);
-        await tester.tap(find.text('View details'));
+        // A series has a single action, so no context menu repeats the tap.
+        expect(find.byType(PopupMenuButton<String>), findsNothing);
+        await tester.tap(series);
         await tester.pumpAndSettle();
         expect(find.byKey(const Key('detail-read')), findsOneWidget);
         expect(find.byTooltip('Add to favorites'), findsNothing);

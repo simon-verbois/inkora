@@ -1,11 +1,12 @@
+import '../../../app/widgets/ink_screen_header.dart';
 import 'settings_transfer_panel.dart';
-import '../../../app/widgets/ink_surface.dart';
 import '../../../app/widgets/ink_slider.dart';
 import 'about_content.dart';
 import 'preference_labels.dart';
 import '../../../app/l10n/app_strings.dart';
 import 'language_settings.dart';
 import 'settings_sections.dart';
+import 'settings_navigation.dart';
 import 'gesture_settings.dart';
 import '../../../app/icons/inkora_icons.dart';
 
@@ -51,11 +52,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await (await ref.read(uiPreferencesStoreProvider)).update(change);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: LText('Unable to save appearance settings. Try again.'),
-          ),
-        );
+        notifyInk(context, 'Unable to save appearance settings. Try again.');
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -69,43 +66,52 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final wide = SettingsPaneScope.wideOf(context);
     final section = widget.section ?? (wide ? 'appearance' : null);
     if (section == null) {
-      return InkContent(
-        maxWidth: wide && (section == 'appearance' || section == 'gestures')
-            ? 960
-            : InkoraLayout.maxSettingsWidth,
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(
-            16,
-            16,
-            16,
-            16 + MediaQuery.paddingOf(context).bottom,
-          ),
-          children: [
-            LText('Settings', style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 12),
-            TextField(
-              decoration: InputDecoration(
-                prefixIcon: Icon(InkIcons.magnifyingGlass),
-                hintText: context.tr("Search settings"),
-              ),
-              onChanged: (value) =>
-                  setState(() => _query = value.toLowerCase().trim()),
+      final host = ref.watch(
+        sessionProvider.select((state) => state.session?.endpoint.uri.host),
+      );
+      String? value(SettingsSection entry) => switch (entry.id) {
+        'servers' => host,
+        'appearance' => context.tr(appearanceLabel(preferences.appearance)),
+        'language' =>
+          languageNames[preferences.locale] ?? context.tr('System language'),
+        'gestures' => context.tr(
+          gesturePresetLabel(preferences.gestures.preset),
+        ),
+        _ => null,
+      };
+      return Scaffold(
+        appBar: const InkScreenHeader(title: LText('Settings')),
+        body: InkContent(
+          maxWidth: InkoraLayout.maxSettingsWidth,
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              16 + MediaQuery.paddingOf(context).bottom,
             ),
-            const SizedBox(height: 12),
-            for (final entry in settingsSections.where(
-              (entry) => '${context.tr(entry.$2)} ${context.tr(entry.$3)}'
-                  .toLowerCase()
-                  .contains(_query),
-            ))
-              InkSettingsRow(
-                icon: entry.$4,
-                title: context.tr(entry.$2),
-                subtitle: entry.$1 == 'appearance'
-                    ? '${context.tr(appearanceLabel(preferences.appearance))} · ${context.tr(densityLabel(preferences.density))}'
-                    : entry.$3,
-                onTap: () => context.push('/settings/${entry.$1}'),
+            children: [
+              SettingsSearchField(
+                onChanged: (text) {
+                  final query = text.toLowerCase().trim();
+                  if (query != _query) setState(() => _query = query);
+                },
               ),
-          ],
+              const SizedBox(height: 4),
+              ...settingsMenu(
+                context,
+                query: _query,
+                entry: (entry, path) => InkSettingsRow(
+                  key: ValueKey('settings-entry-${entry.id}'),
+                  icon: entry.icon,
+                  title: context.tr(entry.title),
+                  subtitle: path ?? entry.description,
+                  value: value(entry),
+                  onTap: () => context.push('/settings/${entry.id}'),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -117,27 +123,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         sessionProvider.select((state) => state.session?.accountId),
       );
       return Scaffold(
-        appBar: widget.embedded || wide
+        // Categories have no page header beside the wide category pane, but
+        // the Global defaults subpage keeps its title and Back there too.
+        appBar: widget.embedded || (wide && section == 'quality')
             ? null
-            : InkAppBar(
-                title: LText(section == 'quality' ? 'Quality' : 'Reading'),
+            : InkScreenHeader(
+                title: LText(
+                  section == 'quality'
+                      ? settingsSectionTitle('quality')
+                      : 'Global defaults',
+                ),
               ),
         body: InkContent(
-          maxWidth: wide && (section == 'appearance' || section == 'gestures')
-              ? 960
-              : InkoraLayout.maxSettingsWidth,
+          maxWidth: InkoraLayout.maxSettingsWidth,
           child: FutureBuilder(
             future: ref.watch(databaseProvider),
             builder: (context, snapshot) => snapshot.hasError
                 ? const Center(
-                    child: LText('Unable to open reading preferences.'),
+                    child: InkEmptyState(
+                      icon: InkIcons.warningCircle,
+                      title: 'Unable to open reading preferences.',
+                    ),
                   )
                 : !snapshot.hasData || account == null
                 ? const Center(child: CircularProgressIndicator())
                 : ReaderSettingsSheet(
                     key: widget.editorKey ?? ValueKey(account),
-                    showFooter: !widget.embedded,
-                    showHeader: !wide,
+                    showReset: !widget.embedded,
                     store: ReaderStore(snapshot.requireData, account),
                     qualityOnly: section == 'quality',
                     upscalingControls: section == 'quality'
@@ -152,17 +164,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Scaffold(
       appBar: widget.embedded || wide
           ? null
-          : InkAppBar(
-              title: LText(switch (section) {
-                'language' => 'Language',
-                'gestures' => 'Reading gestures',
-                'appearance' => 'Appearance',
-                'transfer' => 'Import / export',
-                'downloads' => 'Download settings',
-                'accessibility' => 'Accessibility',
-                _ => 'About Inkora',
-              }),
-            ),
+          : InkScreenHeader(title: LText(settingsSectionTitle(section))),
       body: InkContent(
         maxWidth: wide && (section == 'appearance' || section == 'gestures')
             ? 960
@@ -186,7 +188,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               const SizedBox(height: 12),
               InkPanel(
                 framed: false,
-                title: wide ? null : context.tr("Appearance"),
+                // The page header already names the page; setup steps keep
+                // their own heading.
+                title: widget.embedded && !wide ? 'Appearance' : null,
                 icon: InkIcons.palette,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -216,18 +220,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     const SizedBox(height: 24),
                     const Divider(),
                     const SizedBox(height: 12),
-                    SwitchListTile(
-                      key: const Key('floating-navigation-setting'),
-                      contentPadding: EdgeInsets.zero,
-                      title: const LText('Floating navigation'),
-                      value: preferences.floatingNavigation,
-                      onChanged: _saving || !data.hasValue
-                          ? null
-                          : (value) => _save(
-                              (current) =>
-                                  current.copyWith(floatingNavigation: value),
-                            ),
-                    ),
                     InkSlider(
                       sliderKey: const Key('panel-opacity'),
                       label: context.tr('Panel opacity'),
@@ -242,54 +234,47 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         (current) => current.copyWith(panelOpacity: value),
                       ),
                     ),
-                    const LText(
-                      'Applies to navigation, headers and search. Text stays fully opaque.',
+                    const SizedBox(height: 20),
+                    const LText('Catalogue density'),
+                    const SizedBox(height: 8),
+                    SegmentedButton<CatalogueDensity>(
+                      showSelectedIcon: false,
+                      segments: const [
+                        ButtonSegment(
+                          value: CatalogueDensity.comfortable,
+                          label: LText('Comfortable'),
+                        ),
+                        ButtonSegment(
+                          value: CatalogueDensity.compact,
+                          label: LText('Compact'),
+                        ),
+                      ],
+                      selected: {preferences.density},
+                      onSelectionChanged: _saving
+                          ? null
+                          : (values) => _save(
+                              (current) =>
+                                  current.copyWith(density: values.single),
+                            ),
                     ),
-                    if (section == 'appearance') ...[
-                      const SizedBox(height: 20),
-                      const LText('Catalogue density'),
-                      const SizedBox(height: 8),
-                      SegmentedButton<CatalogueDensity>(
-                        showSelectedIcon: false,
-                        segments: const [
-                          ButtonSegment(
-                            value: CatalogueDensity.comfortable,
-                            label: LText('Comfortable'),
-                          ),
-                          ButtonSegment(
-                            value: CatalogueDensity.compact,
-                            label: LText('Compact'),
-                          ),
-                        ],
-                        selected: {preferences.density},
-                        onSelectionChanged: _saving
-                            ? null
-                            : (values) => _save(
-                                (current) =>
-                                    current.copyWith(density: values.single),
-                              ),
-                      ),
-                      const SizedBox(height: 16),
-                      const LText(
-                        'Reader backgrounds are configured separately in Reading.',
-                      ),
-                    ] else
-                      TextButton(
-                        onPressed: () => context.push('/settings/appearance'),
-                        child: const LText('More appearance settings'),
-                      ),
+                    const SizedBox(height: 16),
+                    const LText(
+                      'Reader backgrounds are configured separately in Reading.',
+                    ),
                   ],
                 ),
               ),
             ],
-            if (section == 'gestures') GestureSettings(showTitle: !wide),
-            if (section == 'language') LanguageSettings(showTitle: !wide),
+            if (section == 'gestures')
+              GestureSettings(showTitle: widget.embedded && !wide),
+            if (section == 'language')
+              LanguageSettings(showTitle: widget.embedded && !wide),
             if (section == 'transfer') const SettingsTransferPanel(),
             if (section == 'downloads') const DownloadSettingsPanel(),
             if (section == 'accessibility')
               InkPanel(
                 framed: false,
-                title: context.tr("Reading comfort"),
+                title: "Reading comfort",
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [

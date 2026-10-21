@@ -67,6 +67,24 @@ void main() {
     );
     final first = await store.read(query);
     expect(first.total, 5);
+    // The filter sheet's result count uses the same scope without rows.
+    expect(await store.count(query), 5);
+    expect(
+      await store.count(
+        CatalogueQuery(
+          kind: CatalogueKind.series,
+          readingUnits: true,
+          libraryId: 'one',
+        ),
+      ),
+      (await store.read(
+        CatalogueQuery(
+          kind: CatalogueKind.series,
+          readingUnits: true,
+          libraryId: 'one',
+        ),
+      )).total,
+    );
     expect(first.items, hasLength(2));
     final rest = await store.read(query, itemLimit: 3, itemOffset: 2);
     expect(rest.items, hasLength(3));

@@ -46,9 +46,9 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text('Reset to default'));
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text('Save'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Save'));
+        // Confirmed reset applies at once; there is no Save step.
+        expect(find.text('Save'), findsNothing);
+        await tester.tap(find.text('Reset to default').last);
         await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 50)),
         );
@@ -56,7 +56,7 @@ void main() {
         final saved = (await tester.runAsync(
           () => store.overrides(SettingsScope.global, ''),
         ))!;
-        expect(saves, 1);
+        expect(saves, 0);
         if (qualityOnly) {
           expect(saved.mode, ReadingMode.manga);
           expect(saved.spacing, 24);

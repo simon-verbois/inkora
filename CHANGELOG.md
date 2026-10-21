@@ -10,6 +10,75 @@ remain in progress.
 
 ## [Unreleased]
 
+## [2026.43.3] - 2026-10-21
+
+- Give Settings, Downloads and History the same short horizontal fade when opened from Home, including the complete tablet settings menu, and preserve Home geometry during navigation.
+
+- Keep series filters and volume controls pinned at the top of the tablet right pane, with jump-to-current positioned beneath them.
+
+- Slim rounded buttons and quick filters to a shared 40 dp minimum surface, align neighboring controls, and retain 48 dp touch regions and text scaling.
+
+- Lightly mute completed-volume covers and titles in series lists and grids while keeping their actions available.
+
+- Make Home the primary page, replace bottom navigation with Settings and Downloads actions beside history in the header, and return to the retained catalogue with Back.
+
+- Remove the tablet volume-pane heading and its divider, bringing filters and books closer to the top.
+
+- Keep visible descriptions in place when Show less collapses them, including the tablet series pane.
+
+- Remove the series progress panel above reading actions on every screen size, and extend tablet series artwork and the pane divider to the top edge.
+
+- Use one column and larger covers in series volume lists; show book titles throughout browsing, history and reader controls, with a simpler Continue button.
+- Hide removed catalogue entries by default after refresh, while retaining the optional unavailable-items filter and historical/offline references.
+
+- Replace the library selector bottom sheet with a compact anchored choice menu.
+
+- Move reading history into an icon-only Home header action beside search.
+
+- Move catalogue and Downloads search into the top header and align quick controls to a shared 48 dp height.
+
+- Give tablets the same logo header and centered floating bottom navigation as phones, with a compact 420 dp bar at normal text size.
+
+- Center quick reading filters across the toolbar and display the localized label of each active filter beside its icon.
+
+- Refine Android system-bar integration, replace browsing search with an animated keyboard-focused button, and use accessible reading-filter icons.
+- Remove the Home Up next shelf, open reading history through its own action and reveal, and keep storage totals in settings rather than the downloaded-book list.
+- Show published book titles in series lists, compact tablet series headers, and separate confirmed whole-series download and reading-status actions. Simplify reference links and publication details, with book/volume counts appropriate to the content.
+- Simplify server/account and file-transfer pages; remove QR transfer and camera permissions/dependencies.
+- Prepare EPUB spread margins before native pagination to avoid moving text on chapter entry.
+
+- Keep the series selection Download action visible on phones by placing it full width below Mark read / Mark unread.
+
+- Unify reading progress text: covers, Continue reading, series details, downloads and reader labels share one format such as "Vol. 01 · 92 %", "8 %", "Up next", "In progress", "Read" or "Unread", without raw file names.
+- Replace the per-cover menu button with standard cover badges (volume, read, progress, offline, unavailable) and a long-press menu for reading, details and downloads; screen readers hear one combined description.
+- Use one sheet, confirmation dialog and notification style across the app, including reader and ebook sheets, with danger-colored destructive confirmations.
+- Show consistent empty and error states and static loading placeholders instead of full-screen spinners in catalogue, downloads and history.
+- Introduce shared spacing, corner-radius, type and semantic color tokens with a contrast check across all appearances; buttons and chips become pill shaped.
+- Give every screen a single header: the Inkora wordmark now appears only on Home, in a header that slides away once you scroll; sub-pages, settings sections, add server and setup share one header with Back and title.
+- Give library, collection and reading-list details the same floating Back button as series details; scrolled content no longer slides under it, and the page title appears in a bar once you scroll.
+- Use a navigation rail with the Inkora wordmark on windows at least 840 pixels wide, with the settings menu beside it; the floating bottom bar setting now applies to narrow windows only.
+- Redesign series details: a blurred cover header with volume count, publication status and publisher, a segmented series progress bar, a "Continue · Vol. 03 · p. 11" button and a download button; phones show About and Volumes tabs, wide windows show About and volumes side by side.
+- Show volumes as a list with thumbnails, reading state, progress and download state (two columns on wide windows), with an optional cover grid, All/Unread/In progress/Downloaded filters, reverse order and a jump to the current volume.
+- Mark volumes read or unread, alone or by selection, and mark all previous volumes as read; changes appear immediately, work offline and sync to Komga, with confirmation for several volumes. Several volumes can also be downloaded from the selection.
+- Genre chips on a series open the catalogue filtered by that genre.
+- Give library, collection and reading-list details the series page layout with a Browse button and a cover grid of their series or books.
+- Show one filter bar in libraries, Home and Downloads: a visible search field, scrollable All/Unread/In progress/Completed chips with a separate Downloaded chip, a sort button that names the active order (such as "A–Z") with the current choice checked, and a filters button with an active-filter count. Series volume filters use the same chips.
+- Rebuild the filters sheet with chips for format, publication status, genres, tags, authors, publisher, language and age rating; long lists can be searched and expanded, and the button shows the number of matching results before applying.
+- Add an Up next shelf on Home for the next unread volume of series you are reading, and a View all link from Continue reading to the reading history.
+- Show a storage summary at the top of Downloads (space used of the quota, downloads, temporary reservations and page cache) with a link to download settings.
+- Show the download queue on Downloads only while downloads are queued, running, paused or failed, with one progress ring, "Downloading · 40 %" style statuses, counts, pause, resume, retry and cancel; queued downloads use an hourglass instead of the history clock.
+- List downloads by series ("3 volumes · 412 MiB · 1/3 read") and individual books by format and size; the cover grid stays available. Long press offers removal with confirmation, and downloaded volumes use the series volume rows.
+- Reading history now combines books opened on this device with reading progress from Komga, grouped into Today, Yesterday, This week and Earlier, with progress and time; older server entries load on demand and remain available offline. Clear history only removes this device's entries and is disabled when there are none.
+- Reader controls show the series title with the volume and page ("Vol. 01 · p. 169/184") at the top, the page and what is left ("p. 169", "92 % · 15 pages left") above the slider, and one row of actions: Pages (Contents in ebooks), Bookmarks, Settings and More. More holds Finish volume, Reading progress and Refresh book (Search in book for ebooks); the details button uses an info icon. Comic and ebook readers share the same loading and error screens.
+- Reading settings apply as soon as you choose them, with no Save or Cancel: This book, Series, Library or Global at the top, chips for mode, direction, fit and page layout, colour swatches for the background and a spacing slider. Reset to default and Apply to all series and books ask for confirmation.
+- Two pages side by side are now the default only in landscape windows and on tablets, including for manga; phones in portrait show one page unless you choose Two pages.
+- Settings are grouped into Account, Reading, Application and Data, each page with its own icon, current value where useful (server, theme, language, gestures) and a title matching the menu. One search field finds settings and shows where they are, such as "Reading › Gestures".
+- Make touch targets at least 48 dp (including the catalogue search field) and give icon-only controls a spoken label; the compact library selector and the reader page surface ("Reading controls") are now announced by screen readers.
+- Respect reduced motion when switching series tabs and reading-settings tabs.
+- On wide windows, the Global defaults reading page now shows its title and a Back button beside the settings menu.
+- The series page no longer re-reads its volume progress for every page saved while the reader covers it; it refreshes once when you return.
+- Remove the unused placeholder sheet, the former series batch-download sheet and stray technical entries from the translation catalogues and the repeated Import / export heading; refresh the public screenshots.
+
 ## [2026.43.2] - 2026-10-19
 
 - Move the presentation website into docs with self-contained assets for GitHub Pages branch publishing.

@@ -1,3 +1,5 @@
+import '../../support/home_navigation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/router.dart';
@@ -57,24 +59,25 @@ void main() {
           'downloads',
           'libraries',
         ]) {
-          await tester.tap(find.byKey(ValueKey('navigation-$branch')));
+          await openHomeDestination(tester, branch);
           await tester.pump(const Duration(milliseconds: 35));
           expect(tester.takeException(), isNull);
         }
         await tester.pumpAndSettle();
         expect(tester.state(find.byType(CatalogueScreen)), same(screen));
         expect(scroll.position.pixels, closeTo(offset, .1));
-        await tester.tap(find.byKey(const Key('navigation-settings')));
+        await openHomeDestination(tester, 'settings');
         await tester.pumpAndSettle();
         expect(
           tester.widget<SettingsScreen>(find.byType(SettingsScreen)).section,
-          'appearance',
+          null,
         );
         expect(find.byKey(const Key('navigation-home')), findsNothing);
-        final nav = tester.getRect(
-          find.byKey(const Key('navigation-libraries')),
+        expect(
+          find.byKey(const Key('floating-navigation-panel')),
+          findsNothing,
         );
-        expect(nav.top, greaterThan(size.height - 100));
+        expect(find.byKey(const Key('open-settings')), findsNothing);
         await harness.close(tester);
       },
     );

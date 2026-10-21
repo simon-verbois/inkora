@@ -9,6 +9,7 @@ import '../data/komga_catalogue_remote.dart';
 import '../data/resume_repository.dart';
 import '../domain/catalogue.dart';
 import '../domain/resume_entry.dart';
+import '../domain/volume_progress.dart';
 import 'navigation_retention.dart';
 import 'catalogue_feed.dart';
 
@@ -135,3 +136,162 @@ final resumeEntriesProvider = StreamProvider.autoDispose<List<ResumeEntry>>((
   }
   yield* retainNavigationStream(ref, repository.watch());
 });
+
+/// Ordered lean volumes of one series (publication-driven, retained briefly
+/// for back navigation like other catalogue queries).
+final seriesVolumesProvider = StreamProvider.autoDispose
+    .family<List<SeriesVolume>, String>((ref, seriesId) async* {
+      final repository = await ref.watch(catalogueRepositoryProvider.future);
+      if (repository == null) {
+        yield const [];
+        return;
+      }
+      yield* retainNavigationStream(
+        ref,
+        repository.store.watchSeriesVolumes(seriesId),
+      );
+    });
+
+/// Whether any page showing a series is on screen. Pages register as owners;
+/// with no owner (for example a provider read outside a page) it is visible.
+class SeriesPageVisibility {
+  final _owners = <Object, bool>{};
+  final _listeners = <void Function()>[];
+
+  bool get visible => _owners.isEmpty || _owners.containsValue(true);
+
+  void set(Object owner, bool visible) {
+    final before = this.visible;
+    _owners[owner] = visible;
+    _notify(before);
+  }
+
+  void remove(Object owner) {
+    final before = visible;
+    if (_owners.remove(owner) != null) _notify(before);
+  }
+
+  void addListener(void Function() listener) => _listeners.add(listener);
+  void removeListener(void Function() listener) => _listeners.remove(listener);
+
+  void _notify(bool before) {
+    if (visible == before) return;
+    for (final listener in List.of(_listeners)) {
+      listener();
+    }
+  }
+}
+
+final seriesPageVisibilityProvider = Provider.autoDispose
+    .family<SeriesPageVisibility, String>((ref, _) => SeriesPageVisibility());
+
+/// Listens to [open] only while [visibility] is visible. Hiding cancels the
+/// source (no query per reading write under the reader); showing again
+/// re-subscribes, which reads once. Emissions equal to the last one are
+/// dropped by [equals].
+Stream<T> whileVisible<T>(
+  SeriesPageVisibility visibility,
+  Stream<T> Function() open, {
+  required bool Function(T a, T b) equals,
+}) {
+  late final StreamController<T> controller;
+  StreamSubscription<T>? source;
+  T? last;
+  var emitted = false;
+  void update() {
+    if (visibility.visible) {
+      source ??= open().listen((value) {
+        if (emitted && equals(last as T, value)) return;
+        emitted = true;
+        last = value;
+        controller.add(value);
+      }, onError: controller.addError);
+    } else {
+      final previous = source;
+      source = null;
+      previous?.cancel();
+    }
+  }
+
+  controller = StreamController<T>(
+    onListen: () {
+      visibility.addListener(update);
+      update();
+    },
+    onCancel: () {
+      visibility.removeListener(update);
+      final previous = source;
+      source = null;
+      return previous?.cancel();
+    },
+  );
+  return controller.stream;
+}
+
+/// Device progress of one series' books. Not retained after the page closes:
+/// it wakes on reading writes, so it lives only while a series page needs it
+/// and pauses while every such page is hidden (covered by the reader or in an
+/// inactive branch), refreshing once when one is shown again.
+final seriesLocalProgressProvider = StreamProvider.autoDispose
+    .family<Map<String, LocalVolumeProgress>, String>((ref, seriesId) async* {
+      final visibility = ref.watch(seriesPageVisibilityProvider(seriesId));
+      final repository = await ref.watch(catalogueRepositoryProvider.future);
+      if (repository == null) {
+        yield const {};
+        return;
+      }
+      yield* whileVisible(
+        visibility,
+        () => repository.store.watchSeriesLocalProgress(seriesId),
+        equals: CatalogueStore.sameProgress,
+      );
+    });
+
+/// The series' server-shelf position (in-progress, not On Deck), used when
+/// the catalogue snapshot is older than the shelf.
+final _seriesShelfProvider = Provider.autoDispose
+    .family<({String id, int pageIndex, double? ratio})?, String>(
+      (ref, seriesId) => ref.watch(
+        resumeEntriesProvider.select((state) {
+          for (final entry in state.asData?.value ?? const <ResumeEntry>[]) {
+            if (entry.onDeck || entry.item.seriesId != seriesId) continue;
+            return (
+              id: entry.item.id,
+              pageIndex: entry.pageIndex,
+              ratio: entry.pageKnown || entry.totalProgression != null
+                  ? entry.progress.toDouble()
+                  : null,
+            );
+          }
+          return null;
+        }),
+      ),
+    );
+
+/// Effective per-volume progress of a series. Value equality keeps
+/// `select`-ing rows from rebuilding unless their own volume changes.
+final seriesProgressProvider = Provider.autoDispose
+    .family<AsyncValue<SeriesProgress>, String>((ref, seriesId) {
+      final volumes = ref.watch(seriesVolumesProvider(seriesId));
+      final local = ref.watch(seriesLocalProgressProvider(seriesId));
+      final shelf = ref.watch(_seriesShelfProvider(seriesId));
+      if (volumes.hasError) {
+        return AsyncValue.error(volumes.error!, volumes.stackTrace!);
+      }
+      final list = volumes.asData?.value;
+      if (list == null) return const AsyncValue.loading();
+      final overrides =
+          local.asData?.value ?? const <String, LocalVolumeProgress>{};
+      return AsyncValue.data(
+        SeriesProgress(list, {
+          for (final volume in list)
+            volume.id: resolveVolumeProgress(
+              volume,
+              overrides[volume.id],
+              shelf: shelf?.id == volume.id
+                  ? (pageIndex: shelf!.pageIndex, ratio: shelf.ratio)
+                  : null,
+            ),
+        }),
+      );
+    });

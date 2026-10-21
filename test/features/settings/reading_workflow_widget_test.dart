@@ -5,7 +5,6 @@ import 'package:inkora/app/l10n/app_strings.dart';
 import 'package:inkora/features/settings/domain/ui_preferences.dart';
 import 'package:inkora/features/settings/presentation/settings_transfer_panel.dart';
 import 'package:inkora/reader/data/reading_history.dart';
-import 'package:inkora/offline/presentation/batch_download_sheet.dart';
 
 import '../../support/ui_harness.dart';
 import '../../support/connection_fakes.dart';
@@ -35,21 +34,12 @@ void main() {
           find.text(AppStrings(locale.languageCode).text('Export QR code')),
           findsNothing,
         );
-        for (final key in [
-          'Export to file',
-          'Import from file',
-          'Scan QR code',
-        ]) {
+        for (final key in ['Export to file', 'Import from file']) {
           final action = find.widgetWithText(
             OutlinedButton,
             AppStrings(locale.languageCode).text(key),
           );
-          final target = key == 'Export to file'
-              ? find.widgetWithText(
-                  FilledButton,
-                  AppStrings(locale.languageCode).text(key),
-                )
-              : action;
+          final target = action;
           await tester.ensureVisible(target);
           await tester.pumpAndSettle();
           expect(target.hitTestable(), findsOneWidget);
@@ -57,41 +47,23 @@ void main() {
         expect(tester.takeException(), isNull);
         router.go('/catalogue/series/series-a');
         await tester.pumpAndSettle();
-        final download = find.text(
-          AppStrings(locale.languageCode).text('Download volumes'),
+        expect(
+          find.text(AppStrings(locale.languageCode).text('Scan QR code')),
+          findsNothing,
         );
+        // Whole-series download now opens a confirmation dialog.
+        final download = find.byKey(const Key('detail-download'));
         await tester.ensureVisible(download);
         await tester.pumpAndSettle();
         await tester.tap(download);
         await tester.pumpAndSettle();
-        expect(find.byType(BatchDownloadSheet), findsOneWidget);
-        final next = find.text(
-          AppStrings(locale.languageCode).text('Next 3 unread volumes'),
-        );
-        await tester.ensureVisible(next);
-        await tester.pumpAndSettle();
-        await tester.tap(next);
-        await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 30)),
-        );
-        await tester.pumpAndSettle();
-        final rows = find.byType(CheckboxListTile);
-        await tester.scrollUntilVisible(
-          rows,
-          120,
-          scrollable: find
-              .descendant(
-                of: find.byType(BatchDownloadSheet),
-                matching: find.byType(Scrollable),
-              )
-              .last,
-        );
-        await tester.pumpAndSettle();
-        expect(rows, findsOneWidget);
+        expect(find.byKey(const Key('selection-bar')), findsNothing);
         expect(
-          tester.widget<CheckboxListTile>(find.byType(CheckboxListTile)).value,
-          isTrue,
+          find.byKey(const Key('ink-confirm-accept')).hitTestable(),
+          findsOneWidget,
         );
+        await tester.tap(find.byKey(const Key('ink-confirm-cancel')));
+        await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
         await harness.close(tester);
       });
@@ -109,17 +81,39 @@ void main() {
             ),
       );
       await harness.mount(tester);
-      await tester.tap(find.text('Reading history'));
+      await tester.tap(find.byKey(const Key('reading-history-action')));
       await tester.pumpAndSettle();
-      expect(find.text('Fixture reader'), findsOneWidget);
+      // The device open is described from the catalogue: series title, then
+      // the volume, its state and the time under Today.
+      expect(find.text('Moonlit District'), findsOneWidget);
+      expect(find.text('Today'), findsOneWidget);
+      expect(
+        find.textContaining('Moonlit District · Volume 3 · In progress · '),
+        findsOneWidget,
+      );
       await tester.tap(find.byTooltip('Clear history'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Clear history'));
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 30)),
+      expect(
+        find.textContaining('books with reading progress on Komga stay listed'),
+        findsOneWidget,
       );
+      await tester.tap(find.widgetWithText(FilledButton, 'Clear history'));
+      for (var turn = 0; turn < 5; turn++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 30)),
+        );
+        await tester.pump();
+      }
       await tester.pumpAndSettle();
       expect(find.text('No reading history yet.'), findsOneWidget);
+      expect(find.text('Browse catalogue'), findsOneWidget);
+      // Nothing left on this device: Clear is disabled.
+      expect(
+        tester
+            .widget<IconButton>(find.byKey(const Key('history-clear')))
+            .onPressed,
+        isNull,
+      );
       await harness.close(tester);
     },
   );

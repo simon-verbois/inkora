@@ -4,6 +4,7 @@ import 'package:inkora/app/router.dart';
 import 'package:inkora/features/library/domain/catalogue.dart';
 import 'package:inkora/features/library/domain/resume_entry.dart';
 import 'package:inkora/features/library/presentation/catalogue_card.dart';
+import 'package:inkora/features/library/presentation/reading_history_screen.dart';
 import 'package:inkora/features/library/presentation/resume_carousel.dart';
 import 'package:inkora/reader/presentation/reader_screen.dart';
 
@@ -62,9 +63,40 @@ void main() {
         final list = tester.widget<ListView>(carousel);
         expect(
           list.childrenDelegate.estimatedChildCount,
-          19,
-        ); // 10 covers + separators.
-        expect(find.text('View all'), findsNothing);
+          21,
+        ); // 10 covers + the View all end card + separators.
+        // The truncated shelf ends with a View all card to the history; the
+        // top header carries the icon action.
+        expect(find.byKey(const Key('reading-history-action')), findsOneWidget);
+        final endCard = find.byKey(
+          const ValueKey('shelf-view-all-Reading history'),
+        );
+        await tester.ensureVisible(find.byType(ResumeCarousel));
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          endCard,
+          300,
+          scrollable: find.descendant(
+            of: find.byType(ResumeCarousel),
+            matching: find.byType(Scrollable),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(endCard);
+        await tester.pumpAndSettle();
+        expect(find.byType(ReadingHistoryScreen), findsOneWidget);
+        harness.container.read(routerProvider).pop();
+        await tester.pumpAndSettle();
+        tester
+            .state<ScrollableState>(
+              find.descendant(
+                of: find.byType(ResumeCarousel),
+                matching: find.byType(Scrollable),
+              ),
+            )
+            .position
+            .jumpTo(0);
+        await tester.pumpAndSettle();
         expect(
           tester.getTopLeft(find.byType(ResumeCarousel)).dy,
           lessThan(
@@ -94,7 +126,7 @@ void main() {
           findsOneWidget,
         );
         expect(
-          tester.widgetList<CatalogueCard>(find.byType(CatalogueCard)).length,
+          tester.widgetList<InkCoverTile>(find.byType(InkCoverTile)).length,
           lessThan(40),
         );
         expect(tester.takeException(), isNull);

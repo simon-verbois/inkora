@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:isolate';
 
 import 'package:drift/drift.dart';
@@ -12,15 +11,12 @@ import '../domain/ui_preferences.dart';
 import 'ui_preferences_store.dart';
 
 /// No credentials, media files, progress, downloads or pending operations.
-/// Legacy QR imports contain portable UI/global configuration; files include account tuning
-/// and local bookmarks. All input is validated before a transaction can write.
+/// Files include account tuning and local bookmarks. All input is validated before a transaction can write.
 final class SettingsTransfer {
   SettingsTransfer(this.database, this.account);
   final AppDatabase database;
   final String account;
   static const maxBytes = 4 * 1024 * 1024;
-  static const qrPrefix = 'inkora:settings:1:';
-  static const maxQrLength = 1800;
 
   Future<Uint8List> export() async {
     final data = await database.transaction(() async {
@@ -66,26 +62,6 @@ final class SettingsTransfer {
     return Isolate.run(() => validate(jsonDecode(utf8.decode(bytes))));
   }
 
-  Future<Map<String, dynamic>> inspectQr(String text) => Isolate.run(() {
-    if (!text.startsWith(qrPrefix) || text.length > maxQrLength) {
-      throw const FormatException('Invalid QR code');
-    }
-    // Bound decompression as well as encoded input, rejecting zip bombs.
-    final output = <int>[];
-    final sink = ByteConversionSink.withCallback((bytes) {
-      output.addAll(bytes);
-    });
-    final decoder = gzip.decoder.startChunkedConversion(
-      _BoundedSink(sink, maxBytes),
-    );
-    decoder.add(base64Url.decode(text.substring(qrPrefix.length)));
-    decoder.close();
-    final value = validate(jsonDecode(utf8.decode(output)));
-    if (value['portable'] != true) {
-      throw const FormatException('QR settings must be portable');
-    }
-    return value;
-  });
   static Map<String, dynamic> validate(Object? raw) {
     if (raw is! Map<String, dynamic> ||
         raw['format'] != 'inkora-settings' ||
@@ -231,22 +207,6 @@ final class SettingsTransfer {
       }
     });
   }
-}
-
-class _BoundedSink extends ByteConversionSinkBase {
-  _BoundedSink(this.sink, this.limit);
-  final Sink<List<int>> sink;
-  final int limit;
-  int count = 0;
-  @override
-  void add(List<int> chunk) {
-    count += chunk.length;
-    if (count > limit) throw const FormatException('Backup exceeds size limit');
-    sink.add(chunk);
-  }
-
-  @override
-  void close() => sink.close();
 }
 
 Future<Uint8List> _exportWorker(Map<String, Object?> data, String accountId) =>

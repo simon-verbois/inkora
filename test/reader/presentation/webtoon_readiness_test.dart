@@ -354,7 +354,7 @@ void main() {
         ),
         same(surface),
       );
-      expect(find.text('2 / 30'), findsOneWidget);
+      expect(find.text('p. 2'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();

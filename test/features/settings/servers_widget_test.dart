@@ -130,7 +130,7 @@ void main() {
       ),
       findsNothing,
     );
-    final cards = tester.widgetList<CatalogueCard>(find.byType(CatalogueCard));
+    final cards = tester.widgetList<InkCoverTile>(find.byType(InkCoverTile));
     expect(cards, isNotEmpty);
     expect(
       cards.every((card) => card.item.kind == CatalogueKind.series),
@@ -139,11 +139,11 @@ void main() {
     await tester.tap(find.text('Moonlit District'));
     await tester.pumpAndSettle();
     expect(find.text('Browse books'), findsNothing);
+    await tester.tap(find.byKey(const Key('series-tab-volumes')));
+    await tester.pumpAndSettle();
+    final volume = find.byKey(const ValueKey('volume-book-a'));
     await tester.scrollUntilVisible(
-      find.descendant(
-        of: find.byType(VolumeListTile),
-        matching: find.text('Moonlit District · Volume 3'),
-      ),
+      volume,
       250,
       scrollable: find
           .descendant(
@@ -153,9 +153,10 @@ void main() {
           .first,
     );
     await tester.pumpAndSettle();
+    // The row shows the volume label; the series name is not repeated.
     expect(
       find.descendant(
-        of: find.byType(VolumeListTile),
+        of: volume,
         matching: find.text('Moonlit District · Volume 3'),
       ),
       findsOneWidget,

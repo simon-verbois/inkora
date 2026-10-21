@@ -9,6 +9,7 @@ import '../../../core/storage/app_database.dart';
 import '../domain/catalogue.dart';
 import '../domain/catalogue_metadata.dart';
 import '../domain/resume_entry.dart';
+import '../domain/volume_progress.dart';
 import 'library_visibility_store.dart';
 
 final class CatalogueStore {
@@ -45,13 +46,14 @@ final class CatalogueStore {
   static String ebookPredicate(String alias) =>
       "COALESCE(json_extract($alias.descriptive_metadata, '\$.mediaType'), '') IN ('application/epub+zip', 'application/pdf')";
 
-  /// One upgrade refresh fills the additive metadata field in older snapshots.
+  /// One upgrade refresh fills additive metadata fields in older snapshots
+  /// (media type, reading status and the in-progress server page).
   Future<bool> needsMediaRefresh() async {
     final active = await snapshot();
     if (active == null) return false;
     final rows = await database
         .customSelect(
-          "SELECT 1 FROM catalogue_entries WHERE account_id=? AND generation=? AND kind='book' AND available=1 AND (json_type(descriptive_metadata, '\$.mediaType') IS NULL OR json_type(descriptive_metadata, '\$.readingStatus') IS NULL) LIMIT 1",
+          "SELECT 1 FROM catalogue_entries WHERE account_id=? AND generation=? AND kind='book' AND available=1 AND (json_type(descriptive_metadata, '\$.mediaType') IS NULL OR json_type(descriptive_metadata, '\$.readingStatus') IS NULL OR (json_extract(descriptive_metadata, '\$.readingStatus')='inProgress' AND json_type(descriptive_metadata, '\$.readPage') IS NULL)) LIMIT 1",
           variables: [Variable(accountId), Variable(active.generation)],
         )
         .get();
@@ -96,19 +98,13 @@ final class CatalogueStore {
           controller.add,
           onError: controller.addError,
         );
-        final reading = database
-            .customSelect(
-              'SELECT 1',
-              readsFrom: {
-                if (includeServerShelf) database.resumeSnapshots,
-                database.readerPositions,
-                database.readerManifests,
-                database.progressEvents,
-                database.progressHeads,
-              },
-            )
-            .watch()
-            .listen((_) => controller.add(null), onError: controller.addError);
+        final reading = watchTables(database, {
+          if (includeServerShelf) database.resumeSnapshots,
+          database.readerPositions,
+          database.readerManifests,
+          database.progressEvents,
+          database.progressHeads,
+        }).listen(controller.add, onError: controller.addError);
         controller.onCancel = () async {
           await publications.cancel();
           await reading.cancel();
@@ -286,6 +282,8 @@ final class CatalogueStore {
                   jsonEncode({
                     ...item.metadata.toJson(),
                     'readingStatus': item.readingStatus.name,
+                    'readPage': ?item.readPage,
+                    'readModified': ?item.readModified,
                   }),
                 ),
               ),
@@ -411,19 +409,13 @@ final class CatalogueStore {
         controller.add,
         onError: controller.addError,
       );
-      final reading = database
-          .customSelect(
-            'SELECT 1',
-            readsFrom: {
-              if (query.filters.readingStatus != ReadingStatus.any) ...{
-                database.bookReadingStates,
-                database.resumeSnapshots,
-              },
-              if (query.filters.downloadedOnly) database.readerDownloads,
-            },
-          )
-          .watch()
-          .listen((_) => controller.add(null), onError: controller.addError);
+      final reading = watchTables(database, {
+        if (query.filters.readingStatus != ReadingStatus.any) ...{
+          database.bookReadingStates,
+          database.resumeSnapshots,
+        },
+        if (query.filters.downloadedOnly) database.readerDownloads,
+      }).listen(controller.add, onError: controller.addError);
       controller.onCancel = () async {
         await publication.cancel();
         await reading.cancel();
@@ -499,6 +491,25 @@ final class CatalogueStore {
       count.read<int>('total'),
       active.updatedAt,
     );
+  });
+
+  /// Result count of [query] for the filter sheet's "Show results" button:
+  /// the same indexed scope and COUNT as [read], without loading any row.
+  Future<int> count(CatalogueQuery query) => database.transaction(() async {
+    if ((query.groupId == null) != (query.groupKind == null) ||
+        (query.readingUnits && query.kind != CatalogueKind.series)) {
+      throw ArgumentError('Invalid catalogue query');
+    }
+    final active = await snapshot();
+    if (active == null) return 0;
+    final (:join, :where, :args) = _scope(query, active.generation);
+    final row = await database
+        .customSelect(
+          'SELECT COUNT(*) AS total FROM catalogue_entries e $join WHERE $where',
+          variables: args,
+        )
+        .getSingle();
+    return row.read<int>('total');
   });
 
   /// Parent lookup uses the account/generation/kind/remote identity index.
@@ -639,39 +650,44 @@ final class CatalogueStore {
     return result;
   });
 
-  CatalogueItem _item(QueryRow row) => CatalogueItem(
-    kind: CatalogueKind.values.byName(row.read<String>('kind')),
-    id: row.read<String>('remote_id'),
-    title: row.read<String>('title'),
-    readingStatus:
-        ReadingStatus.values
-            .where(
-              (v) =>
-                  v.name ==
-                  (jsonDecode(row.read<String>('descriptive_metadata'))
-                      as Map)['readingStatus'],
-            )
-            .firstOrNull ??
-        ReadingStatus.unread,
-    sortTitle: row.read<String>('sort_title'),
-    summary: row.read<String>('summary'),
-    metadata: CatalogueMetadata.fromJson({
-      ...jsonDecode(row.read<String>('descriptive_metadata'))
-          as Map<String, dynamic>,
-      if (row.data['document_type'] case final String type) 'mediaType': type,
-    }),
-    searchText: row.read<String>('search_text'),
-    libraryId: row.readNullable<String>('library_id'),
-    seriesId: row.readNullable<String>('series_id'),
-    number: row.read<double>('number'),
-    itemCount: row.read<int>('item_count'),
-    pageCount: row.read<int>('page_count'),
-    modified: row.read<int>('modified'),
-    deleted: row.read<bool>('deleted'),
-    available: row.read<bool>('available'),
-    ordered: row.read<bool>('ordered'),
-    membershipRemoved: row.read<bool>('membership_removed'),
-  );
+  CatalogueItem _item(QueryRow row) {
+    final descriptive = jsonDecode(
+      row.read<String>('descriptive_metadata'),
+    ) as Map<String, dynamic>;
+    return _itemFrom(row, descriptive);
+  }
+
+  CatalogueItem _itemFrom(QueryRow row, Map<String, dynamic> descriptive) =>
+      CatalogueItem(
+        kind: CatalogueKind.values.byName(row.read<String>('kind')),
+        id: row.read<String>('remote_id'),
+        title: row.read<String>('title'),
+        readingStatus:
+            ReadingStatus.values
+                .where((v) => v.name == descriptive['readingStatus'])
+                .firstOrNull ??
+            ReadingStatus.unread,
+        readPage: descriptive['readPage'] as int?,
+        readModified: descriptive['readModified'] as String?,
+        sortTitle: row.read<String>('sort_title'),
+        summary: row.read<String>('summary'),
+        metadata: CatalogueMetadata.fromJson({
+          ...descriptive,
+          if (row.data['document_type'] case final String type)
+            'mediaType': type,
+        }),
+        searchText: row.read<String>('search_text'),
+        libraryId: row.readNullable<String>('library_id'),
+        seriesId: row.readNullable<String>('series_id'),
+        number: row.read<double>('number'),
+        itemCount: row.read<int>('item_count'),
+        pageCount: row.read<int>('page_count'),
+        modified: row.read<int>('modified'),
+        deleted: row.read<bool>('deleted'),
+        available: row.read<bool>('available'),
+        ordered: row.read<bool>('ordered'),
+        membershipRemoved: row.read<bool>('membership_removed'),
+      );
 
   Stream<Map<CatalogueKind, int>> overview() => _changes().asyncMap(
     (_) => database.transaction(() async {
@@ -714,8 +730,125 @@ final class CatalogueStore {
     }),
   );
 
+  /// Lean, ordered volume rows of one series. Re-read only when a catalogue
+  /// generation or library selection is published; descriptive JSON fields
+  /// are extracted by SQLite on the database isolate, never decoded here.
+  Stream<List<SeriesVolume>> watchSeriesVolumes(String seriesId) =>
+      _changes().asyncMap((_) => readSeriesVolumes(seriesId));
+
+  Future<List<SeriesVolume>> readSeriesVolumes(String seriesId) async {
+    final rows = await database
+        .customSelect(
+          '''SELECT e.remote_id, e.title, e.library_id, e.number, e.page_count,
+            e.modified, e.available, e.deleted,
+            json_extract(e.descriptive_metadata, '\$.mediaType') AS media_type,
+            json_extract(e.descriptive_metadata, '\$.readingStatus') AS server_status,
+            json_extract(e.descriptive_metadata, '\$.readPage') AS server_page,
+            json_extract(e.descriptive_metadata, '\$.readModified') AS server_modified
+          FROM catalogue_snapshots s
+          JOIN catalogue_entries e ON e.account_id=s.account_id AND e.generation=s.generation
+          WHERE s.account_id=? AND e.kind='book' AND e.series_id=? AND ${_visible('e')}
+          ORDER BY e.number, e.sort_title, e.remote_id''',
+          variables: [Variable(accountId), Variable(seriesId)],
+        )
+        .get();
+    return [
+      for (final row in rows)
+        SeriesVolume(
+          id: row.read<String>('remote_id'),
+          seriesId: seriesId,
+          title: row.read<String>('title'),
+          libraryId: row.readNullable<String>('library_id'),
+          number: row.read<double>('number'),
+          pageCount: row.read<int>('page_count'),
+          modified: row.read<int>('modified'),
+          available: row.read<bool>('available') && !row.read<bool>('deleted'),
+          mediaType: row.readNullable<String>('media_type') ?? '',
+          serverStatus:
+              ReadingStatus.values
+                  .where(
+                    (v) => v.name == row.readNullable<String>('server_status'),
+                  )
+                  .firstOrNull ??
+              ReadingStatus.unread,
+          serverPage: row.readNullable<int>('server_page'),
+          serverModified: row.readNullable<String>('server_modified'),
+        ),
+    ];
+  }
+
+  /// Device progress of one series' books (latest outbox intent, observed
+  /// baseline, exact reader position). It wakes on local reading writes, but
+  /// emits only when a book's effective inputs change; every lookup uses the
+  /// progress tables' account/book primary keys.
+  Stream<Map<String, LocalVolumeProgress>> watchSeriesLocalProgress(
+    String seriesId,
+  ) => database
+      .customSelect(
+        '''SELECT e.remote_id AS book_id, v.operation, v.page_index AS event_page,
+          v.page_count AS event_count,
+          json_extract(v.document_locator, '\$.locations.totalProgression') AS event_total,
+          h.baseline IS NOT NULL AS has_baseline,
+          COALESCE(json_extract(h.baseline, '\$.completed'), 0) AS baseline_completed,
+          json_extract(h.baseline, '\$.page') AS baseline_page,
+          p.page_index AS position_page,
+          EXISTS (SELECT 1 FROM progress_events c WHERE c.account_id=e.account_id
+            AND c.book_id=e.remote_id AND c.state='conflict') AS conflict
+        FROM catalogue_snapshots s
+        JOIN catalogue_entries e ON e.account_id=s.account_id AND e.generation=s.generation
+        LEFT JOIN progress_events v ON v.account_id=e.account_id AND v.book_id=e.remote_id
+          AND v.sequence=(SELECT MAX(x.sequence) FROM progress_events x
+            WHERE x.account_id=e.account_id AND x.book_id=e.remote_id)
+        LEFT JOIN progress_heads h ON h.account_id=e.account_id AND h.book_id=e.remote_id
+        LEFT JOIN reader_positions p ON p.account_id=e.account_id AND p.book_id=e.remote_id
+        WHERE s.account_id=? AND e.kind='book' AND e.series_id=?
+          AND (v.book_id IS NOT NULL OR h.baseline IS NOT NULL OR p.book_id IS NOT NULL)''',
+        variables: [Variable(accountId), Variable(seriesId)],
+        readsFrom: {
+          database.catalogueSnapshots,
+          database.progressEvents,
+          database.progressHeads,
+          database.readerPositions,
+        },
+      )
+      .watch()
+      .map(
+        (rows) => {
+          for (final row in rows)
+            row.read<String>('book_id'): LocalVolumeProgress(
+              operation: row.readNullable<String>('operation'),
+              eventPage: row.readNullable<int>('event_page'),
+              eventPageCount: row.readNullable<int>('event_count'),
+              eventTotal: row.readNullable<double>('event_total'),
+              hasBaseline: row.read<bool>('has_baseline'),
+              baselineCompleted: row.read<int>('baseline_completed') == 1,
+              baselinePage: row.readNullable<int>('baseline_page'),
+              positionPage: row.readNullable<int>('position_page'),
+              conflict: row.read<bool>('conflict'),
+            ),
+        },
+      )
+      .distinct(sameProgress);
+
+  /// Value equality of two [watchSeriesLocalProgress] results.
+  static bool sameProgress(
+    Map<String, LocalVolumeProgress> a,
+    Map<String, LocalVolumeProgress> b,
+  ) =>
+      a.length == b.length &&
+      a.entries.every((entry) => b[entry.key] == entry.value);
+
   Future<List<ResumeEntry>> visibleResume(List<ResumeEntry> entries) async {
-    if (!applyLibraryVisibility) return entries;
+    final visible = await libraryVisibility();
+    return entries
+        .where((entry) => visible(entry.item.libraryId))
+        .toList(growable: false);
+  }
+
+  /// Whether a book of a library may be shown: not a revoked library and,
+  /// with an explicit local selection, a selected one. Two small reads.
+  Future<bool Function(String? libraryId)> libraryVisibility() async {
+    if (!applyLibraryVisibility) return (_) => true;
     final selected = LibraryVisibilityStore.decode(await visibility.payload());
     final active = await snapshot();
     final denied = active == null
@@ -731,13 +864,9 @@ final class CatalogueStore {
                   .get())
               .map((row) => row.read<String>('remote_id'))
               .toSet();
-    return entries
-        .where(
-          (entry) =>
-              !denied.contains(entry.item.libraryId) &&
-              (selected == null || selected.contains(entry.item.libraryId)),
-        )
-        .toList(growable: false);
+    return (String? library) =>
+        !denied.contains(library) &&
+        (selected == null || selected.contains(library));
   }
 
   /// Saved local positions with a matching raster manifest; title-ordered because

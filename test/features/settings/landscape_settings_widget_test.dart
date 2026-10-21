@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/l10n/app_strings.dart';
 import 'package:inkora/app/router.dart';
-import 'package:inkora/app/widgets/ink_surface.dart';
+import 'package:inkora/app/widgets/ink_screen_header.dart';
 import 'package:inkora/app/widgets/inkora_widgets.dart';
 import 'package:inkora/features/connection/application/session_controller.dart';
 import 'package:inkora/features/settings/data/ui_preferences_store.dart';
@@ -27,7 +27,7 @@ void main() {
   }
 
   testWidgets(
-    'tablet settings retain the wordmark without header back while editors survive resize',
+    'tablet settings keep one header level and the bottom navigation while editors survive resize',
     (tester) async {
       size(tester, const Size(1200, 800));
       resetView(tester);
@@ -42,24 +42,27 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('settings-sidebar')), findsOneWidget);
       expect(find.byType(AppearancePicker), findsOneWidget);
+      // One header level: wide panes use the sidebar heading (no screen
+      // header, no Back); other windows use the page's own screen header.
+      // Settings keeps its own title; Home owns the shared logo band.
       void checkShellHeader() {
-        final header = find.ancestor(
-          of: find.byType(InkoraWordmark),
-          matching: find.byType(InkAppBar),
-        );
-        expect(header, findsOneWidget);
-        expect(
-          find.descendant(of: header, matching: find.byType(InkoraWordmark)),
-          findsOneWidget,
-        );
-        expect(
-          find.descendant(of: header, matching: find.byType(BackButton)),
-          findsNothing,
-        );
-        expect(
-          find.descendant(of: header, matching: find.text('Quality')),
-          findsNothing,
-        );
+        final size = tester.view.physicalSize;
+        final wide = size.width >= 1000 && size.width > size.height;
+        final rail = find.byKey(const Key('navigation-rail'));
+        expect(rail, findsNothing);
+        expect(find.byType(InkoraWordmark), findsNothing);
+        final header = find.byType(InkScreenHeader);
+        if (wide) {
+          expect(header, findsNothing);
+          expect(find.byType(BackButton), findsNothing);
+        } else if (router.routeInformationProvider.value.uri.path !=
+            '/settings') {
+          expect(header, findsOneWidget);
+          expect(
+            find.descendant(of: header, matching: find.byType(BackButton)),
+            findsOneWidget,
+          );
+        }
       }
 
       checkShellHeader();
@@ -70,25 +73,27 @@ void main() {
         '/settings/quality',
       );
       checkShellHeader();
-      expect(find.text('Quality'), findsOneWidget); // Sidebar category only.
+      // The sidebar names the page; no in-page title repeats it.
+      expect(find.text('Image quality'), findsOneWidget);
       final editor = tester.state<ReaderSettingsSheetState>(
         find.byType(ReaderSettingsSheet),
       );
-      final sampler = find.byType(DropdownButtonFormField<ImageSampling>).first;
+      final sampler = find.byKey(
+        const Key('reader-choice-quality-jpeg-sampling-nearest'),
+      );
       await tester.ensureVisible(sampler);
       await tester.tap(sampler);
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Nearest neighbour').last);
-      await tester.pumpAndSettle();
+      final reset = find.byKey(const Key('reader-settings-reset'));
       for (final keyboardHeight in [300.0, 450.0, 500.0]) {
         tester.view.viewInsets = FakeViewPadding(bottom: keyboardHeight);
         await tester.pumpAndSettle();
         expect(tester.state(find.byType(ReaderSettingsSheet)), same(editor));
-        expect(find.text('Save').hitTestable(), findsOneWidget);
-        expect(
-          tester.getBottomLeft(find.text('Save')).dy,
-          lessThanOrEqualTo(800 - keyboardHeight),
-        );
+        expect(find.text('Save'), findsNothing);
+        expect(reset.hitTestable(), findsOneWidget);
       }
       tester.view.resetViewInsets();
       await tester.pumpAndSettle();
@@ -106,12 +111,7 @@ void main() {
           router.routeInformationProvider.value.uri.path,
           '/settings/quality',
         );
-        expect(
-          tester
-              .widget<DropdownButtonFormField<ImageSampling>>(sampler)
-              .initialValue,
-          ImageSampling.nearest,
-        );
+        expect(tester.widget<ChoiceChip>(sampler).selected, isTrue);
         expect(
           find.byKey(const Key('settings-sidebar')),
           viewport.width >= 1000 && viewport.width > viewport.height
@@ -120,10 +120,6 @@ void main() {
         );
         expect(tester.takeException(), isNull);
       }
-      final save = find.text('Save');
-      await tester.ensureVisible(save);
-      await tester.tap(save);
-      await tester.pumpAndSettle();
       final account = harness.container
           .read(sessionProvider)
           .session!
@@ -164,15 +160,12 @@ void main() {
       final editor = tester.state<ReaderSettingsSheetState>(
         find.byType(ReaderSettingsSheet),
       );
-      final mode = find.byWidgetPredicate(
-        (w) =>
-            w is DropdownButtonFormField<String> &&
-            w.decoration.labelText == 'Mode',
-      );
+      final mode = find.byKey(const Key('reader-choice-mode-webtoon'));
       await tester.ensureVisible(mode);
       await tester.tap(mode);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Webtoon').last);
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
       await tester.pumpAndSettle();
       for (final viewport in [
         const Size(800, 1200),
@@ -182,10 +175,7 @@ void main() {
         size(tester, viewport);
         await tester.pumpAndSettle();
         expect(tester.state(find.byType(ReaderSettingsSheet)), same(editor));
-        expect(
-          tester.widget<DropdownButtonFormField<String>>(mode).initialValue,
-          'webtoon',
-        );
+        expect(tester.widget<ChoiceChip>(mode).selected, isTrue);
         expect(
           find.byKey(const Key('setup-back')).hitTestable(),
           findsOneWidget,
@@ -234,10 +224,21 @@ void main() {
         final opacity = find.byKey(const Key('panel-opacity'));
         await tester.ensureVisible(opacity);
         await tester.pumpAndSettle();
-        expect(
-          tester.getTopLeft(dark).dx,
-          greaterThan(tester.getTopRight(light).dx),
-        );
+        // The rail fits its longest localized word (the square test font
+        // widens it), so pair the groups whenever the pane keeps 720px.
+        final pane = tester.getTopRight(dark).dx - tester.getTopLeft(light).dx;
+        if (pane >= 720) {
+          expect(
+            tester.getTopLeft(dark).dx,
+            greaterThan(tester.getTopRight(light).dx),
+          );
+        } else {
+          expect(
+            tester.getTopLeft(dark).dy,
+            greaterThan(tester.getBottomLeft(light).dy),
+          );
+        }
+        expect(find.byKey(const Key('navigation-rail')), findsNothing);
         expect(tester.takeException(), isNull);
         tester.platformDispatcher.textScaleFactorTestValue = 2;
         await tester.pumpAndSettle();

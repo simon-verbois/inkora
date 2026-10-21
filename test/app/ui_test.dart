@@ -1,7 +1,8 @@
+import '../support/home_navigation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/router.dart';
-import 'package:inkora/app/widgets/inkora_navigation.dart';
 import 'package:inkora/app/widgets/inkora_widgets.dart';
 import 'package:inkora/app/theme/inkora_theme.dart';
 import 'package:inkora/features/library/presentation/book_cover.dart';
@@ -71,12 +72,13 @@ void main() {
           await tester.pumpAndSettle();
           expect(find.byTooltip('Search catalogue'), findsNothing);
           expect(find.text('Favorites'), findsNothing);
-          expect(find.byKey(const Key('navigation-downloads')), findsOneWidget);
-          expect(find.byKey(const Key('navigation-settings')), findsOneWidget);
+          expect(find.byKey(const Key('open-downloads')), findsOneWidget);
+          expect(find.byKey(const Key('open-settings')), findsOneWidget);
           expect(find.byKey(const Key('navigation-home')), findsNothing);
+          expect(find.byKey(const Key('navigation-rail')), findsNothing);
           expect(
-            tester.getRect(find.byType(InkoraNavigation)).top,
-            greaterThan(size.height - 140),
+            find.byKey(const Key('floating-navigation-panel')),
+            findsNothing,
           );
           await harness.close(tester);
         },
@@ -97,7 +99,7 @@ void main() {
       await harness.mount(tester);
       final card = find
           .byWidgetPredicate(
-            (widget) => widget is CatalogueCard && widget.item.id == 'series-a',
+            (widget) => widget is InkCoverTile && widget.item.id == 'series-a',
           )
           .first;
       final cover = find.descendant(of: card, matching: find.byType(BookCover));
@@ -125,7 +127,7 @@ void main() {
     });
   }
 
-  testWidgets('publication sheet blocks navigation behind its modal barrier', (
+  testWidgets('publication sheet blocks detail Back behind its modal barrier', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(1024, 768);
@@ -138,7 +140,7 @@ void main() {
     final router = harness.container.read(routerProvider);
     router.go('/catalogue/series/series-a');
     await tester.pumpAndSettle();
-    // The shared sheet must cover both branch content and shell navigation.
+    // The shared sheet must cover the detail Back action.
     final context = tester.element(find.byType(CatalogueDetailScreen));
     showInkSheet<void>(
       context: context,
@@ -146,7 +148,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.tap(
-      find.byKey(const Key('navigation-settings')),
+      find.byKey(const Key('floating-header-back')),
       warnIfMissed: false,
     );
     await tester.pumpAndSettle();
@@ -165,14 +167,14 @@ void main() {
       final harness = await UiHarness.create(tester);
       addTearDown(() => harness.close(tester));
       await harness.mount(tester);
-      await tester.tap(find.text('Settings'));
+      await openHomeDestination(tester, 'settings');
       await tester.pumpAndSettle();
       expect(find.text('reader@example.test'), findsNothing);
       expect(find.text('Server'), findsNothing);
       expect(find.text('Sign out'), findsNothing);
       await tester.tap(find.text('Servers and account'));
       await tester.pumpAndSettle();
-      expect(find.text('Server'), findsOneWidget);
+      expect(find.text('Active account'), findsOneWidget);
       expect(find.text('Sign out'), findsOneWidget);
       final router = harness.container.read(routerProvider);
       router.go('/settings/account');
@@ -207,6 +209,12 @@ void main() {
       final router = harness.container.read(routerProvider);
       router.go('/settings');
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Appearance'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Appearance'));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('follow-system-theme')));
@@ -223,18 +231,14 @@ void main() {
         harness.container.read(uiPreferencesProvider).requireValue.appearance,
         AppAppearance.dark,
       );
-      harness.container.read(routerProvider).go('/settings');
+      harness.container.read(routerProvider).go('/settings/reading');
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        find.text('Reading'),
-        200,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.tap(find.text('Reading'));
-      await tester.pumpAndSettle();
+      expect(find.text('Reading profiles'), findsOneWidget);
       await tester.tap(find.text('Global defaults').first);
       await tester.pumpAndSettle();
-      expect(find.text('Global'), findsOneWidget);
+      // The page title names the scope; the editor repeats no title.
+      expect(find.text('Global defaults'), findsOneWidget);
+      expect(find.text('Reading preferences'), findsNothing);
       expect(find.text('This book'), findsNothing);
       expect(find.text('Preference inheritance'), findsNothing);
       expect(find.text('Inherit'), findsNothing);
@@ -348,7 +352,7 @@ void registerCatalogueRetentionTest() {
     final harness = await UiHarness.create(tester);
     addTearDown(() => harness.close(tester));
     await harness.mount(tester);
-    await tester.tap(find.text('Libraries'));
+    await openHomeDestination(tester, 'libraries');
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('library-selector')));
     await tester.pumpAndSettle();
@@ -356,33 +360,48 @@ void registerCatalogueRetentionTest() {
     await tester.pumpAndSettle();
     expect(find.text('Moonlit District'), findsOneWidget);
     expect(find.text('Atlas Nine'), findsNothing);
-    await tester.tap(find.byKey(const Key('catalogue-search-toggle')));
-    await tester.pumpAndSettle();
+    if (find
+        .byKey(const Key('open-search'))
+        .hitTestable()
+        .evaluate()
+        .isNotEmpty) {
+      await tester.tap(find.byKey(const Key('open-search')).hitTestable().last);
+      await tester.pumpAndSettle();
+    }
     await tester.enterText(
       find.byKey(const Key('catalogue-search')),
       'Moonlit',
     );
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Downloads'));
+    // On a device the soft keyboard hides the bottom navigation.
+    FocusManager.instance.primaryFocus?.unfocus();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Libraries'));
+    await openHomeDestination(tester, 'downloads');
+    await tester.pumpAndSettle();
+    await openHomeDestination(tester, 'libraries');
     await tester.pumpAndSettle();
     expect(
       tester
-          .widget<TextField>(find.byKey(const Key('catalogue-search')))
+          .widget<TextField>(
+            find.descendant(
+              of: find.byKey(const Key('catalogue-search')),
+              matching: find.byType(TextField),
+            ),
+          )
           .controller!
           .text,
       'Moonlit',
     );
     await tester.pump(const Duration(milliseconds: 200));
-    expect(find.text('Manga shelf'), findsOneWidget);
+    // The selector shows the name on wide windows, its tooltip everywhere.
+    expect(find.byTooltip('Manga shelf'), findsOneWidget);
     await tester.tap(find.byTooltip('Show list'));
     await tester.tap(find.byKey(const Key('catalogue-filters')));
     await tester.pumpAndSettle();
     expect(find.text('List view'), findsNothing);
     await tester.tap(find.text('Show unavailable items'));
-    await tester.tap(find.text('Apply filters'));
+    await tester.tap(find.byKey(const Key('filters-apply')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('catalogue-list')), findsOneWidget);
     expect(tester.takeException(), isNull);

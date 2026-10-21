@@ -16,9 +16,18 @@ import '../data/cover_repository.dart';
 import '../domain/catalogue.dart';
 
 class BookCover extends ConsumerWidget {
-  const BookCover({super.key, required this.item, this.width});
+  const BookCover({
+    super.key,
+    required this.item,
+    this.width,
+    this.muted = false,
+  });
+  static const _frame = 2.0;
   final CatalogueItem item;
   final double? width;
+
+  /// A light page-colored veil for completed volumes; keeps the image identity.
+  final bool muted;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final supported =
@@ -75,17 +84,27 @@ class BookCover extends ConsumerWidget {
           builder: (context, constraints) => AspectRatio(
             aspectRatio: InkoraLayout.coverRatio,
             child: DecoratedBox(
+              position: muted
+                  ? DecorationPosition.foreground
+                  : DecorationPosition.background,
               decoration: BoxDecoration(
+                color: muted
+                    ? Theme.of(context).scaffoldBackgroundColor
+                          .withValues(alpha: .24)
+                    : null,
                 border: Border.all(
                   color: Theme.of(context).colorScheme.primary
                       .withValues(alpha: .8),
                 ),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: InkRadius.small,
               ),
               child: Padding(
-                padding: const EdgeInsets.all(2),
+                padding: const EdgeInsets.all(_frame),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
+                  // Concentric with the small frame radius.
+                  borderRadius: const BorderRadius.all(
+                    Radius.circular(InkRadius.s - _frame),
+                  ),
                   child: bytes == null
                       ? placeholder
                       : Image(

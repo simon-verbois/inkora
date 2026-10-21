@@ -1,3 +1,6 @@
+import '../../../app/icons/inkora_icons.dart';
+import '../../../app/widgets/inkora_widgets.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -67,11 +70,7 @@ class _LibraryVisibilityPanelState
       await store.save(included);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: LText('Unable to save library selection. Try again.'),
-          ),
-        );
+        notifyInk(context, 'Unable to save library selection. Try again.');
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -119,9 +118,9 @@ class _LibraryVisibilityPanelState
                   ),
           ),
           if (libraries.requireValue.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: LText('No saved libraries'),
+            const InkEmptyState(
+              icon: InkIcons.books,
+              title: 'No saved libraries',
             ),
           for (final library in libraries.requireValue)
             CheckboxListTile(

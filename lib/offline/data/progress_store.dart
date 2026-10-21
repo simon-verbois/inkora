@@ -172,6 +172,76 @@ final class ProgressStore {
     );
     await _readingState(manifest.bookId);
   });
+
+  /// Queues explicit read ([ProgressOperation.complete]) or unread
+  /// ([ProgressOperation.markUnread]) intents for catalogue volumes in one
+  /// transaction, without a manifest ([ProgressIntent.anyRevision]). A book
+  /// whose latest queued intent is already the same operation is skipped.
+  /// Unread also rewinds the exact local position to the first page.
+  /// Returns the number of queued intents.
+  Future<int> mark(List<ProgressMark> books, {required bool read}) =>
+      database.transaction(() async {
+        final operation = read
+            ? ProgressOperation.complete
+            : ProgressOperation.markUnread;
+        var queued = 0;
+        for (final book in books) {
+          final head = await database
+              .customSelect(
+                'SELECT sequence, baseline FROM progress_heads WHERE account_id = ? AND book_id = ?',
+                variables: [Variable(accountId), Variable(book.bookId)],
+              )
+              .getSingleOrNull();
+          final tail = await database
+              .customSelect(
+                'SELECT operation, state FROM progress_events WHERE account_id = ? AND book_id = ? ORDER BY sequence DESC LIMIT 1',
+                variables: [Variable(accountId), Variable(book.bookId)],
+              )
+              .getSingleOrNull();
+          if (tail?.read<String>('operation') == operation.name &&
+              tail?.read<String>('state') == 'queued') {
+            continue;
+          }
+          final sequence = (head?.read<int>('sequence') ?? 0) + 1;
+          final observed = head?.readNullable<String>('baseline');
+          final pages = book.pageCount < 1 ? 1 : book.pageCount;
+          await database.customStatement(
+            'INSERT OR REPLACE INTO progress_heads (account_id, book_id, sequence, baseline) VALUES (?, ?, ?, ?)',
+            [accountId, book.bookId, sequence, observed],
+          );
+          await database.customStatement(
+            'INSERT INTO progress_events (account_id, book_id, sequence, revision, page_index, fraction, operation, baseline, state, page_count, document_locator) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, NULL)',
+            [
+              accountId,
+              book.bookId,
+              sequence,
+              ProgressIntent.anyRevision,
+              read ? pages - 1 : 0,
+              operation.name,
+              observed ?? book.server.encode(),
+              'queued',
+              pages,
+            ],
+          );
+          if (!read) {
+            await database.customStatement(
+              'UPDATE reader_positions SET page_index = 0, fraction = 0, document_locator = NULL WHERE account_id = ? AND book_id = ?',
+              [accountId, book.bookId],
+            );
+          }
+          await _readingState(book.bookId);
+          queued++;
+        }
+        if (queued > 0) {
+          database.notifyUpdates({
+            TableUpdate.onTable(database.progressEvents),
+            TableUpdate.onTable(database.progressHeads),
+            if (!read) TableUpdate.onTable(database.readerPositions),
+          });
+        }
+        return queued;
+      });
+
   Future<List<ProgressIntent>> pending() async =>
       (await database
               .customSelect(
@@ -320,7 +390,7 @@ final class ProgressStore {
         }
         final remote = current.remote!;
         if (keepLocal) {
-          if (remote.revision != current.revision) {
+          if (!current.anyContent && remote.revision != current.revision) {
             throw StateError(
               'Refresh the book before remapping a changed revision',
             );

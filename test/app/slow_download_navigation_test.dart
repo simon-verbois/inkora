@@ -1,3 +1,5 @@
+import '../support/home_navigation.dart';
+
 import 'dart:async';
 import 'dart:io';
 
@@ -153,7 +155,7 @@ void main() {
         'libraries',
         'downloads',
       ]) {
-        await tester.tap(find.byKey(ValueKey('navigation-$branch')));
+        await openHomeDestination(tester, branch);
         for (var turn = 0; turn < 4; turn++) {
           await tester.runAsync(
             () => Future<void>.delayed(const Duration(milliseconds: 20)),
@@ -167,7 +169,7 @@ void main() {
         );
         expect(tester.takeException(), isNull, reason: branch);
       }
-      expect(find.text('49 %'), findsOneWidget);
+      expect(find.text('Downloading · 49 %'), findsOneWidget);
       expect(
         transfers,
         1,

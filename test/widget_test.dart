@@ -113,7 +113,7 @@ void main() {
         expect(find.byKey(const Key('library-selector')), findsOneWidget);
         container.read(routerProvider).go('/settings/account');
         await tester.pumpAndSettle();
-        expect(find.text('reader@example.test'), findsOneWidget);
+        expect(find.text('reader@example.test'), findsNWidgets(2));
         await tester.tap(find.text('Sign out'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Sign out').last);

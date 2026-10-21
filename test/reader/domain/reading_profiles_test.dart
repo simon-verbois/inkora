@@ -23,17 +23,38 @@ void main() {
     expect(overrides.spacing, 8);
   });
   test(
-    'manga defaults to joined RTL spreads, comics adapts to the viewport',
+    'manga and comics default to two pages only in landscape or on tablets',
     () {
       const manga = ReadingSettings(mode: ReadingMode.manga);
       const comics = ReadingSettings(mode: ReadingMode.comics);
       expect(manga.direction, ReadingDirection.rightToLeft);
       expect(manga.spacing, 0);
-      expect(manga.useDoublePages(390, 844), isTrue);
-      expect(manga.useDoublePages(1024, 768), isTrue);
+      expect(manga.layout, ReadingLayout.automatic);
       expect(comics.direction, ReadingDirection.leftToRight);
-      expect(comics.useDoublePages(390, 844), isFalse);
-      expect(comics.useDoublePages(1024, 768), isTrue);
+      for (final settings in [manga, comics]) {
+        // Phone portrait (also a split-screen half) stays single.
+        expect(settings.useDoublePages(390, 844), isFalse);
+        expect(settings.useDoublePages(500, 700), isFalse);
+        // Phone landscape, tablet landscape and tablet portrait pair pages.
+        expect(settings.useDoublePages(844, 390), isTrue);
+        expect(settings.useDoublePages(1280, 800), isTrue);
+        expect(settings.useDoublePages(800, 1280), isTrue);
+      }
+      // Explicit choices win over the window rule.
+      expect(
+        const ReadingSettings(
+          mode: ReadingMode.manga,
+          layout: ReadingLayout.doublePage,
+        ).useDoublePages(390, 844),
+        isTrue,
+      );
+      expect(
+        const ReadingSettings(
+          mode: ReadingMode.manga,
+          layout: ReadingLayout.single,
+        ).useDoublePages(1280, 800),
+        isFalse,
+      );
       expect(
         const ReadingSettings(mode: ReadingMode.webtoon).fit,
         ReadingFit.comfort,
@@ -53,7 +74,7 @@ void main() {
       const ReadingOverrides(mode: ReadingMode.manga),
     ]);
     expect(settings.direction, ReadingDirection.rightToLeft);
-    expect(settings.layout, ReadingLayout.doublePage);
+    expect(settings.layout, ReadingLayout.automatic);
     expect(settings.spacing, 0);
     expect(settings.fit, ReadingFit.page);
     expect(settings.background, ReadingBackground.sepia);

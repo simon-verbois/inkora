@@ -161,7 +161,11 @@ void main() {
         await mount(
           tester,
           reader,
-          const ReadingSettings(mode: ReadingMode.manga),
+          // Explicit two pages: the default pairs only landscape/tablet windows.
+          const ReadingSettings(
+            mode: ReadingMode.manga,
+            layout: ReadingLayout.doublePage,
+          ),
           saved,
         );
         await settleReaderImages(tester);
@@ -175,7 +179,7 @@ void main() {
           left.width + right.width,
           closeTo((size.height * (7 / 6)).clamp(0, size.width), .001),
         );
-        expect(find.text('1–2 / 6'), findsOneWidget);
+        expect(find.text('p. 1–2'), findsOneWidget);
         // Inspect real pixels on both sides of the seam, not just widget bounds.
         await tester.runAsync(() async {
           final boundary = tester.renderObject<RenderRepaintBoundary>(
@@ -207,17 +211,17 @@ void main() {
           closeTo(1, .01),
           reason: 'RTL swipe must advance the whole spread',
         );
-        expect(find.text('3 / 6'), findsOneWidget);
+        expect(find.text('p. 3'), findsOneWidget);
         expect(
           tester.getRect(find.byKey(const ValueKey('page-image-2'))).width,
           closeTo(size.width, .001),
         );
         await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
         await settleReaderImages(tester);
-        expect(find.text('4–5 / 6'), findsOneWidget);
+        expect(find.text('p. 4–5'), findsOneWidget);
         await tester.tap(find.byTooltip('Next page'));
         await settleReaderImages(tester);
-        expect(find.text('6 / 6'), findsOneWidget);
+        expect(find.text('p. 6'), findsOneWidget);
         expect(
           saved.map((locator) => locator.pageIndex),
           containsAll([2, 4, 5]),
@@ -256,10 +260,10 @@ void main() {
         saved,
       );
       await settleReaderImages(tester);
-      expect(find.text('3 / 6'), findsOneWidget);
+      expect(find.text('p. 3'), findsOneWidget);
       tester.view.physicalSize = const Size(1024, 768);
       await settleReaderImages(tester);
-      expect(find.text('3–4 / 6'), findsOneWidget);
+      expect(find.text('p. 3–4'), findsOneWidget);
       expect(
         tester.getRect(find.byKey(const ValueKey('page-image-2'))).right,
         closeTo(
@@ -280,11 +284,11 @@ void main() {
         closeTo(2, .01),
         reason: 'LTR swipe must advance the whole spread',
       );
-      expect(find.text('5–6 / 6'), findsOneWidget);
+      expect(find.text('p. 5–6'), findsOneWidget);
       expect(saved.last.pageIndex, 5);
       tester.view.physicalSize = const Size(390, 844);
       await settleReaderImages(tester);
-      expect(find.text('6 / 6'), findsOneWidget);
+      expect(find.text('p. 6'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -308,10 +312,8 @@ void main() {
       ]) {
         await mount(tester, reader, ReadingSettings(mode: mode), []);
         await settleReaderImages(tester);
-        expect(
-          find.text(mode == ReadingMode.manga ? '3–4 / 8' : '3 / 8'),
-          findsOneWidget,
-        );
+        // Phone portrait: every profile shows a single page by default.
+        expect(find.text('p. 3'), findsOneWidget);
         expect(find.byKey(const ValueKey('page-image-2')), findsOneWidget);
       }
       await tester.pumpWidget(const SizedBox.shrink());
@@ -392,14 +394,14 @@ void main() {
       }
 
       await show(const ReadingSettings(mode: ReadingMode.manga));
-      expect(find.text('1–2 / 6'), findsOneWidget);
+      expect(find.text('p. 1–2'), findsOneWidget);
       await tester.tap(find.byKey(const Key('reader-spread-offset')));
       expect(toggles, 1);
 
       await show(
         const ReadingSettings(mode: ReadingMode.manga, spreadOffset: true),
       );
-      expect(find.text('1 / 6'), findsOneWidget, reason: 'first page alone');
+      expect(find.text('p. 1'), findsOneWidget, reason: 'first page alone');
 
       await show(
         const ReadingSettings(
@@ -478,12 +480,12 @@ void main() {
       }
 
       await show(false);
-      expect(find.text('1–2 / 5'), findsOneWidget);
+      expect(find.text('p. 1–2'), findsOneWidget);
       // The group changes (0 -> 1): the PageView jumps during build and its
       // page callback would report a different page to the parent.
       await show(true);
       expect(tester.takeException(), isNull);
-      expect(find.text('2–3 / 5'), findsOneWidget);
+      expect(find.text('p. 2–3'), findsOneWidget);
       expect(
         tester
             .widget<PageView>(find.byKey(const Key('paged-reader')))

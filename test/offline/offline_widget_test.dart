@@ -1,4 +1,6 @@
+import 'package:inkora/app/icons/inkora_icons.dart';
 import 'package:inkora/app/widgets/ink_surface.dart';
+import 'package:inkora/app/widgets/inkora_widgets.dart';
 import 'package:inkora/features/library/domain/catalogue_metadata.dart';
 
 import 'dart:io';
@@ -7,10 +9,12 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inkora/features/library/presentation/catalogue_grid.dart';
+import 'package:inkora/features/library/presentation/volume_browser.dart';
 import 'package:inkora/features/library/presentation/volume_list_tile.dart';
 import 'package:inkora/features/library/application/cover_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inkora/app/widgets/ink_filter_bar.dart';
 import 'package:inkora/core/storage/app_database.dart';
 import 'package:inkora/offline/application/background_transfer.dart';
 import 'package:inkora/offline/application/offline_coordinator.dart';
@@ -217,14 +221,24 @@ void main() {
         ),
       );
       await settle(tester);
+      // The queue card appears only with unfinished work; its status uses the
+      // unified labels and the pending hourglass, not the history clock.
+      expect(find.byKey(const Key('download-queue')), findsOneWidget);
       expect(find.text('Fixture reader'), findsOneWidget);
+      expect(find.text('Queued'), findsOneWidget);
+      expect(find.byIcon(InkIcons.hourglassMedium), findsOneWidget);
+      expect(find.byIcon(InkIcons.clockCounterClockwise), findsNothing);
+      expect(find.byType(InkProgressRing), findsOneWidget);
+      expect(find.byKey(const Key('download-storage')), findsNothing);
       expect(find.text('Download storage quota'), findsNothing);
-      await tap(tester, find.text('Pause'));
+      await tap(tester, find.byTooltip('Pause'));
       await settle(tester);
       expect(
         (await tester.runAsync(() => service.store.job(id)))!.state,
         DownloadState.paused,
       );
+      expect(find.text('Paused'), findsOneWidget);
+      expect(find.byTooltip('Resume download'), findsOneWidget);
       await tap(tester, find.byTooltip('Cancel'));
       await settle(tester);
       expect(
@@ -232,6 +246,7 @@ void main() {
         DownloadState.cancelled,
       );
       expect(find.text('Fixture reader'), findsNothing);
+      expect(find.byKey(const Key('download-queue')), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -287,19 +302,37 @@ void main() {
     await settle(tester);
     expect(find.text('Fantasy book'), findsOneWidget);
     expect(find.text('Adventure book'), findsOneWidget);
+    // Downloads uses the shared filter bar: visible search, reading chips
+    // without the redundant Downloaded toggle, a sort label and filters.
+    expect(find.byType(InkFilterBar), findsOneWidget);
+    expect(find.byKey(const Key('downloads-search')), findsOneWidget);
+    expect(find.byKey(const ValueKey('reading-filter-unread')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('reading-filter-downloaded')),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('downloads-sort')),
+        matching: find.text('A–Z'),
+      ),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const Key('downloads-filters')));
     await tester.pumpAndSettle();
-    final genre = find.byWidgetPredicate(
-      (widget) =>
-          widget is DropdownButtonFormField<String> &&
-          widget.decoration.labelText == 'Genres',
+    // Reading status and Downloaded live in the bar, not in the sheet.
+    expect(find.text('Downloaded'), findsNothing);
+    expect(find.text('Show results (2)'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('filter-genres-Fantasy')));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+    expect(find.text('Show results (1)'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('filters-apply')));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.byKey(const Key('filter-count'))).data,
+      '1',
     );
-    await tester.tap(genre);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Fantasy').last);
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Apply filters'));
-    await tester.tap(find.text('Apply filters'));
     await tester.pumpAndSettle();
     expect(find.text('Fantasy book'), findsOneWidget);
     expect(find.text('Adventure book'), findsNothing);
@@ -400,8 +433,24 @@ void main() {
             ),
           );
           await settle(tester);
+          final scrollable = find
+              .descendant(
+                of: find.byType(CustomScrollView),
+                matching: find.byType(Scrollable),
+              )
+              .first;
+          // Storage summary and the active queue (one pending book) precede
+          // the pinned tools and the series/books sections.
+          expect(find.byKey(const Key('download-storage')), findsNothing);
+          expect(find.byKey(const Key('download-queue')), findsOneWidget);
+          await tester.scrollUntilVisible(
+            find.text('Alpha Manga'),
+            200,
+            scrollable: scrollable,
+          );
           expect(find.text('Alpha Manga'), findsOneWidget);
           expect(find.text('2 items'), findsOneWidget);
+          expect(find.textContaining('2 volumes'), findsOneWidget);
           await tester.scrollUntilVisible(
             find.text('Beta Ebook'),
             200,
@@ -421,18 +470,18 @@ void main() {
           expect(find.byType(SegmentedButton<bool>), findsNothing);
           expect(find.text('Storage and network'), findsNothing);
           expect(find.byKey(const Key('library-selector')), findsNothing);
-          expect(
-            scale == 1
-                ? find.byType(CatalogueGrid)
-                : find.byKey(const Key('downloads-list')),
-            findsOneWidget,
-          );
+          // List layout by default, grouped in Series and Books sections.
+          expect(find.byType(CatalogueGrid), findsNothing);
+          expect(find.byKey(const Key('downloads-series')), findsOneWidget);
+          // Both groups are comic series (the second is only named Ebook).
+          expect(find.byKey(const Key('downloads-books')), findsNothing);
           await tester.ensureVisible(find.text('Alpha Manga'));
           await tester.pumpAndSettle();
           await tester.tap(find.text('Alpha Manga'));
           await settle(tester);
           expect(find.text('Alpha volume 1'), findsOneWidget);
-          expect(find.byType(VolumeListTile), findsWidgets);
+          // Downloaded volumes use the shared series volume rows.
+          expect(find.byType(VolumeRow), findsWidgets);
           expect(find.byType(CatalogueGrid), findsNothing);
           expect(find.byTooltip('Show grid'), findsNothing);
           await tester.scrollUntilVisible(
@@ -515,15 +564,18 @@ void main() {
           betaPoint.dy == alphaPoint.dy && betaPoint.dx < alphaPoint.dx,
       isTrue,
     );
-    await tester.tap(find.byKey(const Key('downloads-search-toggle')));
-    await tester.pumpAndSettle();
+    if (find
+        .byKey(const Key('open-search'))
+        .hitTestable()
+        .evaluate()
+        .isNotEmpty) {
+      await tester.tap(find.byKey(const Key('open-search')).hitTestable().last);
+      await tester.pumpAndSettle();
+    }
     await tester.enterText(find.byKey(const Key('downloads-search')), 'Alpha');
     await tester.pumpAndSettle();
     expect(
-      find.descendant(
-        of: find.byType(VolumeListTile),
-        matching: find.text('Alpha'),
-      ),
+      find.descendant(of: find.byType(VolumeRow), matching: find.text('Alpha')),
       findsOneWidget,
     );
     expect(find.text('Beta'), findsNothing);
@@ -544,10 +596,7 @@ void main() {
       DownloadState.cancelled,
     );
     expect(
-      find.descendant(
-        of: find.byType(VolumeListTile),
-        matching: find.text('Alpha'),
-      ),
+      find.descendant(of: find.byType(VolumeRow), matching: find.text('Alpha')),
       findsNothing,
     );
     expect(tester.takeException(), isNull);
@@ -956,15 +1005,15 @@ void main() {
         Offset(20, tester.getCenter(find.byType(ReaderScreen)).dy),
       );
       await settle(tester);
-      expect(find.text('3–4 / 4'), findsOneWidget);
-      await tester.tap(find.byTooltip('Reading controls'));
+      expect(find.text('p. 3–4'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('reader-more')));
       await settle(tester);
       await tester.tap(find.text('Reading progress').last);
       await settle(tester);
       await tap(tester, find.text('Mark unread and restart'));
       await settle(tester);
       await settleReaderImages(tester);
-      expect(find.text('1–2 / 4'), findsOneWidget);
+      expect(find.text('p. 1–2'), findsOneWidget);
       expect(
         (await tester.runAsync(() => repository.store.locator(manifest)))!
             .pageIndex,

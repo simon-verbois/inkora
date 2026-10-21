@@ -136,31 +136,12 @@ class EbookSettingsControls extends StatelessWidget {
     String value,
     Map<String, String> options,
     ValueChanged<String> change,
-  ) => DropdownButtonFormField<String>(
-    key: ValueKey('ebook-$label-$value'),
-    initialValue: value,
-    isExpanded: true,
-    itemHeight: null,
-    icon: const Icon(InkIcons.caretDown, size: 20),
-    decoration: InputDecoration(labelText: context.tr(label)),
-    selectedItemBuilder: (context) => [
-      for (final label in options.values)
-        ReaderSettingsSelectedValue(context.tr(label)),
-    ],
-    items: [
-      for (final option in options.entries)
-        DropdownMenuItem(
-          value: option.key,
-          child: LText(
-            option.value,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-    ],
-    onChanged: (v) {
-      if (v != null) change(v);
-    },
+  ) => ReaderChoiceGroup(
+    id: 'ebook-${label.toLowerCase().replaceAll(' ', '-')}',
+    label: label,
+    choices: options,
+    selected: value,
+    onSelected: change,
   );
   Widget _slider(
     BuildContext context,

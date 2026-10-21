@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import '../../app/icons/inkora_icons.dart';
 import '../../app/widgets/ink_surface.dart';
 import '../../app/l10n/app_strings.dart';
+import '../../app/theme/inkora_theme.dart';
+import '../../app/widgets/inkora_widgets.dart';
 
 /// Retained publication surfaces sit behind these small, opaque control panels.
 /// No blur, screenshot, shadow or surface animation is needed to reveal them.
@@ -27,37 +29,126 @@ class ReaderPanel extends StatelessWidget {
   );
 }
 
+/// Top reader bar: Back, the publication [title], an optional position
+/// [subtitle] (for example "Vol. 01 · p. 169/184") and trailing [actions].
 class ReaderTopBar extends StatelessWidget {
   const ReaderTopBar({
     super.key,
     required this.title,
     required this.onBack,
     required this.actions,
+    this.subtitle,
   });
   final String title;
+  final Widget? subtitle;
   final VoidCallback onBack;
   final List<Widget> actions;
 
   @override
-  Widget build(BuildContext context) => ReaderPanel(
-    top: true,
-    child: Row(
-      children: [
-        BackButton(onPressed: onBack),
-        Expanded(
-          child: Text(
-            title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleSmall,
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return ReaderPanel(
+      top: true,
+      child: Row(
+        children: [
+          BackButton(onPressed: onBack),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  key: const Key('reader-title'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: text.titleSmall,
+                ),
+                if (subtitle != null)
+                  DefaultTextStyle.merge(
+                    style: text.meta,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    child: subtitle!,
+                  ),
+              ],
+            ),
           ),
+          ...actions,
+        ],
+      ),
+    );
+  }
+}
+
+/// Position above the slider: "p. 169" and "92 % · 15 pages left".
+class ReaderProgressLine extends StatelessWidget {
+  const ReaderProgressLine({
+    super.key,
+    required this.position,
+    required this.detail,
+  });
+  final String position;
+  final String detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = Theme.of(context).textTheme.labelMedium;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: InkSpace.md),
+      child: Row(
+        children: [
+          Flexible(
+            child: Text(
+              position,
+              key: const Key('reader-position'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: style,
+            ),
+          ),
+          const SizedBox(width: InkSpace.md),
+          Expanded(
+            child: Text(
+              detail,
+              key: const Key('reader-progress-detail'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: style,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReaderActionFace extends StatelessWidget {
+  const _ReaderActionFace({required this.label, required this.icon});
+  final String label;
+  final IconData icon;
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: InkSpace.xs),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 22),
+        const SizedBox(height: InkSpace.xs),
+        LText(
+          label,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.labelSmall,
         ),
-        ...actions,
       ],
     ),
   );
 }
 
+/// One labelled action of the reader's bottom action row.
 class ReaderQuickAction extends StatelessWidget {
   const ReaderQuickAction({
     super.key,
@@ -73,18 +164,125 @@ class ReaderQuickAction extends StatelessWidget {
   Widget build(BuildContext context) => Tooltip(
     message: context.tr(label),
     child: TextButton(
+      style: TextButton.styleFrom(
+        minimumSize: const Size(48, 48),
+        padding: const EdgeInsets.symmetric(horizontal: InkSpace.xs),
+      ),
       onPressed: onPressed,
+      child: _ReaderActionFace(label: label, icon: icon),
+    ),
+  );
+}
+
+/// The single row of reader actions (Pages/Contents, Bookmarks, Settings,
+/// More). Every action keeps an equal share of the panel width.
+class ReaderActionRow extends StatelessWidget {
+  const ReaderActionRow({super.key, required this.children});
+  final List<Widget> children;
+  @override
+  Widget build(BuildContext context) => Row(
+    key: const Key('reader-action-row'),
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [for (final child in children) Expanded(child: child)],
+  );
+}
+
+/// One entry of the reader's More menu; a null [onSelected] disables it.
+final class ReaderMenuEntry {
+  const ReaderMenuEntry({
+    required this.label,
+    required this.icon,
+    required this.onSelected,
+  });
+  final String label;
+  final IconData icon;
+  final VoidCallback? onSelected;
+}
+
+/// The More action: a menu of less frequent reader commands.
+class ReaderMoreAction extends StatelessWidget {
+  const ReaderMoreAction({super.key, required this.entries});
+  final List<ReaderMenuEntry> entries;
+  @override
+  Widget build(BuildContext context) => PopupMenuButton<int>(
+    key: const Key('reader-more'),
+    tooltip: context.tr('More'),
+    itemBuilder: (_) => [
+      for (var i = 0; i < entries.length; i++)
+        PopupMenuItem(
+          value: i,
+          enabled: entries[i].onSelected != null,
+          child: Row(
+            children: [
+              Icon(entries[i].icon, size: 20),
+              const SizedBox(width: InkSpace.md),
+              Flexible(child: LText(entries[i].label)),
+            ],
+          ),
+        ),
+    ],
+    onSelected: (index) => entries[index].onSelected?.call(),
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 48),
+      child: const Center(
+        child: _ReaderActionFace(label: 'More', icon: InkIcons.dotsThree),
+      ),
+    ),
+  );
+}
+
+/// Shared reader loading state (raster and ebook).
+class ReaderLoadingView extends StatelessWidget {
+  const ReaderLoadingView({
+    super.key,
+    this.message,
+    this.actionLabel,
+    this.onAction,
+  });
+  final String? message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  @override
+  Widget build(BuildContext context) => Center(
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.all(InkSpace.lg),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 22),
-          const SizedBox(height: 4),
-          LText(
-            label,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.labelSmall,
+          CircularProgressIndicator(
+            semanticsLabel: message == null ? context.tr('Opening book') : null,
           ),
+          if (message != null) ...[
+            const SizedBox(height: InkSpace.lg),
+            LText(message!, textAlign: TextAlign.center),
+          ],
+          if (actionLabel != null)
+            TextButton(onPressed: onAction, child: LText(actionLabel!)),
         ],
+      ),
+    ),
+  );
+}
+
+/// Shared reader error state (raster and ebook) with one recovery action.
+class ReaderErrorView extends StatelessWidget {
+  const ReaderErrorView({
+    super.key,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  @override
+  Widget build(BuildContext context) => Center(
+    child: SingleChildScrollView(
+      child: InkEmptyState(
+        icon: InkIcons.warningCircle,
+        title: message,
+        label: actionLabel,
+        action: onAction,
       ),
     ),
   );

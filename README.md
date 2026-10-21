@@ -20,8 +20,8 @@ behind this branch; see [the changelog](CHANGELOG.md).
 - **Continue in one tap.** Open the exact book you were reading, with progress
   synchronized to Komga when you reconnect.
 - **Take books offline.** Download volumes, manage the transfer queue and set
-  storage and Wi-Fi preferences. Select the next three unread volumes, all unread
-  volumes, or your own batch.
+  storage and Wi-Fi preferences. From a series, download the unread volumes
+  preselected for you or pick your own selection.
 - **Keep your place.** Preview page thumbnails, save bookmarks and notes, and
   continue to the next volume from the completion screen. Reopen recent books
   from device-local reading history.
@@ -51,9 +51,9 @@ are rendered by Flutter; they are not device photographs.
 
 | Batch downloads | Import / export |
 | --- | --- |
-| ![Series download selection with unread presets](docs/screenshots/phone-batch-download.png) | ![File backup and QR transfer settings](docs/screenshots/phone-transfer.png) |
+| ![Series download confirmation](docs/screenshots/phone-batch-download.png) | ![File backup and QR transfer settings](docs/screenshots/phone-transfer.png) |
 
-![Inkora library home on a tablet with bottom navigation](docs/screenshots/tablet-home.png)
+![Inkora library home on a tablet](docs/screenshots/tablet-home.png)
 
 ## Get started
 

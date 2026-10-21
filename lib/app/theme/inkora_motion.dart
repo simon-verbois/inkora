@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// One motion vocabulary: peers fade, deeper pages slide, sheets rise.
+/// Header destinations fade horizontally, deeper pages slide, sheets rise.
 abstract final class InkoraMotion {
   static const tab = Duration(milliseconds: 160);
   static const forward = Duration(milliseconds: 240);

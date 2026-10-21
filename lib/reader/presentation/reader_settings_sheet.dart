@@ -3,8 +3,10 @@ import 'ebook_settings_controls.dart';
 import 'ebook_presentation.dart';
 import 'reader_settings_layout.dart';
 import '../../app/l10n/app_strings.dart';
-import '../../app/icons/inkora_icons.dart';
+import '../../app/widgets/inkora_widgets.dart';
 
+import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -23,24 +25,27 @@ enum _PreferenceTab {
   preloading,
 }
 
+/// Scoped reading preferences. Every change applies immediately: it is
+/// persisted to the selected scope (latest value wins, unchanged values are
+/// skipped) and the open reader follows the account's settings stream. There
+/// is no Save or Cancel; Reset to default is a confirmed header action.
 class ReaderSettingsSheet extends StatefulWidget {
   const ReaderSettingsSheet({
     required this.store,
     this.manifest,
     this.libraryId,
     this.onSaved,
-    this.showFooter = true,
-    this.showHeader = true,
-    this.showSaveAction = true,
+    this.showReset = true,
     this.qualityOnly = false,
     this.upscalingControls,
     this.modal = false,
     super.key,
   });
+
+  /// Called by [ReaderSettingsSheetState.savePreferences] and after the
+  /// library-wide replacement; the editor pops its route when absent.
   final VoidCallback? onSaved;
-  final bool showFooter;
-  final bool showHeader;
-  final bool showSaveAction;
+  final bool showReset;
   final bool qualityOnly;
   final Widget? upscalingControls;
   final bool modal;
@@ -51,6 +56,8 @@ class ReaderSettingsSheet extends StatefulWidget {
   ReaderSettingsSheetState createState() => ReaderSettingsSheetState();
 }
 
+typedef _Target = (SettingsScope, String);
+
 class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
   late SettingsScope _scope;
   Map<SettingsScope, ReadingOverrides> _layers = {};
@@ -60,6 +67,13 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
   int _generation = 0;
   String? _message;
   _PreferenceTab _tab = _PreferenceTab.layout;
+
+  // Live persistence: one writer, latest value per change, no duplicate rows.
+  final _persisted = <_Target, String>{};
+  (_Target, ReadingOverrides)? _queued;
+  Future<void>? _writer;
+  bool _writeFailed = false;
+
   bool get _supportsTypography =>
       _effective.mode == ReadingMode.ebook &&
       (widget.manifest == null ||
@@ -121,6 +135,8 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
       _message = null;
     });
     try {
+      // Read layers only after earlier live writes reached the store.
+      await _flush();
       final layers = await widget.store.preferenceLayers(
         libraryId: widget.libraryId ?? widget.manifest?.libraryId,
         seriesId: widget.manifest?.seriesId,
@@ -129,8 +145,9 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
       final ebookConfigured = layers.values.any(
         (layer) => layer.mode == ReadingMode.ebook,
       );
+      final stored = layers[scope];
       final value =
-          layers[scope] ??
+          stored ??
           (widget.manifest?.isDocument == true
               ? ReadingOverrides(
                   mode: ReadingMode.ebook,
@@ -138,6 +155,9 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
                 )
               : const ReadingOverrides());
       if (mounted && generation == _generation) {
+        if (stored != null) {
+          _persisted[(scope, _id(scope))] = jsonEncode(stored.toJson());
+        }
         setState(() {
           _layers = layers;
           _overrides = value;
@@ -154,7 +174,45 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
     }
   }
 
-  void _change(String key, Object? value) => setState(() {
+  /// Applies [next] to the selected scope at once and persists it.
+  void _apply(ReadingOverrides next) {
+    setState(() {
+      _overrides = next;
+      _message = null;
+    });
+    _queued = ((_scope, _id(_scope)), next);
+    _writer ??= _drain();
+  }
+
+  Future<void> _drain() async {
+    try {
+      while (_queued != null) {
+        final (target, value) = _queued!;
+        _queued = null;
+        final encoded = jsonEncode(value.toJson());
+        if (_persisted[target] == encoded) continue;
+        await widget.store.saveOverrides(target.$1, target.$2, value);
+        _persisted[target] = encoded;
+        _writeFailed = false;
+      }
+    } catch (_) {
+      _queued = null;
+      _writeFailed = true;
+      if (mounted) {
+        setState(() => _message = 'Unable to save reading preferences.');
+      }
+    } finally {
+      _writer = null;
+    }
+  }
+
+  Future<void> _flush() async {
+    while (_writer != null) {
+      await _writer;
+    }
+  }
+
+  void _change(String key, Object? value) {
     final values = {..._overrides.toJson(), key: value};
     if (key == 'layout') values['spreads'] = null;
     if (key == 'mode' && value != _overrides.mode?.name) {
@@ -169,8 +227,9 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
         values[field] = null;
       }
     }
-    _overrides = ReadingOverrides.fromJson(values);
-  });
+    _apply(ReadingOverrides.fromJson(values));
+  }
+
   ReadingSettings get _effective => ReadingSettings.resolveScopes({
     for (final scope in SettingsScope.values)
       if (scope.index < _scope.index && _layers[scope] != null)
@@ -186,46 +245,15 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
       'mode' => settings.mode.name,
       'direction' => settings.direction.name,
       'fit' => settings.fit.name,
-      'background' => settings.background.name,
-      'spacing' => settings.spacing.toString(),
       'layout' => settings.layout.name,
       _ => throw ArgumentError('Unknown reading setting'),
     };
-    if (!choices.containsKey(raw)) {
-      choices = {
-        ...choices,
-        raw.toString(): context.tr('{0} (custom)', [raw]),
-      };
-    }
-    return DropdownButtonFormField<String>(
-      icon: const Icon(InkIcons.caretDown, size: 20),
-      key: ValueKey('${_scope.name}-$key-$raw'),
-      initialValue: raw.toString(),
-      isExpanded: true,
-      itemHeight: null,
-      decoration: InputDecoration(labelText: context.tr(label)),
-      selectedItemBuilder: (context) => [
-        for (final label in choices.values)
-          ReaderSettingsSelectedValue(context.tr(label)),
-      ],
-      items: [
-        ...choices.entries.map(
-          (e) => DropdownMenuItem(
-            value: e.key,
-            child: LText(e.value, maxLines: 2, overflow: TextOverflow.ellipsis),
-          ),
-        ),
-      ],
-      onChanged: _loading
-          ? null
-          : (value) => _change(
-              key,
-              key == 'spacing'
-                  ? double.parse(value!)
-                  : key == 'spreads'
-                  ? value == 'true'
-                  : value,
-            ),
+    return ReaderChoiceGroup(
+      id: key,
+      label: label,
+      choices: choices,
+      selected: raw,
+      onSelected: _loading ? null : (value) => _change(key, value),
     );
   }
 
@@ -298,25 +326,15 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
     T current,
     String Function(T) text,
     RasterQuality Function(T) update,
-  ) => DropdownButtonFormField<T>(
-    key: ValueKey('quality-${format.name}-$label-${current.name}'),
-    initialValue: current,
-    isExpanded: true,
-    itemHeight: null,
-    icon: const Icon(InkIcons.caretDown, size: 20),
-    decoration: InputDecoration(labelText: context.tr(label)),
-    selectedItemBuilder: (context) => [
-      for (final value in values)
-        ReaderSettingsSelectedValue(context.tr(text(value))),
-    ],
-    items: [
-      for (final value in values)
-        DropdownMenuItem(value: value, child: LText(text(value))),
-    ],
-    onChanged: _loading
+  ) => ReaderChoiceGroup(
+    id: 'quality-${format.name}-${label == 'Image scaling' ? 'sampling' : 'filter'}',
+    label: label,
+    choices: {for (final value in values) value.name: text(value)},
+    selected: current.name,
+    onSelected: _loading
         ? null
-        : (value) {
-            if (value == null) return;
+        : (name) {
+            final value = values.firstWhere((v) => v.name == name);
             _change('imageQuality', {
               for (final entry
                   in (_overrides.imageQuality ??
@@ -464,43 +482,43 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
     );
   }
 
-  /// Commit the editor through its owning setup footer or standalone action.
+  /// Waits until every live change reached the store, then notifies the
+  /// owner (setup Next, library return) or closes the editor.
   Future<bool> savePreferences() async {
     if (_loading) return false;
-    setState(() => _loading = true);
-    try {
-      await widget.store.saveOverrides(_scope, _id(_scope), _overrides);
-      if (mounted) {
-        if (widget.onSaved != null) {
-          widget.onSaved!();
-        } else {
-          Navigator.of(context).pop();
-        }
-      }
-      if (mounted) setState(() => _loading = false);
-      return true;
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _loading = false;
-          _message = 'Unable to save reading preferences.';
-        });
-      }
-      return false;
+    await _flush();
+    if (!mounted || _writeFailed) return false;
+    if (widget.onSaved != null) {
+      widget.onSaved!();
+    } else {
+      Navigator.of(context).pop();
     }
+    return true;
   }
 
   Future<void> _applyToLibrary() async {
+    final confirmed = await confirmInk(
+      context,
+      title: 'Apply to all series and books?',
+      message: 'Apply these preferences to every series and book in this library, replacing their custom reading preferences.',
+      confirmLabel: 'Apply to all series and books',
+      destructive: true,
+    );
+    if (!confirmed || !mounted) return;
     setState(() {
       _loading = true;
       _message = null;
     });
     try {
+      await _flush();
       await widget.store.applyLibraryDefaults(
         _id(SettingsScope.library),
         _overrides,
       );
+      _persisted[(SettingsScope.library, _id(SettingsScope.library))] =
+          jsonEncode(_overrides.toJson());
       if (mounted) {
+        setState(() => _loading = false);
         if (widget.onSaved != null) {
           widget.onSaved!();
         } else {
@@ -517,7 +535,16 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
     }
   }
 
-  void _reset() => setState(() {
+  Future<void> _reset() async {
+    final confirmed = await confirmInk(
+      context,
+      title: 'Reset to default?',
+      message:
+          'The custom settings of this tab are removed for the selected scope.',
+      confirmLabel: 'Reset to default',
+      destructive: true,
+    );
+    if (!confirmed || !mounted) return;
     final values = {..._overrides.toJson()};
     for (final field
         in _showQuality
@@ -546,38 +573,24 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
       values['libraryDefaults'] =
           _scope == SettingsScope.book && widget.manifest?.libraryId != null;
     }
-    _overrides = ReadingOverrides.fromJson(values);
-  });
+    _apply(ReadingOverrides.fromJson(values));
+  }
 
-  Widget _scopeControl() => DropdownButtonFormField<SettingsScope>(
-    key: ValueKey(('scope', _scope)),
-    icon: const Icon(InkIcons.caretDown, size: 20),
-    initialValue: _scope,
-    isExpanded: true,
-    itemHeight: null,
-    decoration: InputDecoration(labelText: context.tr('Apply to')),
-    items: [
-      const DropdownMenuItem(
-        value: SettingsScope.global,
-        child: LText('Global'),
-      ),
-      if (widget.manifest?.libraryId != null)
-        const DropdownMenuItem(
-          value: SettingsScope.library,
-          child: LText('Library'),
-        ),
+  Widget _scopeControl() => ReaderChoiceGroup(
+    id: 'scope',
+    label: 'Apply to',
+    choices: {
+      if (widget.manifest != null) SettingsScope.book.name: 'This book',
       if (widget.manifest?.seriesId != null)
-        const DropdownMenuItem(
-          value: SettingsScope.series,
-          child: LText('Series'),
-        ),
-      if (widget.manifest != null)
-        const DropdownMenuItem(
-          value: SettingsScope.book,
-          child: LText('This book'),
-        ),
-    ],
-    onChanged: _loading ? null : (scope) => _load(scope!),
+        SettingsScope.series.name: 'Series',
+      if (widget.manifest?.libraryId != null)
+        SettingsScope.library.name: 'Library',
+      SettingsScope.global.name: 'Global',
+    },
+    selected: _scope.name,
+    onSelected: _loading
+        ? null
+        : (name) => _load(SettingsScope.values.byName(name)),
   );
 
   Widget _layoutControls() {
@@ -585,67 +598,88 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
     final mode = _effective.mode == ReadingMode.ebook && _rasterControls
         ? ReadingMode.comics
         : _effective.mode;
+    final fit = _effective.fit;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ReaderSettingsGrid(
-          children: [
-            if (widget.manifest?.isDocument != true)
-              _select('Mode', 'mode', {
-                'manga': 'Manga',
-                'comics': 'Comics',
-                'webtoon': 'Webtoon',
-                if (widget.manifest == null ||
-                    _effective.mode == ReadingMode.ebook)
-                  'ebook': 'Ebooks',
-              }),
-            _select('Background', 'background', {
-              'black': 'Black',
-              'white': 'White',
-              'sepia': 'Sepia',
-              if (mode == ReadingMode.ebook) ...{
-                'ivory': 'Ivory',
-                'sage': 'Soft sage',
-                'mist': 'Blue mist',
-                'slate': 'Slate night',
-              },
-            }),
-            if (widget.manifest?.documentType == 'application/pdf')
-              _select('Fit', 'fit', {'page': 'Fit page', 'width': 'Fit width'}),
+        if (widget.manifest?.isDocument != true) ...[
+          _select('Mode', 'mode', {
+            'manga': 'Manga',
+            'comics': 'Comics',
+            'webtoon': 'Webtoon',
+            if (widget.manifest == null || _effective.mode == ReadingMode.ebook)
+              'ebook': 'Ebooks',
+          }),
+          const SizedBox(height: 20),
+        ],
+        if (mode != ReadingMode.ebook && mode != ReadingMode.webtoon) ...[
+          _select('Direction', 'direction', {
+            'leftToRight': 'Left to right',
+            'rightToLeft': 'Right to left',
+            'vertical': 'Vertical pages',
+          }),
+          const SizedBox(height: 20),
+        ],
+        if (mode != ReadingMode.ebook ||
+            widget.manifest?.documentType == 'application/pdf') ...[
+          _select(
+            'Fit',
+            'fit',
+            mode == ReadingMode.webtoon
+                ? {
+                    'comfort': 'Comfortable width',
+                    'width': 'Full width',
+                    if (fit == ReadingFit.page)
+                      'page': 'Comfortable width (legacy)',
+                  }
+                : {'page': 'Fit page', 'width': 'Fit width'},
+          ),
+          const SizedBox(height: 20),
+        ],
+        if (mode != ReadingMode.ebook && mode != ReadingMode.webtoon) ...[
+          _select('Page layout', 'layout', {
+            'single': 'Single page',
+            'doublePage': 'Two pages',
+            'automatic': 'Automatic',
+          }),
+          if (_effective.layout == ReadingLayout.automatic) ...[
+            const SizedBox(height: 4),
+            LText(
+              'Two pages in landscape windows and on tablets.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ],
+          const SizedBox(height: 20),
+        ],
+        ReaderBackgroundSwatches(
+          choices: {
+            ReadingBackground.black: 'Black',
+            ReadingBackground.white: 'White',
+            ReadingBackground.sepia: 'Sepia',
+            if (mode == ReadingMode.ebook) ...{
+              ReadingBackground.ivory: 'Ivory',
+              ReadingBackground.sage: 'Soft sage',
+              ReadingBackground.mist: 'Blue mist',
+              ReadingBackground.slate: 'Slate night',
+            },
+          },
+          selected: _effective.background,
+          onSelected: _loading
+              ? null
+              : (value) => _change('background', value.name),
         ),
         const SizedBox(height: 20),
         if (mode != ReadingMode.ebook)
-          ReaderSettingsGrid(
-            children: [
-              if (mode != ReadingMode.webtoon)
-                _select('Direction', 'direction', {
-                  'leftToRight': 'Left to right',
-                  'rightToLeft': 'Right to left',
-                  'vertical': 'Vertical pages',
-                }),
-              _select(
-                'Fit',
-                'fit',
-                mode == ReadingMode.webtoon
-                    ? {
-                        'comfort': 'Comfortable width',
-                        'width': 'Full width',
-                        'page': 'Comfortable width (legacy)',
-                      }
-                    : {'page': 'Fit page', 'width': 'Fit width'},
-              ),
-              if (mode != ReadingMode.webtoon)
-                _select('Page layout', 'layout', {
-                  'single': 'Single page',
-                  'doublePage': 'Two pages',
-                  'automatic': 'Automatic landscape spreads',
-                }),
-              _select('Page spacing', 'spacing', {
-                for (final n in [0, 4, 8, 12, 16, 24, 32, 48, 64])
-                  '$n.0': context.tr('{0} px', [n]),
-              }),
-            ],
+          InkSlider(
+            sliderKey: const Key('reader-spacing'),
+            label: context.tr('Page spacing'),
+            value: _effective.spacing.clamp(0, 64),
+            min: 0,
+            max: 64,
+            divisions: 16,
+            enabled: !_loading,
+            formatValue: (v) => context.tr('{0} px', [v.round()]),
+            onCommitted: (v) => _change('spacing', v.roundToDouble()),
           ),
         if (mode == ReadingMode.ebook) ...[
           EbookSettingsControls(
@@ -664,7 +698,9 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
             contentPadding: EdgeInsets.zero,
             title: const LText('Page turn animation'),
             value: _effective.pageAnimation,
-            onChanged: (value) => _change('pageAnimation', value),
+            onChanged: _loading
+                ? null
+                : (value) => _change('pageAnimation', value),
           ),
       ],
     );
@@ -674,8 +710,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
     _PreferenceTab.layout => _layoutControls(),
     _PreferenceTab.style => EbookStylePicker(
       settings: _effective,
-      onSelected: (style) =>
-          setState(() => _overrides = style.apply(_overrides)),
+      onSelected: (style) => _apply(style.apply(_overrides)),
     ),
     _PreferenceTab.typography => EbookSettingsControls(
       section: EbookControlsSection.typography,
@@ -687,27 +722,6 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
     _PreferenceTab.upscaling => widget.upscalingControls!,
     _PreferenceTab.preloading => _webtoonQuality(context),
   };
-
-  Widget _footer() => Padding(
-    padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-    child: OverflowBar(
-      alignment: MainAxisAlignment.spaceBetween,
-      overflowAlignment: OverflowBarAlignment.end,
-      spacing: 12,
-      overflowSpacing: 8,
-      children: [
-        TextButton(
-          onPressed: _loading ? null : _reset,
-          child: const LText('Reset to default'),
-        ),
-        if (widget.showSaveAction)
-          FilledButton(
-            onPressed: _loading ? null : savePreferences,
-            child: const LText('Save'),
-          ),
-      ],
-    ),
-  );
 
   @override
   Widget build(BuildContext context) => SafeArea(
@@ -722,73 +736,46 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
         final preferredHeight = widget.modal
             ? math.min(
                 available,
-                math.min(MediaQuery.sizeOf(context).height * .86, 520 * scale),
+                math.min(MediaQuery.sizeOf(context).height * .86, 560 * scale),
               )
             : available;
         final height = widget.modal && tabs.length == 1
-            ? math.min(preferredHeight, 360 * scale)
+            ? math.min(preferredHeight, 420 * scale)
             : preferredHeight;
-        // Large type can make the header/actions taller than a phone sheet.
-        // Let the whole editor scroll then; ordinary sizes keep actions pinned.
-        final short = scale > 1.3 || height < (widget.showHeader ? 420 : 180);
-        final title = LText(
-          widget.qualityOnly ? 'Quality' : 'Reading preferences',
-          style: Theme.of(context).textTheme.titleLarge,
+        // Large type can make the header taller than a phone sheet. Let the
+        // whole editor scroll then; ordinary sizes keep the header pinned.
+        final short = scale > 1.3 || height < (widget.modal ? 420 : 180);
+        final reset = widget.showReset && _activeTab != _PreferenceTab.upscaling
+            ? TextButton(
+                key: const Key('reader-settings-reset'),
+                onPressed: _loading ? null : _reset,
+                child: const LText('Reset to default'),
+              )
+            : null;
+        final scope = widget.manifest != null && widget.libraryId == null;
+        final header = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (widget.modal)
+              InkSheetHeader(
+                title: widget.qualityOnly
+                    ? 'Image quality'
+                    : 'Reading preferences',
+                action: reset,
+              )
+            else if (reset != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 8, 0),
+                child: Align(alignment: Alignment.centerRight, child: reset),
+              ),
+            if (scope)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: _scopeControl(),
+              ),
+            if (_loading) const LinearProgressIndicator(),
+          ],
         );
-        final header = !widget.showHeader
-            ? (_loading
-                  ? const LinearProgressIndicator()
-                  : const SizedBox.shrink())
-            : Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-                child: LayoutBuilder(
-                  builder: (context, headerConstraints) {
-                    final scope =
-                        widget.manifest != null && widget.libraryId == null;
-                    final wide = headerConstraints.maxWidth >= 520 * scale;
-                    final close = widget.modal
-                        ? IconButton(
-                            tooltip: MaterialLocalizations.of(context)
-                                .closeButtonTooltip,
-                            icon: const Icon(InkIcons.x),
-                            onPressed: () => Navigator.of(context).pop(),
-                          )
-                        : widget.manifest == null && widget.libraryId == null
-                        ? LText(
-                            'Global',
-                            style: Theme.of(context).textTheme.labelMedium,
-                          )
-                        : const SizedBox.shrink();
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(child: title),
-                            if (scope && wide) ...[
-                              const SizedBox(width: 16),
-                              SizedBox(width: 200, child: _scopeControl()),
-                              const SizedBox(width: 8),
-                            ],
-                            close,
-                          ],
-                        ),
-                        if (scope && !wide) ...[
-                          const SizedBox(height: 12),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: SizedBox(
-                              width: 280 * scale,
-                              child: _scopeControl(),
-                            ),
-                          ),
-                        ],
-                        if (_loading) const LinearProgressIndicator(),
-                      ],
-                    );
-                  },
-                ),
-              );
         final navigation = tabs.length < 2
             ? const SizedBox.shrink()
             : TabBar(
@@ -816,7 +803,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
                 onTap: (index) => setState(() => _tab = tabs[index]),
               );
         final body = Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
           child: Column(
             key: ValueKey((
               _scope,
@@ -841,8 +828,13 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
               ],
               if (_message != null) ...[
                 const SizedBox(height: 12),
-                LText(_message!),
+                LText(_message!, key: const Key('reader-settings-message')),
               ],
+              const SizedBox(height: 12),
+              LText(
+                'Changes apply immediately.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             ],
           ),
         );
@@ -858,29 +850,19 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
                 key: ValueKey(tabs.map((tab) => tab.name).join(',')),
                 length: tabs.length,
                 initialIndex: tabs.indexOf(_activeTab),
+                animationDuration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : null,
                 child: short
                     ? SingleChildScrollView(
                         child: Column(
-                          // Refresh action semantics when conditional controls
-                          // move them in short windows.
-                          key: ValueKey((
-                            _scope,
-                            _effective.mode,
-                            _activeTab,
-                            _effective.webtoonQuality,
-                          )),
                           mainAxisSize: MainAxisSize.min,
-                          children: [
-                            header,
-                            navigation,
-                            body,
-                            if (widget.showFooter &&
-                                _activeTab != _PreferenceTab.upscaling)
-                              _footer(),
-                          ],
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [header, navigation, body],
                         ),
                       )
                     : Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           header,
                           navigation,
@@ -894,9 +876,6 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
                               child: body,
                             ),
                           ),
-                          if (widget.showFooter &&
-                              _activeTab != _PreferenceTab.upscaling)
-                            _footer(),
                         ],
                       ),
               ),

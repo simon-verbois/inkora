@@ -12,6 +12,8 @@ final class CatalogueItem {
     required this.id,
     required this.title,
     this.readingStatus = ReadingStatus.unread,
+    this.readPage,
+    this.readModified,
     this.sortTitle = '',
     this.summary = '',
     this.metadata = const CatalogueMetadata(),
@@ -32,6 +34,12 @@ final class CatalogueItem {
   final String id;
   final String title;
   final ReadingStatus readingStatus;
+
+  /// Zero-based server page of an in-progress book in the catalogue snapshot
+  /// and the server's progress version (`readProgress.lastModified`). Both
+  /// are snapshot data: local reader/outbox state is layered on top.
+  final int? readPage;
+  final String? readModified;
   final String sortTitle;
   final String summary;
   final CatalogueMetadata metadata;

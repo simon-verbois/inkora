@@ -136,16 +136,11 @@ void main() {
         expect(find.byType(ReaderSettingsSheet), findsOneWidget);
         expect(
           find.text(strings.text('Upscaling and sharpening')),
-          findsNothing,
-        );
-        final upscaling = find.widgetWithText(Tab, strings.text('Upscaling'));
-        await tester.ensureVisible(upscaling);
-        await tester.pumpAndSettle();
-        await tester.tap(upscaling);
-        await tester.pumpAndSettle();
-        expect(
-          find.text(strings.text('Upscaling and sharpening')),
           findsOneWidget,
+        );
+        expect(
+          find.widgetWithText(Tab, strings.text('Upscaling')),
+          findsNothing,
         );
         final rendering = find.widgetWithText(Tab, strings.text('Rendering'));
         await tester.ensureVisible(rendering);
@@ -154,7 +149,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text(strings.text('Save')), findsNothing);
         final sampling = find.byKey(
-          const Key('reader-choice-quality-jpeg-sampling-nearest'),
+          const Key('reader-choice-quality-all-sampling-nearest'),
         );
         await tester.ensureVisible(sampling);
         await tester.pumpAndSettle();

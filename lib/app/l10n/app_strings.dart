@@ -31,6 +31,7 @@ class AppStrings {
   static final _english = AppStrings('en');
   static final _placeholder = RegExp(r'\{(\d+)\}');
   final String language;
+  String number(num value) => _number.format(value);
   static const delegate = _StringsDelegate();
   static final supportedLocales = [
     for (final code in languageNames.keys) localeFor(code),

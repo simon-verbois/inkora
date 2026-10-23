@@ -40,6 +40,7 @@ final pageNetworkGateProvider = Provider<PageNetworkGate>((ref) {
 final readerRepositoryProvider = FutureProvider.autoDispose<ReaderRepository?>((
   ref,
 ) async {
+  final transport = ref.watch(activeConnectionTransportProvider);
   final account = ref.watch(
     sessionProvider.select(
       (state) =>
@@ -59,7 +60,7 @@ final readerRepositoryProvider = FutureProvider.autoDispose<ReaderRepository?>((
   final assets = await ref.watch(readerAssetStoreProvider);
   if (!alive) return null;
   final controller = ref.read(sessionProvider.notifier);
-  final client = controller.client;
+  final client = transport;
   if (client == null) return null;
   repository = ReaderRepository(
     ReaderStore(database, account),
@@ -70,8 +71,15 @@ final readerRepositoryProvider = FutureProvider.autoDispose<ReaderRepository?>((
   );
   return repository;
 });
+
+/// Live reader ownership, including an opening book. Retention consults this
+/// only at foreground opportunities; changes never rebuild the application.
+final activeReadingBooksProvider = Provider<Set<String>>((ref) => {});
+
 final openReaderProvider = FutureProvider.autoDispose
     .family<OpenReader, String>((ref, bookId) async {
+      final active = ref.read(activeReadingBooksProvider)..add(bookId);
+      ref.onDispose(() => active.remove(bookId));
       final repository = await ref.watch(readerRepositoryProvider.future);
       if (repository == null) {
         throw StateError('Reader requires an active session');

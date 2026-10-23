@@ -92,23 +92,29 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
   @override
   Widget build(BuildContext context) {
-    return const CatalogueScreen(
+    final size = MediaQuery.sizeOf(context);
+    final overflow =
+        size.width < 360 ||
+        size.width / MediaQuery.textScalerOf(context).scale(1) < 300;
+    return CatalogueScreen(
       kind: CatalogueKind.series,
       embedded: true,
-      header: _ResumeSection(),
-      headerActions: [
-        _HomeAction(
-          destination: 'settings',
-          label: 'Settings',
-          icon: InkIcons.gearSix,
-        ),
-        _HomeAction(
-          destination: 'downloads',
-          label: 'Downloads',
-          icon: InkIcons.downloadSimple,
-        ),
-        _HistoryAction(),
-      ],
+      header: const _ResumeSection(),
+      headerActions: overflow
+          ? const [_HomeMenu()]
+          : const [
+              _HomeAction(
+                destination: 'settings',
+                label: 'Settings',
+                icon: InkIcons.gearSix,
+              ),
+              _HomeAction(
+                destination: 'downloads',
+                label: 'Downloads',
+                icon: InkIcons.downloadSimple,
+              ),
+              _HistoryAction(),
+            ],
     );
   }
 }
@@ -185,5 +191,29 @@ class _HomeAction extends StatelessWidget {
     tooltip: context.tr(label),
     onPressed: () => context.go('/$destination'),
     icon: Icon(icon),
+  );
+}
+
+/// Keep every destination available when the header has too little space.
+class _HomeMenu extends StatelessWidget {
+  const _HomeMenu();
+  @override
+  Widget build(BuildContext context) => PopupMenuButton<String>(
+    key: const Key('home-menu'),
+    tooltip: context.tr('More'),
+    icon: const Icon(InkIcons.list),
+    onSelected: (path) => context.go(path),
+    itemBuilder: (_) => [
+      for (final entry in const [
+        ('/settings', 'Settings'),
+        ('/downloads', 'Downloads'),
+        ('/history', 'Reading history'),
+      ])
+        PopupMenuItem(
+          key: ValueKey('home-menu-${entry.$1.substring(1)}'),
+          value: entry.$1,
+          child: LText(entry.$2),
+        ),
+    ],
   );
 }

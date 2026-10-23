@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../icons/inkora_icons.dart';
 import '../l10n/app_strings.dart';
+import '../theme/inkora_motion.dart';
 import '../theme/inkora_theme.dart';
+import 'ink_home_attachment.dart';
 
 /// The shared browse tools of catalogue, Home and Downloads:
 /// an optional [leading] control (library selector or item count) beside a
@@ -20,6 +22,11 @@ class InkFilterBar extends StatelessWidget {
     this.leading,
     this.search,
     this.chips = const [],
+    this.startChipsWhenCompact = false,
+    this.compactMenu,
+    this.lowerWideSides = false,
+    this.attachedGroups = false,
+    this.groupsAttached = true,
     this.sort,
     this.filterCount,
     this.onFilters,
@@ -34,6 +41,13 @@ class InkFilterBar extends StatelessWidget {
 
   /// Prefix of the stable control keys (`<prefix>-chips`, `<prefix>-filters`).
   final String controlPrefix;
+  final bool startChipsWhenCompact;
+  final Widget? compactMenu;
+  final bool lowerWideSides;
+
+  /// Home-only surfaces joining the header through concave upper corners.
+  final bool attachedGroups;
+  final bool groupsAttached;
   final Widget? leading, search, sort;
   final List<Widget> chips, actions;
 
@@ -57,7 +71,14 @@ class InkFilterBar extends StatelessWidget {
             (leading == null && search == null && effectiveWidth >= 600);
         final chipRow = chips.isEmpty
             ? const SizedBox.shrink()
-            : InkChipRow(key: Key('$controlPrefix-chips'), children: chips);
+            : InkChipRow(
+                key: Key('$controlPrefix-chips'),
+                alignment: !wide && startChipsWhenCompact
+                    ? MainAxisAlignment.start
+                    : MainAxisAlignment.center,
+                fillWidth: !attachedGroups,
+                children: chips,
+              );
         // The sort label may shrink (ellipsis) so the chips keep most of the
         // row; the chip row always takes the remaining width.
         final sortButton = sort == null
@@ -78,33 +99,78 @@ class InkFilterBar extends StatelessWidget {
         if (wide) {
           // Equal side slots keep filters centered on the whole toolbar,
           // independently of the selector and trailing action widths.
+          Widget group(Widget child, AlignmentGeometry alignment) {
+            if (!attachedGroups) return child;
+            return Padding(
+              padding: EdgeInsetsDirectional.only(
+                start: alignment == AlignmentDirectional.centerStart ? 24 : 0,
+                end: alignment == AlignmentDirectional.centerEnd ? 24 : 0,
+              ),
+              child: Align(
+                alignment: alignment,
+                child: InkHomeToolGroup(
+                  attached: groupsAttached,
+                  horizontalPadding: alignment == Alignment.center ? 20 : 12,
+                  compact: alignment != Alignment.center,
+                  child: child,
+                ),
+              ),
+            );
+          }
+
           return Row(
+            crossAxisAlignment: lowerWideSides
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
             children: [
               Expanded(
                 flex: 3,
-                child: Row(
-                  children: [
-                    if (leading != null) Flexible(child: leading!),
-                    if (leading != null && search != null)
-                      const SizedBox(width: InkSpace.sm),
-                    if (search != null) Flexible(child: search!),
-                  ],
+                child: group(
+                  Row(
+                    mainAxisSize: attachedGroups
+                        ? MainAxisSize.min
+                        : MainAxisSize.max,
+                    children: [
+                      if (leading != null) Flexible(child: leading!),
+                      if (leading != null && search != null)
+                        const SizedBox(width: InkSpace.sm),
+                      if (search != null) Flexible(child: search!),
+                    ],
+                  ),
+                  AlignmentDirectional.centerStart,
                 ),
               ),
-              Expanded(flex: 4, child: chipRow),
+              Expanded(flex: 4, child: group(chipRow, Alignment.center)),
               Expanded(
                 flex: 3,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [?sortButton, ...buttons],
+                child: group(
+                  Row(
+                    mainAxisSize: attachedGroups
+                        ? MainAxisSize.min
+                        : MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [?sortButton, ...buttons],
+                  ),
+                  AlignmentDirectional.centerEnd,
                 ),
               ),
             ],
           );
         }
+        if (compactMenu != null && effectiveWidth < 600) {
+          final row = Row(
+            children: [
+              Expanded(child: chipRow),
+              compactMenu!,
+            ],
+          );
+          return attachedGroups
+              ? InkHomeToolGroup(attached: groupsAttached, child: row)
+              : row;
+        }
         // Compact windows give filters a full-width centered row. Search,
         // sort and actions share the other row so they cannot offset it.
-        return Column(
+        final rows = Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (leading != null ||
@@ -137,6 +203,9 @@ class InkFilterBar extends StatelessWidget {
             if (chips.isNotEmpty) chipRow,
           ],
         );
+        return attachedGroups
+            ? InkHomeToolGroup(attached: groupsAttached, child: rows)
+            : rows;
       },
     ),
   );
@@ -145,17 +214,24 @@ class InkFilterBar extends StatelessWidget {
 /// Horizontally scrollable chips with the shared spacing. Never wraps or
 /// scales labels; overflowing chips scroll.
 class InkChipRow extends StatelessWidget {
-  const InkChipRow({super.key, required this.children});
+  const InkChipRow({
+    super.key,
+    required this.children,
+    this.alignment = MainAxisAlignment.center,
+    this.fillWidth = true,
+  });
+  final MainAxisAlignment alignment;
   final List<Widget> children;
+  final bool fillWidth;
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, bounds) => SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: ConstrainedBox(
-        constraints: BoxConstraints(minWidth: bounds.maxWidth),
+        constraints: BoxConstraints(minWidth: fillWidth ? bounds.maxWidth : 0),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: alignment,
           children: [
             for (var i = 0; i < children.length; i++) ...[
               if (i > 0) const SizedBox(width: InkSpace.xs + 2),
@@ -252,6 +328,71 @@ class InkChipDivider extends StatelessWidget {
   );
 }
 
+/// Compact browse tools with native Back dismissal.
+class InkToolsMenu extends StatefulWidget {
+  const InkToolsMenu({
+    super.key,
+    required this.children,
+    this.active = false,
+    this.buttonBuilder,
+    this.menuStyle,
+    this.alignmentOffset = Offset.zero,
+  });
+  final List<Widget> children;
+  final bool active;
+  final Widget Function(BuildContext, MenuController)? buttonBuilder;
+  final MenuStyle? menuStyle;
+  final Offset alignmentOffset;
+  @override
+  State<InkToolsMenu> createState() => _InkToolsMenuState();
+}
+
+/// MenuAnchor does not push a route. Guard Back while it is open so Android
+/// dismisses the menu and its submenus without leaving the catalogue.
+class _InkToolsMenuState extends State<InkToolsMenu> {
+  final _controller = MenuController();
+  bool _open = false, _disposing = false;
+
+  void _changed(bool open) {
+    if (!_disposing && mounted && open != _open) setState(() => _open = open);
+  }
+
+  @override
+  void dispose() {
+    _disposing = true;
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => PopScope(
+    canPop: !_open,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop && _open) _controller.close();
+    },
+    child: MenuAnchor(
+      controller: _controller,
+      style: widget.menuStyle,
+      alignmentOffset: widget.alignmentOffset,
+      useRootOverlay: true,
+      onOpen: () => _changed(true),
+      onClose: () => _changed(false),
+      menuChildren: widget.children,
+      builder: (context, controller, _) =>
+          widget.buttonBuilder?.call(context, controller) ??
+          IconButton(
+            key: const Key('catalogue-tools-menu'),
+            tooltip: context.tr('More'),
+            onPressed: () =>
+                controller.isOpen ? controller.close() : controller.open(),
+            icon: Badge(
+              isLabelVisible: widget.active,
+              child: const Icon(InkIcons.list),
+            ),
+          ),
+    ),
+  );
+}
+
 /// A sort choice: full menu [label] and the [short] label shown on the button.
 typedef InkSortOption<T> = ({T value, String label, String short});
 
@@ -280,7 +421,17 @@ class InkSortButton<T> extends StatelessWidget {
         MediaQuery.textScalerOf(context).scale(1) <= 1.5;
     return PopupMenuButton<T>(
       tooltip: context.tr(tooltip),
-      initialValue: value,
+      position: PopupMenuPosition.under,
+      offset: const Offset(0, 4),
+      useRootNavigator: true,
+      popUpAnimationStyle: MediaQuery.disableAnimationsOf(context)
+          ? AnimationStyle.noAnimation
+          : const AnimationStyle(duration: InkoraMotion.tab),
+      constraints: BoxConstraints(
+        minWidth: 240,
+        maxWidth: (MediaQuery.sizeOf(context).width - 32).clamp(240, 320),
+        maxHeight: (MediaQuery.sizeOf(context).height * .6).clamp(48, 360),
+      ),
       onSelected: (selected) {
         if (selected != value) onSelected(selected);
       },

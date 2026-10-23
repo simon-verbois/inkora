@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inkora/app/router.dart';
+import 'package:inkora/features/library/presentation/book_detail_screen.dart';
 import 'package:inkora/features/library/application/catalogue_providers.dart';
 import 'package:inkora/features/library/domain/catalogue.dart';
 import 'package:inkora/features/library/domain/catalogue_metadata.dart';
@@ -136,7 +137,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const Key('detail-read')),
-        matching: find.text('Volume 000'),
+        matching: find.text('Commencer - Volume 000'),
       ),
       findsOneWidget,
     );
@@ -163,7 +164,7 @@ void main() {
     expect(find.text('Writer Name'), findsOneWidget);
     expect(find.text('Artist Name'), findsOneWidget);
     expect(find.text('Fixture Press'), findsWidgets);
-    expect(find.text('Hidden tag'), findsOneWidget);
+    expect(find.text('Hidden tag'), findsNothing);
     expect(tester.takeException(), isNull);
     await harness.close(tester);
   });
@@ -209,7 +210,7 @@ void main() {
           final readButton = find.byKey(const Key('detail-read'));
           final readLabel = find.descendant(
             of: readButton,
-            matching: find.text(targetTitle),
+            matching: find.text('Start - $targetTitle'),
           );
           expect(readLabel, findsOneWidget);
           final labelBounds = tester.getRect(readLabel);
@@ -271,7 +272,7 @@ void main() {
           );
           expect(find.text('https://example.test/reference'), findsNothing);
           expect(find.text('Status'), findsNothing);
-          expect(find.text('Hidden tag'), findsOneWidget);
+          expect(find.text('Hidden tag'), findsNothing);
           expect(find.text('Writer'), findsOneWidget);
           expect(find.text('Penciller'), findsOneWidget);
           final volumesTab = find.byKey(const Key('series-tab-volumes'));
@@ -326,6 +327,10 @@ void main() {
           expect(find.text('Book details'), findsNothing);
           expect(tester.takeException(), isNull);
           router.go('/catalogue/book/volume-0');
+          await tester.pumpAndSettle();
+          expect(find.byType(BookDetailScreen), findsOneWidget);
+          await tester.ensureVisible(find.byKey(const Key('book-detail-read')));
+          await tester.tap(find.byKey(const Key('book-detail-read')));
           await tester.pumpAndSettle();
           expect(
             tester.widget<ReaderScreen>(find.byType(ReaderScreen)).bookId,
@@ -508,7 +513,10 @@ void main() {
         final router = harness.container.read(routerProvider);
         router.go('/catalogue/series/series-a');
         await tester.pumpAndSettle();
-        expect(find.text('Volume 001'), findsOneWidget);
+        expect(
+          find.text('${onDeck ? 'Start' : 'Resume'} - Volume 001'),
+          findsOneWidget,
+        );
         await tester.tap(find.byKey(const Key('detail-read')));
         await tester.pumpAndSettle();
         expect(

@@ -1,3 +1,4 @@
+import '../../../app/theme/inkora_theme.dart';
 import '../../../app/theme/inkora_motion.dart';
 import '../../../app/widgets/ink_screen_header.dart';
 import '../../../app/widgets/ink_filter_bar.dart';
@@ -72,6 +73,9 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
   int _initialWindowSize = 60;
   LocalCataloguePage? _sortingPage;
   String? _sortingAccount;
+  double? _filterMinimumExtent;
+  double? _tailHeight;
+  Widget? _tailSliver;
   bool _showUnavailable = false, _listView = false;
   MetadataFilters _metadataFilters = const MetadataFilters();
 
@@ -99,6 +103,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
   }
 
   void _reset() {
+    _filterMinimumExtent = null;
     _metadataFilters = widget.initialFilters;
     _initialWindowSize = 60;
     _sortingPage = null;
@@ -146,12 +151,40 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
   }
 
   void _change(VoidCallback change) {
+    _filterMinimumExtent = null;
     setState(() {
       _sortingPage = null;
       _initialWindowSize = 60;
       change();
     });
     if (_scroll.hasClients) _scroll.jumpTo(0);
+  }
+
+  void _quickFilters(MetadataFilters filters) {
+    final current = ref.read(catalogueFeedStateProvider(_query)).asData?.value;
+    setState(() {
+      _sortingPage = current?.page ?? _sortingPage;
+      _sortingAccount = ref.read(sessionProvider).session?.accountId;
+      _initialWindowSize = _sortingPage?.items.length ?? 60;
+      if (widget.embedded && _scroll.hasClients) {
+        _filterMinimumExtent =
+            _scroll.offset + _scroll.position.viewportDimension;
+      }
+      _metadataFilters = filters;
+    });
+  }
+
+  Widget _filterSpace(BuildContext context, SliverConstraints constraints) {
+    final height =
+        ((_filterMinimumExtent ?? 0) - constraints.precedingScrollExtent).clamp(
+          0.0,
+          double.infinity,
+        );
+    if (_tailSliver == null || _tailHeight != height) {
+      _tailHeight = height;
+      _tailSliver = SliverToBoxAdapter(child: SizedBox(height: height));
+    }
+    return _tailSliver!;
   }
 
   void _sortChanged(CatalogueSort sort) {
@@ -222,7 +255,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
               ) ??
               Future.value(0),
         );
-    final result = await showInkSheet<CatalogueFilterResult>(
+    final result = await showInkPopup<CatalogueFilterResult>(
       context: context,
       child: CatalogueFiltersSheet(
         showUnavailable: _showUnavailable,
@@ -283,6 +316,14 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
     final volumesOnly =
         _kind == CatalogueKind.book && !items.any((item) => item.isEbook);
     final scale = MediaQuery.textScalerOf(context).scale(1);
+    final cataloguePadding = EdgeInsets.fromLTRB(
+      16,
+      widget.embedded && window.width >= 840 && window.width > window.height
+          ? 4
+          : 16,
+      16,
+      16,
+    );
     final librarySelection = widget.seriesId == null && widget.groupId == null;
     final search = InkHeaderSearch(
       key: const Key('catalogue-search'),
@@ -293,6 +334,77 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
       onChanged: _searchChanged,
       onClear: _clearSearch,
     );
+    Widget tools(bool attached) => PinnedHeaderSliver(
+      child: ColoredBox(
+        key: const Key('catalogue-pinned-tools'),
+        color: widget.embedded
+            ? Colors.transparent
+            : Theme.of(context).scaffoldBackgroundColor,
+        child: InkFilterBar(
+          controlPrefix: 'catalogue',
+          padding: widget.embedded
+              ? const EdgeInsets.fromLTRB(16, 0, 8, 0)
+              : const EdgeInsets.fromLTRB(16, 4, 8, 4),
+          attachedGroups: widget.embedded,
+          groupsAttached: attached,
+          startChipsWhenCompact: widget.embedded,
+          compactMenu: widget.embedded
+              ? _toolsMenu(selectedLibrary, libraries)
+              : null,
+          leading: librarySelection
+              ? _libraryButton(selectedLibrary, libraries)
+              : Text(
+                  AppStrings.of(context).quantity(page?.total ?? 0, 'item'),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+          chips: _kind == CatalogueKind.book || _kind == CatalogueKind.series
+              ? readingFilterChips(
+                  filters: _metadataFilters,
+                  onChanged: _quickFilters,
+                )
+              : const [],
+          sort: InkSortButton<CatalogueSort>(
+            key: const Key('catalogue-sort'),
+            value: _sort,
+            options: catalogueSortOptions(
+              sequence: widget.groupId != null || widget.seriesId != null,
+              groupOrder: widget.groupId != null,
+            ),
+            onSelected: _sortChanged,
+          ),
+          filterCount: _metadataFilters.values.length,
+          onFilters: _filters,
+          actions: [
+            if (_kind != CatalogueKind.book)
+              IconButton(
+                key: const Key('catalogue-view'),
+                tooltip: context.tr(_listView ? 'Show grid' : 'Show list'),
+                onPressed: () => setState(() => _listView = !_listView),
+                icon: Icon(
+                  _listView ? InkIcons.squaresFour : InkIcons.list,
+                  size: 20,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+    // Cache both paint states outside the per-scroll sliver layout callback.
+    final detachedTools = tools(false);
+    final attachedTools = tools(true);
+    final toolbar = widget.embedded
+        ? SliverLayoutBuilder(
+            builder: (context, constraints) {
+              final atHeader =
+                  constraints.scrollOffset > 0 ||
+                  constraints.remainingPaintExtent >=
+                      constraints.viewportMainAxisExtent -
+                          (InkScreenHeader.extent - 8) -
+                          .5;
+              return atHeader ? attachedTools : detachedTools;
+            },
+          )
+        : detachedTools;
     final scaffold = Scaffold(
       appBar: widget.embedded
           ? null
@@ -306,175 +418,144 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
         top: false,
         bottom: false,
         child: InkContent(
-          child: RefreshIndicator(
-            edgeOffset: widget.topInset,
-            onRefresh: () => refreshCatalogue(ref),
-            child: CustomScrollView(
-              controller: _scroll,
-              scrollCacheExtent: const ScrollCacheExtent.viewport(1),
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Column(
-                    children: [
-                      SizedBox(height: widget.topInset),
-                      const CatalogueRefreshStatus(),
-                      if (widget.header != null) widget.header!,
-                    ],
-                  ),
-                ),
-                PinnedHeaderSliver(
-                  child: ColoredBox(
-                    key: const Key('catalogue-pinned-tools'),
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    child: InkFilterBar(
-                      controlPrefix: 'catalogue',
-                      leading: librarySelection
-                          ? _libraryButton(selectedLibrary, libraries)
-                          : Text(
-                              AppStrings.of(context)
-                                  .quantity(page?.total ?? 0, 'item'),
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                      chips:
-                          _kind == CatalogueKind.book ||
-                              _kind == CatalogueKind.series
-                          ? readingFilterChips(
-                              filters: _metadataFilters,
-                              onChanged: (filters) =>
-                                  _change(() => _metadataFilters = filters),
-                            )
-                          : const [],
-                      sort: InkSortButton<CatalogueSort>(
-                        key: const Key('catalogue-sort'),
-                        value: _sort,
-                        options: catalogueSortOptions(
-                          sequence:
-                              widget.groupId != null || widget.seriesId != null,
-                          groupOrder: widget.groupId != null,
-                        ),
-                        onSelected: _sortChanged,
-                      ),
-                      filterCount: _metadataFilters.values.length,
-                      onFilters: _filters,
-                      actions: [
-                        if (_kind != CatalogueKind.book)
-                          IconButton(
-                            key: const Key('catalogue-view'),
-                            tooltip: context.tr(
-                              _listView ? 'Show grid' : 'Show list',
-                            ),
-                            onPressed: () =>
-                                setState(() => _listView = !_listView),
-                            icon: Icon(
-                              _listView ? InkIcons.squaresFour : InkIcons.list,
-                              size: 20,
-                            ),
-                          ),
+          maxWidth: widget.embedded
+              ? double.infinity
+              : InkoraLayout.maxContentWidth,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: widget.embedded && window.width >= 600
+                  ? (window.width * .0125).clamp(8.0, 24.0)
+                  : 0,
+            ),
+            child: RefreshIndicator(
+              edgeOffset:
+                  widget.topInset +
+                  (widget.embedded ? InkScreenHeader.extent : 0),
+              onRefresh: () => refreshCatalogue(ref),
+              child: CustomScrollView(
+                controller: _scroll,
+                scrollCacheExtent: const ScrollCacheExtent.viewport(1),
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  if (widget.embedded)
+                    const PinnedHeaderSliver(
+                      child: SizedBox(height: InkScreenHeader.extent - 8),
+                    ),
+                  SliverToBoxAdapter(
+                    child: Column(
+                      children: [
+                        SizedBox(height: widget.topInset),
+                        const CatalogueRefreshStatus(),
+                        if (widget.header != null) widget.header!,
                       ],
                     ),
                   ),
-                ),
-                if (items.isNotEmpty)
-                  if (_listView ||
-                      volumesOnly ||
-                      _kind == CatalogueKind.library ||
-                      scale > 1.5)
-                    SliverPadding(
-                      padding: const EdgeInsets.all(16),
-                      sliver: volumesOnly
-                          ? VolumeList(
-                              key: const Key('catalogue-list'),
-                              itemCount: items.length,
-                              itemBuilder: (_, index) =>
-                                  VolumeListTile(item: items[index]),
-                            )
-                          : SliverList.separated(
-                              key: const Key('catalogue-list'),
-                              itemCount: items.length,
-                              itemBuilder: (_, index) => volumesOnly
-                                  ? VolumeListTile(item: items[index])
-                                  : CatalogueItemTile(item: items[index]),
-                              separatorBuilder: (_, _) =>
-                                  const SizedBox(height: 8),
-                            ),
-                    )
-                  else
-                    CatalogueGrid(
-                      key: const Key('catalogue-grid'),
-                      columns: homeColumns,
-                      itemCount: items.length,
-                      artwork: items,
-                      itemBuilder: (_, index) =>
-                          InkCoverTile(item: items[index]),
-                    )
-                else if (data.isLoading || state?.loading == true)
-                  if (_listView ||
-                      volumesOnly ||
-                      _kind == CatalogueKind.library ||
-                      scale > 1.5)
-                    const SliverToBoxAdapter(child: InkSkeletonList())
-                  else
-                    CatalogueGrid(
-                      key: const Key('catalogue-skeleton'),
-                      columns: homeColumns,
-                      itemCount: 12,
-                      itemBuilder: coverSkeletonBuilder,
-                    )
-                else
-                  SliverToBoxAdapter(
-                    child: InkEmptyState(
-                      icon: data.hasError || state?.error == true
-                          ? InkIcons.cloudSlash
-                          : InkIcons.magnifyingGlassMinus,
-                      title: data.hasError || state?.error == true
-                          ? 'Catalogue unavailable'
-                          : query.search.isNotEmpty
-                          ? 'No matching books'
-                          : 'Nothing here yet',
-                      message: page?.lastUpdated == null
-                          ? 'Connect and refresh to browse your catalogue offline.'
-                          : 'Try another library, category or search.',
-                    ),
-                  ),
-                if (items.isNotEmpty &&
-                    (state?.loading == true || state?.hasMore == true))
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Center(
-                        child: state?.error == true
-                            ? TextButton(
-                                onPressed: () => ref
-                                    .read(catalogueFeedProvider(query))
-                                    .asData
-                                    ?.value
-                                    ?.retry(),
-                                child: const LText('Retry loading books'),
+                  toolbar,
+                  if (items.isNotEmpty)
+                    if (_listView ||
+                        volumesOnly ||
+                        _kind == CatalogueKind.library ||
+                        scale > 1.5)
+                      SliverPadding(
+                        padding: cataloguePadding,
+                        sliver: volumesOnly
+                            ? VolumeList(
+                                key: const Key('catalogue-list'),
+                                itemCount: items.length,
+                                itemBuilder: (_, index) =>
+                                    VolumeListTile(item: items[index]),
                               )
-                            : state?.loading == true
-                            ? const LinearProgressIndicator()
-                            : const SizedBox(height: 24),
+                            : SliverList.separated(
+                                key: const Key('catalogue-list'),
+                                itemCount: items.length,
+                                itemBuilder: (_, index) => volumesOnly
+                                    ? VolumeListTile(item: items[index])
+                                    : CatalogueItemTile(item: items[index]),
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(height: 8),
+                              ),
+                      )
+                    else
+                      CatalogueGrid(
+                        key: const Key('catalogue-grid'),
+                        columns: homeColumns,
+                        topPadding: cataloguePadding.top,
+                        itemCount: items.length,
+                        artwork: items,
+                        itemBuilder: (_, index) =>
+                            InkCoverTile(item: items[index]),
+                      )
+                  else if (data.isLoading || state?.loading == true)
+                    if (_listView ||
+                        volumesOnly ||
+                        _kind == CatalogueKind.library ||
+                        scale > 1.5)
+                      const SliverToBoxAdapter(child: InkSkeletonList())
+                    else
+                      CatalogueGrid(
+                        key: const Key('catalogue-skeleton'),
+                        columns: homeColumns,
+                        topPadding: cataloguePadding.top,
+                        itemCount: 12,
+                        itemBuilder: coverSkeletonBuilder,
+                      )
+                  else
+                    SliverToBoxAdapter(
+                      child: InkEmptyState(
+                        icon: data.hasError || state?.error == true
+                            ? InkIcons.cloudSlash
+                            : InkIcons.magnifyingGlassMinus,
+                        title: data.hasError || state?.error == true
+                            ? 'Catalogue unavailable'
+                            : query.search.isNotEmpty
+                            ? 'No matching books'
+                            : 'Nothing here yet',
+                        message: page?.lastUpdated == null
+                            ? 'Connect and refresh to browse your catalogue offline.'
+                            : 'Try another library, category or search.',
                       ),
                     ),
-                  ),
-                if (items.isNotEmpty && state?.hasMore == false)
+                  if (items.isNotEmpty &&
+                      (state?.loading == true || state?.hasMore == true))
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Center(
+                          child: state?.error == true
+                              ? TextButton(
+                                  onPressed: () => ref
+                                      .read(catalogueFeedProvider(query))
+                                      .asData
+                                      ?.value
+                                      ?.retry(),
+                                  child: const LText('Retry loading books'),
+                                )
+                              : state?.loading == true
+                              ? const LinearProgressIndicator()
+                              : const SizedBox(height: 24),
+                        ),
+                      ),
+                    ),
+                  if (items.isNotEmpty && state?.hasMore == false)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                        child: Text(
+                          AppStrings.of(context).quantity(page!.total, 'item'),
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    ),
                   SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                      child: Text(
-                        AppStrings.of(context).quantity(page!.total, 'item'),
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
+                    child: SizedBox(
+                      height: MediaQuery.paddingOf(context).bottom + 12,
                     ),
                   ),
-                SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: MediaQuery.paddingOf(context).bottom + 12,
-                  ),
-                ),
-              ],
+                  if (widget.embedded && _filterMinimumExtent != null)
+                    SliverLayoutBuilder(builder: _filterSpace),
+                ],
+              ),
             ),
           ),
         ),
@@ -493,6 +574,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
         library?.title ??
         context.tr(_libraryId == null ? 'All libraries' : 'Selected library');
     final compact =
+        MediaQuery.sizeOf(context).width <= MediaQuery.sizeOf(context).height ||
         MediaQuery.sizeOf(context).width < 600 ||
         MediaQuery.textScalerOf(context).scale(1) > 1.5;
     return PopupMenuButton<(String?,)>(
@@ -576,4 +658,70 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
       ),
     );
   }
+
+  Widget _toolsMenu(
+    CatalogueItem? library,
+    AsyncValue<LocalCataloguePage> libraries,
+  ) => InkToolsMenu(
+    active: _libraryId != null || _metadataFilters.values.isNotEmpty,
+    children: [
+      SubmenuButton(
+        key: const Key('catalogue-library-menu'),
+        leadingIcon: const Icon(InkIcons.books),
+        menuChildren: [
+          MenuItemButton(
+            key: const Key('library-choice-all'),
+            leadingIcon: _libraryId == null ? const Icon(InkIcons.check) : null,
+            onPressed: () => _selectLibrary((null,)),
+            child: const LText('All libraries'),
+          ),
+          for (final item in libraries.asData?.value.items ?? <CatalogueItem>[])
+            MenuItemButton(
+              key: ValueKey('library-choice-${item.id}'),
+              leadingIcon: _libraryId == item.id
+                  ? const Icon(InkIcons.check)
+                  : null,
+              onPressed: () => _selectLibrary((item.id,)),
+              child: Text(item.title),
+            ),
+          if (libraries.isLoading)
+            const MenuItemButton(child: LinearProgressIndicator()),
+          if (libraries.hasError)
+            const MenuItemButton(child: LText('Saved libraries unavailable.')),
+        ],
+        child: Text(library?.title ?? context.tr('All libraries')),
+      ),
+      SubmenuButton(
+        key: const Key('catalogue-sort-menu'),
+        leadingIcon: const Icon(InkIcons.sortAscending),
+        menuChildren: [
+          for (final option in catalogueSortOptions(
+            sequence: widget.groupId != null || widget.seriesId != null,
+            groupOrder: widget.groupId != null,
+          ))
+            MenuItemButton(
+              key: ValueKey('catalogue-sort-${option.value.name}'),
+              leadingIcon: option.value == _sort
+                  ? const Icon(InkIcons.check)
+                  : null,
+              onPressed: () => _sortChanged(option.value),
+              child: LText(option.label),
+            ),
+        ],
+        child: const LText('Sort catalogue'),
+      ),
+      MenuItemButton(
+        key: const Key('catalogue-menu-filters'),
+        leadingIcon: const Icon(InkIcons.slidersHorizontal),
+        onPressed: _filters,
+        child: const LText('Filters'),
+      ),
+      MenuItemButton(
+        key: const Key('catalogue-menu-view'),
+        leadingIcon: Icon(_listView ? InkIcons.squaresFour : InkIcons.list),
+        onPressed: () => setState(() => _listView = !_listView),
+        child: LText(_listView ? 'Show grid' : 'Show list'),
+      ),
+    ],
+  );
 }

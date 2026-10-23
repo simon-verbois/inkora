@@ -56,6 +56,20 @@ final startupLoginProvider = Provider<StartupLogin?>((ref) => null);
 final sessionProvider = NotifierProvider<SessionController, SessionState>(
   SessionController.new,
 );
+
+/// Network repositories rebind after verified credential edits, including when
+/// the account identity stays the same. Saved inactive-server edits do not emit.
+final activeConnectionTransportProvider = Provider<KomgaClient?>((ref) {
+  final identity = ref.watch(
+    sessionProvider.select(
+      (s) => (s.phase, s.session?.accountId, s.session?.credentials),
+    ),
+  );
+  return identity.$1 == SessionPhase.ready
+      ? ref.read(sessionProvider.notifier).client
+      : null;
+});
+
 final savedSessionsProvider = FutureProvider<List<SavedSession>>((ref) {
   ref.watch(
     sessionProvider.select(
@@ -292,6 +306,69 @@ final class SessionController extends Notifier<SessionState> {
       }
     } finally {
       candidate.close();
+    }
+  }
+
+  /// Verify replacement credentials before changing the saved or active connection.
+  Future<void> updateServer(
+    SavedSession previous,
+    String url,
+    Credentials credentials,
+  ) async {
+    final generation = _generation;
+    final endpoint = ServerEndpoint(url.trim());
+    final candidate = _factory(endpoint, credentials);
+    var adopted = false;
+    try {
+      final user = await candidate.currentUser();
+      final updated = SavedSession(
+        endpoint: endpoint,
+        user: user,
+        credentials: credentials,
+      );
+      final active = state.session?.accountId == previous.accountId;
+      await _persist(() async {
+        if (!_current(generation)) throw StateError('Session changed');
+        final saved = await _store.savedSessions();
+        if (!saved.any((s) => s.accountId == previous.accountId)) {
+          throw StateError('Saved connection unavailable');
+        }
+        if (updated.accountId != previous.accountId &&
+            saved.any((s) => s.accountId == updated.accountId)) {
+          throw const ActiveConnectionAlreadySaved();
+        }
+        if (active) {
+          await _store.save(updated);
+        } else {
+          await _store.remember(updated);
+        }
+        if (updated.accountId != previous.accountId) {
+          try {
+            await _store.forget(previous.accountId);
+          } catch (_) {
+            if (active) {
+              await _store.save(previous);
+            } else {
+              await _store.remember(previous);
+            }
+            await _store.forget(updated.accountId);
+            rethrow;
+          }
+        }
+      });
+      if (!_current(generation)) return;
+      if (active) {
+        final next = ++_generation;
+        _client?.close();
+        _client = candidate;
+        adopted = true;
+        candidate.onUnauthorized = () => unawaited(_expire(next));
+        state = SessionState(SessionPhase.ready, session: updated);
+        unawaited(_negotiate(candidate, user, next));
+      }
+      _connectionsChanged();
+    } finally {
+      if (!adopted) candidate.close();
     }
   }
 

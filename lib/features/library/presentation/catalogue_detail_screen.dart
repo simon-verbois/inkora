@@ -15,6 +15,7 @@ import 'catalogue_detail_widgets.dart';
 import 'catalogue_grid.dart';
 import 'catalogue_widgets.dart';
 import 'series_detail_screen.dart';
+import 'book_detail_screen.dart';
 
 /// Detail page of a catalogue item. Series use [SeriesDetailScreen]; library,
 /// collection and reading-list pages share its structure: floating Back
@@ -31,6 +32,8 @@ class CatalogueDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => kind == CatalogueKind.series
       ? SeriesDetailScreen(id: id)
+      : kind == CatalogueKind.book
+      ? BookDetailScreen(id: id)
       : GroupDetailScreen(kind: kind, id: id);
 }
 

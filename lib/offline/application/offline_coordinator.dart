@@ -12,6 +12,7 @@ import '../../reader/application/reader_providers.dart';
 import '../../reader/data/reader_asset_store.dart';
 import '../data/download_scheduler.dart';
 import '../data/download_store.dart';
+import '../data/download_retention_store.dart';
 import '../data/progress_store.dart';
 import '../data/progress_sync.dart';
 import '../domain/progress.dart';
@@ -31,6 +32,7 @@ bool _initiallyBackgrounded() {
 final offlineCoordinatorProvider = FutureProvider<OfflineCoordinator?>((
   ref,
 ) async {
+  final transport = ref.watch(activeConnectionTransportProvider);
   final state = ref.watch(
     sessionProvider.select((s) => (s.phase, s.session?.accountId)),
   );
@@ -59,7 +61,7 @@ final offlineCoordinatorProvider = FutureProvider<OfflineCoordinator?>((
   if (!alive) return null;
   final controller = ref.read(sessionProvider.notifier);
   final session = ref.read(sessionProvider).session!;
-  final client = controller.client!;
+  final client = transport!;
   final database = await ref.watch(databaseProvider);
   final assets = await ref.watch(readerAssetStoreProvider);
   final support = await getApplicationSupportDirectory();
@@ -86,6 +88,7 @@ final offlineCoordinatorProvider = FutureProvider<OfflineCoordinator?>((
     ),
     BackgroundTransfer(),
     current,
+    bookInUse: (book) => ref.read(activeReadingBooksProvider).contains(book),
   );
   await coordinator.start();
   if (!current()) {
@@ -170,8 +173,9 @@ final class OfflineCoordinator with WidgetsBindingObserver {
     this.downloads,
     this.sync,
     this.background,
-    this.isCurrent,
-  );
+    this.isCurrent, {
+    this.bookInUse = _notInUse,
+  });
   final DownloadStore store;
   final ReaderAssetStore assets;
   final SavedSession session;
@@ -179,6 +183,8 @@ final class OfflineCoordinator with WidgetsBindingObserver {
   final ProgressSync sync;
   final BackgroundTransfer background;
   final bool Function() isCurrent;
+  final bool Function(String) bookInUse;
+  static bool _notInUse(String _) => false;
   Timer? _timer;
   bool _closed = false, _backgrounded = false, _recovered = false;
   Future<void> _lifecycle = Future.value();
@@ -335,6 +341,17 @@ final class OfflineCoordinator with WidgetsBindingObserver {
       _recovered = true;
     }
     if (!_backgrounded) {
+      // Launch/resume opportunities only: never delete a book during an active
+      // reading session or create a background timer just for retention.
+      final retention = DownloadRetentionStore(store.database, store.accountId);
+      for (final candidate in await retention.due()) {
+        if (!current || _backgrounded) break;
+        // Recheck policy/progress after each asynchronous removal opportunity.
+        if ((await retention.due(jobId: candidate.jobId)).isEmpty) continue;
+        if (!current || _backgrounded) break;
+        if (bookInUse(candidate.bookId)) continue;
+        await downloads.cancel(candidate.jobId);
+      }
       // start() owns the first timer; later resumes restart polling here.
       if (_recovered && _timer == null && _started) _startTimer();
       await _tick();

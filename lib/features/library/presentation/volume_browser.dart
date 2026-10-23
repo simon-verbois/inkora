@@ -10,6 +10,7 @@ import '../../../app/l10n/app_strings.dart';
 import '../../../app/theme/inkora_theme.dart';
 import '../../../app/widgets/ink_filter_bar.dart';
 import '../../../app/widgets/inkora_widgets.dart';
+import '../../../app/widgets/ink_surface.dart';
 import '../../../offline/application/offline_coordinator.dart';
 import '../../../offline/presentation/download_book_action.dart';
 import '../application/catalogue_providers.dart';
@@ -118,11 +119,13 @@ class VolumeBrowserController extends ChangeNotifier {
 final class VolumeActions {
   const VolumeActions({
     required this.open,
+    this.read,
     required this.mark,
     this.markPrevious,
     this.select,
   });
   final void Function(SeriesVolume volume) open;
+  final void Function(SeriesVolume volume)? read;
   final Future<void> Function(SeriesVolume volume, {required bool read}) mark;
   final Future<void> Function(SeriesVolume volume)? markPrevious;
   final void Function(SeriesVolume volume)? select;
@@ -184,6 +187,7 @@ class _VolumeToolbarState extends State<VolumeToolbar> {
     if (bounds.maxWidth >= _inlineWidths[controller.filter]!) {
       return InkChipRow(
         key: const Key('volume-chips'),
+        alignment: MainAxisAlignment.start,
         children: [
           for (final filter in VolumeFilter.values)
             InkFilterChip(
@@ -283,6 +287,7 @@ class VolumeSliver extends StatefulWidget {
     required this.controller,
     required this.actions,
     this.currentId,
+    this.focusedId,
     this.seriesTitle = '',
   });
   final String seriesId;
@@ -298,7 +303,7 @@ class VolumeSliver extends StatefulWidget {
   final bool grid, selecting;
   final VolumeBrowserController controller;
   final VolumeActions actions;
-  final String? currentId;
+  final String? currentId, focusedId;
 
   @override
   State<VolumeSliver> createState() => VolumeSliverState();
@@ -326,6 +331,7 @@ class VolumeSliverState extends State<VolumeSliver> {
     if (old.grid != widget.grid ||
         old.selecting != widget.selecting ||
         old.currentId != widget.currentId ||
+        old.focusedId != widget.focusedId ||
         old.seriesId != widget.seriesId ||
         old.seriesTitle != widget.seriesTitle ||
         !listEquals(old.volumes, widget.volumes) ||
@@ -396,6 +402,7 @@ class VolumeSliverState extends State<VolumeSliver> {
             volume: volumes[index],
             index: widget.order[volumes[index].id] ?? 0,
             current: volumes[index].id == widget.currentId,
+            focused: volumes[index].id == widget.focusedId,
             selecting: widget.selecting,
             controller: widget.controller,
             actions: widget.actions,
@@ -421,6 +428,7 @@ class VolumeSliverState extends State<VolumeSliver> {
           volume: volumes[index],
           index: widget.order[volumes[index].id] ?? 0,
           current: volumes[index].id == widget.currentId,
+          focused: volumes[index].id == widget.focusedId,
           selecting: widget.selecting,
           controller: widget.controller,
           actions: widget.actions,
@@ -503,6 +511,9 @@ String volumeStatusLine(
 typedef _MenuAction = ({String label, IconData icon, VoidCallback run});
 
 List<_MenuAction> _menuActions(
+  BuildContext context,
+  WidgetRef ref,
+  String seriesId,
   SeriesVolume volume,
   VolumeProgress progress,
   int index,
@@ -511,13 +522,13 @@ List<_MenuAction> _menuActions(
   (
     label: 'Read book',
     icon: InkIcons.bookOpen,
-    run: () => actions.open(volume),
+    run: () => (actions.read ?? actions.open)(volume),
   ),
   if (!progress.read)
     (
       label: 'Mark read',
       icon: InkIcons.check,
-      run: () => actions.mark(volume, read: true),
+      run: () => _markVolumeRead(context, ref, seriesId, volume, actions),
     ),
   if (progress.status != ReadingStatus.unread)
     (
@@ -538,6 +549,32 @@ List<_MenuAction> _menuActions(
       run: () => actions.select!(volume),
     ),
 ];
+
+/// Completing an in-progress book discards its current position. The row,
+/// context menu and accessibility action all use the same guarded operation.
+Future<void> _markVolumeRead(
+  BuildContext context,
+  WidgetRef ref,
+  String seriesId,
+  SeriesVolume volume,
+  VolumeActions actions,
+) async {
+  final progress =
+      ref.read(seriesProgressProvider(seriesId)).asData?.value.of(volume.id) ??
+      VolumeProgress(status: volume.serverStatus, pageIndex: volume.serverPage);
+  if (progress.read) return;
+  if (progress.reading &&
+      !await confirmInk(
+        context,
+        title: 'Mark as read?',
+        message: '“{0}” is in progress. Marking it as read replaces its current reading position.',
+        messageArguments: [volume.title],
+        confirmLabel: 'Mark read',
+      )) {
+    return;
+  }
+  if (context.mounted) await actions.mark(volume, read: true);
+}
 
 Future<void> _showMenu(
   BuildContext context,
@@ -582,7 +619,12 @@ mixin _VolumeState on ConsumerWidget {
 
   VolumeProgress watchProgress(WidgetRef ref) => ref.watch(
     seriesProgressProvider(seriesId).select(
-      (value) => value.asData?.value.of(volume.id) ?? VolumeProgress.unread,
+      (value) =>
+          value.asData?.value.of(volume.id) ??
+          VolumeProgress(
+            status: volume.serverStatus,
+            pageIndex: volume.serverPage,
+          ),
     ),
   );
 
@@ -606,6 +648,7 @@ class VolumeRow extends ConsumerWidget with _VolumeState {
     required this.volume,
     required this.index,
     required this.current,
+    this.focused = false,
     required this.selecting,
     required this.controller,
     required this.actions,
@@ -617,7 +660,7 @@ class VolumeRow extends ConsumerWidget with _VolumeState {
   @override
   final SeriesVolume volume;
   final int index;
-  final bool current, selecting;
+  final bool current, selecting, focused;
   final VolumeBrowserController controller;
   final VolumeActions actions;
 
@@ -638,11 +681,14 @@ class VolumeRow extends ConsumerWidget with _VolumeState {
       downloaded: downloaded,
     );
     final menu = volume.available
-        ? _menuActions(volume, progress, index, actions)
+        ? _menuActions(context, ref, seriesId, volume, progress, index, actions)
         : const <_MenuAction>[];
     Offset? pressed;
     return DecoratedBox(
       decoration: BoxDecoration(
+        color: focused
+            ? theme.colorScheme.primary.withValues(alpha: .08)
+            : null,
         border: Border(
           bottom: BorderSide(color: theme.dividerColor.withValues(alpha: .25)),
         ),
@@ -657,7 +703,11 @@ class VolumeRow extends ConsumerWidget with _VolumeState {
                 return Semantics(
                   container: true,
                   button: true,
-                  selected: selecting ? selected : null,
+                  selected: selecting
+                      ? selected
+                      : focused
+                      ? true
+                      : null,
                   enabled: volume.available,
                   label: '$title, $status',
                   customSemanticsActions: selecting
@@ -713,7 +763,7 @@ class VolumeRow extends ConsumerWidget with _VolumeState {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: volumeTitleStyle(theme)?.copyWith(
-                                    color: current
+                                    color: (current || focused)
                                         ? theme.colorScheme.primary
                                         : progress.read
                                         ? theme.colorScheme.onSurfaceVariant
@@ -754,6 +804,17 @@ class VolumeRow extends ConsumerWidget with _VolumeState {
             ),
           ),
           if (!selecting)
+            IconButton(
+              key: ValueKey('volume-mark-read-${volume.id}'),
+              tooltip: context.tr('Mark read'),
+              isSelected: progress.read,
+              icon: const Icon(InkIcons.check),
+              onPressed: volume.available && !progress.read
+                  ? () =>
+                        _markVolumeRead(context, ref, seriesId, volume, actions)
+                  : null,
+            ),
+          if (!selecting)
             DownloadBookAction(
               bookId: volume.id,
               title: volume.title,
@@ -776,6 +837,7 @@ class VolumeTile extends ConsumerWidget with _VolumeState {
     required this.volume,
     required this.index,
     required this.current,
+    this.focused = false,
     required this.selecting,
     required this.controller,
     required this.actions,
@@ -786,7 +848,7 @@ class VolumeTile extends ConsumerWidget with _VolumeState {
   @override
   final SeriesVolume volume;
   final int index;
-  final bool current, selecting;
+  final bool current, selecting, focused;
   final VolumeBrowserController controller;
   final VolumeActions actions;
 
@@ -816,7 +878,7 @@ class VolumeTile extends ConsumerWidget with _VolumeState {
       downloaded: downloaded,
     );
     final menu = volume.available
-        ? _menuActions(volume, progress, index, actions)
+        ? _menuActions(context, ref, seriesId, volume, progress, index, actions)
         : const <_MenuAction>[];
     Offset? pressed;
     return ValueListenableBuilder<Set<String>>(
@@ -826,7 +888,11 @@ class VolumeTile extends ConsumerWidget with _VolumeState {
         return Semantics(
           container: true,
           button: true,
-          selected: selecting ? selected : null,
+          selected: selecting
+              ? selected
+              : focused
+              ? true
+              : null,
           enabled: volume.available,
           label:
               '${volumeRowTitle(strings, volume, seriesTitle: seriesTitle)}, $status',
@@ -941,7 +1007,7 @@ class VolumeTile extends ConsumerWidget with _VolumeState {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: volumeTitleStyle(theme)?.copyWith(
-                    color: current
+                    color: (current || focused)
                         ? theme.colorScheme.primary
                         : progress.read
                         ? theme.colorScheme.onSurfaceVariant
@@ -978,8 +1044,10 @@ class VolumeSection extends ConsumerWidget {
     required this.sliverKey,
     required this.onJump,
     this.seriesTitle = '',
+    this.focusedId,
   });
   final String seriesId;
+  final String? focusedId;
   final String seriesTitle;
   final VolumeBrowserController controller;
   final VolumeActions actions;
@@ -1058,7 +1126,9 @@ class VolumeSection extends ConsumerWidget {
     final strings = AppStrings.of(context);
     return SliverMainAxisGroup(
       slivers: [
-        if (all.length > jumpThreshold && jumpIndex >= 0)
+        if (all.length > jumpThreshold &&
+            jumpIndex >= 0 &&
+            !all.every((volume) => volume.isEbook))
           SliverToBoxAdapter(
             child: Align(
               alignment: AlignmentDirectional.centerStart,
@@ -1102,6 +1172,7 @@ class VolumeSection extends ConsumerWidget {
               controller: controller,
               actions: actions,
               currentId: currentId,
+              focusedId: focusedId,
             ),
           ),
       ],
@@ -1124,6 +1195,8 @@ final class _Ids {
 /// download. Actions are enabled only when they would change a selected
 /// volume.
 class VolumeSelectionBar extends ConsumerWidget {
+  /// Extra scroll clearance, excluding the device's own bottom safe area.
+  static const double clearance = 72;
   const VolumeSelectionBar({
     super.key,
     required this.seriesId,
@@ -1145,157 +1218,99 @@ class VolumeSelectionBar extends ConsumerWidget {
         ref.watch(downloadedIdentitiesProvider).asData?.value ??
         const <String>{};
     final strings = AppStrings.of(context);
-    return Material(
-      color: InkoraColors.of(context).raised,
-      child: SafeArea(
-        top: false,
+    return SafeArea(
+      top: false,
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        heightFactor: 1,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            InkSpace.sm,
-            InkSpace.xs,
-            InkSpace.lg,
-            InkSpace.md,
-          ),
-          child: ValueListenableBuilder<Set<String>>(
-            valueListenable: controller.selection,
-            builder: (context, selection, _) {
-              final selected = [
-                for (final volume
-                    in progress?.volumes ?? const <SeriesVolume>[])
-                  if (selection.contains(volume.id) && volume.available) volume,
-              ];
-              final canRead = selected.any((v) => !progress!.of(v.id).read);
-              final canUnread = selected.any(
-                (v) => progress!.of(v.id).status != ReadingStatus.unread,
-              );
-              final canDownload = selected.any(
-                (v) => v.pageCount > 0 && !downloaded.contains('book:${v.id}'),
-              );
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        key: const Key('selection-close'),
-                        tooltip: strings.text('Cancel'),
-                        onPressed: controller.endSelection,
-                        icon: const Icon(InkIcons.x),
-                      ),
-                      Expanded(
-                        child: Text(
-                          strings.text('Selected: {0}', [
-                            strings.quantity(selection.length, 'volume'),
-                          ]),
-                          key: const Key('selection-count'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleSmall,
+          padding: const EdgeInsets.all(InkSpace.sm),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: InkOverlaySurface(
+              child: Padding(
+                padding: const EdgeInsets.all(InkSpace.xs),
+                child: ValueListenableBuilder<Set<String>>(
+                  valueListenable: controller.selection,
+                  builder: (context, selection, _) {
+                    final selected = [
+                      for (final volume
+                          in progress?.volumes ?? const <SeriesVolume>[])
+                        if (selection.contains(volume.id) && volume.available)
+                          volume,
+                    ];
+                    final canRead = selected.any(
+                      (v) => !progress!.of(v.id).read,
+                    );
+                    final canUnread = selected.any(
+                      (v) => progress!.of(v.id).status != ReadingStatus.unread,
+                    );
+                    final canDownload = selected.any(
+                      (v) =>
+                          (v.isEbook || v.pageCount > 0) &&
+                          !downloaded.contains('book:${v.id}'),
+                    );
+                    final label = strings.text('Selected: {0}', [
+                      strings.quantity(selection.length, 'volume'),
+                    ]);
+                    return Row(
+                      children: [
+                        IconButton(
+                          key: const Key('selection-close'),
+                          tooltip: strings.text('Cancel'),
+                          onPressed: controller.endSelection,
+                          icon: const Icon(InkIcons.x),
                         ),
-                      ),
-                      IconButton(
-                        key: const Key('selection-all'),
-                        tooltip: strings.text('Select all'),
-                        onPressed: () => controller.selectAll(visibleIds()),
-                        icon: const Icon(InkIcons.selectionAll),
-                      ),
-                    ],
-                  ),
-                  _SelectionActions(
-                    actions: [
-                      OutlinedButton.icon(
-                        key: const Key('selection-read'),
-                        onPressed: canRead ? () => onMark(read: true) : null,
-                        icon: const Icon(InkIcons.check, size: 18),
-                        label: const LText('Mark read'),
-                      ),
-                      OutlinedButton.icon(
-                        key: const Key('selection-unread'),
-                        onPressed: canUnread ? () => onMark(read: false) : null,
-                        icon: const Icon(
-                          InkIcons.arrowCounterClockwise,
-                          size: 18,
+                        Expanded(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) => Tooltip(
+                              message: label,
+                              child: Text(
+                                constraints.maxWidth < 180
+                                    ? strings.number(selection.length)
+                                    : label,
+                                semanticsLabel: label,
+                                key: const Key('selection-count'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.titleSmall,
+                              ),
+                            ),
+                          ),
                         ),
-                        label: const LText('Mark unread'),
-                      ),
-                      FilledButton.icon(
-                        key: const Key('selection-download'),
-                        onPressed: canDownload ? onDownload : null,
-                        icon: const Icon(InkIcons.downloadSimple, size: 18),
-                        label: const LText('Download'),
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            },
+                        IconButton(
+                          key: const Key('selection-all'),
+                          tooltip: strings.text('Select all'),
+                          onPressed: () => controller.selectAll(visibleIds()),
+                          icon: const Icon(InkIcons.selectionAll),
+                        ),
+                        IconButton(
+                          key: const Key('selection-read'),
+                          tooltip: strings.text('Mark read'),
+                          onPressed: canRead ? () => onMark(read: true) : null,
+                          icon: const Icon(InkIcons.check),
+                        ),
+                        IconButton(
+                          key: const Key('selection-unread'),
+                          tooltip: strings.text('Mark unread'),
+                          onPressed: canUnread
+                              ? () => onMark(read: false)
+                              : null,
+                          icon: const Icon(InkIcons.arrowCounterClockwise),
+                        ),
+                        IconButton.filled(
+                          key: const Key('selection-download'),
+                          tooltip: strings.text('Download'),
+                          onPressed: canDownload ? onDownload : null,
+                          icon: const Icon(InkIcons.downloadSimple),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Selection actions: one row on wide windows; on compact windows the
-/// secondary actions share a row and the last (primary) action spans the
-/// width below, so no action is ever scrolled out of view. Large text sizes
-/// stack full-width buttons (wrapping labels, at most 30 % of the window,
-/// scrolling) so no label is clipped or wider than the screen.
-class _SelectionActions extends StatelessWidget {
-  const _SelectionActions({required this.actions});
-  final List<Widget> actions;
-
-  @override
-  Widget build(BuildContext context) {
-    final large = MediaQuery.textScalerOf(context).scale(1) > 1.3;
-    if (!large) {
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          final wide = constraints.maxWidth >= 600;
-          final secondary = actions.sublist(0, actions.length - 1);
-          final row = Row(
-            children: [
-              for (var i = 0; i < secondary.length; i++) ...[
-                if (i > 0) const SizedBox(width: InkSpace.sm),
-                Expanded(child: secondary[i]),
-              ],
-              if (wide) ...[
-                const SizedBox(width: InkSpace.sm),
-                Expanded(child: actions.last),
-              ],
-            ],
-          );
-          return Padding(
-            padding: const EdgeInsetsDirectional.only(start: InkSpace.sm),
-            child: wide
-                ? row
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      row,
-                      const SizedBox(height: InkSpace.xs),
-                      actions.last,
-                    ],
-                  ),
-          );
-        },
-      );
-    }
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * .3,
-      ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsetsDirectional.only(start: InkSpace.sm),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (var i = 0; i < actions.length; i++) ...[
-              if (i > 0) const SizedBox(height: InkSpace.xs),
-              actions[i],
-            ],
-          ],
         ),
       ),
     );

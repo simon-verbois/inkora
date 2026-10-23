@@ -13,6 +13,8 @@ String appearanceLabel(AppAppearance appearance) => switch (appearance) {
   AppAppearance.rose => 'Rose',
   AppAppearance.midnight => 'Midnight',
   AppAppearance.plum => 'Plum',
+  AppAppearance.mint => 'Mint',
+  AppAppearance.lavender => 'Lavender',
 };
 String gesturePresetLabel(GesturePreset preset) => switch (preset) {
   GesturePreset.systemNavigation => 'Easy system back',

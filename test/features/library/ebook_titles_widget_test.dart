@@ -5,6 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inkora/app/router.dart';
+import 'package:inkora/features/library/presentation/book_detail_screen.dart';
+import 'package:inkora/features/library/presentation/book_cover.dart';
+import 'package:inkora/features/library/presentation/series_header.dart';
+import 'package:inkora/app/widgets/ink_screen_header.dart';
 import 'package:inkora/features/library/application/cover_providers.dart';
 import 'package:inkora/features/library/domain/catalogue.dart';
 import 'package:inkora/features/library/domain/catalogue_metadata.dart';
@@ -19,6 +23,7 @@ import 'package:inkora/reader/domain/reader_manifest.dart';
 import 'package:inkora/reader/presentation/reader_screen.dart';
 
 import '../../support/catalogue_fakes.dart';
+import '../../app/home_navigation_widget_test.dart' show backEvent;
 import '../../support/ui_harness.dart';
 
 CatalogueItem _book(String id, {String type = 'application/epub+zip'}) =>
@@ -160,6 +165,69 @@ void main() {
           expect(
             find.descendant(of: searchOverlay, matching: find.text('Novel a')),
             findsNothing,
+          );
+          await tester.tap(
+            find.descendant(of: searchOverlay, matching: find.text('Novel c')),
+          );
+          await tester.pumpAndSettle();
+          expect(find.byType(BookDetailScreen), findsOneWidget);
+          expect(find.byType(ReaderScreen), findsNothing);
+          expect(find.text('Novel c'), findsOneWidget);
+          expect(find.text('PDF'), findsNothing);
+          expect(find.text('EPUB'), findsNothing);
+          expect(
+            tester.widget<SeriesBackdrop>(find.byType(SeriesBackdrop)).item.id,
+            'c',
+          );
+          expect(
+            tester
+                .widget<InkFloatingHeader>(find.byType(InkFloatingHeader))
+                .transparentAtRest,
+            isTrue,
+          );
+          if (size.width >= 1000 && scale == 1) {
+            final cover = find.byType(BookCover);
+            final heading = find.byKey(const Key('book-detail-title'));
+            final action = find.byKey(const Key('book-detail-read'));
+            expect(cover, findsOneWidget);
+            expect(tester.getSize(cover).width, greaterThanOrEqualTo(240));
+            expect(
+              tester.getRect(cover).right,
+              lessThan(tester.getRect(heading).left),
+            );
+            expect(
+              tester.getRect(action).left,
+              closeTo(tester.getRect(heading).left, 1),
+            );
+            expect(
+              tester.getRect(action).top,
+              greaterThan(tester.getRect(heading).bottom),
+            );
+          }
+          await tester.ensureVisible(find.byKey(const Key('book-detail-read')));
+          await tester.tap(find.byKey(const Key('book-detail-read')));
+          await tester.pumpAndSettle();
+          expect(
+            tester.widget<ReaderScreen>(find.byType(ReaderScreen)).bookId,
+            'c',
+          );
+          expect(await backEvent(tester, 'startBackGesture'), isTrue);
+          await backEvent(tester, 'updateBackGestureProgress');
+          await tester.pump();
+          await backEvent(tester, 'cancelBackGesture');
+          await tester.pumpAndSettle();
+          expect(find.byType(ReaderScreen), findsOneWidget);
+          expect(await backEvent(tester, 'startBackGesture'), isTrue);
+          await backEvent(tester, 'updateBackGestureProgress');
+          await tester.pump();
+          await backEvent(tester, 'commitBackGesture');
+          await tester.pumpAndSettle();
+          expect(find.byType(BookDetailScreen), findsOneWidget);
+          router.pop();
+          await tester.pumpAndSettle();
+          expect(
+            find.descendant(of: searchOverlay, matching: find.text('Novel c')),
+            findsOneWidget,
           );
           expect(tester.takeException(), isNull);
           await harness.close(tester);

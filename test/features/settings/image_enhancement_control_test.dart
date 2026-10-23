@@ -17,7 +17,7 @@ import '../../support/ui_harness.dart';
 void main() {
   for (final size in [const Size(320, 640), const Size(1024, 768)]) {
     for (final locale in AppStrings.supportedLocales) {
-      testWidgets('quality separates upscaling at $size / $locale / 200%', (
+      testWidgets('quality integrates upscaling at $size / $locale / 200%', (
         tester,
       ) async {
         tester.view.physicalSize = size;
@@ -32,14 +32,12 @@ void main() {
         await harness.mount(tester, textScale: 2);
         harness.container.read(routerProvider).go('/settings/quality');
         await tester.pumpAndSettle();
-        expect(find.byType(ImageEnhancementControl), findsNothing);
         final strings = AppStrings(locale.languageCode);
-        final tab = find.widgetWithText(Tab, strings.text('Upscaling'));
-        await tester.ensureVisible(tab);
-        await tester.pumpAndSettle();
-        await tester.tap(tab);
-        await tester.pumpAndSettle();
         expect(find.byType(ImageEnhancementControl), findsOneWidget);
+        expect(
+          find.widgetWithText(Tab, strings.text('Upscaling')),
+          findsNothing,
+        );
         expect(find.text(strings.text('JPEG / JPG')), findsNothing);
         expect(find.text(strings.text('Save')), findsNothing);
         expect(
@@ -54,7 +52,7 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(rendering);
         await tester.pumpAndSettle();
-        expect(find.byType(ImageEnhancementControl), findsNothing);
+        expect(find.byType(ImageEnhancementControl), findsOneWidget);
         expect(tester.takeException(), isNull);
         await harness.close(tester);
       });

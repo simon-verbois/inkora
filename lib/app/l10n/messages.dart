@@ -846,6 +846,28 @@ const Map<String, Map<String, String>> messages = {
     "Portrait": "Portrait",
     "Landscape": "Landscape",
     "Fit content": "Fit content",
+    "Resume - {0}": "Resume - {0}",
+    "Start - {0}": "Start - {0}",
+    "Entire series": "Entire series",
+    "Unread and in-progress volumes": "Unread and in-progress volumes",
+    "Remove finished books from this device":
+        "Remove finished books from this device",
+    "For this series only, at least 24 hours after completion, on the next app launch or resume. Reading progress is kept.": "For this series only, at least 24 hours after completion, on the next app launch or resume. Reading progress is kept.",
+    "“{0}” is in progress. Marking it as read replaces its current reading position.": "“{0}” is in progress. Marking it as read replaces its current reading position.",
+    "Hide tags": "Hide tags",
+    "Author": "Author",
+    "Open external link?": "Open external link?",
+    "This link opens in your browser outside the app.":
+        "This link opens in your browser outside the app.",
+    "Open link": "Open link",
+    "Unable to open this link.": "Unable to open this link.",
+    "Mint": "Mint",
+    "Lavender": "Lavender",
+    "Edit connection": "Edit connection",
+    "Restore the default settings for this page?":
+        "Restore the default settings for this page?",
+    "Unable to reset settings. Try again.":
+        "Unable to reset settings. Try again.",
   },
   "fr": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Un conflit nécessite votre choix. Ouvrez le livre concerné et sélectionnez « Progression de lecture ».",
@@ -1699,6 +1721,28 @@ const Map<String, Map<String, String>> messages = {
     "Portrait": "Portrait",
     "Landscape": "Paysage",
     "Fit content": "Adapter au contenu",
+    "Resume - {0}": "Reprendre - {0}",
+    "Start - {0}": "Commencer - {0}",
+    "Entire series": "Toute la série",
+    "Unread and in-progress volumes": "Tomes non lus et en cours",
+    "Remove finished books from this device":
+        "Supprimer les livres terminés de cet appareil",
+    "For this series only, at least 24 hours after completion, on the next app launch or resume. Reading progress is kept.": "Pour cette série uniquement, au moins 24 heures après la fin de lecture, au prochain lancement ou retour dans l’application. La progression de lecture est conservée.",
+    "“{0}” is in progress. Marking it as read replaces its current reading position.": "La lecture de « {0} » est en cours. Marquer ce livre comme lu remplace sa position de lecture actuelle.",
+    "Hide tags": "Masquer les étiquettes",
+    "Author": "Auteur",
+    "Open external link?": "Ouvrir le lien externe ?",
+    "This link opens in your browser outside the app.":
+        "Ce lien s’ouvre dans votre navigateur, en dehors de l’application.",
+    "Open link": "Ouvrir le lien",
+    "Unable to open this link.": "Impossible d’ouvrir ce lien.",
+    "Mint": "Menthe",
+    "Lavender": "Lavande",
+    "Edit connection": "Modifier la connexion",
+    "Restore the default settings for this page?":
+        "Restaurer les paramètres par défaut de cette page ?",
+    "Unable to reset settings. Try again.":
+        "Impossible de réinitialiser les paramètres. Réessayez.",
   },
   "de": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Bei einem Konflikt müssen Sie eine Entscheidung treffen. Öffnen Sie das betroffene Buch und wählen Sie „Lesefortschritt“ aus.",
@@ -2535,6 +2579,27 @@ const Map<String, Map<String, String>> messages = {
     "Portrait": "Hochformat",
     "Landscape": "Querformat",
     "Fit content": "An Inhalt anpassen",
+    "Resume - {0}": "Weiterlesen - {0}",
+    "Start - {0}": "Beginnen - {0}",
+    "Entire series": "Gesamte Serie",
+    "Unread and in-progress volumes": "Ungelesene und angefangene Bände",
+    "Remove finished books from this device":
+        "Gelesene Bücher von diesem Gerät entfernen",
+    "For this series only, at least 24 hours after completion, on the next app launch or resume. Reading progress is kept.": "Nur für diese Serie, frühestens 24 Stunden nach dem Fertiglesen, beim nächsten Start oder erneuten Öffnen der App. Der Lesefortschritt bleibt erhalten.",
+    "“{0}” is in progress. Marking it as read replaces its current reading position.": "Sie lesen „{0}“ gerade. Wenn Sie das Buch als gelesen markieren, wird die aktuelle Leseposition ersetzt.",
+    "Hide tags": "Tags ausblenden",
+    "Author": "Autor",
+    "Open external link?": "Externen Link öffnen?",
+    "This link opens in your browser outside the app.":
+        "Dieser Link wird außerhalb der App in Ihrem Browser geöffnet.",
+    "Open link": "Link öffnen",
+    "Unable to open this link.": "Dieser Link kann nicht geöffnet werden.",
+    "Mint": "Minze",
+    "Lavender": "Lavendel",
+    "Edit connection": "Verbindung bearbeiten",
+    "Restore the default settings for this page?":
+        "Standardeinstellungen für diese Seite wiederherstellen?",
+    "Unable to reset settings. Try again.": "Einstellungen können nicht zurückgesetzt werden. Versuchen Sie es erneut.",
   },
   "es": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Un conflicto requiere que usted elija. Abra el libro afectado y seleccione «Progreso de lectura».",
@@ -3387,6 +3452,28 @@ const Map<String, Map<String, String>> messages = {
     "Portrait": "Vertical",
     "Landscape": "Horizontal",
     "Fit content": "Ajustar al contenido",
+    "Resume - {0}": "Continuar - {0}",
+    "Start - {0}": "Comenzar - {0}",
+    "Entire series": "Toda la serie",
+    "Unread and in-progress volumes": "Tomos sin leer y en curso",
+    "Remove finished books from this device":
+        "Eliminar de este dispositivo los libros terminados",
+    "For this series only, at least 24 hours after completion, on the next app launch or resume. Reading progress is kept.": "Solo para esta serie, al menos 24 horas después de terminar la lectura, al iniciar la aplicación o volver a ella. Se conserva el progreso de lectura.",
+    "“{0}” is in progress. Marking it as read replaces its current reading position.": "La lectura de «{0}» está en curso. Marcar este libro como leído sustituye su posición de lectura actual.",
+    "Hide tags": "Ocultar etiquetas",
+    "Author": "Autor",
+    "Open external link?": "¿Abrir enlace externo?",
+    "This link opens in your browser outside the app.":
+        "Este enlace se abre en su navegador fuera de la aplicación.",
+    "Open link": "Abrir enlace",
+    "Unable to open this link.": "No se puede abrir este enlace.",
+    "Mint": "Menta",
+    "Lavender": "Lavanda",
+    "Edit connection": "Editar conexión",
+    "Restore the default settings for this page?":
+        "¿Restaurar la configuración predeterminada para esta página?",
+    "Unable to reset settings. Try again.":
+        "No se puede restablecer la configuración. Inténtalo de nuevo.",
   },
   "it": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Per risolvere un conflitto è necessaria una sua scelta. Apra il libro interessato e selezioni «Progresso di lettura».",
@@ -4238,6 +4325,28 @@ const Map<String, Map<String, String>> messages = {
     "Portrait": "Verticale",
     "Landscape": "Orizzontale",
     "Fit content": "Adatta al contenuto",
+    "Resume - {0}": "Riprendi - {0}",
+    "Start - {0}": "Inizia - {0}",
+    "Entire series": "Tutta la serie",
+    "Unread and in-progress volumes": "Volumi non letti e in lettura",
+    "Remove finished books from this device":
+        "Rimuovi da questo dispositivo i libri terminati",
+    "For this series only, at least 24 hours after completion, on the next app launch or resume. Reading progress is kept.": "Solo per questa serie, almeno 24 ore dopo aver terminato la lettura, al successivo avvio o ritorno nell’app. I progressi di lettura vengono conservati.",
+    "“{0}” is in progress. Marking it as read replaces its current reading position.": "La lettura di «{0}» è in corso. Contrassegnare questo libro come letto sostituisce la posizione di lettura attuale.",
+    "Hide tags": "Nascondi i tag",
+    "Author": "Autore",
+    "Open external link?": "Aprire collegamento esterno?",
+    "This link opens in your browser outside the app.":
+        "Questo collegamento si apre nel tuo browser all'esterno dell'app.",
+    "Open link": "Apri collegamento",
+    "Unable to open this link.": "Impossibile aprire questo collegamento.",
+    "Mint": "Menta",
+    "Lavender": "Lavanda",
+    "Edit connection": "Modifica connessione",
+    "Restore the default settings for this page?":
+        "Ripristinare le impostazioni predefinite per questa pagina?",
+    "Unable to reset settings. Try again.":
+        "Impossibile ripristinare le impostazioni. Riprova.",
   },
   "pl": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "W przypadku konfliktu należy dokonać wyboru. Proszę otworzyć daną książkę i wybrać opcję „Postęp czytania”.",
@@ -5082,6 +5191,29 @@ const Map<String, Map<String, String>> messages = {
     "Portrait": "Pionowo",
     "Landscape": "Poziomo",
     "Fit content": "Dopasuj do treści",
+    "Resume - {0}": "Wznów - {0}",
+    "Start - {0}": "Rozpocznij - {0}",
+    "Entire series": "Cała seria",
+    "Unread and in-progress volumes":
+        "Tomy nieprzeczytane i w trakcie czytania",
+    "Remove finished books from this device":
+        "Usuwaj przeczytane książki z tego urządzenia",
+    "For this series only, at least 24 hours after completion, on the next app launch or resume. Reading progress is kept.": "Tylko dla tej serii, co najmniej 24 godziny po ukończeniu czytania, przy następnym uruchomieniu aplikacji lub powrocie do niej. Postęp czytania zostaje zachowany.",
+    "“{0}” is in progress. Marking it as read replaces its current reading position.": "Czytanie „{0}” jest w toku. Oznaczenie tej książki jako przeczytanej zastąpi bieżącą pozycję czytania.",
+    "Hide tags": "Ukryj tagi",
+    "Author": "Autor",
+    "Open external link?": "Otworzyć link zewnętrzny?",
+    "This link opens in your browser outside the app.":
+        "Ten link otwiera się w przeglądarce poza aplikacją.",
+    "Open link": "Otwórz link",
+    "Unable to open this link.": "Nie można otworzyć tego linku.",
+    "Mint": "Mięta",
+    "Lavender": "Lawenda",
+    "Edit connection": "Edytuj połączenie",
+    "Restore the default settings for this page?":
+        "Przywrócić ustawienia domyślne tej strony?",
+    "Unable to reset settings. Try again.":
+        "Nie można zresetować ustawień. Spróbuj ponownie.",
   },
   "nl": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Bij een conflict dient u een keuze te maken. Open het betreffende boek en selecteer ‘Leesvoortgang’.",
@@ -5939,6 +6071,28 @@ const Map<String, Map<String, String>> messages = {
     "Portrait": "Staand",
     "Landscape": "Liggend",
     "Fit content": "Aan inhoud aanpassen",
+    "Resume - {0}": "Hervatten - {0}",
+    "Start - {0}": "Beginnen - {0}",
+    "Entire series": "Hele serie",
+    "Unread and in-progress volumes": "Ongelezen en deels gelezen delen",
+    "Remove finished books from this device":
+        "Uitgelezen boeken van dit apparaat verwijderen",
+    "For this series only, at least 24 hours after completion, on the next app launch or resume. Reading progress is kept.": "Alleen voor deze serie, minstens 24 uur na het uitlezen, bij de volgende start van de app of terugkeer naar de app. De leesvoortgang blijft behouden.",
+    "“{0}” is in progress. Marking it as read replaces its current reading position.": "U bent bezig met het lezen van ‘{0}’. Als u dit boek als gelezen markeert, wordt de huidige leespositie vervangen.",
+    "Hide tags": "Tags verbergen",
+    "Author": "Auteur",
+    "Open external link?": "Externe link openen?",
+    "This link opens in your browser outside the app.":
+        "Deze link opent in uw browser buiten de app.",
+    "Open link": "Link openen",
+    "Unable to open this link.": "Kan deze link niet openen.",
+    "Mint": "Munt",
+    "Lavender": "Lavendel",
+    "Edit connection": "Verbinding bewerken",
+    "Restore the default settings for this page?":
+        "De standaardinstellingen voor deze pagina herstellen?",
+    "Unable to reset settings. Try again.":
+        "Kan instellingen niet resetten. Probeer het opnieuw.",
   },
   "pt": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Um conflito requer a sua escolha. Abra o livro afetado e selecione «Progresso de leitura».",
@@ -6788,6 +6942,28 @@ const Map<String, Map<String, String>> messages = {
     "Portrait": "Vertical",
     "Landscape": "Horizontal",
     "Fit content": "Ajustar ao conteúdo",
+    "Resume - {0}": "Retomar - {0}",
+    "Start - {0}": "Começar - {0}",
+    "Entire series": "Toda a série",
+    "Unread and in-progress volumes": "Volumes por ler e em leitura",
+    "Remove finished books from this device":
+        "Remover deste dispositivo os livros terminados",
+    "For this series only, at least 24 hours after completion, on the next app launch or resume. Reading progress is kept.": "Apenas para esta série, pelo menos 24 horas após terminar a leitura, no próximo arranque da aplicação ou regresso à mesma. O progresso de leitura é mantido.",
+    "“{0}” is in progress. Marking it as read replaces its current reading position.": "A leitura de «{0}» está em curso. Marcar este livro como lido substitui a posição de leitura atual.",
+    "Hide tags": "Ocultar etiquetas",
+    "Author": "Autor",
+    "Open external link?": "Abrir ligação externa?",
+    "This link opens in your browser outside the app.":
+        "Esta ligação abre no seu navegador, fora da aplicação.",
+    "Open link": "Abrir ligação",
+    "Unable to open this link.": "Não foi possível abrir esta ligação.",
+    "Mint": "Menta",
+    "Lavender": "Lavanda",
+    "Edit connection": "Editar ligação",
+    "Restore the default settings for this page?":
+        "Restaurar as predefinições desta página?",
+    "Unable to reset settings. Try again.":
+        "Não foi possível repor as definições. Tente novamente.",
   },
   "ro": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Un conflict necesită alegerea dvs. Deschideți cartea afectată și selectați „Progresul lecturii”.",
@@ -7635,6 +7811,28 @@ const Map<String, Map<String, String>> messages = {
     "Portrait": "Portret",
     "Landscape": "Peisaj",
     "Fit content": "Ajustare la conținut",
+    "Resume - {0}": "Continuă - {0}",
+    "Start - {0}": "Începe - {0}",
+    "Entire series": "Întreaga serie",
+    "Unread and in-progress volumes": "Volume necitite și în curs de lectură",
+    "Remove finished books from this device":
+        "Elimină cărțile citite de pe acest dispozitiv",
+    "For this series only, at least 24 hours after completion, on the next app launch or resume. Reading progress is kept.": "Doar pentru această serie, la cel puțin 24 de ore după terminarea lecturii, la următoarea pornire a aplicației sau revenire în aceasta. Progresul lecturii este păstrat.",
+    "“{0}” is in progress. Marking it as read replaces its current reading position.": "Lectura cărții „{0}” este în curs. Marcarea acestei cărți ca citită înlocuiește poziția curentă de lectură.",
+    "Hide tags": "Ascunde etichetele",
+    "Author": "Autor",
+    "Open external link?": "Deschideți linkul extern?",
+    "This link opens in your browser outside the app.":
+        "Acest link se deschide în browserul dvs. în afara aplicației.",
+    "Open link": "Deschideți linkul",
+    "Unable to open this link.": "Nu se poate deschide acest link.",
+    "Mint": "Mentă",
+    "Lavender": "Lavandă",
+    "Edit connection": "Editați conexiunea",
+    "Restore the default settings for this page?":
+        "Restabiliți setările implicite pentru această pagină?",
+    "Unable to reset settings. Try again.":
+        "Nu se pot reseta setările. Încercați din nou.",
   },
   "el": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Μια διένεξη απαιτεί την επιλογή σας. Ανοίξτε το σχετικό βιβλίο και επιλέξτε «Πρόοδος ανάγνωσης».",
@@ -8497,6 +8695,29 @@ const Map<String, Map<String, String>> messages = {
     "Portrait": "Κατακόρυφα",
     "Landscape": "Οριζόντια",
     "Fit content": "Προσαρμογή στο περιεχόμενο",
+    "Resume - {0}": "Συνέχιση - {0}",
+    "Start - {0}": "Έναρξη - {0}",
+    "Entire series": "Ολόκληρη η σειρά",
+    "Unread and in-progress volumes":
+        "Αδιάβαστοι και μερικώς διαβασμένοι τόμοι",
+    "Remove finished books from this device":
+        "Αφαίρεση διαβασμένων βιβλίων από αυτήν τη συσκευή",
+    "For this series only, at least 24 hours after completion, on the next app launch or resume. Reading progress is kept.": "Μόνο για αυτήν τη σειρά, τουλάχιστον 24 ώρες μετά την ολοκλήρωση της ανάγνωσης, κατά την επόμενη εκκίνηση ή επιστροφή στην εφαρμογή. Η πρόοδος ανάγνωσης διατηρείται.",
+    "“{0}” is in progress. Marking it as read replaces its current reading position.": "Η ανάγνωση του βιβλίου «{0}» είναι σε εξέλιξη. Η σήμανσή του ως διαβασμένου αντικαθιστά την τρέχουσα θέση ανάγνωσης.",
+    "Hide tags": "Απόκρυψη ετικετών",
+    "Author": "Συγγραφέας",
+    "Open external link?": "Άνοιγμα εξωτερικού συνδέσμου;",
+    "This link opens in your browser outside the app.": "Αυτός ο σύνδεσμος ανοίγει στο πρόγραμμα περιήγησής σας εκτός της εφαρμογής.",
+    "Open link": "Άνοιγμα συνδέσμου",
+    "Unable to open this link.":
+        "Δεν είναι δυνατό το άνοιγμα αυτού του συνδέσμου.",
+    "Mint": "Μέντα",
+    "Lavender": "Λεβάντα",
+    "Edit connection": "Επεξεργασία σύνδεσης",
+    "Restore the default settings for this page?":
+        "Επαναφορά των προεπιλεγμένων ρυθμίσεων για αυτήν τη σελίδα;",
+    "Unable to reset settings. Try again.":
+        "Δεν είναι δυνατή η επαναφορά των ρυθμίσεων. Προσπαθήστε ξανά.",
   },
   "hu": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Egy ütközés esetén döntést kell hoznia. Nyissa meg az érintett könyvet, és válassza az Olvasási előrehaladás menüpontot.",
@@ -9338,6 +9559,28 @@ const Map<String, Map<String, String>> messages = {
     "Portrait": "Álló",
     "Landscape": "Fekvő",
     "Fit content": "Tartalomhoz igazítás",
+    "Resume - {0}": "Folytatás - {0}",
+    "Start - {0}": "Kezdés - {0}",
+    "Entire series": "Teljes sorozat",
+    "Unread and in-progress volumes": "Olvasatlan és megkezdett kötetek",
+    "Remove finished books from this device":
+        "Elolvasott könyvek eltávolítása erről az eszközről",
+    "For this series only, at least 24 hours after completion, on the next app launch or resume. Reading progress is kept.": "Csak ennél a sorozatnál, legalább 24 órával az olvasás befejezése után, az alkalmazás következő indításakor vagy az alkalmazásba való visszatéréskor. Az olvasási előrehaladás megmarad.",
+    "“{0}” is in progress. Marking it as read replaces its current reading position.": "A(z) „{0}” olvasása folyamatban van. A könyv elolvasottként való megjelölése felülírja a jelenlegi olvasási pozíciót.",
+    "Hide tags": "Címkék elrejtése",
+    "Author": "Szerző",
+    "Open external link?": "Megnyitja a külső hivatkozást?",
+    "This link opens in your browser outside the app.":
+        "Ez a hivatkozás az alkalmazáson kívül nyílik meg a böngészőjében.",
+    "Open link": "Hivatkozás megnyitása",
+    "Unable to open this link.": "Ez a hivatkozás nem nyitható meg.",
+    "Mint": "Menta",
+    "Lavender": "Levendula",
+    "Edit connection": "Kapcsolat szerkesztése",
+    "Restore the default settings for this page?":
+        "Visszaállítja az oldal alapértelmezett beállításait?",
+    "Unable to reset settings. Try again.":
+        "A beállítások nem állíthatók vissza. Próbálja újra.",
   },
   "cs": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Konflikt vyžaduje vaše rozhodnutí. Otevřete příslušnou knihu a vyberte „Průběh čtení“.",
@@ -10173,5 +10416,27 @@ const Map<String, Map<String, String>> messages = {
     "Portrait": "Na výšku",
     "Landscape": "Na šířku",
     "Fit content": "Přizpůsobit obsahu",
+    "Resume - {0}": "Pokračovat - {0}",
+    "Start - {0}": "Začít - {0}",
+    "Entire series": "Celá série",
+    "Unread and in-progress volumes": "Nepřečtené a rozečtené svazky",
+    "Remove finished books from this device":
+        "Odebírat přečtené knihy z tohoto zařízení",
+    "For this series only, at least 24 hours after completion, on the next app launch or resume. Reading progress is kept.": "Pouze pro tuto sérii, nejdříve 24 hodin po dočtení, při příštím spuštění aplikace nebo návratu do ní. Průběh čtení zůstane zachován.",
+    "“{0}” is in progress. Marking it as read replaces its current reading position.": "Knihu „{0}“ máte rozečtenou. Označení této knihy jako přečtené nahradí aktuální pozici čtení.",
+    "Hide tags": "Skrýt štítky",
+    "Author": "Autor",
+    "Open external link?": "Otevřít externí odkaz?",
+    "This link opens in your browser outside the app.":
+        "Tento odkaz se otevře ve vašem prohlížeči mimo aplikaci.",
+    "Open link": "Otevřít odkaz",
+    "Unable to open this link.": "Tento odkaz nelze otevřít.",
+    "Mint": "Máta",
+    "Lavender": "Levandule",
+    "Edit connection": "Upravit připojení",
+    "Restore the default settings for this page?":
+        "Obnovit výchozí nastavení pro tuto stránku?",
+    "Unable to reset settings. Try again.":
+        "Nastavení nelze resetovat. Zkuste to znovu.",
   },
 };

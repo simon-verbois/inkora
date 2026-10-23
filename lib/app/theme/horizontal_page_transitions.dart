@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 
 import 'inkora_motion.dart';
 
-/// Full-size horizontal navigation on Android, including system edge gestures.
-/// InkoraPage owns eligibility; this observer only drives the accepted route.
+/// Horizontal navigation on Android, with stationary system edge gestures.
+/// InkoraPage owns eligibility; this observer commits only the accepted route.
 class HorizontalPageTransitionsBuilder extends PageTransitionsBuilder {
   const HorizontalPageTransitionsBuilder({this.reveal = false});
   final bool reveal;
@@ -48,17 +48,13 @@ class _HorizontalPageState extends State<_HorizontalPage>
     with WidgetsBindingObserver {
   late Animation<Offset> _position;
   late Animation<double> _opacity;
-  late Animation<Offset> _interactivePosition;
   bool _accepted = false;
   bool _interactive = false;
   void _bind() {
-    final tween = Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero);
-    _interactivePosition = tween.animate(widget.animation);
     _opacity = widget.animation.drive(CurveTween(curve: Curves.easeOutCubic));
     _position = Tween<Offset>(
       // Header destinations share a short horizontal fade, rather than moving
-      // a tablet-wide page across the entire viewport. Edge gestures retain
-      // their full-size, finger-driven horizontal preview below.
+      // a tablet-wide page across the entire viewport.
       begin: widget.reveal ? const Offset(.04, 0) : const Offset(1, 0),
       end: Offset.zero,
     ).animate(_opacity);
@@ -97,24 +93,21 @@ class _HorizontalPageState extends State<_HorizontalPage>
     }
     _accepted = true;
     setState(() => _interactive = true);
-    widget.route.handleStartBackGesture(progress: 1 - event.progress);
+    // Preserve Navigator gesture ownership at the fully open position. Finger
+    // updates never drive the animation; commit/cancel retain route safeguards.
+    widget.route.handleStartBackGesture(progress: 1);
     return true;
   }
 
   @override
-  void handleUpdateBackGestureProgress(PredictiveBackEvent event) {
-    if (_accepted) {
-      widget.route.handleUpdateBackGestureProgress(
-        progress: 1 - event.progress,
-      );
-    }
-  }
+  void handleUpdateBackGestureProgress(PredictiveBackEvent event) {}
 
   @override
   void handleCancelBackGesture() {
     if (!_accepted) return;
     _accepted = false;
     widget.route.handleCancelBackGesture();
+    setState(() => _interactive = false);
   }
 
   @override
@@ -138,7 +131,9 @@ class _HorizontalPageState extends State<_HorizontalPage>
           ? _opacity
           : kAlwaysCompleteAnimation,
       child: SlideTransition(
-        position: _interactive ? _interactivePosition : _position,
+        position: _interactive
+            ? const AlwaysStoppedAnimation(Offset.zero)
+            : _position,
         child: widget.child,
       ),
     );

@@ -1,5 +1,6 @@
 import '../../../app/widgets/ink_screen_header.dart';
 import 'settings_adaptive_layout.dart';
+import 'library_visibility_panel.dart';
 import '../../../app/l10n/app_strings.dart';
 
 import 'package:flutter/material.dart';
@@ -24,10 +25,8 @@ class LibraryDefaultsScreen extends ConsumerStatefulWidget {
     this.onLibrarySelected,
     this.onSaved,
     this.editorKey,
-    this.includeGlobal = false,
   });
   final bool embedded;
-  final bool includeGlobal;
   final String? libraryId;
   final ValueChanged<String>? onLibrarySelected;
   final VoidCallback? onSaved;
@@ -65,18 +64,12 @@ class _LibraryDefaultsScreenState extends ConsumerState<LibraryDefaultsScreen> {
     super.dispose();
   }
 
-  Widget _globalEntry(BuildContext context) => InkSettingsRow(
-    icon: InkIcons.bookOpen,
-    title: context.tr('Global defaults'),
-    subtitle: 'Profiles, direction and page layout',
-    onTap: () => context.push('/settings/reading-defaults'),
-  );
-
   @override
   Widget build(BuildContext context) {
     final account = ref.watch(
       sessionProvider.select((state) => state.session?.accountId),
     );
+    final visibility = ref.watch(libraryVisibilityProvider).asData?.value;
     final libraryId = widget.libraryId;
     final libraries = libraryId == null
         ? ref.watch(catalogueFeedStateProvider(_query))
@@ -101,12 +94,7 @@ class _LibraryDefaultsScreenState extends ConsumerState<LibraryDefaultsScreen> {
           ? null
           : InkScreenHeader(
               title: Text(
-                library?.asData?.value?.title ??
-                    context.tr(
-                      widget.includeGlobal
-                          ? 'Reading profiles'
-                          : 'Library defaults',
-                    ),
+                library?.asData?.value?.title ?? context.tr('Reading profiles'),
               ),
             ),
       body: SafeArea(
@@ -161,8 +149,14 @@ class _LibraryDefaultsScreenState extends ConsumerState<LibraryDefaultsScreen> {
                 stream: _defaults,
                 builder: (context, defaults) {
                   final items =
-                      libraries?.asData?.value.page.items ??
-                      const <CatalogueItem>[];
+                      (libraries?.asData?.value.page.items ??
+                              const <CatalogueItem>[])
+                          .where(
+                            (item) =>
+                                visibility == null ||
+                                visibility.contains(item.id),
+                          )
+                          .toList(growable: false);
                   final firstPublicationPending =
                       libraries?.asData?.value.page.lastUpdated == null &&
                       (refresh?.isLoading == true ||
@@ -187,12 +181,7 @@ class _LibraryDefaultsScreenState extends ConsumerState<LibraryDefaultsScreen> {
                         setState(() => _defaults = _store!.libraryDefaults());
                       },
                     );
-                    return widget.includeGlobal
-                        ? ListView(
-                            padding: const EdgeInsets.all(16),
-                            children: [_globalEntry(context), error],
-                          )
-                        : error;
+                    return error;
                   }
                   if (items.isEmpty &&
                       (firstPublicationPending ||
@@ -200,7 +189,7 @@ class _LibraryDefaultsScreenState extends ConsumerState<LibraryDefaultsScreen> {
                           libraries?.asData?.value.loading == true)) {
                     return const Center(child: CircularProgressIndicator());
                   }
-                  if (items.isEmpty && !widget.includeGlobal) {
+                  if (items.isEmpty) {
                     return InkEmptyState(
                       icon: InkIcons.books,
                       title: "No saved libraries",
@@ -216,7 +205,6 @@ class _LibraryDefaultsScreenState extends ConsumerState<LibraryDefaultsScreen> {
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            if (widget.includeGlobal) _globalEntry(context),
                             const Padding(
                               padding: EdgeInsets.only(bottom: 16),
                               child: LText(

@@ -26,6 +26,8 @@ import 'appearance_picker.dart';
 import 'library_defaults_screen.dart';
 import 'image_enhancement_control.dart';
 import 'settings_adaptive_layout.dart';
+import 'settings_reset_button.dart';
+import '../../../core/images/image_enhancement.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({
@@ -116,7 +118,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       );
     }
     if (section == 'reading') {
-      return const LibraryDefaultsScreen(includeGlobal: true);
+      return const LibraryDefaultsScreen();
     }
     if (section == 'reading-defaults' || section == 'quality') {
       final account = ref.watch(
@@ -155,6 +157,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     upscalingControls: section == 'quality'
                         ? const ImageEnhancementControl()
                         : null,
+                    onResetRendering: section == 'quality'
+                        ? () async {
+                            await (await ref.read(uiPreferencesStoreProvider))
+                                .update(
+                                  (current) => current.copyWith(
+                                    imageEnhancement: ImageEnhancement.balanced,
+                                  ),
+                                );
+                          }
+                        : null,
                     onSaved: widget.onSaved,
                   ),
           ),
@@ -183,6 +195,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: LText(
                   'Saved appearance unavailable. Default settings are active.',
                 ),
+              ),
+            if (section == 'appearance' || section == 'accessibility')
+              SettingsResetButton(
+                enabled: !_saving && data.hasValue,
+                onReset: () async {
+                  const defaults = UiPreferences();
+                  await (await ref.read(uiPreferencesStoreProvider)).update(
+                    (current) => section == 'appearance'
+                        ? current.copyWith(
+                            appearance: defaults.appearance,
+                            systemLightTheme: defaults.systemLightTheme,
+                            systemDarkTheme: defaults.systemDarkTheme,
+                            homePortraitColumns: defaults.homePortraitColumns,
+                            homeLandscapeColumns: defaults.homeLandscapeColumns,
+                            hideTags: defaults.hideTags,
+                            floatingNavigation: defaults.floatingNavigation,
+                          )
+                        : current.copyWith(
+                            textScale: defaults.textScale,
+                            reduceMotion: defaults.reduceMotion,
+                          ),
+                  );
+                },
               ),
             if (section == 'appearance') ...[
               const SizedBox(height: 12),
@@ -248,6 +283,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             ),
                     ),
                     const SizedBox(height: 16),
+                    SwitchListTile.adaptive(
+                      key: const Key('hide-tags'),
+                      contentPadding: EdgeInsets.zero,
+                      title: const LText('Hide tags'),
+                      value: preferences.hideTags,
+                      onChanged: _saving || !data.hasValue
+                          ? null
+                          : (value) => _save(
+                              (current) => current.copyWith(hideTags: value),
+                            ),
+                    ),
                     const LText(
                       'Reader backgrounds are configured separately in Reading.',
                     ),

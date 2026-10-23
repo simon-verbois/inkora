@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inkora/features/library/presentation/catalogue_grid.dart';
 import 'package:inkora/features/library/presentation/volume_browser.dart';
+import 'package:inkora/features/library/presentation/volume_actions.dart';
 import 'package:inkora/features/library/presentation/volume_list_tile.dart';
 import 'package:inkora/features/library/application/cover_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,6 +21,7 @@ import 'package:inkora/offline/application/background_transfer.dart';
 import 'package:inkora/offline/application/offline_coordinator.dart';
 import 'package:inkora/offline/data/download_scheduler.dart';
 import 'package:inkora/offline/data/download_store.dart';
+import 'package:inkora/offline/data/download_retention_store.dart';
 import 'package:inkora/offline/data/progress_store.dart';
 import 'package:inkora/offline/data/progress_sync.dart';
 import 'package:inkora/offline/domain/progress.dart';
@@ -52,7 +54,9 @@ void main() {
   late AppDatabase database;
   late OfflineCoordinator service;
   late ProviderContainer container;
+  final openBooks = <String>{};
   setUp(() async {
+    openBooks.clear();
     root = await Directory.systemTemp.createTemp('inkora-offline-ui-');
     database = AppDatabase(NativeDatabase.memory());
     await database.customSelect('SELECT 1').get();
@@ -87,6 +91,7 @@ void main() {
       ),
       BackgroundTransfer(),
       () => true,
+      bookInUse: openBooks.contains,
     );
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
@@ -129,6 +134,76 @@ void main() {
     });
     await settle(tester);
   }
+
+  testWidgets('series confirmation cannot enqueue into a different account', (
+    tester,
+  ) async {
+    late WidgetRef captured;
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: Consumer(
+          builder: (_, ref, _) {
+            captured = ref;
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
+    await tester.runAsync(() async {
+      await expectLater(
+        queueVolumeDownloads(captured, [
+          'reader-book',
+        ], accountId: 'previous-account'),
+        throwsStateError,
+      );
+      expect(await service.store.jobs(), isEmpty);
+    });
+  });
+
+  testWidgets(
+    'retention defers an open book at launch and removes it on a later resume without changing progress',
+    (tester) async {
+      final manifest = readerManifest();
+      final retention = DownloadRetentionStore(database, manifest.accountId);
+      late String id;
+      await tester.runAsync(() async {
+        id = await service.store.enqueue(manifest);
+        await service.store.state(id, DownloadState.complete);
+        await service.sync.store.observe(
+          manifest.bookId,
+          ProgressSnapshot(revision: manifest.revision, completed: true),
+        );
+        await retention.readingStateChanged(
+          manifest.bookId,
+          now: DateTime.now().subtract(const Duration(days: 2)),
+        );
+        await retention.configure('series', true);
+        openBooks.add(manifest.bookId);
+        await service.start();
+        expect(await service.store.stateOf(id), DownloadState.complete);
+      });
+      openBooks.clear();
+      await tester.runAsync(() async {
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+      });
+      await settle(tester);
+      await tester.runAsync(() async {
+        expect(await service.store.stateOf(id), DownloadState.cancelled);
+        final head = await database
+            .customSelect('SELECT baseline FROM progress_heads')
+            .getSingle();
+        expect(
+          ProgressSnapshot.decode(head.read<String>('baseline')).completed,
+          isTrue,
+        );
+      });
+    },
+  );
 
   testWidgets(
     'background engine startup preserves native ownership until resume',

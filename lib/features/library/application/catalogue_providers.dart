@@ -38,6 +38,7 @@ final catalogueFeedStateProvider = StreamProvider.autoDispose
 
 final catalogueRepositoryProvider =
     FutureProvider.autoDispose<CatalogueRepository?>((ref) async {
+      final transport = ref.watch(activeConnectionTransportProvider);
       final account = ref.watch(
         sessionProvider.select(
           (state) => state.phase == SessionPhase.ready
@@ -55,7 +56,7 @@ final catalogueRepositoryProvider =
       final controller = ref.read(sessionProvider.notifier);
       final database = await ref.watch(databaseProvider);
       if (!alive) return null;
-      final client = controller.client;
+      final client = transport;
       if (client == null) return null;
       repository = CatalogueRepository(
         CatalogueStore(database, account),
@@ -106,6 +107,7 @@ final catalogueItemProvider = StreamProvider.autoDispose
 final resumeRepositoryProvider = FutureProvider.autoDispose<ResumeRepository?>((
   ref,
 ) async {
+  final transport = ref.watch(activeConnectionTransportProvider);
   var alive = true;
   ResumeRepository? repository;
   ref.onDispose(() {
@@ -115,7 +117,7 @@ final resumeRepositoryProvider = FutureProvider.autoDispose<ResumeRepository?>((
   final controller = ref.read(sessionProvider.notifier);
   final catalogue = await ref.watch(catalogueRepositoryProvider.future);
   if (!alive || catalogue == null) return null;
-  final client = controller.client;
+  final client = transport;
   if (client == null) return null;
   repository = ResumeRepository(
     catalogue.store,

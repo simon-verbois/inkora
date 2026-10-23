@@ -12,6 +12,7 @@ import '../../../app/theme/inkora_theme.dart';
 import '../../connection/application/session_controller.dart';
 import '../../connection/domain/session.dart';
 import 'library_visibility_panel.dart';
+import '../../connection/presentation/connection_screen.dart';
 
 class ServersScreen extends ConsumerStatefulWidget {
   const ServersScreen({super.key});
@@ -75,47 +76,11 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              if (state.session != null) ...[
-                InkPanel(
-                  title: 'Active account',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(InkIcons.checkCircle),
-                        title: Text(
-                          state.session!.endpoint.uri.host,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        subtitle: Text(state.session!.user.email),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 56, bottom: 12),
-                        child: SelectableText(
-                          state.session!.endpoint.uri.toString(),
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ),
-                      Align(
-                        alignment: AlignmentDirectional.centerEnd,
-                        child: OutlinedButton.icon(
-                          icon: const Icon(InkIcons.signOut),
-                          label: const LText('Sign out'),
-                          onPressed: _busy ? null : _signOut,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                LibraryVisibilityPanel(key: ValueKey(state.session!.accountId)),
-                const SizedBox(height: 24),
-              ],
               LText(
                 'Saved servers',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
+              const SizedBox(height: InkSpace.md),
               ...saved.when(
                 loading: () => [const LinearProgressIndicator()],
                 error: (_, _) => [
@@ -144,12 +109,55 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                           .withValues(alpha: .25),
                       selected: session.accountId == state.session?.accountId,
                       onTap: _busy ? null : () => _select(session),
-                      trailing: IconButton(
-                        tooltip: context.tr('Remove server {0}', [
-                          session.endpoint.uri.host,
-                        ]),
-                        icon: const Icon(InkIcons.trash),
-                        onPressed: _busy ? null : () => _remove(session),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            key: ValueKey('edit-server-${session.accountId}'),
+                            tooltip: context.tr('Edit connection'),
+                            icon: const Icon(InkIcons.gearSix),
+                            onPressed: _busy
+                                ? null
+                                : () => showInkPopup<void>(
+                                    context: context,
+                                    child: SizedBox(
+                                      height:
+                                          MediaQuery.sizeOf(context).height *
+                                          .72,
+                                      child: ConnectionScreen(
+                                        addServer: true,
+                                        editing: session,
+                                        modal: true,
+                                      ),
+                                    ),
+                                  ),
+                          ),
+                          IconButton(
+                            key: ValueKey(
+                              'server-libraries-${session.accountId}',
+                            ),
+                            tooltip: context.tr('Libraries to display'),
+                            icon: const Icon(InkIcons.books),
+                            onPressed: _busy
+                                ? null
+                                : () => showInkPopup<void>(
+                                    context: context,
+                                    title: 'Libraries to display',
+                                    scrollable: true,
+                                    child: LibraryVisibilityPanel(
+                                      accountId: session.accountId,
+                                      expanded: true,
+                                    ),
+                                  ),
+                          ),
+                          IconButton(
+                            tooltip: context.tr('Remove server {0}', [
+                              session.endpoint.uri.host,
+                            ]),
+                            icon: const Icon(InkIcons.trash),
+                            onPressed: _busy ? null : () => _remove(session),
+                          ),
+                        ],
                       ),
                     ),
                 ],
@@ -171,18 +179,5 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> _signOut() async {
-    final confirmed = await confirmInk(
-      context,
-      title: 'Sign out of Inkora?',
-      message:
-          'Your downloaded books and saved preferences remain on this device.',
-      confirmLabel: 'Sign out',
-    );
-    if (confirmed && mounted) {
-      await ref.read(sessionProvider.notifier).logout();
-    }
   }
 }

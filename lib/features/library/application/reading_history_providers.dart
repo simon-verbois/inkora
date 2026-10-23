@@ -11,6 +11,7 @@ import 'catalogue_providers.dart';
 /// server pages are refreshed on open, never on rebuilds.
 final readingHistoryRepositoryProvider =
     FutureProvider.autoDispose<ReadingHistoryRepository?>((ref) async {
+      final transport = ref.watch(activeConnectionTransportProvider);
       var alive = true;
       ReadingHistoryRepository? repository;
       ref.onDispose(() {
@@ -20,7 +21,7 @@ final readingHistoryRepositoryProvider =
       final controller = ref.read(sessionProvider.notifier);
       final catalogue = await ref.watch(catalogueRepositoryProvider.future);
       if (!alive || catalogue == null) return null;
-      final client = controller.client;
+      final client = transport;
       repository = ReadingHistoryRepository(
         catalogue.store,
         fetch: client == null

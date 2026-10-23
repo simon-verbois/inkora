@@ -1,3 +1,5 @@
+import '../../support/home_navigation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/router.dart';
@@ -71,7 +73,7 @@ void main() {
         );
         await tester.ensureVisible(find.byType(ResumeCarousel));
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('reading-history-action')));
+        await tapHomeAction(tester, 'history');
         await tester.pumpAndSettle();
         expect(find.byType(ReadingHistoryScreen), findsOneWidget);
         harness.container.read(routerProvider).pop();
@@ -89,7 +91,9 @@ void main() {
         expect(
           tester.getTopLeft(find.byType(ResumeCarousel)).dy,
           lessThan(
-            tester.getTopLeft(find.byKey(const Key('library-selector'))).dy,
+            tester
+                .getTopLeft(find.byKey(const Key('catalogue-pinned-tools')))
+                .dy,
           ),
         );
         final router = harness.container.read(routerProvider);

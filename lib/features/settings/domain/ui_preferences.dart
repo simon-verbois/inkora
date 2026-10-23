@@ -12,10 +12,12 @@ enum AppAppearance {
   pearl,
   rose,
   midnight,
-  plum;
+  plum,
+  mint,
+  lavender;
 
   bool get isLight => switch (this) {
-    light || sepia || pearl || rose => true,
+    light || sepia || pearl || rose || mint || lavender => true,
     _ => false,
   };
   bool get isDark => this != system && !isLight;
@@ -32,6 +34,7 @@ final class UiPreferences {
     this.homeLandscapeColumns = 6,
     this.textScale = 1,
     this.reduceMotion = false,
+    this.hideTags = true,
     this.floatingNavigation = true,
     this.locale,
     this.setupCompleted = false,
@@ -52,6 +55,7 @@ final class UiPreferences {
       width > height ? homeLandscapeColumns : homePortraitColumns;
   final double textScale;
   final bool reduceMotion, setupCompleted;
+  final bool hideTags;
   final bool floatingNavigation;
   final String? locale;
   final int setupStep;
@@ -66,6 +70,7 @@ final class UiPreferences {
     int? homeLandscapeColumns,
     double? textScale,
     bool? reduceMotion,
+    bool? hideTags,
     bool? floatingNavigation,
     String? locale,
     bool systemLocale = false,
@@ -81,6 +86,7 @@ final class UiPreferences {
     homeLandscapeColumns: homeLandscapeColumns ?? this.homeLandscapeColumns,
     textScale: textScale ?? this.textScale,
     reduceMotion: reduceMotion ?? this.reduceMotion,
+    hideTags: hideTags ?? this.hideTags,
     floatingNavigation: floatingNavigation ?? this.floatingNavigation,
     locale: systemLocale ? null : locale ?? this.locale,
     setupCompleted: setupCompleted ?? this.setupCompleted,
@@ -97,6 +103,7 @@ final class UiPreferences {
     'homeLandscapeColumns': homeLandscapeColumns,
     'textScale': textScale,
     'reduceMotion': reduceMotion,
+    'hideTags': hideTags,
     'floatingNavigation': floatingNavigation,
     'locale': locale,
     'setupCompleted': setupCompleted,
@@ -172,6 +179,7 @@ final class UiPreferences {
           ? scale.toDouble()
           : 1,
       reduceMotion: json['reduceMotion'] == true,
+      hideTags: json['hideTags'] != false,
       floatingNavigation: json['floatingNavigation'] != false,
       imageEnhancement: ImageEnhancement.parse(json['imageEnhancement']),
       locale: json['locale'] is String ? json['locale'] as String : null,

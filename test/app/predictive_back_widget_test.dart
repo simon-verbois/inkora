@@ -93,7 +93,7 @@ void main() {
             await tester.pump();
             final slidingRect = tester.getRect(find.byType(ReaderScreen));
             expect(slidingRect.size, originalRect.size);
-            expect(slidingRect.left, greaterThan(originalRect.left));
+            expect(slidingRect, originalRect);
             await _backEvent(tester, 'commitBackGesture', edge);
             await tester.pumpAndSettle();
             expect(find.byType(ReaderScreen), findsNothing);

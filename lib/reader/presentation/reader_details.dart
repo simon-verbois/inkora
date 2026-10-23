@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,33 +12,58 @@ import '../../features/library/domain/catalogue.dart';
 import '../../features/library/presentation/book_cover.dart';
 import '../../features/library/presentation/catalogue_detail_widgets.dart';
 import '../domain/reader_manifest.dart';
+import 'reader_system_ui.dart';
 
-/// Comic readers return to their existing covered series route when possible.
-/// Ebooks expose book facts in place: legacy book routes redirect to reading.
-Future<void> openReaderDetails(
+/// Open parent facts above the retained reader; Back restores its live position.
+Future<void> openReaderSeries(
   BuildContext context,
-  ReaderManifest manifest,
-) async {
-  if (!manifest.isDocument && manifest.seriesId?.isNotEmpty == true) {
-    final route = GoRouterState.of(context);
-    if (route.name == 'series-reader' &&
-        route.pathParameters['id'] == manifest.seriesId) {
-      context.pop();
-    } else {
-      // A shell route pushed above a retained root reader duplicates the shell
-      // when goBranch restores its history. Leave the reader before returning
-      // to the shell; its existing origin remains underneath for Back.
-      context.pushReplacementNamed(
-        'catalogue-detail',
-        pathParameters: {'kind': 'series', 'id': manifest.seriesId!},
-      );
-    }
-    return;
-  }
-  await showInkSheet<void>(
-    context: context,
-    child: ReaderBookDetails(manifest: manifest),
+  ReaderManifest manifest, {
+  bool immersiveOnReturn = false,
+}) async {
+  if (manifest.seriesId?.isNotEmpty != true) return;
+  final dismissed = context.pushNamed<void>(
+    'reader-parent',
+    pathParameters: {'id': manifest.seriesId!},
+    queryParameters: {'book': manifest.bookId},
   );
+  unawaited(ReaderSystemUi.setImmersive(false));
+  await dismissed;
+  if (context.mounted && ModalRoute.of(context)?.isCurrent == true) {
+    unawaited(ReaderSystemUi.setImmersive(immersiveOnReturn));
+  }
+}
+
+/// The information button always shows the current book without leaving it.
+Future<void> openReaderDetails(BuildContext context, ReaderManifest manifest) =>
+    showInkSheet<void>(
+      context: context,
+      child: ReaderBookDetails(manifest: manifest),
+    );
+
+class ReaderSeriesButton extends StatelessWidget {
+  const ReaderSeriesButton({
+    super.key,
+    required this.manifest,
+    this.onPressed,
+    this.immersiveOnReturn,
+  });
+  final ReaderManifest manifest;
+  final VoidCallback? onPressed;
+  final bool? immersiveOnReturn;
+  @override
+  Widget build(BuildContext context) => manifest.seriesId?.isNotEmpty != true
+      ? const SizedBox.shrink()
+      : TextButton(
+          key: const Key('reader-series'),
+          onPressed:
+              onPressed ??
+              () => openReaderSeries(
+                context,
+                manifest,
+                immersiveOnReturn: immersiveOnReturn ?? manifest.isDocument,
+              ),
+          child: LText(manifest.isDocument ? 'Author' : 'Series'),
+        );
 }
 
 class ReaderDetailsButton extends StatelessWidget {
@@ -50,12 +77,7 @@ class ReaderDetailsButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => IconButton(
     key: const Key('reader-details'),
-    // One details glyph for both destinations; the tooltip names the target.
-    tooltip: context.tr(
-      !manifest.isDocument && manifest.seriesId?.isNotEmpty == true
-          ? 'Series details'
-          : 'Book details',
-    ),
+    tooltip: context.tr('Book details'),
     icon: const Icon(InkIcons.info),
     onPressed: onPressed ?? () => openReaderDetails(context, manifest),
   );

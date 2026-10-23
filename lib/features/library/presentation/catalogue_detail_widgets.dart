@@ -1,7 +1,9 @@
 import '../../../app/l10n/app_strings.dart';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../settings/application/ui_preferences_provider.dart';
 
 import '../../../app/icons/inkora_icons.dart';
 import '../../../app/theme/inkora_theme.dart';
@@ -9,6 +11,7 @@ import '../../../app/widgets/inkora_widgets.dart';
 import '../domain/catalogue.dart';
 import '../domain/catalogue_metadata.dart';
 import 'catalogue_presentation.dart';
+import 'catalogue_link_button.dart';
 
 /// Lighter hero of library, collection and reading-list pages: kind icon,
 /// title, member count and synopsis, matching the series hero layout.
@@ -156,7 +159,7 @@ class _CatalogueSummaryState extends State<CatalogueSummary> {
   );
 }
 
-class CatalogueMetadataSection extends StatelessWidget {
+class CatalogueMetadataSection extends ConsumerWidget {
   const CatalogueMetadataSection({
     super.key,
     required this.metadata,
@@ -165,7 +168,7 @@ class CatalogueMetadataSection extends StatelessWidget {
   final CatalogueMetadata metadata;
   final bool complete;
 
-  bool get _hasDetails =>
+  bool _hasDetails(bool hideTags) =>
       metadata.authors.isNotEmpty ||
       metadata.publisher.isNotEmpty ||
       metadata.language.isNotEmpty ||
@@ -173,11 +176,16 @@ class CatalogueMetadataSection extends StatelessWidget {
       metadata.releaseDate.isNotEmpty ||
       metadata.isbn.isNotEmpty ||
       metadata.genres.isNotEmpty ||
-      metadata.tags.isNotEmpty;
+      (!hideTags && metadata.tags.isNotEmpty);
 
   @override
-  Widget build(BuildContext context) {
-    if (!_hasDetails) return const SizedBox.shrink();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hideTags = ref.watch(
+      uiPreferencesProvider.select(
+        (value) => value.asData?.value.hideTags ?? true,
+      ),
+    );
+    if (!_hasDetails(hideTags)) return const SizedBox.shrink();
     final roles = <String, List<String>>{};
     for (final author in metadata.authors) {
       roles.putIfAbsent(author.role, () => []).add(author.name);
@@ -192,7 +200,7 @@ class CatalogueMetadataSection extends StatelessWidget {
                 ? metadata.genres
                 : metadata.genres.take(6).toList(),
           ),
-        if (metadata.tags.isNotEmpty)
+        if (!hideTags && metadata.tags.isNotEmpty)
           _MetadataRow(
             label: context.tr("Tags"),
             values: complete ? metadata.tags : metadata.tags.take(6).toList(),
@@ -223,23 +231,7 @@ class CatalogueMetadataSection extends StatelessWidget {
           if (metadata.links.isNotEmpty) ...[
             const SizedBox(height: 8),
             LText('Links', style: Theme.of(context).textTheme.titleSmall),
-            for (final link in metadata.links)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  link.label.isEmpty ? context.tr('Reference') : link.label,
-                ),
-                trailing: IconButton(
-                  tooltip: context.tr("Copy link"),
-                  icon: const Icon(InkIcons.copy),
-                  onPressed: () async {
-                    await Clipboard.setData(ClipboardData(text: link.url));
-                    if (context.mounted) {
-                      notifyInk(context, 'Link copied');
-                    }
-                  },
-                ),
-              ),
+            CatalogueLinks(links: metadata.links),
           ],
         ] else ...[
           if (metadata.authors.isNotEmpty)
@@ -270,7 +262,7 @@ class CatalogueMetadataSection extends StatelessWidget {
             ),
           TextButton.icon(
             key: const Key('detail-metadata'),
-            onPressed: () => showInkSheet<void>(
+            onPressed: () => showInkPopup<void>(
               context: context,
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -292,7 +284,8 @@ class CatalogueMetadataSection extends StatelessWidget {
             ),
             icon: const Icon(InkIcons.info, size: 18),
             label: LText(
-              metadata.genres.length > 6 || metadata.tags.length > 6
+              !hideTags &&
+                      (metadata.genres.length > 6 || metadata.tags.length > 6)
                   ? 'All tags and publication details'
                   : 'Publication details',
             ),

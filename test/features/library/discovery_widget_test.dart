@@ -38,7 +38,7 @@ void main() {
               .path,
           '/',
         );
-        expect(find.byKey(const Key('library-selector')), findsOneWidget);
+        expect(find.byKey(const Key('catalogue-pinned-tools')), findsOneWidget);
         expect(find.byKey(const Key('catalogue-grid')), findsOneWidget);
         expect(find.byKey(const Key('home-discovery')), findsNothing);
         expect(harness.container.exists(discoverySectionsProvider), isFalse);

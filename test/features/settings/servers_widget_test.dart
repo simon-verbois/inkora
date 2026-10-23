@@ -1,3 +1,10 @@
+import 'package:inkora/features/connection/domain/session.dart';
+import 'package:inkora/core/network/server_endpoint.dart';
+import 'package:inkora/features/library/data/catalogue_store.dart';
+import 'package:inkora/features/library/data/library_visibility_store.dart';
+
+import '../../support/catalogue_fakes.dart';
+
 import 'package:inkora/features/library/presentation/volume_list_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -111,6 +118,127 @@ void main() {
       '/',
     );
     expect(tester.takeException(), isNull);
+    await harness.close(tester);
+  });
+
+  testWidgets(
+    'server edit popup cancels without writes and saves verified replacement credentials',
+    (tester) async {
+      final harness = await UiHarness.create(tester);
+      addTearDown(() => harness.close(tester));
+      await harness.mount(tester);
+      final router = harness.container.read(routerProvider);
+      router.go('/settings/servers');
+      await tester.pumpAndSettle();
+      final original = harness.container.read(sessionProvider).session!;
+      await tester.tap(find.byTooltip('Edit connection'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ConnectionScreen), findsOneWidget);
+      expect(
+        tester
+            .widget<EditableText>(
+              find.descendant(
+                of: find.byKey(const Key('secret')),
+                matching: find.byType(EditableText),
+              ),
+            )
+            .obscureText,
+        isTrue,
+      );
+      await tester.enterText(
+        find.byKey(const Key('secret')),
+        'replacement-fixture',
+      );
+      await tester.ensureVisible(find.text('Cancel'));
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(
+        harness.container.read(sessionProvider).session!.credentials.secret,
+        original.credentials.secret,
+      );
+      await tester.tap(find.byTooltip('Edit connection'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('secret')),
+        'replacement-fixture',
+      );
+      await tester.ensureVisible(find.text('Save server'));
+      await tester.tap(find.text('Save server'));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(ConnectionScreen), findsNothing);
+      expect(find.byType(ServersScreen), findsOneWidget);
+      expect(
+        harness.container.read(sessionProvider).session!.credentials.secret,
+        'replacement-fixture',
+      );
+      await harness.close(tester);
+    },
+  );
+
+  testWidgets('inactive server library popup edits only its own account', (
+    tester,
+  ) async {
+    final harness = await UiHarness.create(tester);
+    addTearDown(() => harness.close(tester));
+    await harness.mount(tester);
+    final active = harness.container.read(sessionProvider).session!;
+    final second = SavedSession(
+      endpoint: ServerEndpoint('https://second.test'),
+      user: active.user,
+      credentials: active.credentials,
+    );
+    await tester.runAsync(
+      () => harness.container.read(sessionStoreProvider).remember(second),
+    );
+    harness.container.invalidate(savedSessionsProvider);
+    final other = CatalogueStore(harness.database, second.accountId);
+    await tester.runAsync(() async {
+      await other.stage('other', [
+        entry(
+          'other-library',
+          kind: CatalogueKind.library,
+          title: 'Other account shelf',
+        ),
+      ]);
+      await other.publish('other', DateTime.now(), () => true);
+    });
+    harness.container.read(routerProvider).go('/settings/servers');
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(ValueKey('server-libraries-${second.accountId}')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Other account shelf'), findsOneWidget);
+    expect(find.text('Manga shelf'), findsNothing);
+    await tester.tap(
+      find.byKey(const ValueKey('visible-library-other-library')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      harness.container.read(sessionProvider).session!.accountId,
+      active.accountId,
+    );
+    expect(
+      await tester.runAsync(
+        () => LibraryVisibilityStore(
+          harness.database,
+          active.accountId,
+        ).payload(),
+      ),
+      isNull,
+    );
+    expect(
+      await tester.runAsync(
+        () => LibraryVisibilityStore(
+          harness.database,
+          second.accountId,
+        ).payload(),
+      ),
+      '[]',
+    );
     await harness.close(tester);
   });
 

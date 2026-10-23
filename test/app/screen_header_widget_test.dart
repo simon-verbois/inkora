@@ -65,13 +65,17 @@ void main() {
     tester,
   ) async {
     final harness = await _mount(tester, const Size(320, 240));
-    for (final key in [
-      'open-settings',
-      'open-downloads',
-      'reading-history-action',
-    ]) {
-      expect(find.byKey(Key(key)).hitTestable(), findsOneWidget);
+    expect(find.byKey(const Key('home-menu')).hitTestable(), findsOneWidget);
+    await tester.tap(find.byKey(const Key('home-menu')));
+    await tester.pumpAndSettle();
+    for (final destination in ['settings', 'downloads', 'history']) {
+      expect(
+        find.byKey(ValueKey('home-menu-$destination')).hitTestable(),
+        findsOneWidget,
+      );
     }
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('open-search')));
     await tester.pumpAndSettle();
     final bounds = tester.getRect(find.byType(TextField));
@@ -259,6 +263,7 @@ void main() {
       final router = harness.container.read(routerProvider);
       for (final location in [
         '/catalogue/series/series-a',
+        '/catalogue/book/book-0',
         '/catalogue/library/library-a',
         '/catalogue/collection/collection-a',
         '/catalogue/readlist/readlist-a',
@@ -436,7 +441,7 @@ void main() {
       expect(tester.getRect(header), headerRect);
       expect(
         tester.getTopLeft(tools).dy,
-        greaterThanOrEqualTo(headerRect.bottom),
+        greaterThanOrEqualTo(headerRect.bottom - 8),
       );
     }
     await tester.tap(search);

@@ -10,6 +10,49 @@ remain in progress.
 
 ## [Unreleased]
 
+## [2026.43.6] - 2026-10-23
+
+- Refresh the twelve-language presentation website and README with thirteen current phone/tablet demonstration captures and expanded feature coverage.
+- Match sort menus to the library selector, opening below the button with a checked choice and no full-row selected background.
+
+- Fit the lateral Home toolbar backgrounds to 36 dp with no outer vertical padding and align them at the header edge, more clearly mute completed covers, hide the current-volume jump in ebook author pages and float selection controls over unchanged detail panes.
+- Add spacing below the saved-server heading.
+
+- Fade Home toolbar attachments into a continuous header outline, inset their side groups, add adaptive side margins and preserve scroll when quick filters change.
+- Add Mint and Lavender light themes, page-specific confirmed resets and a full-width Settings search field that covers Back while active.
+- Use one image scaling/filter choice for all formats and place upscaling controls directly in Rendering.
+- Group saved-server editing, library selection and removal on each server row; show only enabled libraries in reading-profile overrides.
+
+- Give pinned Home tools three rounded extensions joined to the header, keep their background hidden before attachment and let Home covers use the full available width.
+
+- Arrange metadata website buttons in rows of three, remove the tablet detail overscroll indicator and align reader page/progress labels and action buttons.
+
+- Open metadata websites from their names with confirmation before leaving the app.
+- Replace the large selection panel with a compact action row, add reader sheet drag handles and position More menus above their buttons.
+- Fade truncated synopsis text progressively across its last three lines, soften covers behind the Home header and attach its evenly padded tools directly below it.
+
+- Remove the contrasting ebook metadata panel so synopsis and publication facts share the cover background.
+
+- Keep the current reader beneath Series and Author details so Back resumes the same position.
+- Enlarge ebook covers on wide detail pages, move titles and reading actions above the right-hand description, and slightly widen series information panes.
+- Bottom-align and lower wide Home tools closer to covers, and remove the reader slider/action separator.
+
+- Focus ebook information in the left series pane on the first tap; read the focused book on the next tap or through its orange action.
+
+- Give ebook details the same softened cover background as series, remove format pills, and label ebook reader catalogue shortcuts Author.
+- Reduce the gap above Home covers on landscape tablets and bring reader action labels closer to their icons.
+
+- Keep mobile Home filters on one row with library, sort and view submenus; lower wide side controls and let covers scroll behind the header.
+- Add individual ebook detail pages with explicit reading and download actions, and hide metadata tags by default with an Appearance switch.
+- Apply shared translucency to reader controls; show current-book details in an overlay and provide a separate Series button.
+- Align series quick filters to the left, remove the detail header scroll rule and tighten the reading-status dialog.
+
+- Simplify the portrait Home library selector and move header actions into a menu when space is limited; align portrait series and mobile download quick filters to the left.
+- Show more of series descriptions in portrait and label reading buttons with Start or Resume followed by the book title.
+- Add whole-series or unread/in-progress download choices and an optional per-series rule to remove finished local copies after at least 24 hours, at a later launch or foreground return, while retaining reading progress and open books.
+- Use centered choice dialogs outside the reader and add a direct Mark read action to volume rows, with confirmation for books already in progress.
+- Keep Android pages stationary during predictive Back gestures while preserving cancellation and navigation ownership.
+
 ## [2026.43.5] - 2026-10-21
 
 - Add optional Fit content for Manga and Comics: detect embedded white margins progressively, fit the drawing area in single/double-page layouts, and preserve original files and reading positions.

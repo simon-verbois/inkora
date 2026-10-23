@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/l10n/app_strings.dart';
 import '../../../app/icons/inkora_icons.dart';
 import '../application/ui_preferences_provider.dart';
+import 'settings_reset_button.dart';
 
 class LanguageSettings extends ConsumerWidget {
   const LanguageSettings({super.key, this.showTitle = true});
@@ -20,6 +21,12 @@ class LanguageSettings extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        SettingsResetButton(
+          onReset: () async {
+            await (await ref.read(uiPreferencesStoreProvider))
+                .update((current) => current.copyWith(systemLocale: true));
+          },
+        ),
         if (showTitle)
           LText('Language', style: Theme.of(context).textTheme.screenTitle),
         const LText(

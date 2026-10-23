@@ -39,6 +39,131 @@ void main() {
   });
   tearDown(() => container.dispose());
 
+  test(
+    'editing active credentials verifies then replaces only the active client',
+    () async {
+      store.saved = savedSession;
+      await flush();
+      final original = controller().client;
+      final transports = <Object?>[];
+      final subscription = container.listen(
+        activeConnectionTransportProvider,
+        (_, next) => transports.add(next),
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+      await controller().updateServer(
+        savedSession,
+        savedSession.endpoint.uri.toString(),
+        Credentials.apiKey('replacement-fixture'),
+      );
+      expect(
+        container.read(sessionProvider).session!.credentials.secret,
+        'replacement-fixture',
+      );
+      expect(controller().client, isNot(same(original)));
+      expect(
+        container.read(activeConnectionTransportProvider),
+        same(controller().client),
+      );
+      expect(transports, hasLength(2));
+      expect(transports.last, same(controller().client));
+      expect((await store.savedSessions()), hasLength(1));
+      expect((await store.restore())!.accountId, savedSession.accountId);
+    },
+  );
+  test('editing an inactive server leaves the active client and identity unchanged', () async {
+    store.saved = savedSession;
+    await flush();
+    final second = SavedSession(
+      endpoint: ServerEndpoint('https://second.test'),
+      user: savedSession.user,
+      credentials: Credentials.apiKey('second-fixture'),
+    );
+    await store.remember(second);
+    final original = controller().client;
+    final transports = <Object?>[];
+    final subscription = container.listen(
+      activeConnectionTransportProvider,
+      (_, next) => transports.add(next),
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
+    await controller().updateServer(
+      second,
+      second.endpoint.uri.toString(),
+      Credentials.apiKey('replacement-fixture'),
+    );
+    expect(transports, hasLength(1));
+    expect(controller().client, same(original));
+    expect((await store.restore())!.accountId, savedSession.accountId);
+    expect(
+      (await store.savedSessions())
+          .singleWhere((s) => s.accountId == second.accountId)
+          .credentials
+          .secret,
+      'replacement-fixture',
+    );
+  });
+  test('failed credential verification preserves the active session and stored secret', () async {
+    store.saved = savedSession;
+    await flush();
+    final original = controller().client;
+    adapter = FixtureAdapter((options) => jsonResponse({}, status: 401));
+    await expectLater(
+      controller().updateServer(
+        savedSession,
+        savedSession.endpoint.uri.toString(),
+        Credentials.apiKey('rejected-fixture'),
+      ),
+      throwsA(isA<Exception>()),
+    );
+    expect(controller().client, same(original));
+    expect(container.read(sessionProvider).phase, SessionPhase.ready);
+    expect(
+      (await store.restore())!.credentials.secret,
+      savedSession.credentials.secret,
+    );
+  });
+  test(
+    'failed edit storage keeps the previous active connection usable',
+    () async {
+      store.saved = savedSession;
+      await flush();
+      final original = controller().client;
+      store.failSave = true;
+      await expectLater(
+        controller().updateServer(
+          savedSession,
+          savedSession.endpoint.uri.toString(),
+          Credentials.apiKey('replacement-fixture'),
+        ),
+        throwsStateError,
+      );
+      expect(controller().client, same(original));
+      expect(
+        container.read(sessionProvider).session!.credentials.secret,
+        savedSession.credentials.secret,
+      );
+    },
+  );
+  test(
+    'editing a URL changes account identity without moving saved reader data',
+    () async {
+      store.saved = savedSession;
+      await flush();
+      await controller().updateServer(
+        savedSession,
+        'https://moved.test',
+        Credentials.apiKey('replacement-fixture'),
+      );
+      final current = container.read(sessionProvider).session!;
+      expect(current.endpoint.uri.host, 'moved.test');
+      expect(current.accountId, isNot(savedSession.accountId));
+      expect((await store.savedSessions()), hasLength(1));
+      expect((await store.restore())!.accountId, current.accountId);
+    },
+  );
   test('adding and switching servers preserve saved connections and isolate active identity', () async {
     store.saved = savedSession;
     await flush();

@@ -11,6 +11,10 @@ import 'package:inkora/features/library/domain/resume_entry.dart';
 import 'package:inkora/features/library/presentation/catalogue_screen.dart';
 import 'package:inkora/features/library/presentation/book_cover.dart';
 import 'package:inkora/features/library/presentation/series_header.dart';
+import 'package:inkora/features/library/presentation/book_detail_screen.dart';
+
+import '../../support/catalogue_fakes.dart';
+
 import 'package:inkora/features/library/presentation/volume_browser.dart';
 import 'package:inkora/features/settings/domain/ui_preferences.dart';
 import 'package:inkora/offline/data/progress_store.dart';
@@ -70,6 +74,7 @@ Future<void> seedSeries(
         libraryId: 'library-a',
         number: i.toDouble(),
         pageCount: ebooks ? 0 : 30,
+        summary: ebooks ? 'Synopsis for ebook $i.' : '',
         metadata: CatalogueMetadata(
           mediaType: ebooks ? 'application/epub+zip' : '',
         ),
@@ -235,7 +240,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(const Key('detail-read')),
-          matching: find.text('Moonlit District 03'),
+          matching: find.text('Resume - Moonlit District 03'),
         ),
         findsOneWidget,
       );
@@ -369,7 +374,7 @@ void main() {
         ),
       ],
     );
-    expect(find.text('The Lantern Mystery'), findsOneWidget);
+    expect(find.text('Resume - The Lantern Mystery'), findsOneWidget);
     expect(find.textContaining('Vol. 03'), findsNothing);
     await harness.close(tester);
   });
@@ -489,6 +494,78 @@ void main() {
     await harness.close(tester);
   });
 
+  for (final size in [
+    const Size(320, 640),
+    const Size(844, 390),
+    const Size(1280, 800),
+    const Size(800, 1280),
+  ]) {
+    testWidgets(
+      'selection stays compact with 48dp actions at $size and 200% text',
+      (tester) async {
+        final harness = await openSeries(
+          tester,
+          size: size,
+          textScale: 2,
+          ebooks: true,
+        );
+        if (find
+            .byKey(const Key('volume-select'))
+            .hitTestable()
+            .evaluate()
+            .isEmpty) {
+          await showVolumes(tester);
+        }
+        final about = find.byKey(const Key('series-about-pane'));
+        final before = about.evaluate().isEmpty ? null : tester.getRect(about);
+        await tester.tap(find.byKey(const Key('volume-select')));
+        await tester.pumpAndSettle();
+        if (before != null) {
+          expect(tester.getRect(about), before);
+          expect(
+            before.bottom,
+            greaterThan(
+              tester.getTopLeft(find.byKey(const Key('selection-bar'))).dy,
+            ),
+          );
+        }
+        final actions = [
+          'selection-close',
+          'selection-all',
+          'selection-read',
+          'selection-unread',
+          'selection-download',
+        ].map((key) => find.byKey(Key(key))).toList();
+        final tops = <double>{};
+        for (final action in actions) {
+          expect(action.hitTestable(), findsOneWidget);
+          final rect = tester.getRect(action);
+          expect(rect.width, greaterThanOrEqualTo(48));
+          expect(rect.height, greaterThanOrEqualTo(48));
+          tops.add(rect.top);
+        }
+        expect(tops, hasLength(1));
+        expect(
+          tester.getSize(find.byKey(const Key('selection-bar'))).height,
+          lessThanOrEqualTo(80),
+        );
+        await tester.tap(find.byKey(const Key('selection-all')));
+        await tester.pumpAndSettle();
+        expect(
+          tester
+              .widget<IconButton>(find.byKey(const Key('selection-download')))
+              .onPressed,
+          isNotNull,
+        );
+        await tester.tap(find.byKey(const Key('selection-close')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('selection-bar')), findsNothing);
+        expect(tester.takeException(), isNull);
+        await harness.close(tester);
+      },
+    );
+  }
+
   testWidgets(
     'multi-select marks read and unread through the outbox with batch confirmation',
     (tester) async {
@@ -499,7 +576,7 @@ void main() {
       expect(find.byKey(const Key('selection-bar')), findsOneWidget);
       await tapVisible(tester, row('v4'));
       await tapVisible(tester, row('v5'));
-      expect(find.text('Selected: 2 volumes'), findsOneWidget);
+      expect(find.byTooltip('Selected: 2 volumes'), findsOneWidget);
       await tester.tap(find.byKey(const Key('selection-read')));
       await tester.pumpAndSettle();
       expect(find.text('Mark as read?'), findsOneWidget);
@@ -614,6 +691,145 @@ void main() {
       await tester.tap(find.byKey(const Key('ink-confirm-cancel')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('selection-bar')), findsNothing);
+      await harness.close(tester);
+    },
+  );
+
+  testWidgets('ebook author pages omit the current-volume jump in long lists', (
+    tester,
+  ) async {
+    final harness = await openSeries(
+      tester,
+      size: const Size(1280, 800),
+      ebooks: true,
+      volumes: 30,
+      current: 21,
+    );
+    expect(find.byKey(const Key('volume-jump')), findsNothing);
+    expect(find.byKey(const Key('detail-read')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await harness.close(tester);
+  });
+
+  for (final readWithButton in [false, true]) {
+    for (final size in [const Size(1280, 800), const Size(1000, 1400)]) {
+      testWidgets(
+        'ebook first tap focuses metadata, next action reads at $size (button $readWithButton)',
+        (tester) async {
+          final harness = await openSeries(
+            tester,
+            size: size,
+            ebooks: true,
+            read: 0,
+            current: null,
+          );
+          final router = harness.container.read(routerProvider);
+          final pane = find.byKey(const Key('series-volumes-pane'));
+          final scroll = tester
+              .state<ScrollableState>(
+                find
+                    .descendant(of: pane, matching: find.byType(Scrollable))
+                    .first,
+              )
+              .position;
+          final before = scroll.pixels;
+          final remote = harness.repository.remote as FakeCatalogueRemote;
+          final calls = remote.calls;
+          final row = find.byKey(const ValueKey('volume-v4'));
+          await tester.tap(
+            find.descendant(
+              of: row,
+              matching: find.text('Moonlit District 04'),
+            ),
+          );
+          await tester.pumpAndSettle();
+          expect(find.byType(ReaderScreen), findsNothing);
+          expect(
+            tester.widget<BookDetailHero>(find.byType(BookDetailHero)).item.id,
+            'v4',
+          );
+          expect(
+            tester.widget<SeriesAbout>(find.byType(SeriesAbout)).item.summary,
+            'Synopsis for ebook 4.',
+          );
+          expect(tester.widget<VolumeRow>(row).focused, isTrue);
+          expect(scroll.pixels, before);
+          expect(remote.calls, calls);
+          expect(
+            await tester.runAsync(
+              () => ProgressStore(
+                harness.database,
+                harness.repository.store.accountId,
+              ).pending(),
+            ),
+            isEmpty,
+          );
+          if (readWithButton) {
+            final action = find.byKey(const Key('book-detail-read'));
+            await tester.ensureVisible(action);
+            await tester.pumpAndSettle();
+            await tester.tap(action);
+          } else {
+            await tester.tap(
+              find.descendant(
+                of: row,
+                matching: find.text('Moonlit District 04'),
+              ),
+            );
+          }
+          await tester.pumpAndSettle();
+          expect(
+            tester.widget<ReaderScreen>(find.byType(ReaderScreen)).bookId,
+            'v4',
+          );
+          router.pop();
+          await tester.pumpAndSettle();
+          expect(
+            tester.widget<BookDetailHero>(find.byType(BookDetailHero)).item.id,
+            'v4',
+          );
+          expect(scroll.pixels, before);
+          expect(tester.takeException(), isNull);
+          await harness.close(tester);
+        },
+      );
+    }
+  }
+
+  testWidgets(
+    'ebook grid focus replaces selection and survives portrait resize at 200% text',
+    (tester) async {
+      final harness = await openSeries(
+        tester,
+        size: const Size(1280, 800),
+        textScale: 2,
+        ebooks: true,
+        read: 0,
+        current: null,
+      );
+      await tester.tap(find.byKey(const Key('volume-view')));
+      await tester.pumpAndSettle();
+      for (final id in ['v2', 'v4']) {
+        final tile = find.byKey(ValueKey('volume-tile-$id'));
+        await tester.ensureVisible(tile);
+        await tester.pumpAndSettle();
+        await tester.tap(tile);
+        await tester.pumpAndSettle();
+        expect(find.byType(ReaderScreen), findsNothing);
+        expect(
+          tester.widget<BookDetailHero>(find.byType(BookDetailHero)).item.id,
+          id,
+        );
+        expect(tester.widget<VolumeTile>(tile).focused, isTrue);
+      }
+      tester.view.physicalSize = const Size(800, 1280);
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<BookDetailHero>(find.byType(BookDetailHero)).item.id,
+        'v4',
+      );
+      expect(find.byType(ReaderScreen), findsNothing);
+      expect(tester.takeException(), isNull);
       await harness.close(tester);
     },
   );
@@ -957,7 +1173,7 @@ void main() {
     expect(find.text('6 livres'), findsOneWidget);
     expect(find.text('À propos'), findsOneWidget);
     expect(find.text('Tomes (6)'), findsOneWidget);
-    expect(find.text('Moonlit District 03'), findsOneWidget);
+    expect(find.text('Reprendre - Moonlit District 03'), findsOneWidget);
     expect(find.text('2/6 lus'), findsNothing);
     expect(tester.takeException(), isNull);
     await harness.close(tester);

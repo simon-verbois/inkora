@@ -21,9 +21,9 @@ void main() {
           await harness.mount(tester, textScale: scale);
           harness.container.read(routerProvider).go('/settings/servers');
           await tester.pumpAndSettle();
-          await tester.ensureVisible(find.text('Libraries to display'));
+          await tester.ensureVisible(find.byTooltip('Libraries to display'));
           await tester.pumpAndSettle();
-          await tester.tap(find.text('Libraries to display'));
+          await tester.tap(find.byTooltip('Libraries to display'));
           await tester.pumpAndSettle();
           final second = find.byKey(
             const ValueKey('visible-library-library-b'),
@@ -40,16 +40,18 @@ void main() {
             ),
           );
           expect(filtered!.items.map((item) => item.id), ['series-a']);
+          await tester.binding.handlePopRoute();
+          await tester.pumpAndSettle();
           harness.container.read(routerProvider).go('/');
           await tester.pumpAndSettle();
           expect(find.text('Atlas Nine'), findsNothing);
           expect(find.text('Moonlit District'), findsWidgets);
           harness.container.read(routerProvider).go('/settings/servers');
           await tester.pumpAndSettle();
-          await tester.ensureVisible(find.text('Libraries to display'));
+          await tester.ensureVisible(find.byTooltip('Libraries to display'));
           await tester.pumpAndSettle();
           if (second.evaluate().isEmpty) {
-            await tester.tap(find.text('Libraries to display'));
+            await tester.tap(find.byTooltip('Libraries to display'));
             await tester.pumpAndSettle();
           }
           expect(tester.widget<CheckboxListTile>(second).value, isFalse);
@@ -95,12 +97,16 @@ void main() {
         await harness.mount(tester, textScale: 2);
         harness.container.read(routerProvider).go('/settings/servers');
         await tester.pumpAndSettle();
-        final panel = find.byKey(const Key('library-visibility'));
-        await tester.ensureVisible(panel);
-        await tester.pumpAndSettle();
-        await tester.tap(
-          find.descendant(of: panel, matching: find.byType(ListTile)).first,
+        final button = find.byWidgetPredicate(
+          (widget) =>
+              widget is IconButton &&
+              widget.key is ValueKey<String> &&
+              (widget.key as ValueKey<String>).value.startsWith(
+                'server-libraries-',
+              ),
         );
+        await tester.ensureVisible(button);
+        await tester.tap(button);
         await tester.pumpAndSettle();
         final all = find.byKey(const Key('all-accessible-libraries'));
         await tester.ensureVisible(all);

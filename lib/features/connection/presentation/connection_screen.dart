@@ -14,8 +14,15 @@ import '../application/session_controller.dart';
 import '../domain/session.dart';
 
 class ConnectionScreen extends ConsumerStatefulWidget {
-  const ConnectionScreen({super.key, this.addServer = false});
+  const ConnectionScreen({
+    super.key,
+    this.addServer = false,
+    this.editing,
+    this.modal = false,
+  });
   final bool addServer;
+  final SavedSession? editing;
+  final bool modal;
   @override
   ConsumerState<ConnectionScreen> createState() => _ConnectionScreenState();
 }
@@ -29,6 +36,18 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
   bool _showSecret = false;
   bool _saving = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final saved = widget.editing;
+    if (saved != null) {
+      _url.text = saved.endpoint.uri.toString();
+      _method = saved.credentials.method;
+      _username.text = saved.credentials.username ?? '';
+      _secret.text = saved.credentials.secret;
+    }
+  }
 
   @override
   void dispose() {
@@ -60,10 +79,19 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
       _error = null;
     });
     try {
-      await ref
-          .read(sessionProvider.notifier)
-          .addServer(_url.text, credentials);
-      if (mounted) context.pop();
+      final controller = ref.read(sessionProvider.notifier);
+      if (widget.editing != null) {
+        await controller.updateServer(widget.editing!, _url.text, credentials);
+      } else {
+        await controller.addServer(_url.text, credentials);
+      }
+      if (mounted) {
+        if (widget.modal) {
+          Navigator.of(context).pop();
+        } else {
+          context.pop();
+        }
+      }
     } catch (error) {
       if (mounted) {
         setState(
@@ -85,7 +113,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
     final session = ref.watch(sessionProvider);
     final busy = _saving || session.phase == SessionPhase.authenticating;
     return Scaffold(
-      appBar: widget.addServer
+      appBar: widget.addServer && !widget.modal
           ? const InkScreenHeader(title: LText('Add server'))
           : null,
       body: SafeArea(
@@ -111,7 +139,9 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                         const SizedBox(height: 20),
                       ] else ...[
                         LText(
-                          'Connect another server',
+                          widget.editing == null
+                              ? 'Connect another server'
+                              : 'Edit connection',
                           style: Theme.of(context).textTheme.headlineMedium,
                           textAlign: TextAlign.center,
                         ),
@@ -270,6 +300,13 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                                 widget.addServer ? 'Save server' : 'Sign in',
                               ),
                       ),
+                      if (widget.modal)
+                        TextButton(
+                          onPressed: busy
+                              ? null
+                              : () => Navigator.of(context).pop(),
+                          child: const LText('Cancel'),
+                        ),
                       if (!widget.addServer &&
                           session.phase == SessionPhase.expired)
                         TextButton(

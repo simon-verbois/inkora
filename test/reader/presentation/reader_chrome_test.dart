@@ -129,8 +129,46 @@ void main() {
           hasLength(1),
           reason: 'one action row',
         );
+        final actionButtons = find.descendant(
+          of: find.byKey(const Key('reader-action-row')),
+          matching: find.byType(TextButton),
+        );
+        final buttonRects = [
+          for (final element in actionButtons.evaluate())
+            tester.getRect(find.byWidget(element.widget)),
+        ];
+        expect(buttonRects, hasLength(4));
+        expect(buttonRects.map((rect) => rect.top).toSet(), hasLength(1));
+        expect(buttonRects.map((rect) => rect.height).toSet(), hasLength(1));
+        final icons = find.descendant(
+          of: find.byKey(const Key('reader-action-row')),
+          matching: find.byType(Icon),
+        );
+        expect({
+          for (final element in icons.evaluate())
+            tester.getTopLeft(find.byWidget(element.widget)).dy,
+        }, hasLength(1));
+        final detail = find.byKey(const Key('reader-progress-detail'));
+        final progressRow = find
+            .ancestor(of: detail, matching: find.byType(Row))
+            .first;
+        expect(tester.getRect(detail).right, tester.getRect(progressRow).right);
         await tester.tap(settings);
         await tester.tap(find.byTooltip('Book details'));
+        await tester.tap(find.byKey(const Key('reader-more')));
+        await tester.pumpAndSettle();
+        final item = find.ancestor(
+          of: find.text(strings.text('Search in book')),
+          matching: find.byType(MenuItemButton),
+        );
+        expect(
+          tester.getBottomLeft(item).dy,
+          lessThan(tester.getTopLeft(find.byKey(const Key('reader-more'))).dy),
+        );
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+        expect(find.text(strings.text('Search in book')), findsNothing);
+        expect(actions, ['Settings', 'details']);
         await tester.tap(find.byKey(const Key('reader-more')));
         await tester.pumpAndSettle();
         // Disabled entries stay visible but inert.

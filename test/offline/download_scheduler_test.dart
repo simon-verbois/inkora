@@ -10,6 +10,9 @@ import 'package:inkora/core/network/komga/api_failure.dart';
 import 'package:inkora/core/storage/app_database.dart';
 import 'package:inkora/offline/data/download_store.dart';
 import 'package:inkora/offline/data/download_scheduler.dart';
+import 'package:inkora/offline/data/download_retention_store.dart';
+import 'package:inkora/offline/data/progress_store.dart';
+import 'package:inkora/offline/domain/progress.dart';
 import 'package:inkora/reader/data/reader_asset_store.dart';
 import 'package:inkora/reader/data/page_network_gate.dart';
 import 'package:inkora/reader/domain/page_source.dart';
@@ -97,6 +100,36 @@ void main() {
     await scheduler.cancel(ids.first);
     expect(await assets.isDownloaded(manifest), isFalse);
     expect(await store.occupied(), 0);
+  });
+  test('delayed removal reuses verified download cancellation and preserves pending completion', () async {
+    await scheduler.enqueue(manifest.bookId);
+    await scheduler.idle;
+    final progress = ProgressStore(database, manifest.accountId);
+    await progress.save(
+      manifest,
+      ReaderLocator(3, 0),
+      operation: ProgressOperation.complete,
+    );
+    final retention = DownloadRetentionStore(database, manifest.accountId);
+    await retention.configure('series', true);
+    await retention.readingStateChanged(
+      manifest.bookId,
+      now: DateTime.now().subtract(const Duration(days: 2)),
+    );
+    expect(await assets.isDownloaded(manifest), isTrue);
+    for (final candidate in await retention.due()) {
+      await scheduler.cancel(candidate.jobId);
+    }
+    expect(await assets.isDownloaded(manifest), isFalse);
+    expect(await store.occupied(), 0);
+    expect(
+      (await progress.pending()).single.operation,
+      ProgressOperation.complete,
+    );
+    expect(
+      (await database.select(database.readerPositions).get()).single.pageIndex,
+      3,
+    );
   });
   test('global quota reservations are transactional across accounts and cover native/staging/promotion', () async {
     final quota = fixtureRaster.length * 4 * 3;

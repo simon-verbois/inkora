@@ -20,7 +20,7 @@ void main() {
     expect(
       find.descendant(
         of: search,
-        matching: find.byKey(const Key('catalogue-filters')),
+        matching: find.byKey(const Key('catalogue-pinned-tools')),
       ),
       findsOneWidget,
     );

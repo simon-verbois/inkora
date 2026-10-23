@@ -22,6 +22,7 @@ import 'package:inkora/reader/domain/ebook_locator.dart';
 import 'package:inkora/reader/domain/reading_settings.dart';
 import 'package:inkora/reader/domain/reader_manifest.dart';
 import 'package:inkora/offline/data/progress_store.dart';
+import 'package:inkora/offline/data/download_retention_store.dart';
 import 'package:inkora/offline/domain/progress.dart';
 
 import '../../support/reader_fakes.dart';
@@ -99,6 +100,7 @@ void main() {
       }),
     );
     final transfer = SettingsTransfer(db, 'a');
+    await DownloadRetentionStore(db, 'a').configure('series', true);
     final bytes = await transfer.export();
     final value = await transfer.inspect(bytes);
     expect((value['ui'] as Map)['homePortraitColumns'], 2);
@@ -107,6 +109,10 @@ void main() {
     expect(value['bookmarks'], hasLength(2));
     expect(utf8.decode(bytes), isNot(contains('Private')));
     expect(utf8.decode(bytes), isNot(contains('setupCompleted')));
+    expect(
+      utf8.decode(bytes),
+      isNot(contains(DownloadRetentionStore.policyScope)),
+    );
     await ui.save(const UiPreferences(setupCompleted: false));
     await transfer.apply(value);
     expect((await ui.watch().first).appearance, AppAppearance.ocean);

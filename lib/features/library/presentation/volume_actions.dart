@@ -60,10 +60,13 @@ Future<int> markVolumes(
 /// were queued and how many failed.
 Future<({int done, int failed})> queueVolumeDownloads(
   WidgetRef ref,
-  List<String> bookIds,
-) async {
+  List<String> bookIds, {
+  String? accountId,
+}) async {
   final coordinator = await ref.read(offlineCoordinatorProvider.future);
-  if (coordinator == null || !coordinator.current) {
+  if (coordinator == null ||
+      !coordinator.current ||
+      (accountId != null && coordinator.store.accountId != accountId)) {
     throw StateError('Download manager unavailable');
   }
   var done = 0, failed = 0;

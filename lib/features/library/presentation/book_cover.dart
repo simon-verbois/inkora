@@ -26,7 +26,7 @@ class BookCover extends ConsumerWidget {
   final CatalogueItem item;
   final double? width;
 
-  /// A light page-colored veil for completed volumes; keeps the image identity.
+  /// A page-colored veil for completed volumes; keeps the image identity.
   final bool muted;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -90,11 +90,11 @@ class BookCover extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: muted
                     ? Theme.of(context).scaffoldBackgroundColor
-                          .withValues(alpha: .24)
+                          .withValues(alpha: .56)
                     : null,
                 border: Border.all(
                   color: Theme.of(context).colorScheme.primary
-                      .withValues(alpha: .8),
+                      .withValues(alpha: muted ? .32 : .8),
                 ),
                 borderRadius: InkRadius.small,
               ),

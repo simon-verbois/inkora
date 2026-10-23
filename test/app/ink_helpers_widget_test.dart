@@ -93,7 +93,9 @@ void main() {
         tester.getSize(find.byType(InkOverlaySurface)).height,
         moreOrLessEquals(size.height * .5),
       );
-      await tester.binding.handlePopRoute();
+      final handle = find.byKey(const Key('ink-sheet-handle'));
+      expect(handle.hitTestable(), findsOneWidget);
+      await tester.fling(handle, Offset(0, size.height * .7), 1500);
       await tester.pumpAndSettle();
       expect(find.text('Fixed'), findsNothing);
     });

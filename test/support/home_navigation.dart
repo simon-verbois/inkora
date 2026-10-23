@@ -13,6 +13,26 @@ Future<void> openHomeDestination(
   router.go('/');
   await tester.pumpAndSettle();
   if (destination == 'libraries') return;
-  await tester.tap(find.byKey(ValueKey('open-$destination')));
+  await tapHomeAction(tester, destination);
+}
+
+/// Use the overflow menu when the current header cannot fit direct actions.
+Future<void> tapHomeAction(WidgetTester tester, String destination) async {
+  final menu = find.byKey(const Key('home-menu'));
+  if (menu.evaluate().isNotEmpty) {
+    await tester.tap(menu);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(ValueKey('home-menu-$destination')));
+  } else {
+    await tester.tap(
+      find.byKey(
+        ValueKey(
+          destination == 'history'
+              ? 'reading-history-action'
+              : 'open-$destination',
+        ),
+      ),
+    );
+  }
   await tester.pumpAndSettle();
 }

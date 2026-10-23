@@ -16,14 +16,7 @@ import '../domain/reader_manifest.dart';
 import '../domain/reading_settings.dart';
 import '../domain/webtoon_layout.dart';
 
-enum _PreferenceTab {
-  layout,
-  style,
-  typography,
-  rendering,
-  upscaling,
-  preloading,
-}
+enum _PreferenceTab { layout, style, typography, rendering, preloading }
 
 /// Scoped reading preferences. Every change applies immediately: it is
 /// persisted to the selected scope (latest value wins, unchanged values are
@@ -38,6 +31,7 @@ class ReaderSettingsSheet extends StatefulWidget {
     this.showReset = true,
     this.qualityOnly = false,
     this.upscalingControls,
+    this.onResetRendering,
     this.modal = false,
     super.key,
   });
@@ -48,6 +42,7 @@ class ReaderSettingsSheet extends StatefulWidget {
   final bool showReset;
   final bool qualityOnly;
   final Widget? upscalingControls;
+  final Future<void> Function()? onResetRendering;
   final bool modal;
   final ReaderStore store;
   final ReaderManifest? manifest;
@@ -82,11 +77,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
       widget.manifest?.isDocument == false ||
       _effective.mode != ReadingMode.ebook;
   List<_PreferenceTab> get _tabs => widget.qualityOnly
-      ? [
-          _PreferenceTab.rendering,
-          if (widget.upscalingControls != null) _PreferenceTab.upscaling,
-          _PreferenceTab.preloading,
-        ]
+      ? [_PreferenceTab.rendering, _PreferenceTab.preloading]
       : [
           _PreferenceTab.layout,
           if (_supportsTypography) ...[
@@ -261,59 +252,46 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
   Widget _imageQuality() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      const LText(
-        'Choose how each image format is displayed. Archive files use the format of each page inside them.',
+      ReaderSettingsGrid(
+        children: [
+          _qualityChoice<ImageSampling>(
+            'Image scaling',
+            ImageSampling.values,
+            _effective.imageQuality[RasterFormat.jpeg]?.sampling ??
+                ImageSampling.high,
+            (value) => switch (value) {
+              ImageSampling.nearest => 'Nearest neighbour',
+              ImageSampling.smooth => 'Bilinear',
+              ImageSampling.high => 'High quality',
+            },
+            (value) => RasterQuality(
+              sampling: value,
+              filter:
+                  _effective.imageQuality[RasterFormat.jpeg]?.filter ??
+                  VisualFilter.original,
+            ),
+          ),
+          _qualityChoice<VisualFilter>(
+            'Visual filter',
+            VisualFilter.values,
+            _effective.imageQuality[RasterFormat.jpeg]?.filter ??
+                VisualFilter.original,
+            (value) => switch (value) {
+              VisualFilter.original => 'Original colours',
+              VisualFilter.grayscale => 'Grayscale',
+              VisualFilter.sepia => 'Sepia',
+              VisualFilter.inverted => 'Invert colours',
+            },
+            (value) => RasterQuality(
+              filter: value,
+              sampling:
+                  _effective.imageQuality[RasterFormat.jpeg]?.sampling ??
+                  ImageSampling.high,
+            ),
+          ),
+        ],
       ),
-      const SizedBox(height: 12),
-      for (final format in RasterFormat.values) ...[
-        LText(switch (format) {
-          RasterFormat.jpeg => 'JPEG images',
-          RasterFormat.png => 'PNG images',
-          RasterFormat.webp => 'WebP images',
-          RasterFormat.other => 'Other images',
-        }, style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
-        ReaderSettingsGrid(
-          children: [
-            _qualityChoice<ImageSampling>(
-              format,
-              'Image scaling',
-              ImageSampling.values,
-              _effective.imageQuality[format]?.sampling ?? ImageSampling.high,
-              (value) => switch (value) {
-                ImageSampling.nearest => 'Nearest neighbour',
-                ImageSampling.smooth => 'Bilinear',
-                ImageSampling.high => 'High quality',
-              },
-              (value) => RasterQuality(
-                sampling: value,
-                filter:
-                    _effective.imageQuality[format]?.filter ??
-                    VisualFilter.original,
-              ),
-            ),
-            _qualityChoice<VisualFilter>(
-              format,
-              'Visual filter',
-              VisualFilter.values,
-              _effective.imageQuality[format]?.filter ?? VisualFilter.original,
-              (value) => switch (value) {
-                VisualFilter.original => 'Original colours',
-                VisualFilter.grayscale => 'Grayscale',
-                VisualFilter.sepia => 'Sepia',
-                VisualFilter.inverted => 'Invert colours',
-              },
-              (value) => RasterQuality(
-                filter: value,
-                sampling:
-                    _effective.imageQuality[format]?.sampling ??
-                    ImageSampling.high,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-      ],
+      const SizedBox(height: 24),
       const LText(
         'High quality uses the rendering engine’s best image sampling. Scaling cannot restore details missing from the source.',
       ),
@@ -321,14 +299,13 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
   );
 
   Widget _qualityChoice<T extends Enum>(
-    RasterFormat format,
     String label,
     List<T> values,
     T current,
     String Function(T) text,
     RasterQuality Function(T) update,
   ) => ReaderChoiceGroup(
-    id: 'quality-${format.name}-${label == 'Image scaling' ? 'sampling' : 'filter'}',
+    id: 'quality-all-${label == 'Image scaling' ? 'sampling' : 'filter'}',
     label: label,
     choices: {for (final value in values) value.name: text(value)},
     selected: current.name,
@@ -337,12 +314,8 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
         : (name) {
             final value = values.firstWhere((v) => v.name == name);
             _change('imageQuality', {
-              for (final entry
-                  in (_overrides.imageQuality ??
-                          const <RasterFormat, RasterQuality>{})
-                      .entries)
-                entry.key.name: entry.value.toJson(),
-              format.name: update(value).toJson(),
+              for (final format in RasterFormat.values)
+                format.name: update(value).toJson(),
             });
           },
   );
@@ -547,10 +520,23 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
     );
     if (!confirmed || !mounted) return;
     final values = {..._overrides.toJson()};
+    final targetScope = _scope;
+    final targetTab = _activeTab;
+    if (_activeTab == _PreferenceTab.rendering &&
+        widget.onResetRendering != null) {
+      try {
+        await widget.onResetRendering!();
+      } catch (_) {
+        if (mounted) notifyInk(context, 'Unable to reset settings. Try again.');
+        return;
+      }
+      if (!mounted || _scope != targetScope || _activeTab != targetTab) return;
+    }
     for (final field
-        in _showQuality
+        in _activeTab == _PreferenceTab.rendering
+            ? ['imageQuality']
+            : _activeTab == _PreferenceTab.preloading
             ? [
-                'imageQuality',
                 'webtoonQuality',
                 'webtoonSharpness',
                 'webtoonPreload',
@@ -732,8 +718,16 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
       onChanged: (key, value) =>
           _change('ebook', {...?_overrides.ebook, key: value}),
     ),
-    _PreferenceTab.rendering => _imageQuality(),
-    _PreferenceTab.upscaling => widget.upscalingControls!,
+    _PreferenceTab.rendering => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _imageQuality(),
+        if (widget.upscalingControls != null) ...[
+          const SizedBox(height: 24),
+          widget.upscalingControls!,
+        ],
+      ],
+    ),
     _PreferenceTab.preloading => _webtoonQuality(context),
   };
 
@@ -759,7 +753,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
         // Large type can make the header taller than a phone sheet. Let the
         // whole editor scroll then; ordinary sizes keep the header pinned.
         final short = scale > 1.3 || height < (widget.modal ? 420 : 180);
-        final reset = widget.showReset && _activeTab != _PreferenceTab.upscaling
+        final reset = widget.showReset
             ? TextButton(
                 key: const Key('reader-settings-reset'),
                 onPressed: _loading ? null : _reset,
@@ -809,7 +803,6 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
                         _PreferenceTab.style => 'Reading style',
                         _PreferenceTab.typography => 'Typography',
                         _PreferenceTab.rendering => 'Rendering',
-                        _PreferenceTab.upscaling => 'Upscaling',
                         _PreferenceTab.preloading => 'Preloading',
                       }),
                     ),

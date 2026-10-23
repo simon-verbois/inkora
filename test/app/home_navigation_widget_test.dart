@@ -71,10 +71,18 @@ void main() {
           final harness = await mount(tester, size, scale: scale);
           final router = harness.container.read(routerProvider);
           final home = tester.state(find.byType(CatalogueScreen));
+          final overflow = find
+              .byKey(const Key('home-menu'))
+              .evaluate()
+              .isNotEmpty;
           final keys = [
-            'open-settings',
-            'open-downloads',
-            'reading-history-action',
+            if (overflow)
+              'home-menu'
+            else ...[
+              'open-settings',
+              'open-downloads',
+              'reading-history-action',
+            ],
             'open-search',
           ];
           double last = -1;
@@ -95,7 +103,19 @@ void main() {
             final key = destination == 'history'
                 ? 'reading-history-action'
                 : 'open-$destination';
-            await tester.tap(find.byKey(ValueKey(key)));
+            if (overflow) {
+              await tester.tap(find.byKey(const Key('home-menu')));
+              await tester.pumpAndSettle();
+              await tester.tap(
+                find.text(switch (destination) {
+                  'history' => 'Reading history',
+                  'settings' => 'Settings',
+                  _ => 'Downloads',
+                }),
+              );
+            } else {
+              await tester.tap(find.byKey(ValueKey(key)));
+            }
             await tester.pumpAndSettle();
             expect(
               router.routeInformationProvider.value.uri.path,
@@ -193,7 +213,7 @@ void main() {
         expect(await backEvent(tester, 'startBackGesture'), isTrue);
         await backEvent(tester, 'updateBackGestureProgress');
         await tester.pump();
-        expect(tester.getRect(downloads).left, greaterThan(rect.left));
+        expect(tester.getRect(downloads), rect);
         await backEvent(tester, 'commitBackGesture');
         await tester.pumpAndSettle();
         expect(router.routeInformationProvider.value.uri.path, '/');

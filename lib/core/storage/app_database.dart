@@ -326,6 +326,9 @@ class AppDatabase extends _$AppDatabase {
     },
     beforeOpen: (_) async {
       await customStatement(
+        'CREATE INDEX IF NOT EXISTS download_retention_jobs ON download_jobs(account_id, state, book_id)',
+      );
+      await customStatement(
         'CREATE INDEX IF NOT EXISTS reading_history_recent ON reading_history(account_id, opened_at DESC, book_id)',
       );
       await customStatement(

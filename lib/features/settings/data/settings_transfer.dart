@@ -23,9 +23,13 @@ final class SettingsTransfer {
       final ui = await (database.select(
         database.appPreferences,
       )..where((r) => r.key.equals('ui'))).getSingleOrNull();
-      final preferences = await (database.select(
-        database.readingPreferences,
-      )..where((r) => r.accountId.equals(account))).get();
+      final preferences =
+          await (database.select(database.readingPreferences)..where(
+                (r) =>
+                    r.accountId.equals(account) &
+                    r.scope.isIn(SettingsScope.values.map((s) => s.name)),
+              ))
+              .get();
       final bookmarks = await database
           .customSelect(
             "SELECT key,payload FROM app_preferences WHERE substr(key,1,16)='ebook-bookmarks:' OR substr(key,1,17)='raster-bookmarks:'",

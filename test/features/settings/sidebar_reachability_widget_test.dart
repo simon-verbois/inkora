@@ -183,7 +183,7 @@ void main() {
         expect(tester.getRect(field).overlaps(closedRect), isTrue);
         expect(
           tester.getRect(field).right,
-          lessThanOrEqualTo(tester.getRect(toggle).left),
+          greaterThanOrEqualTo(tester.getRect(toggle).right),
         );
         if (reducedMotion) {
           expect(intermediateClip.left, 0);

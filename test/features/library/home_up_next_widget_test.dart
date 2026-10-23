@@ -1,3 +1,5 @@
+import '../../support/home_navigation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/router.dart';
@@ -93,7 +95,7 @@ void main() {
       expect(find.textContaining('Solo.Leveling.T03.FR'), findsOneWidget);
 
       // View all opens the reading history; Back returns Home.
-      await tester.tap(find.byKey(const Key('reading-history-action')));
+      await tapHomeAction(tester, 'history');
       await tester.pumpAndSettle();
       expect(find.byType(ReadingHistoryScreen), findsOneWidget);
       router.pop();

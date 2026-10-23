@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:inkora/app/router.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/features/library/domain/catalogue.dart';
 
@@ -47,6 +48,8 @@ void main() {
       );
       addTearDown(() => harness.close(tester));
       await harness.mount(tester, textScale: scale);
+      harness.container.read(routerProvider).push<void>('/catalogue/series');
+      await tester.pumpAndSettle();
       final button = find.byKey(const Key('library-selector'));
       final all = find.byKey(const Key('library-choice-all'));
       final second = find.byKey(const ValueKey('library-choice-library-1'));

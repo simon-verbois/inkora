@@ -120,7 +120,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
   final _scroll = ScrollController();
   final _browser = VolumeBrowserController();
   late final _actions = VolumeActions(
-    open: (volume) => openCatalogueItem(context, volume.item),
+    open: (volume) => openBookReader(context, volume.item),
     mark: _mark,
   );
   late CatalogueSort _sort = widget.seriesId == null
@@ -191,7 +191,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
             ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
       if (values.isNotEmpty) options[facet] = values;
     }
-    final result = await showInkSheet<CatalogueFilterResult>(
+    final result = await showInkPopup<CatalogueFilterResult>(
       context: context,
       child: CatalogueFiltersSheet(
         options: Future.value(options),
@@ -229,7 +229,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
     if (_root && item.kind == CatalogueKind.series) {
       context.push('/downloads/series/${Uri.encodeComponent(item.id)}');
     } else {
-      openCatalogueItem(context, item);
+      openBookReader(context, item);
     }
   }
 
@@ -367,6 +367,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
             color: Theme.of(context).scaffoldBackgroundColor,
             child: InkFilterBar(
               controlPrefix: 'downloads',
+              startChipsWhenCompact: true,
               leading: Text(
                 AppStrings.of(context)
                     .quantity(visible.length, root ? 'item' : 'book'),

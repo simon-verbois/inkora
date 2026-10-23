@@ -69,6 +69,14 @@ void main() {
           final bytes = await demonstrationCover(index);
           artwork['series-$index'] = bytes;
           artwork['book-$index'] = bytes;
+          for (
+            var copy = index + demonstrationTitles.length;
+            copy < 24;
+            copy += demonstrationTitles.length
+          ) {
+            artwork['series-$copy'] = bytes;
+          }
+          artwork['demo-volume-${index + 2}'] = bytes;
         }
       });
       final client = fixtureClient(
@@ -77,7 +85,7 @@ void main() {
         FixtureAdapter((request) {
           final id = request.uri.pathSegments.reversed.skip(1).first;
           return ResponseBody.fromBytes(
-            artwork[id]!,
+            artwork[id] ?? artwork['series-0']!,
             200,
             headers: {
               'content-type': ['image/png'],
@@ -92,7 +100,7 @@ void main() {
         savedSession.accountId,
       );
       final series = [
-        for (var index = 0; index < demonstrationTitles.length; index++)
+        for (var index = 0; index < 24; index++)
           CatalogueItem(
             kind: CatalogueKind.series,
             id: 'series-$index',
@@ -100,7 +108,10 @@ void main() {
             libraryId: index.isEven ? 'library-a' : 'library-b',
             itemCount: 4 + index,
             modified: 1792015200000 + index,
+            summary: 'A city that only wakes after midnight. When a young cartographer discovers a street missing from every map, a quiet commission becomes a journey through forgotten stories and impossible places.',
             metadata: CatalogueMetadata(
+              publisher: 'Northlight Press',
+              authors: const [CatalogueAuthor('Alex Rowan', 'writer')],
               status: index.isEven ? 'ONGOING' : 'ENDED',
               genres: [index.isEven ? 'Adventure' : 'Fantasy'],
             ),
@@ -111,7 +122,16 @@ void main() {
           CatalogueItem(
             kind: CatalogueKind.book,
             id: 'book-$index',
-            title: '${demonstrationTitles[index]} · Volume ${index + 1}',
+            title: index == 7
+                ? demonstrationTitles[index]
+                : '${demonstrationTitles[index]} · Volume ${index + 1}',
+            summary: 'A lighthouse keeper receives letters from an island that vanished a century ago. Follow the tide through a story of maps, memory and the places we call home.',
+            metadata: CatalogueMetadata(
+              mediaType: index == 7
+                  ? 'application/epub+zip'
+                  : 'application/zip',
+              authors: const [CatalogueAuthor('Alex Rowan', 'writer')],
+            ),
             libraryId: series[index].libraryId,
             seriesId: series[index].id,
             number: index + 1,
@@ -122,8 +142,23 @@ void main() {
             modified: series[index].modified,
           ),
       ];
+      final volumes = [
+        for (var number = 2; number <= 4; number++)
+          CatalogueItem(
+            kind: CatalogueKind.book,
+            id: 'demo-volume-$number',
+            title: '${demonstrationTitles.first} · Volume $number',
+            libraryId: 'library-a',
+            seriesId: 'series-0',
+            number: number.toDouble(),
+            readingStatus: number == 2
+                ? ReadingStatus.completed
+                : ReadingStatus.unread,
+            pageCount: 192,
+          ),
+      ];
       await tester.runAsync(() async {
-        for (final item in [...series, ...books]) {
+        for (final item in [...series, ...books, ...volumes]) {
           final bytes = await covers.load((
             kind: item.kind.name,
             id: item.id,
@@ -156,16 +191,7 @@ void main() {
           entry('library-b', kind: CatalogueKind.library, title: 'Comics'),
           ...series,
           ...books,
-          for (var number = 2; number <= 4; number++)
-            CatalogueItem(
-              kind: CatalogueKind.book,
-              id: 'demo-volume-$number',
-              title: '${demonstrationTitles.first} · Volume $number',
-              libraryId: 'library-a',
-              seriesId: 'series-0',
-              number: number.toDouble(),
-              pageCount: 192,
-            ),
+          ...volumes,
         ],
       );
       addTearDown(() async {
@@ -201,29 +227,14 @@ void main() {
 
       expect(find.text('Continue reading'), findsOneWidget);
       await capture('phone-home');
-      await tester.ensureVisible(find.byKey(const Key('catalogue-sort')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('catalogue-sort')));
-      await tester.pumpAndSettle();
-      await capture('phone-sort-menu', public: false);
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
       final router = harness.container.read(routerProvider);
-      router.go('/');
-      await tester.pumpAndSettle();
-      final libraryControl = find.byKey(const Key('library-selector'));
-      await Scrollable.ensureVisible(
-        tester.element(libraryControl),
-        alignment: 0,
+      await tester.drag(
+        find.byType(CustomScrollView).first,
+        const Offset(0, -560),
       );
       await tester.pumpAndSettle();
       await capture('phone-library');
       router.go('/settings/appearance');
-      await tester.pumpAndSettle();
-      await Scrollable.ensureVisible(
-        tester.element(find.byKey(const Key('home-portrait-columns'))),
-        alignment: .2,
-      );
       await tester.pumpAndSettle();
       await capture('phone-appearance');
       router.go('/settings/transfer');
@@ -231,10 +242,10 @@ void main() {
       await capture('phone-transfer');
       router.go('/settings/quality');
       await tester.pumpAndSettle();
-      await capture('phone-quality', public: false);
-      await tester.tap(find.text('Upscaling'));
+      await capture('phone-quality');
+      router.go('/catalogue/book/book-7');
       await tester.pumpAndSettle();
-      await capture('phone-upscaling', public: false);
+      await capture('phone-ebook');
       router.go('/catalogue/series/series-0');
       await tester.pumpAndSettle();
       await capture('phone-series');
@@ -265,39 +276,24 @@ void main() {
       router.go('/catalogue/series/series-0');
       await tester.pumpAndSettle();
       await capture('tablet-series');
+      await tester.tap(find.byKey(const Key('volume-select')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('volume-check-demo-volume-3')));
+      await tester.tap(find.byKey(const Key('volume-check-demo-volume-4')));
+      await tester.pumpAndSettle();
+      await capture('tablet-selection');
       router.go('/settings/quality');
       await tester.pumpAndSettle();
-      await capture('tablet-settings-header', public: false);
-      await tester.tap(find.byKey(const Key('settings-sidebar-search-toggle')));
-      await tester.pumpAndSettle();
-      await capture('tablet-settings-search', public: false);
-      await tester.tap(find.byKey(const Key('settings-sidebar-search-toggle')));
-      await tester.pumpAndSettle();
-      tester.view.physicalSize = const Size(390, 844);
-      router.go('/settings');
-      await tester.pumpAndSettle();
-      await capture('phone-settings', public: false);
-      router.go('/settings/appearance');
-      await tester.pumpAndSettle();
-      await Scrollable.ensureVisible(
-        tester.element(find.byKey(const Key('home-portrait-columns'))),
-        alignment: .2,
-      );
-      await tester.pumpAndSettle();
-      await capture('phone-appearance-controls', public: false);
+      await capture('tablet-quality');
       router.go('/');
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('open-search')));
+      await tester.drag(
+        find.byType(CustomScrollView).first,
+        const Offset(0, -850),
+      );
       await tester.pumpAndSettle();
-      await tester.enterText(find.byKey(const Key('expanded-search')), 'Atlas');
-      await tester.pump(const Duration(milliseconds: 200));
-      await tester.pumpAndSettle();
-      await capture('phone-search', public: false);
-      router.go('/setup?edit=true');
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('setup-next')));
-      await tester.pumpAndSettle();
-      await capture('phone-setup', public: false);
+      await capture('tablet-library');
+      covers.close();
       await harness.close(tester);
     },
     skip: Platform.environment['INKORA_CAPTURE_SCREENSHOTS'] != 'true',

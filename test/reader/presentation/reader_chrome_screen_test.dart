@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inkora/core/storage/app_database.dart';
+import 'package:inkora/app/widgets/ink_surface.dart';
 import 'package:inkora/features/connection/application/session_controller.dart';
 import 'package:inkora/features/library/application/catalogue_providers.dart';
 import 'package:inkora/features/library/application/cover_providers.dart';
@@ -23,6 +24,7 @@ import 'package:inkora/reader/data/reader_store.dart';
 import 'package:inkora/reader/domain/reader_manifest.dart';
 import 'package:inkora/reader/domain/reading_settings.dart';
 import 'package:inkora/reader/presentation/reader_chrome.dart';
+import 'package:inkora/reader/presentation/reader_details.dart';
 import 'package:inkora/reader/presentation/reader_screen.dart';
 import 'package:inkora/reader/presentation/reader_settings_sheet.dart';
 
@@ -163,6 +165,11 @@ void main() {
             initialLocation: '/reader/${manifest.bookId}',
             routes: [
               GoRoute(
+                name: 'reader-parent',
+                path: '/reader-parent/:id',
+                builder: (_, _) => const Scaffold(body: Text('Parent facts')),
+              ),
+              GoRoute(
                 name: 'reader',
                 path: '/reader/:id',
                 builder: (_, state) =>
@@ -185,7 +192,47 @@ void main() {
             // Top bar: series title, "Another T01 · p. 5/20", details action.
             expect(find.text('Another'), findsOneWidget);
             expect(find.text('Another T01 · p. 5/20'), findsOneWidget);
-            expect(find.byTooltip('Series details'), findsOneWidget);
+            expect(find.byTooltip('Book details'), findsOneWidget);
+            expect(
+              find.byKey(const Key('reader-series')).hitTestable(),
+              findsOneWidget,
+            );
+            final retainedReader = tester.state(find.byType(ReaderScreen));
+            await tester.tap(find.byKey(const Key('reader-details')));
+            await _frames(tester);
+            expect(find.byType(ReaderBookDetails), findsOneWidget);
+            expect(
+              tester.state(find.byType(ReaderScreen)),
+              same(retainedReader),
+            );
+            await _predictiveBack(tester, find.byType(ReaderBookDetails));
+            expect(find.byType(ReaderBookDetails), findsNothing);
+            expect(find.text('Another T01 · p. 5/20'), findsOneWidget);
+            await tester.tap(find.byKey(const Key('reader-series')));
+            await _frames(tester);
+            expect(find.text('Parent facts'), findsOneWidget);
+            await _predictiveBack(tester, find.text('Parent facts'));
+            expect(
+              tester.state(find.byType(ReaderScreen)),
+              same(retainedReader),
+            );
+            expect(find.text('Another T01 · p. 5/20'), findsOneWidget);
+            expect(
+              find.descendant(
+                of: find.byType(ReaderPanel),
+                matching: find.byType(Divider),
+              ),
+              findsNothing,
+            );
+            for (final panel in find.byType(ReaderPanel).evaluate()) {
+              final surface = tester.widget<InkSurface>(
+                find.descendant(
+                  of: find.byElementPredicate((element) => element == panel),
+                  matching: find.byType(InkSurface),
+                ),
+              );
+              expect(surface.opacity, InkOverlaySurface.opacity);
+            }
             // Progress line and the single action row.
             expect(find.text('p. 5'), findsOneWidget);
             expect(find.text('25 % · 15 pages left'), findsOneWidget);

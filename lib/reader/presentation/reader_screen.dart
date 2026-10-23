@@ -124,7 +124,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.resumed &&
+        ModalRoute.of(context)?.isCurrent == true) {
       unawaited(
         ReaderSystemUi.setImmersive(
           !_controlsVisible && !widget.gestureZones.showSystemBars,
@@ -253,7 +254,18 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
       if (action == 'next' && nextId != null) {
         if (!await _nextChapter(reader)) _suppressedReader = previous;
       } else {
-        await openReaderDetails(context, reader.manifest);
+        final seriesId = reader.manifest.seriesId;
+        if (seriesId == null || seriesId.isEmpty) {
+          await _details(reader);
+        } else if (GoRouterState.of(context).name == 'series-reader' &&
+            GoRouterState.of(context).pathParameters['id'] == seriesId) {
+          context.pop();
+        } else {
+          context.pushReplacementNamed(
+            'catalogue-detail',
+            pathParameters: {'kind': 'series', 'id': seriesId},
+          );
+        }
       }
     } catch (_) {
       if (mounted) {
@@ -281,6 +293,17 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
     reader.prefetch?.suspend(true);
     try {
       await openReaderDetails(context, reader.manifest);
+    } finally {
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+        reader.prefetch?.suspend(false);
+      }
+    }
+  }
+
+  Future<void> _parent(OpenReader reader) async {
+    reader.prefetch?.suspend(true);
+    try {
+      await openReaderSeries(context, reader.manifest);
     } finally {
       if (mounted && ModalRoute.of(context)?.isCurrent == true) {
         reader.prefetch?.suspend(false);
@@ -349,6 +372,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
                       page: _page,
                       onBack: () => context.pop(),
                       onDetails: () => _details(opened),
+                      onSeries: () => _parent(opened),
                     ),
             ),
         ],
@@ -491,11 +515,12 @@ class _RasterTopBar extends StatelessWidget {
     required this.page,
     required this.onBack,
     required this.onDetails,
+    required this.onSeries,
   });
   final ReaderManifest manifest;
   final Future<ReaderHeading>? heading;
   final ValueListenable<int> page;
-  final VoidCallback onBack, onDetails;
+  final VoidCallback onBack, onDetails, onSeries;
 
   @override
   Widget build(BuildContext context) => FutureBuilder<ReaderHeading>(
@@ -523,6 +548,7 @@ class _RasterTopBar extends StatelessWidget {
           ),
         ),
         actions: [
+          ReaderSeriesButton(manifest: manifest, onPressed: onSeries),
           ReaderDetailsButton(manifest: manifest, onPressed: onDetails),
         ],
       );

@@ -9,6 +9,7 @@ import '../../connection/application/session_controller.dart';
 import '../../library/application/catalogue_providers.dart';
 import '../../library/data/catalogue_store.dart';
 import '../../library/data/library_visibility_store.dart';
+import '../../library/data/komga_catalogue_remote.dart';
 import '../../library/domain/catalogue.dart';
 
 final libraryVisibilityStoreProvider =
@@ -45,8 +46,66 @@ final accessibleLibrariesProvider =
       yield* store.watchAvailableLibraries();
     });
 
+final accountVisibilityStoreProvider = FutureProvider.autoDispose
+    .family<LibraryVisibilityStore, String>(
+      (ref, account) async =>
+          LibraryVisibilityStore(await ref.watch(databaseProvider), account),
+    );
+final accountVisibilityProvider = StreamProvider.autoDispose
+    .family<Set<String>?, String>((ref, account) async* {
+      yield* (await ref.watch(accountVisibilityStoreProvider(account).future))
+          .watch();
+    });
+final accountLibrariesProvider = StreamProvider.autoDispose
+    .family<List<CatalogueItem>, String>((ref, account) async* {
+      final database = await ref.watch(databaseProvider);
+      final store = CatalogueStore(
+        database,
+        account,
+        applyLibraryVisibility: false,
+      );
+      List<CatalogueItem>? remoteLibraries;
+      await for (final cached in store.watchAvailableLibraries()) {
+        if (!ref.mounted) return;
+        if (cached.isNotEmpty) {
+          yield cached;
+          continue;
+        }
+        if (remoteLibraries == null) {
+          final saved = (await ref.read(savedSessionsProvider.future))
+              .where((s) => s.accountId == account)
+              .firstOrNull;
+          if (!ref.mounted) return;
+          if (saved == null) {
+            yield const [];
+            return;
+          }
+          final client = ref.read(komgaClientFactoryProvider)(
+            saved.endpoint,
+            saved.credentials,
+          );
+          ref.onDispose(client.close);
+          try {
+            remoteLibraries = (await client.catalogueLibraries(
+              (json) => parseCatalogueItem(json, CatalogueKind.library),
+            )).where((item) => item.available).toList(growable: false);
+          } finally {
+            client.close();
+          }
+          if (!ref.mounted) return;
+        }
+        yield remoteLibraries;
+      }
+    }, retry: (_, _) => null);
+
 class LibraryVisibilityPanel extends ConsumerStatefulWidget {
-  const LibraryVisibilityPanel({super.key});
+  const LibraryVisibilityPanel({
+    super.key,
+    this.accountId,
+    this.expanded = false,
+  });
+  final String? accountId;
+  final bool expanded;
 
   @override
   ConsumerState<LibraryVisibilityPanel> createState() =>
@@ -60,9 +119,16 @@ class _LibraryVisibilityPanelState
   Future<void> _save(Set<String>? included) async {
     if (_saving) return;
     // Capture the account-owned store before awaiting or switching accounts.
-    final store = ref.read(libraryVisibilityStoreProvider).asData?.value;
+    final store = widget.accountId == null
+        ? ref.read(libraryVisibilityStoreProvider).asData?.value
+        : ref
+              .read(accountVisibilityStoreProvider(widget.accountId!))
+              .asData
+              ?.value;
     if (store == null ||
-        store.accountId != ref.read(sessionProvider).session?.accountId) {
+        store.accountId !=
+            (widget.accountId ??
+                ref.read(sessionProvider).session?.accountId)) {
       return;
     }
     setState(() => _saving = true);
@@ -79,73 +145,82 @@ class _LibraryVisibilityPanelState
 
   @override
   Widget build(BuildContext context) {
-    final libraries = ref.watch(accessibleLibrariesProvider);
-    final visibility = ref.watch(libraryVisibilityProvider);
-    return ExpansionTile(
-      key: const Key('library-visibility'),
-      title: const LText('Libraries to display'),
-      children: [
-        if (libraries.hasError || visibility.hasError)
-          TextButton(
-            onPressed: () {
-              ref.invalidate(accessibleLibrariesProvider);
-              ref.invalidate(libraryVisibilityProvider);
-            },
-            child: const LText('Retry'),
-          )
-        else if (libraries.isLoading ||
-            visibility.isLoading ||
-            !libraries.hasValue ||
-            !visibility.hasValue)
-          const LinearProgressIndicator()
-        else ...[
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: LText(
-              'Only libraries available to this account are listed. Your selection applies to this account on this device.',
-            ),
+    final libraries = widget.accountId == null
+        ? ref.watch(accessibleLibrariesProvider)
+        : ref.watch(accountLibrariesProvider(widget.accountId!));
+    final visibility = widget.accountId == null
+        ? ref.watch(libraryVisibilityProvider)
+        : ref.watch(accountVisibilityProvider(widget.accountId!));
+    final children = <Widget>[
+      if (libraries.hasError || visibility.hasError)
+        TextButton(
+          onPressed: () {
+            ref.invalidate(accessibleLibrariesProvider);
+            ref.invalidate(libraryVisibilityProvider);
+          },
+          child: const LText('Retry'),
+        )
+      else if (libraries.isLoading ||
+          visibility.isLoading ||
+          !libraries.hasValue ||
+          !visibility.hasValue)
+        const LinearProgressIndicator()
+      else ...[
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: LText(
+            'Only libraries available to this account are listed. Your selection applies to this account on this device.',
           ),
-          SwitchListTile(
-            key: const Key('all-accessible-libraries'),
-            title: const LText('Show all accessible libraries'),
-            value: visibility.requireValue == null,
+        ),
+        SwitchListTile(
+          key: const Key('all-accessible-libraries'),
+          title: const LText('Show all accessible libraries'),
+          value: visibility.requireValue == null,
+          onChanged: _saving
+              ? null
+              : (all) => _save(
+                  all
+                      ? null
+                      : libraries.requireValue.map((item) => item.id).toSet(),
+                ),
+        ),
+        if (libraries.requireValue.isEmpty)
+          const InkEmptyState(
+            icon: InkIcons.books,
+            title: 'No saved libraries',
+          ),
+        for (final library in libraries.requireValue)
+          CheckboxListTile(
+            key: ValueKey('visible-library-${library.id}'),
+            title: Text(library.title),
+            value: visibility.requireValue?.contains(library.id) ?? true,
             onChanged: _saving
                 ? null
-                : (all) => _save(
-                    all
-                        ? null
-                        : libraries.requireValue.map((item) => item.id).toSet(),
-                  ),
+                : (checked) {
+                    final included = {
+                      ...visibility.requireValue ??
+                          libraries.requireValue.map((item) => item.id).toSet(),
+                    };
+                    if (checked == true) {
+                      included.add(library.id);
+                    } else {
+                      included.remove(library.id);
+                    }
+                    _save(included);
+                  },
           ),
-          if (libraries.requireValue.isEmpty)
-            const InkEmptyState(
-              icon: InkIcons.books,
-              title: 'No saved libraries',
-            ),
-          for (final library in libraries.requireValue)
-            CheckboxListTile(
-              key: ValueKey('visible-library-${library.id}'),
-              title: Text(library.title),
-              value: visibility.requireValue?.contains(library.id) ?? true,
-              onChanged: _saving
-                  ? null
-                  : (checked) {
-                      final included = {
-                        ...visibility.requireValue ??
-                            libraries.requireValue
-                                .map((item) => item.id)
-                                .toSet(),
-                      };
-                      if (checked == true) {
-                        included.add(library.id);
-                      } else {
-                        included.remove(library.id);
-                      }
-                      _save(included);
-                    },
-            ),
-        ],
       ],
-    );
+    ];
+    return widget.expanded
+        ? Column(
+            key: const Key('library-visibility'),
+            mainAxisSize: MainAxisSize.min,
+            children: children,
+          )
+        : ExpansionTile(
+            key: const Key('library-visibility'),
+            title: const LText('Libraries to display'),
+            children: children,
+          );
   }
 }

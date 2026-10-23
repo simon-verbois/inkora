@@ -134,12 +134,16 @@ class InkCoverTile extends ConsumerWidget {
       (
         label:
             openLabel ??
-            (book
+            (book && item.isEbook && onOpen == null
+                ? 'View details'
+                : book
                 ? 'Read book'
                 : continues
                 ? 'Continue reading'
                 : 'View details'),
-        icon: book || continues ? InkIcons.bookOpen : InkIcons.info,
+        icon: (book && !item.isEbook) || continues
+            ? InkIcons.bookOpen
+            : InkIcons.info,
         run: () => _open(context),
       ),
       if (!book && resume != null)
@@ -152,7 +156,7 @@ class InkCoverTile extends ConsumerWidget {
             : (
                 label: 'Read book',
                 icon: InkIcons.bookOpen,
-                run: () => openCatalogueItem(context, resume!.item),
+                run: () => openBookReader(context, resume!.item),
               ),
       if (book && downloaded)
         (

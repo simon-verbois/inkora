@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/l10n/app_strings.dart';
+import 'package:inkora/app/router.dart';
+import 'package:inkora/app/widgets/ink_screen_header.dart';
 import 'package:inkora/app/widgets/ink_filter_bar.dart';
 import 'package:inkora/features/library/domain/catalogue.dart';
 import 'package:inkora/features/settings/domain/ui_preferences.dart';
@@ -41,6 +43,8 @@ void main() {
         );
         addTearDown(() => harness.close(tester));
         await harness.mount(tester, textScale: scale);
+        harness.container.read(routerProvider).push<void>('/catalogue/series');
+        await tester.pumpAndSettle();
         final bar = find.byType(InkFilterBar);
         String tr(String text) => AppStrings.of(tester.element(bar)).text(text);
         InkFilterChip chip(String key) =>
@@ -73,7 +77,7 @@ void main() {
         expect(find.descendant(of: bar, matching: topSearch), findsNothing);
         expect(
           find.descendant(
-            of: find.byKey(const Key('home-header')),
+            of: find.byType(InkScreenHeader),
             matching: topSearch,
           ),
           findsOneWidget,
@@ -178,7 +182,13 @@ void main() {
             .toList();
         expect(checked, hasLength(1));
         expect(checked.single.value, CatalogueSort.title);
-        await tester.tap(find.text(tr('Recently updated')).last);
+        await tester.tap(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is CheckedPopupMenuItem<CatalogueSort> &&
+                widget.value == CatalogueSort.recentlyUpdated,
+          ),
+        );
         await tester.pumpAndSettle();
         expect(
           find.descendant(of: sort, matching: find.text(tr('Updated'))),

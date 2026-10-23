@@ -5,6 +5,7 @@ import '../icons/inkora_icons.dart';
 import '../theme/inkora_motion.dart';
 import '../theme/inkora_theme.dart';
 import 'ink_surface.dart';
+import 'ink_home_attachment.dart';
 import 'inkora_widgets.dart';
 
 /// The single header of a screen: an inset outlined bar with the native route
@@ -19,10 +20,12 @@ class InkScreenHeader extends StatelessWidget implements PreferredSizeWidget {
     required this.title,
     this.actions,
     this.automaticallyImplyLeading = true,
+    this.outlined = true,
   });
 
   /// Use `LText` for application copy and `Text` for server-owned names.
   final Widget title;
+  final bool outlined;
   final List<Widget>? actions;
 
   /// False hides the implied route Back (setup, wide settings panes).
@@ -43,6 +46,7 @@ class InkScreenHeader extends StatelessWidget implements PreferredSizeWidget {
         vertical: InkSpace.sm,
       ),
       child: InkOverlaySurface(
+        outlined: outlined,
         child: AppBar(
           primary: false,
           title: title,
@@ -128,7 +132,9 @@ class _ScrollThresholdState<T> extends State<_ScrollThreshold<T>> {
   );
 }
 
-/// Home brand header. With [pinned], it reserves a fixed band for actions.
+/// Home brand header. With [pinned], it overlays a fixed band for actions;
+/// the catalogue reserves its initial space with a transparent pinned sliver.
+/// Scrolling artwork can therefore pass behind the translucent header.
 /// Otherwise it overlays the top of [child] and hides once the
 /// scroll offset passes half its height, returning above that threshold. The
 /// state flips only on crossings; there is no per-frame interpolation.
@@ -158,23 +164,55 @@ class InkHomeHeader extends StatelessWidget {
     left: false,
     right: false,
     child: pinned && enabled
-        ? Column(
-            children: [
-              SizedBox(
-                key: const Key('home-header'),
-                height: InkScreenHeader.extent,
-                child: InkScreenHeader(
-                  automaticallyImplyLeading: false,
-                  title: const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: AlignmentDirectional.centerStart,
-                    child: InkoraWordmark(),
+        ? InkHomeAttachmentFrame(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                child,
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: SizedBox(
+                    key: const Key('home-header'),
+                    height: InkScreenHeader.extent,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                stops: const [0, .5, 1],
+                                colors: [
+                                  Theme.of(context).scaffoldBackgroundColor,
+                                  Theme.of(context).scaffoldBackgroundColor
+                                      .withValues(alpha: .94),
+                                  Theme.of(context).scaffoldBackgroundColor
+                                      .withValues(alpha: 0),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        InkScreenHeader(
+                          outlined: false,
+                          automaticallyImplyLeading: false,
+                          title: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: AlignmentDirectional.centerStart,
+                            child: InkoraWordmark(),
+                          ),
+                          actions: actions,
+                        ),
+                      ],
+                    ),
                   ),
-                  actions: actions,
                 ),
-              ),
-              Expanded(child: child),
-            ],
+              ],
+            ),
           )
         : _ScrollThreshold<bool>(
             initial: false,
@@ -257,7 +295,7 @@ enum InkFloatingHeaderState {
   /// At rest: the bubbles float on the plain page background.
   rest,
 
-  /// Scrolled: the band reads as a bar (divider below it).
+  /// Scrolled: the band reads as a bar.
   scrolled,
 
   /// Scrolled past the title threshold: the bar also shows the title.
@@ -273,7 +311,7 @@ enum InkFloatingHeaderState {
 /// `ensureVisible`/accessibility focus never reveal content behind them. At
 /// rest the band uses the plain page background, or reveals artwork when
 /// [transparentAtRest] is enabled; once the primary (depth-0, vertical) scroll view in [body] scrolls,
-/// the band becomes an opaque bar with a divider, and past [titleThreshold]
+/// the band becomes an opaque bar, and past [titleThreshold]
 /// it also shows [title]. These states change only on threshold crossings.
 ///
 /// Without [overlay], [body] needs no top safe-area padding (the band consumes
@@ -367,16 +405,12 @@ class InkFloatingHeader extends StatelessWidget {
         ],
       ),
       builder: (context, state) {
-        final scheme = Theme.of(context).colorScheme;
         return DecoratedBox(
           key: ValueKey('floating-header-${state.name}'),
           decoration: BoxDecoration(
             color: transparentAtRest && state == InkFloatingHeaderState.rest
                 ? Colors.transparent
                 : Theme.of(context).scaffoldBackgroundColor,
-            border: state == InkFloatingHeaderState.rest
-                ? null
-                : Border(bottom: BorderSide(color: scheme.outlineVariant)),
           ),
           child: SafeArea(
             bottom: false,

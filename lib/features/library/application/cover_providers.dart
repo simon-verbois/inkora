@@ -24,7 +24,7 @@ final coverRepositoryProvider = FutureProvider<CoverRepository?>((ref) async {
   );
   if (account == null) return null;
   final gate = ref.watch(pageNetworkGateProvider);
-  final client = ref.read(sessionProvider.notifier).client;
+  final client = ref.watch(activeConnectionTransportProvider);
   if (client == null) return null;
   var alive = true;
   CoverRepository? repository;

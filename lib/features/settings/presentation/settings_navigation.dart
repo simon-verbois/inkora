@@ -14,6 +14,7 @@ class SettingsSearchField extends StatelessWidget {
     this.controller,
     this.focusNode,
     this.showIcon = true,
+    this.onClose,
     this.fieldKey = const Key('settings-search'),
   });
   final Key fieldKey;
@@ -21,13 +22,41 @@ class SettingsSearchField extends StatelessWidget {
   final TextEditingController? controller;
   final FocusNode? focusNode;
   final bool showIcon;
+  final VoidCallback? onClose;
   @override
   Widget build(BuildContext context) => TextField(
     key: fieldKey,
     controller: controller,
     focusNode: focusNode,
     decoration: InputDecoration(
-      prefixIcon: showIcon ? const Icon(InkIcons.magnifyingGlass) : null,
+      prefixIcon: showIcon
+          ? const Icon(InkIcons.magnifyingGlass, size: 20)
+          : null,
+      suffixIcon: onClose == null
+          ? null
+          : IconButton(
+              key: const Key('settings-sidebar-search-toggle'),
+              tooltip: context.tr('Close'),
+              onPressed: onClose,
+              icon: const Icon(InkIcons.x, size: 20),
+            ),
+      filled: true,
+      fillColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(999)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(999),
+        borderSide: BorderSide(
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(999),
+        borderSide: BorderSide(
+          color: Theme.of(context).colorScheme.primary,
+          width: 2,
+        ),
+      ),
       hintText: context.tr('Search settings'),
     ),
     onChanged: onChanged,

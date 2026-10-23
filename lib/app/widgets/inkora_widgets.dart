@@ -265,15 +265,14 @@ Future<T?> showInkSheet<T>({
         ],
       );
     }
-    if (heightFactor != null) {
-      body = SizedBox(
-        height: (MediaQuery.sizeOf(context).height * heightFactor).clamp(
-          0,
-          maxHeight,
-        ),
-        child: body,
-      );
-    }
+    // Keep the handle inside the inset surface, rather than above its frame.
+    final framedBody = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const InkSheetHandle(),
+        Flexible(child: body),
+      ],
+    );
     return Padding(
       padding: EdgeInsets.fromLTRB(
         InkSpace.md,
@@ -283,10 +282,85 @@ Future<T?> showInkSheet<T>({
       ),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
-        child: InkOverlaySurface(child: body),
+        child: InkOverlaySurface(
+          child: heightFactor == null
+              ? framedBody
+              : SizedBox(
+                  height: (MediaQuery.sizeOf(context).height * heightFactor)
+                      .clamp(0, maxHeight),
+                  child: framedBody,
+                ),
+        ),
       ),
     );
   },
+);
+
+/// Visual affordance for every draggable reader sheet; the route owns dragging.
+class InkSheetHandle extends StatelessWidget {
+  const InkSheetHandle({super.key});
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: SizedBox(
+      key: const Key('ink-sheet-handle'),
+      height: 24,
+      width: double.infinity,
+      child: Center(
+        child: Container(
+          width: 36,
+          height: 4,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.onSurfaceVariant
+                .withValues(alpha: .5),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// Centered choices outside the reader. Keeps the same shared panel content,
+/// bounded height and root Navigator ownership as reader sheets.
+Future<T?> showInkPopup<T>({
+  required BuildContext context,
+  required Widget child,
+  String? title,
+  Widget? action,
+  Widget? footer,
+  bool scrollable = false,
+  double? heightFactor,
+}) => showDialog<T>(
+  context: context,
+  builder: (context) => Dialog(
+    clipBehavior: Clip.antiAlias,
+    child: ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: 720,
+        maxHeight: MediaQuery.sizeOf(context).height * .85,
+      ),
+      child: SizedBox(
+        height: heightFactor == null
+            ? null
+            : MediaQuery.sizeOf(context).height * heightFactor,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (title != null) InkSheetHeader(title: title, action: action),
+            Flexible(
+              child: scrollable ? SingleChildScrollView(child: child) : child,
+            ),
+            if (footer != null)
+              Padding(
+                padding: const EdgeInsets.all(InkSpace.lg),
+                child: footer,
+              ),
+          ],
+        ),
+      ),
+    ),
+  ),
 );
 
 /// Title row shared by sheets: localized [title] and an optional trailing
@@ -340,6 +414,7 @@ class InkDialog extends StatelessWidget {
     required this.content,
     required this.actions,
     this.scrollable = false,
+    this.contentPadding,
   });
   final String title;
   final Widget content;
@@ -348,11 +423,13 @@ class InkDialog extends StatelessWidget {
   /// Scroll title, message and actions together (long confirmations at
   /// large text sizes on small windows).
   final bool scrollable;
+  final EdgeInsetsGeometry? contentPadding;
   @override
   Widget build(BuildContext context) => AlertDialog(
     scrollable: scrollable,
     title: LText(title, style: Theme.of(context).textTheme.sheetTitle),
     content: content,
+    contentPadding: contentPadding,
     actions: actions,
   );
 }

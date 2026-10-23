@@ -13,6 +13,22 @@ const demonstrationTitles = [
   'Aster & Ash',
   'Beyond the Pines',
   'Blue Meridian',
+  'Copper Sky',
+  'The Silent Harbour',
+  'Winter Letters',
+  'Wildwood Station',
+  'The Clockmaker',
+  'Red Horizon',
+  'Lantern Road',
+  'The Glass Garden',
+  'Solstice',
+  'The Lost Observatory',
+  'Ember Valley',
+  'A Map of Rain',
+  'Northern Lights',
+  'The Jade Compass',
+  'Distant Shores',
+  'The Midnight Library',
 ];
 const _palettes = [
   [Color(0xff152c46), Color(0xffd6b778), Color(0xff4b7299)],
@@ -28,7 +44,7 @@ const _palettes = [
 Future<Uint8List> demonstrationCover(int index) async {
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(recorder);
-  final palette = _palettes[index];
+  final palette = _palettes[index % _palettes.length];
   final paint = Paint()..color = palette[0];
   canvas.drawRect(const Rect.fromLTWH(0, 0, 480, 690), paint);
   canvas.drawCircle(

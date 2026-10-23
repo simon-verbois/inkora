@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/widgets/inkora_widgets.dart';
 import '../application/offline_coordinator.dart';
+import '../data/download_store.dart';
+import '../../features/settings/presentation/settings_reset_button.dart';
 
 class DownloadSettingsPanel extends ConsumerStatefulWidget {
   const DownloadSettingsPanel({super.key});
@@ -64,6 +66,18 @@ class _DownloadSettingsPanelState extends ConsumerState<DownloadSettingsPanel> {
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  SettingsResetButton(
+                    enabled: !_busy,
+                    onReset: () => _run((s) async {
+                      final used = await s.store.occupied();
+                      await s.configure(
+                        quota: used > defaultDownloadQuota
+                            ? used
+                            : defaultDownloadQuota,
+                        wifiOnly: true,
+                      );
+                    }),
+                  ),
                   InkPanel(
                     framed: false,
                     title: "Storage and network",

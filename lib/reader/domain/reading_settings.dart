@@ -206,7 +206,8 @@ final class ReadingSettings {
   final bool pageAnimation;
   final Map<RasterFormat, RasterQuality> imageQuality;
   RasterQuality qualityFor(String mediaType) =>
-      imageQuality[RasterFormat.fromMediaType(mediaType)] ??
+      imageQuality[RasterFormat.jpeg] ??
+      imageQuality.values.firstOrNull ??
       const RasterQuality();
 
   /// Slider values used when [webtoonQuality] is custom (kept otherwise so
@@ -320,7 +321,13 @@ final class ReadingSettings {
       offset = layer.spreadOffset ?? offset;
       animation = layer.pageAnimation ?? animation;
       ebook.addAll(layer.ebook ?? const {});
-      images.addAll(layer.imageQuality ?? const {});
+      final rendering = layer.imageQuality;
+      if (rendering != null && rendering.isNotEmpty) {
+        final value = rendering[RasterFormat.jpeg] ?? rendering.values.first;
+        images.addAll({
+          for (final format in RasterFormat.values) format: value,
+        });
+      }
     }
     return ReadingSettings(
       mode: mode,

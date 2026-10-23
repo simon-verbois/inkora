@@ -79,7 +79,7 @@ void main() {
         find.byType(ReaderSettingsSheet),
       );
       final sampler = find.byKey(
-        const Key('reader-choice-quality-jpeg-sampling-nearest'),
+        const Key('reader-choice-quality-all-sampling-nearest'),
       );
       await tester.ensureVisible(sampler);
       await tester.tap(sampler);

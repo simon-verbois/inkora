@@ -48,7 +48,7 @@ void main() {
             );
             expect(tester.takeException(), isNull);
           }
-          expect(colors, hasLength(10));
+          expect(colors, hasLength(12));
           final selectors = tester
               .widgetList<SegmentedButton<int>>(
                 find.byType(SegmentedButton<int>),
@@ -64,9 +64,11 @@ void main() {
           expect(find.byType(ServersScreen), findsOneWidget);
           expect(find.text('Connection'), findsNothing);
           expect(find.text('Server connected'), findsNothing);
-          expect(find.text('Active account'), findsOneWidget);
+          expect(find.text('Active account'), findsNothing);
+          expect(find.byTooltip('Edit connection'), findsOneWidget);
+          expect(find.byTooltip('Libraries to display'), findsOneWidget);
           expect(find.byIcon(InkIcons.checkCircle), findsWidgets);
-          expect(find.text('Sign out'), findsOneWidget);
+          expect(find.text('Sign out'), findsNothing);
           await tester.scrollUntilVisible(
             find.text('Add server'),
             160,

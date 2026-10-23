@@ -4,11 +4,12 @@ import 'package:flutter/material.dart';
 
 import '../../app/icons/inkora_icons.dart';
 import '../../app/widgets/ink_surface.dart';
+import '../../app/widgets/ink_filter_bar.dart';
 import '../../app/l10n/app_strings.dart';
 import '../../app/theme/inkora_theme.dart';
 import '../../app/widgets/inkora_widgets.dart';
 
-/// Retained publication surfaces sit behind these small, opaque control panels.
+/// Retained publication surfaces sit behind these translucent control panels.
 /// No blur, screenshot, shadow or surface animation is needed to reveal them.
 class ReaderPanel extends StatelessWidget {
   const ReaderPanel({super.key, required this.child, this.top = false});
@@ -23,7 +24,9 @@ class ReaderPanel extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(12, top ? 8 : 0, 12, top ? 0 : 12),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 760),
-        child: InkSurface(padding: const EdgeInsets.all(8), child: child),
+        child: InkOverlaySurface(
+          child: Padding(padding: const EdgeInsets.all(8), child: child),
+        ),
       ),
     ),
   );
@@ -93,16 +96,17 @@ class ReaderProgressLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = Theme.of(context).textTheme.labelMedium;
+    final style = Theme.of(context).textTheme.labelMedium
+        ?.copyWith(height: 1.3);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: InkSpace.md),
       child: Row(
         children: [
-          Flexible(
+          Expanded(
             child: Text(
               position,
               key: const Key('reader-position'),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: style,
             ),
@@ -112,7 +116,7 @@ class ReaderProgressLine extends StatelessWidget {
             child: Text(
               detail,
               key: const Key('reader-progress-detail'),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.end,
               style: style,
@@ -129,23 +133,32 @@ class _ReaderActionFace extends StatelessWidget {
   final String label;
   final IconData icon;
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: InkSpace.xs),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 22),
-        const SizedBox(height: InkSpace.xs),
-        LText(
-          label,
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.labelSmall,
-        ),
-      ],
-    ),
-  );
+  Widget build(BuildContext context) {
+    final style = Theme.of(context).textTheme.labelMedium!
+        .copyWith(height: 1.2);
+    final labelHeight =
+        MediaQuery.textScalerOf(context).scale(style.fontSize!) * 1.2 * 2;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: InkSpace.xs),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 22),
+          const SizedBox(height: InkSpace.xs / 2),
+          SizedBox(
+            height: labelHeight,
+            child: LText(
+              label,
+              style: style,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// One labelled action of the reader's bottom action row.
@@ -204,28 +217,34 @@ class ReaderMoreAction extends StatelessWidget {
   const ReaderMoreAction({super.key, required this.entries});
   final List<ReaderMenuEntry> entries;
   @override
-  Widget build(BuildContext context) => PopupMenuButton<int>(
-    key: const Key('reader-more'),
-    tooltip: context.tr('More'),
-    itemBuilder: (_) => [
-      for (var i = 0; i < entries.length; i++)
-        PopupMenuItem(
-          value: i,
-          enabled: entries[i].onSelected != null,
-          child: Row(
-            children: [
-              Icon(entries[i].icon, size: 20),
-              const SizedBox(width: InkSpace.md),
-              Flexible(child: LText(entries[i].label)),
-            ],
-          ),
+  Widget build(BuildContext context) => InkToolsMenu(
+    alignmentOffset: const Offset(0, 8),
+    menuStyle: MenuStyle(
+      maximumSize: WidgetStatePropertyAll(
+        Size(320, MediaQuery.sizeOf(context).height * .5),
+      ),
+    ),
+    children: [
+      for (final entry in entries)
+        MenuItemButton(
+          onPressed: entry.onSelected,
+          leadingIcon: Icon(entry.icon, size: 20),
+          child: LText(entry.label),
         ),
     ],
-    onSelected: (index) => entries[index].onSelected?.call(),
-    child: ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 48),
-      child: const Center(
-        child: _ReaderActionFace(label: 'More', icon: InkIcons.dotsThree),
+    buttonBuilder: (context, controller) => Tooltip(
+      message: context.tr('More'),
+      child: TextButton(
+        key: const Key('reader-more'),
+        style: TextButton.styleFrom(
+          minimumSize: const Size(48, 48),
+          padding: const EdgeInsets.symmetric(horizontal: InkSpace.xs),
+        ),
+        onPressed: () =>
+            controller.isOpen ? controller.close() : controller.open(),
+        child: const Center(
+          child: _ReaderActionFace(label: 'More', icon: InkIcons.dotsThree),
+        ),
       ),
     ),
   );

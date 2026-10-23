@@ -103,20 +103,20 @@ void main() {
         await tester.ensureVisible(find.text('Sign in'));
         await tester.tap(find.text('Sign in'));
         await tester.pumpAndSettle();
-        expect(find.byKey(const Key('library-selector')), findsOneWidget);
+        expect(find.byKey(const Key('catalogue-pinned-tools')), findsOneWidget);
         expect(
           container.read(sessionProvider).session?.user.email,
           'reader@example.test',
         );
         container.read(routerProvider).go('/connections');
         await tester.pumpAndSettle();
-        expect(find.byKey(const Key('library-selector')), findsOneWidget);
+        expect(find.byKey(const Key('catalogue-pinned-tools')), findsOneWidget);
         container.read(routerProvider).go('/settings/account');
         await tester.pumpAndSettle();
-        expect(find.text('reader@example.test'), findsNWidgets(2));
-        await tester.tap(find.text('Sign out'));
+        expect(find.text('reader@example.test'), findsOneWidget);
+        await tester.tap(find.byTooltip('Remove server example.test'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Sign out').last);
+        await tester.tap(find.byKey(const Key('ink-confirm-accept')));
         await tester.pumpAndSettle();
         expect(
           find.text('Connect your Komga server to start reading.'),
@@ -170,7 +170,7 @@ void main() {
     );
     restore.complete(savedSession);
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('library-selector')), findsOneWidget);
+    expect(find.byKey(const Key('catalogue-pinned-tools')), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(milliseconds: 20));
     await tester.runAsync(database.close);

@@ -61,7 +61,7 @@ const settingsSections = [
   SettingsSection(
     'quality',
     'Image quality',
-    'Image rendering and format preferences',
+    'Image scaling',
     InkIcons.image,
     SettingsGroup.reading,
   ),

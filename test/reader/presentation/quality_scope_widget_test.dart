@@ -61,7 +61,7 @@ void main() {
           expect(saved.mode, ReadingMode.manga);
           expect(saved.spacing, 24);
           expect(saved.imageQuality, isNull);
-          expect(saved.webtoonQuality, isNull);
+          expect(saved.webtoonQuality, WebtoonQuality.saver);
         } else {
           expect(saved.mode, isNull);
           expect(saved.spacing, isNull);

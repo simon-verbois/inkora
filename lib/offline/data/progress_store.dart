@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import '../../core/storage/app_database.dart';
 import '../../reader/domain/reader_manifest.dart';
 import '../domain/progress.dart';
+import 'download_retention_store.dart';
 
 ProgressIntent _intent(QueryRow row) => ProgressIntent(
   accountId: row.read<String>('account_id'),
@@ -297,6 +298,10 @@ final class ProgressStore {
       ],
     );
     if (changed > 0) {
+      await DownloadRetentionStore(
+        database,
+        accountId,
+      ).readingStateChanged(book);
       database.notifyUpdates({TableUpdate.onTable(database.bookReadingStates)});
     }
   }

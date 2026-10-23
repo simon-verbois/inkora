@@ -84,77 +84,71 @@ class _SettingsWorkspaceState extends State<SettingsWorkspace> {
         padding: const EdgeInsets.only(bottom: 8),
         child: SizedBox(
           height: MediaQuery.textScalerOf(context).scale(24) + 32,
-          child: Row(
+          child: Stack(
             key: const Key('settings-sidebar-heading'),
+            fit: StackFit.expand,
             children: [
-              IconButton(
-                key: const Key('settings-sidebar-back'),
-                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-                onPressed: () =>
-                    context.canPop() ? context.pop() : context.go('/'),
-                icon: const Icon(InkIcons.caretLeft),
-              ),
-              Expanded(
-                child: Stack(
-                  fit: StackFit.expand,
+              Offstage(
+                offstage: _searchOpen,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: ExcludeSemantics(
-                        excluding: _searchOpen,
-                        child: LText(
-                          'Settings',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
+                    IconButton(
+                      key: const Key('settings-sidebar-back'),
+                      tooltip: MaterialLocalizations.of(context)
+                          .backButtonTooltip,
+                      onPressed: () =>
+                          context.canPop() ? context.pop() : context.go('/'),
+                      icon: const Icon(InkIcons.caretLeft),
+                    ),
+                    Expanded(
+                      child: LText(
+                        'Settings',
+                        style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
-                    TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0, end: _searchOpen ? 1 : 0),
-                      duration: MediaQuery.disableAnimationsOf(context)
-                          ? Duration.zero
-                          : InkoraMotion.tab,
-                      curve: Curves.easeOutCubic,
-                      builder: (context, value, child) => Offstage(
-                        offstage: value == 0,
-                        child: ClipRect(
-                          key: const Key('settings-sidebar-search-reveal'),
-                          clipper: _SearchRevealClipper(value),
-                          child: child,
-                        ),
-                      ),
-                      child: ExcludeFocus(
-                        excluding: !_searchOpen,
-                        child: ExcludeSemantics(
-                          excluding: !_searchOpen,
-                          child: IgnorePointer(
-                            ignoring: !_searchOpen,
-                            child: ColoredBox(
-                              color: Theme.of(context).scaffoldBackgroundColor,
-                              child: SettingsSearchField(
-                                fieldKey: const Key('settings-sidebar-search'),
-                                showIcon: false,
-                                controller: _searchController,
-                                focusNode: _searchFocus,
-                                onChanged: (value) {
-                                  final query = value.toLowerCase().trim();
-                                  if (query != _query) {
-                                    setState(() => _query = query);
-                                  }
-                                },
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                    IconButton(
+                      key: const Key('settings-sidebar-search-toggle'),
+                      tooltip: context.tr('Search settings'),
+                      icon: const Icon(InkIcons.magnifyingGlass),
+                      onPressed: _toggleSearch,
                     ),
                   ],
                 ),
               ),
-              IconButton(
-                key: const Key('settings-sidebar-search-toggle'),
-                tooltip: context.tr(_searchOpen ? 'Close' : 'Search settings'),
-                icon: Icon(_searchOpen ? InkIcons.x : InkIcons.magnifyingGlass),
-                onPressed: _toggleSearch,
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: _searchOpen ? 1 : 0),
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : InkoraMotion.tab,
+                curve: Curves.easeOutCubic,
+                builder: (context, value, child) => Offstage(
+                  offstage: value == 0,
+                  child: ClipRect(
+                    key: const Key('settings-sidebar-search-reveal'),
+                    clipper: _SearchRevealClipper(value),
+                    child: child,
+                  ),
+                ),
+                child: ExcludeFocus(
+                  excluding: !_searchOpen,
+                  child: ExcludeSemantics(
+                    excluding: !_searchOpen,
+                    child: IgnorePointer(
+                      ignoring: !_searchOpen,
+                      child: SettingsSearchField(
+                        fieldKey: const Key('settings-sidebar-search'),
+                        controller: _searchController,
+                        focusNode: _searchFocus,
+                        onClose: _toggleSearch,
+                        onChanged: (value) {
+                          final query = value.toLowerCase().trim();
+                          if (query != _query) setState(() => _query = query);
+                        },
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

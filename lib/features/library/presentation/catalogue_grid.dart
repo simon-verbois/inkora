@@ -21,11 +21,13 @@ class CatalogueGrid extends ConsumerStatefulWidget {
     required this.itemBuilder,
     this.columns,
     this.artwork,
+    this.topPadding = 16,
   });
   final int itemCount;
   final IndexedWidgetBuilder itemBuilder;
   final int? columns;
   final List<CatalogueItem>? artwork;
+  final double topPadding;
   @override
   ConsumerState<CatalogueGrid> createState() => _CatalogueGridState();
 }
@@ -178,7 +180,7 @@ class _CatalogueGridState extends ConsumerState<CatalogueGrid> {
       height: height,
       columns: columns,
       sliver: SliverPadding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(16, widget.topPadding, 16, 16),
         sliver: SliverGrid.builder(
           itemCount: widget.itemCount,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(

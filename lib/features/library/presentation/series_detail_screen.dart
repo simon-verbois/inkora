@@ -13,12 +13,15 @@ import '../../../app/widgets/inkora_widgets.dart';
 import '../../../app/widgets/route_visibility.dart';
 import '../../../offline/application/offline_coordinator.dart';
 import '../../../offline/data/download_store.dart';
+import '../../../offline/data/download_retention_store.dart';
 import '../application/catalogue_providers.dart';
 import '../domain/catalogue.dart';
 import '../domain/catalogue_filters.dart';
 import '../domain/volume_progress.dart';
 import 'catalogue_widgets.dart';
 import 'series_header.dart';
+import 'book_detail_screen.dart';
+import 'series_download_dialog.dart';
 import 'volume_actions.dart';
 import 'volume_browser.dart';
 
@@ -68,12 +71,27 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
   }
 
   late final _actions = VolumeActions(
-    open: (volume) => openCatalogueItem(context, volume.item),
+    open: _openVolume,
+    read: (volume) => openBookReader(context, volume.item),
     mark: (volume, {required read}) => _mark([volume], read: read),
     markPrevious: _markPrevious,
     select: (volume) => _browser.startSelection([volume.id]),
   );
   bool _selecting = false;
+  SeriesVolume? _focusedVolume;
+
+  void _openVolume(SeriesVolume volume) {
+    if (!volume.isEbook || _focusedVolume?.id == volume.id) {
+      openBookReader(context, volume.item);
+      return;
+    }
+    if (MediaQuery.sizeOf(context).width < SeriesDetailScreen.paneBreakpoint) {
+      openCatalogueItem(context, volume.item);
+      return;
+    }
+    setState(() => _focusedVolume = volume);
+    if (_scroll.hasClients) _scroll.jumpTo(0);
+  }
 
   String get _id => widget.id;
 
@@ -107,6 +125,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
   void didUpdateWidget(SeriesDetailScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.id != widget.id) {
+      _focusedVolume = null;
       _observeVisibility();
       _browser.endSelection();
       if (_scroll.hasClients) _scroll.jumpTo(0);
@@ -282,27 +301,41 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
     final progress = _progress;
     if (progress == null) return;
     final skip = _downloadedOrQueued();
-    final targets = [
-      for (final volume in progress.volumes)
-        if (volume.available &&
-            (volume.isEbook || volume.pageCount > 0) &&
-            !skip.contains(volume.id))
-          volume.id,
-    ];
-    if (targets.isEmpty) return;
-    if (!await confirmInk(
-          context,
-          title: 'Download volumes?',
-          message:
-              'Selection: {0}. The volumes are added to the download queue.',
-          messageArguments: [_strings.quantity(targets.length, 'book')],
-          confirmLabel: 'Download',
-        ) ||
-        !mounted) {
-      return;
-    }
     try {
-      final result = await queueVolumeDownloads(ref, targets);
+      final repository = await ref.read(catalogueRepositoryProvider.future);
+      if (repository == null || !mounted) return;
+      final retention = DownloadRetentionStore(
+        repository.store.database,
+        repository.store.accountId,
+      );
+      final enabled = await retention.enabled(_id);
+      if (!mounted) return;
+      final choice = await showDialog<SeriesDownloadChoice>(
+        context: context,
+        builder: (_) => SeriesDownloadDialog(
+          progress: progress,
+          skip: skip,
+          removeFinished: enabled,
+        ),
+      );
+      if (choice == null || !mounted) return;
+      // A dialog must not carry an old account's series operation across login.
+      final current = await ref.read(catalogueRepositoryProvider.future);
+      if (!identical(current, repository) || !mounted) return;
+      await retention.configure(_id, choice.removeFinished);
+      final latest = _progress;
+      if (latest == null) return;
+      final targets = seriesDownloadTargets(
+        latest,
+        _downloadedOrQueued(),
+        unreadOnly: choice.unreadOnly,
+      );
+      if (targets.isEmpty) return;
+      final result = await queueVolumeDownloads(
+        ref,
+        targets,
+        accountId: repository.store.accountId,
+      );
       if (mounted) {
         notifyInk(
           context,
@@ -321,25 +354,35 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
   }
 
   Future<void> _markSeries() async {
-    final read = await showInkSheet<bool>(
+    final read = await showDialog<bool>(
       context: context,
-      title: 'Reading progress',
-      child: Builder(
-        builder: (sheetContext) => Column(
+      builder: (dialogContext) => InkDialog(
+        title: 'Reading progress',
+        scrollable: true,
+        contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
+              minTileHeight: 48,
               leading: const Icon(InkIcons.check),
               title: const LText('Mark read'),
-              onTap: () => Navigator.pop(sheetContext, true),
+              onTap: () => Navigator.pop(dialogContext, true),
             ),
             ListTile(
+              minTileHeight: 48,
               leading: const Icon(InkIcons.arrowCounterClockwise),
               title: const LText('Mark unread'),
-              onTap: () => Navigator.pop(sheetContext, false),
+              onTap: () => Navigator.pop(dialogContext, false),
             ),
           ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const LText('Cancel'),
+          ),
+        ],
       ),
     );
     if (read == null || !mounted) return;
@@ -455,16 +498,27 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
     );
     final wide =
         MediaQuery.sizeOf(context).width >= SeriesDetailScreen.paneBreakpoint;
+    final focus = _focusedVolume;
+    final focusedBook = focus == null
+        ? null
+        : ref
+                  .watch(catalogueItemProvider((CatalogueKind.book, focus.id)))
+                  .asData
+                  ?.value ??
+              focus.item;
     return PopScope(
       canPop: !_selecting,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _browser.endSelection();
       },
       child: Scaffold(
+        extendBody: true,
         body: Stack(
           children: [
             if (!wide && data.asData?.value != null)
-              Positioned.fill(child: SeriesBackdrop(item: data.asData!.value!)),
+              Positioned.fill(
+                child: SeriesBackdrop(item: focusedBook ?? data.asData!.value!),
+              ),
             InkFloatingHeader(
               overlay: wide,
               transparentAtRest: !wide,
@@ -496,8 +550,13 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
                     }
                     final count = volumeCount ?? item.itemCount;
                     return wide
-                        ? _panes(context, item, count)
-                        : _single(context, item, count);
+                        ? _panes(context, item, count, focusedBook: focusedBook)
+                        : _single(
+                            context,
+                            item,
+                            count,
+                            focusedBook: focusedBook,
+                          );
                   },
                 ),
               ),
@@ -543,6 +602,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
     VolumeSection(
       seriesId: _id,
       seriesTitle: item.title,
+      focusedId: _focusedVolume?.id,
       controller: _browser,
       actions: _actions,
       sliverKey: _sliverKey,
@@ -550,9 +610,17 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
     ),
   ];
 
-  Widget _single(BuildContext context, CatalogueItem item, int count) {
+  Widget _single(
+    BuildContext context,
+    CatalogueItem item,
+    int count, {
+    CatalogueItem? focusedBook,
+  }) {
     final extent = _pinnedExtent(context);
-    final bottom = MediaQuery.paddingOf(context).bottom + InkSpace.xl;
+    final bottom =
+        MediaQuery.paddingOf(context).bottom +
+        InkSpace.xl +
+        (_selecting ? VolumeSelectionBar.clearance : 0);
     return InkContent(
       child: CustomScrollView(
         key: ValueKey('series-$_id'),
@@ -564,8 +632,16 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const CatalogueRefreshStatus(),
-                SeriesHero(item: item, volumeCount: count, showBackdrop: false),
-                _readingBlock(item),
+                if (focusedBook != null)
+                  _focusedHero(focusedBook, wide: false)
+                else ...[
+                  SeriesHero(
+                    item: item,
+                    volumeCount: count,
+                    showBackdrop: false,
+                  ),
+                  _readingBlock(item),
+                ],
                 const SizedBox(height: InkSpace.lg),
               ],
             ),
@@ -595,7 +671,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
                 ),
                 sliver: SliverToBoxAdapter(
                   key: const Key('series-about'),
-                  child: SeriesAbout(item: item),
+                  child: SeriesAbout(item: focusedBook ?? item),
                 ),
               )
             else if (item.canOpen)
@@ -616,43 +692,59 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
     );
   }
 
-  Widget _panes(BuildContext context, CatalogueItem item, int count) {
+  Widget _panes(
+    BuildContext context,
+    CatalogueItem item,
+    int count, {
+    CatalogueItem? focusedBook,
+  }) {
     final width = MediaQuery.sizeOf(context).width;
-    final left = (width * .36).clamp(320.0, 440.0);
-    final bottom = MediaQuery.paddingOf(context).bottom + InkSpace.xl;
+    final left = (width * .38).clamp(336.0, 480.0);
+    final bottom =
+        MediaQuery.paddingOf(context).bottom +
+        InkSpace.xl +
+        (_selecting ? VolumeSelectionBar.clearance : 0);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SizedBox(
           width: left,
-          child: CustomScrollView(
-            key: const Key('series-about-pane'),
-            controller: _scroll,
-            slivers: [
-              SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const CatalogueRefreshStatus(),
-                    SeriesHero(
-                      item: item,
-                      volumeCount: count,
-                      coverWidth: 120,
-                      topInset: InkFloatingHeader.contentInset(context),
-                    ),
-                    _readingBlock(item),
-                  ],
+          child: ScrollConfiguration(
+            behavior: ScrollConfiguration.of(context)
+                .copyWith(overscroll: false),
+            child: CustomScrollView(
+              key: const Key('series-about-pane'),
+              controller: _scroll,
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const CatalogueRefreshStatus(),
+                      if (focusedBook != null)
+                        _focusedHero(focusedBook, wide: true)
+                      else ...[
+                        SeriesHero(
+                          item: item,
+                          volumeCount: count,
+                          coverWidth: 120,
+                          topInset: InkFloatingHeader.contentInset(context),
+                        ),
+                        _readingBlock(item),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.all(InkSpace.lg),
-                sliver: SliverToBoxAdapter(
-                  key: const Key('series-about'),
-                  child: SeriesAbout(item: item),
+                SliverPadding(
+                  padding: const EdgeInsets.all(InkSpace.lg),
+                  sliver: SliverToBoxAdapter(
+                    key: const Key('series-about'),
+                    child: SeriesAbout(item: focusedBook ?? item),
+                  ),
                 ),
-              ),
-              SliverToBoxAdapter(child: SizedBox(height: bottom)),
-            ],
+                SliverToBoxAdapter(child: SizedBox(height: bottom)),
+              ],
+            ),
           ),
         ),
         const VerticalDivider(key: Key('series-pane-divider'), width: 1),
@@ -677,6 +769,21 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
       ],
     );
   }
+
+  Widget _focusedHero(CatalogueItem item, {required bool wide}) => Stack(
+    children: [
+      if (wide) Positioned.fill(child: SeriesBackdrop(item: item)),
+      Padding(
+        padding: EdgeInsets.fromLTRB(
+          InkSpace.lg,
+          (wide ? InkFloatingHeader.contentInset(context) : 0) + InkSpace.sm,
+          InkSpace.lg,
+          InkSpace.lg,
+        ),
+        child: BookDetailHero(item: item),
+      ),
+    ],
+  );
 }
 
 class _ScrollIsolation extends StatelessWidget {

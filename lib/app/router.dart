@@ -88,6 +88,20 @@ final routerProvider = Provider<GoRouter>((ref) {
     ),
     routes: [
       GoRoute(
+        name: 'reader-parent',
+        path: '/reader-parent/:id',
+        pageBuilder: (_, state) => page(
+          state,
+          InkoraShell(
+            currentPath: '/catalogue/series/${state.pathParameters['id']!}',
+            child: CatalogueDetailScreen(
+              kind: CatalogueKind.series,
+              id: state.pathParameters['id']!,
+            ),
+          ),
+        ),
+      ),
+      GoRoute(
         path: '/setup',
         pageBuilder: (_, state) => page(
           state,
@@ -213,9 +227,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                     ),
                   ),
                 ],
-                redirect: (_, state) => state.pathParameters['kind'] == 'book'
-                    ? '/reader/${Uri.encodeComponent(state.pathParameters['id']!)}'
-                    : null,
                 pageBuilder: (_, state) {
                   final kind = CatalogueKind.values
                       .where(

@@ -382,7 +382,6 @@ class _ReaderViewportState extends State<ReaderViewport>
                                     : null,
                               ),
                               if (widget.controlsActions != null) ...[
-                                const Divider(height: 1),
                                 widget.controlsActions!,
                               ],
                             ],

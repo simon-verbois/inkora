@@ -27,17 +27,13 @@ IconData catalogueIcon(CatalogueKind kind) => switch (kind) {
 void openCatalogueItem(BuildContext context, CatalogueItem item) {
   if (!item.canOpen) return;
   if (item.kind == CatalogueKind.book) {
-    if (!item.isEbook && item.seriesId != null && item.seriesId!.isNotEmpty) {
+    if (item.isEbook) {
       context.pushNamed(
-        'series-reader',
-        pathParameters: {
-          'kind': 'series',
-          'id': item.seriesId!,
-          'bookId': item.id,
-        },
+        'catalogue-detail',
+        pathParameters: {'kind': 'book', 'id': item.id},
       );
     } else {
-      context.pushNamed('reader', pathParameters: {'id': item.id});
+      openBookReader(context, item);
     }
     return;
   }
@@ -45,6 +41,39 @@ void openCatalogueItem(BuildContext context, CatalogueItem item) {
     'catalogue-detail',
     pathParameters: {'kind': item.kind.name, 'id': item.id},
   );
+}
+
+/// Explicit reading actions bypass book details, including offline and resume.
+void openBookReader(BuildContext context, CatalogueItem item) {
+  if (!item.canOpen) return;
+  final route = GoRouterState.of(context);
+  if (route.name == 'reader-parent') {
+    final router = GoRouter.of(context);
+    final currentBook = route.uri.queryParameters['book'];
+    if (!router.canPop()) {
+      router.goNamed('reader', pathParameters: {'id': item.id});
+      return;
+    }
+    router.pop();
+    if (currentBook != item.id) {
+      // Readium owns one publication; replace the prior reader rather than
+      // retaining two native publications on the navigation stack.
+      router.pushReplacementNamed('reader', pathParameters: {'id': item.id});
+    }
+    return;
+  }
+  if (!item.isEbook && item.seriesId != null && item.seriesId!.isNotEmpty) {
+    context.pushNamed(
+      'series-reader',
+      pathParameters: {
+        'kind': 'series',
+        'id': item.seriesId!,
+        'bookId': item.id,
+      },
+    );
+  } else {
+    context.pushNamed('reader', pathParameters: {'id': item.id});
+  }
 }
 
 String catalogueDescription(CatalogueItem item, {BuildContext? context}) =>

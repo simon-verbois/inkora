@@ -28,7 +28,7 @@ void main() {
         harness.container.read(routerProvider).go('/settings/quality');
         await tester.pumpAndSettle();
         final chip = find.byKey(
-          const Key('reader-choice-quality-jpeg-sampling-nearest'),
+          const Key('reader-choice-quality-all-sampling-nearest'),
         );
         await tester.ensureVisible(chip);
         await tester.pumpAndSettle();

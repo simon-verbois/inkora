@@ -2,6 +2,7 @@ import '../../../app/widgets/inkora_widgets.dart';
 import '../../../app/theme/inkora_theme.dart';
 import 'settings_adaptive_layout.dart';
 import 'preference_labels.dart';
+import 'settings_reset_button.dart';
 import '../../../app/l10n/app_strings.dart';
 
 import 'package:flutter/material.dart';
@@ -34,6 +35,7 @@ class GestureSettings extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        SettingsResetButton(onReset: () => save(const GestureZones())),
         if (showTitle)
           LText('Gestures', style: Theme.of(context).textTheme.screenTitle),
         const SizedBox(height: 12),

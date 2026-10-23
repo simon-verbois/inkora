@@ -126,7 +126,7 @@ void main() {
   }
 
   testWidgets(
-    'predictive Back moves the whole workspace or its category once',
+    'predictive Back keeps the workspace and category still until commit',
     (tester) async {
       final harness = await mount(tester, const Size(1280, 800));
       final router = harness.container.read(routerProvider);
@@ -138,7 +138,7 @@ void main() {
         expect(await backEvent(tester, 'startBackGesture'), isTrue);
         await backEvent(tester, 'updateBackGestureProgress');
         await tester.pump();
-        expect(tester.getRect(page).left, closeTo(rect.width * .4, .01));
+        expect(tester.getRect(page), rect);
         expect(tester.getRect(page).size, rect.size);
         await backEvent(tester, 'cancelBackGesture');
         await tester.pumpAndSettle();
@@ -163,7 +163,7 @@ void main() {
       await backEvent(tester, 'updateBackGestureProgress');
       await tester.pump();
       expect(tester.getRect(workspace), rect);
-      expect(tester.getRect(category).left, greaterThan(categoryRect.left));
+      expect(tester.getRect(category), categoryRect);
       await backEvent(tester, 'cancelBackGesture');
       await tester.pumpAndSettle();
       expect(tester.getRect(category), categoryRect);
@@ -226,7 +226,7 @@ void main() {
           await backEvent(tester, 'updateBackGestureProgress', edge: edge);
           await tester.pump();
           expect(tester.getRect(workspace), original);
-          expect(tester.getRect(reader).left, greaterThan(0));
+          expect(tester.getRect(reader).left, 0);
           await backEvent(
             tester,
             cancel ? 'cancelBackGesture' : 'commitBackGesture',

@@ -450,7 +450,11 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   }
 
   void _locationChanged(Locator locator) {
-    if (!mounted || _backgrounded) return;
+    if (!mounted ||
+        _backgrounded ||
+        ModalRoute.of(context)?.isCurrent != true) {
+      return;
+    }
     if (!_presentationReady) {
       _presentationReady = true;
       unawaited(_configurePresentation(force: true));
@@ -833,7 +837,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
         state == AppLifecycleState.detached;
     if (state != AppLifecycleState.resumed) {
       _flush();
-    } else {
+    } else if (ModalRoute.of(context)?.isCurrent == true) {
       _chromeChanged();
     }
   }
@@ -935,7 +939,13 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
                               key: const Key('reader-subtitle'),
                             ),
                           ),
-                    actions: [ReaderDetailsButton(manifest: _manifest)],
+                    actions: [
+                      ReaderSeriesButton(
+                        manifest: _manifest,
+                        immersiveOnReturn: !widget.gestureZones.showSystemBars,
+                      ),
+                      ReaderDetailsButton(manifest: _manifest),
+                    ],
                   ),
                 )
               : const SizedBox.shrink(),
@@ -989,7 +999,6 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
                                   : null,
                               onSeek: _seek,
                             ),
-                            const Divider(height: 1),
                             ReaderActionRow(
                               children: [
                                 ReaderQuickAction(

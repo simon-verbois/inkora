@@ -37,7 +37,10 @@ void main() {
           );
           addTearDown(() => harness.close(tester));
           await harness.mount(tester);
-          expect(find.byKey(const Key('library-selector')), findsOneWidget);
+          expect(
+            find.byKey(const Key('catalogue-pinned-tools')),
+            findsOneWidget,
+          );
           expect(find.byTooltip('Refresh catalogue'), findsNothing);
           expect(find.byTooltip('Search catalogue'), findsNothing);
           expect(find.byIcon(Icons.shield_outlined), findsNothing);
@@ -72,8 +75,12 @@ void main() {
           await tester.pumpAndSettle();
           expect(find.byTooltip('Search catalogue'), findsNothing);
           expect(find.text('Favorites'), findsNothing);
-          expect(find.byKey(const Key('open-downloads')), findsOneWidget);
-          expect(find.byKey(const Key('open-settings')), findsOneWidget);
+          if (size.width < 360) {
+            expect(find.byKey(const Key('home-menu')), findsOneWidget);
+          } else {
+            expect(find.byKey(const Key('open-downloads')), findsOneWidget);
+            expect(find.byKey(const Key('open-settings')), findsOneWidget);
+          }
           expect(find.byKey(const Key('navigation-home')), findsNothing);
           expect(find.byKey(const Key('navigation-rail')), findsNothing);
           expect(
@@ -174,8 +181,8 @@ void main() {
       expect(find.text('Sign out'), findsNothing);
       await tester.tap(find.text('Servers and account'));
       await tester.pumpAndSettle();
-      expect(find.text('Active account'), findsOneWidget);
-      expect(find.text('Sign out'), findsOneWidget);
+      expect(find.text('Active account'), findsNothing);
+      expect(find.byTooltip('Edit connection'), findsOneWidget);
       final router = harness.container.read(routerProvider);
       router.go('/settings/account');
       await tester.pumpAndSettle();
@@ -184,9 +191,9 @@ void main() {
         '/settings/servers',
       );
       expect(find.text('Account and connection'), findsNothing);
-      await tester.tap(find.text('Sign out'));
+      await tester.tap(find.byTooltip('Remove server example.test'));
       await tester.pumpAndSettle();
-      expect(find.text('Sign out of Inkora?'), findsOneWidget);
+      expect(find.text('Remove this server?'), findsOneWidget);
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       expect(
@@ -234,10 +241,10 @@ void main() {
       harness.container.read(routerProvider).go('/settings/reading');
       await tester.pumpAndSettle();
       expect(find.text('Reading profiles'), findsOneWidget);
-      await tester.tap(find.text('Global defaults').first);
+      await tester.tap(find.text('Manga shelf'));
       await tester.pumpAndSettle();
       // The page title names the scope; the editor repeats no title.
-      expect(find.text('Global defaults'), findsOneWidget);
+      expect(find.text('Manga shelf'), findsOneWidget);
       expect(find.text('Reading preferences'), findsNothing);
       expect(find.text('This book'), findsNothing);
       expect(find.text('Preference inheritance'), findsNothing);

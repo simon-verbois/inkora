@@ -1,5 +1,5 @@
-/// The decoded page's MIME type, not its archive/container extension, owns
-/// rendering preferences. Unknown supported raster types use the fallback.
+/// MIME groups retained for decoding and backwards-compatible preference JSON.
+/// The rendering editor and effective settings now use one choice for all groups.
 enum RasterFormat {
   jpeg,
   png,

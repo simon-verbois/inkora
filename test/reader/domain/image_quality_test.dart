@@ -45,9 +45,12 @@ void main() {
       ),
       SettingsScope.book: const ReadingOverrides(mode: ReadingMode.webtoon),
     });
-    expect(resolved.qualityFor('image/jpeg').sampling, ImageSampling.nearest);
+    expect(resolved.qualityFor('image/jpeg').sampling, ImageSampling.high);
     expect(resolved.qualityFor('image/png').filter, VisualFilter.sepia);
-    expect(resolved.qualityFor('image/webp'), const RasterQuality());
+    expect(
+      resolved.qualityFor('image/webp'),
+      const RasterQuality(filter: VisualFilter.sepia),
+    );
     expect(
       resolved,
       ReadingSettings.resolveScopes({

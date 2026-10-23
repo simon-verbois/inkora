@@ -1,22 +1,22 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/icons/inkora_icons.dart';
 import '../../../app/l10n/app_strings.dart';
 import '../../../app/theme/inkora_theme.dart';
-import '../../../app/widgets/inkora_widgets.dart';
 import '../application/catalogue_providers.dart';
 import '../application/cover_providers.dart';
 import '../domain/catalogue.dart';
 import '../domain/catalogue_metadata.dart';
 import '../domain/resume_entry.dart';
 import '../domain/volume_progress.dart';
+import '../../settings/application/ui_preferences_provider.dart';
 import 'book_cover.dart';
 import 'catalogue_detail_widgets.dart';
+import 'catalogue_link_button.dart';
 import 'catalogue_presentation.dart';
 import 'progress_format.dart';
 
@@ -355,10 +355,16 @@ class SeriesReadAction extends ConsumerWidget {
               ? const SizedBox.shrink()
               : FilledButton.icon(
                   key: const Key('detail-read'),
-                  onPressed: () => openCatalogueItem(context, target!),
+                  onPressed: () => openBookReader(context, target!),
                   icon: const Icon(InkIcons.play, size: 20),
                   label: Text(
-                    label!,
+                    strings.text(
+                      (target.id == reading?.item.id ||
+                              progress?.of(target.id).reading == true)
+                          ? 'Resume - {0}'
+                          : 'Start - {0}',
+                      [label!],
+                    ),
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -386,12 +392,17 @@ class SeriesReadAction extends ConsumerWidget {
 
 /// "About" content: synopsis with a fade and Read more, tappable genres
 /// (opening the catalogue filtered by genre), tags and publication facts.
-class SeriesAbout extends StatelessWidget {
+class SeriesAbout extends ConsumerWidget {
   const SeriesAbout({super.key, required this.item});
   final CatalogueItem item;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hideTags = ref.watch(
+      uiPreferencesProvider.select(
+        (value) => value.asData?.value.hideTags ?? true,
+      ),
+    );
     final metadata = item.metadata;
     final theme = Theme.of(context);
     Widget section(String label) => Padding(
@@ -425,7 +436,7 @@ class SeriesAbout extends StatelessWidget {
             ],
           ),
         ],
-        if (metadata.tags.isNotEmpty) ...[
+        if (!hideTags && metadata.tags.isNotEmpty) ...[
           section('Tags'),
           Wrap(
             spacing: InkSpace.xs + 2,
@@ -440,27 +451,40 @@ class SeriesAbout extends StatelessWidget {
   }
 }
 
-/// Collapsible synopsis: six lines with a fade into the page background, then
+/// Collapsible synopsis: text alpha fades across the last three lines, then
 /// Read more / Show less. Overflow is measured once per width/text scale.
 class SeriesSynopsis extends StatefulWidget {
   const SeriesSynopsis({super.key, required this.summary});
   final String summary;
   static const lines = 6;
+  static const portraitLines = 8;
   @override
   State<SeriesSynopsis> createState() => _SeriesSynopsisState();
 }
 
 class _SeriesSynopsisState extends State<SeriesSynopsis> {
   bool _expanded = false;
-  ({double width, double scale, TextStyle? style, String text, bool overflow})?
+  ({
+    double width,
+    double scale,
+    int lines,
+    TextStyle? style,
+    String text,
+    bool overflow,
+  })?
   _measured;
 
   bool _overflows(double width, TextStyle? style) {
+    final window = MediaQuery.sizeOf(context);
+    final lines = window.width <= window.height
+        ? SeriesSynopsis.portraitLines
+        : SeriesSynopsis.lines;
     final scale = MediaQuery.textScalerOf(context).scale(1);
     final cached = _measured;
     if (cached != null &&
         cached.width == width &&
         cached.scale == scale &&
+        cached.lines == lines &&
         cached.style == style &&
         cached.text == widget.summary) {
       return cached.overflow;
@@ -469,13 +493,14 @@ class _SeriesSynopsisState extends State<SeriesSynopsis> {
       text: TextSpan(text: widget.summary, style: style),
       textDirection: Directionality.of(context),
       textScaler: MediaQuery.textScalerOf(context),
-      maxLines: SeriesSynopsis.lines,
+      maxLines: lines,
     )..layout(maxWidth: width);
     final overflow = painter.didExceedMaxLines;
     painter.dispose();
     _measured = (
       width: width,
       scale: scale,
+      lines: lines,
       style: style,
       text: widget.summary,
       overflow: overflow,
@@ -490,48 +515,43 @@ class _SeriesSynopsisState extends State<SeriesSynopsis> {
       height: 1.5,
       color: theme.colorScheme.onSurfaceVariant,
     );
-    final background = theme.scaffoldBackgroundColor;
     return LayoutBuilder(
       builder: (context, constraints) {
         final overflow = _overflows(constraints.maxWidth, style);
+        final collapsed = Text(
+          widget.summary,
+          key: const Key('series-synopsis'),
+          style: style,
+          maxLines: _measured!.lines,
+          overflow: TextOverflow.clip,
+        );
+        final fadeStart = (_measured!.lines - 3) / _measured!.lines;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (_expanded)
               SelectableText(widget.summary, style: style)
+            else if (overflow)
+              // One cached detail header, outside list/grid items or reader pages.
+              RepaintBoundary(
+                child: ShaderMask(
+                  blendMode: BlendMode.dstIn,
+                  shaderCallback: (bounds) => LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0, fadeStart, (fadeStart + 1) / 2, 1],
+                    colors: const [
+                      Colors.white,
+                      Colors.white,
+                      Color(0x66FFFFFF),
+                      Colors.transparent,
+                    ],
+                  ).createShader(bounds),
+                  child: collapsed,
+                ),
+              )
             else
-              Stack(
-                children: [
-                  Text(
-                    widget.summary,
-                    key: const Key('series-synopsis'),
-                    style: style,
-                    maxLines: SeriesSynopsis.lines,
-                    overflow: TextOverflow.clip,
-                  ),
-                  if (overflow)
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      height: 40,
-                      child: IgnorePointer(
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                background.withValues(alpha: 0),
-                                background,
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+              collapsed,
             if (overflow)
               TextButton(
                 key: const Key('detail-summary-toggle'),
@@ -625,21 +645,7 @@ class SeriesFacts extends StatelessWidget {
                         ),
                 ),
               ),
-            for (final link in metadata.links)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  link.label.isEmpty ? context.tr('Reference') : link.label,
-                ),
-                trailing: IconButton(
-                  tooltip: context.tr('Copy link'),
-                  icon: const Icon(InkIcons.copy),
-                  onPressed: () async {
-                    await Clipboard.setData(ClipboardData(text: link.url));
-                    if (context.mounted) notifyInk(context, 'Link copied');
-                  },
-                ),
-              ),
+            CatalogueLinks(links: metadata.links),
           ],
         );
       },

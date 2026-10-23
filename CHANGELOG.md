@@ -10,6 +10,10 @@ remain in progress.
 
 ## [Unreleased]
 
+## [2026.43.7] - 2026-10-23
+
+- Strengthen public release checks to exclude private AI configuration, editor settings and agent instructions before GitHub publication, including checks of prepared files and public history.
+
 ## [2026.43.6] - 2026-10-23
 
 - Refresh the twelve-language presentation website and README with thirteen current phone/tablet demonstration captures and expanded feature coverage.

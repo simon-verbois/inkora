@@ -22,6 +22,7 @@ LANGUAGES = {
 SCREENSHOTS = (
     'phone-home', 'phone-library', 'phone-appearance', 'tablet-home',
     'phone-batch-download', 'phone-transfer', 'phone-series', 'tablet-series',
+    'phone-quality', 'phone-ebook', 'tablet-library', 'tablet-quality', 'tablet-selection',
 )
 ASSETS = ('styles.css', 'site.js', 'favicon.svg', 'font-license.txt',
           'fonts/LibreBaskerville.ttf') + tuple(f'screenshots/{name}.png' for name in SCREENSHOTS)

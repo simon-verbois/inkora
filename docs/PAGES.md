@@ -15,7 +15,7 @@ Hungarian and Czech. English is at the root; the other languages have actual
 `fr/index.html`, `de/index.html`, etc. files. Language selection follows ordinary
 links, with no redirect, runtime translation request or server rewrite.
 
-Edit `docs/site-template.html`, the matching 43-key dictionaries under
+Edit `docs/site-template.html`, the matching 57-key dictionaries under
 `docs/locales/`, `docs/styles.css` and `docs/site.js`. After changing the template
 or copy, regenerate and check the committed pages:
 
@@ -43,7 +43,7 @@ Open http://127.0.0.1:4173/fr/ for French, or the root for English. Use `--outpu
 with a fresh directory for subsequent builds; the builder preserves nonempty
 destinations. It verifies committed generation, all twelve routes, local assets,
 fragments and containment, rejecting root-relative paths. Its runtime artifact
-contains twelve HTML pages, eight demonstration screenshots, CSS, JavaScript,
+contains twelve HTML pages, thirteen demonstration screenshots, CSS, JavaScript,
 favicon, font/license and `.nojekyll`; translation/template sources are omitted.
 
 ## GitHub Pages setup

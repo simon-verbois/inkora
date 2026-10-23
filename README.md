@@ -20,18 +20,30 @@ behind this branch; see [the changelog](CHANGELOG.md).
 - **Continue in one tap.** Open the exact book you were reading, with progress
   synchronized to Komga when you reconnect.
 - **Take books offline.** Download volumes, manage the transfer queue and set
-  storage and Wi-Fi preferences. From a series, download the unread volumes
-  preselected for you or pick your own selection.
+  storage and Wi-Fi preferences. From a series, choose all volumes or only
+  unread and in-progress books. Optionally remove finished downloads for that
+  series after at least 24 hours, keeping reading progress.
 - **Keep your place.** Preview page thumbnails, save bookmarks and notes, and
   continue to the next volume from the completion screen. Reopen recent books
   from device-local reading history.
-- **Make it yours.** Choose appearance palettes, reading direction, page layout,
-  gestures, image quality and EPUB typography. Set Home covers per row separately
+- **Make it yours.** Choose from twelve light and dark palettes, including Mint
+  and Lavender. Set reading direction, page layout, gestures and EPUB typography.
+  Use one scaling/filter choice for all image formats, with sharpening on the
+  same page. Configure reading defaults per visible library and reset individual
+  settings pages when needed. Set Home covers per row separately
   for portrait and landscape windows.
 - **Find your next read.** Search your catalogue and browse series, collections
   and reading lists. Filter by format, reading status or downloaded availability.
-- **Choose what appears.** Connect multiple server accounts and filter their
-  visible libraries. All libraries you can access are selected by default.
+- **Choose what appears.** Edit multiple server connections and choose the
+  visible libraries for each account in dedicated popups. All accessible
+  libraries are selected by default.
+- **Explore each book.** Open individual ebook details and author pages. Browse
+  series information beside its volumes on tablets, with completed covers muted
+  and selection actions floating over the page. Catalogue links ask before
+  opening an external site.
+- **Keep browsing comfortably.** Compact controls attach to Home’s header as you
+  scroll. Quick filters preserve your position, and adaptive side margins keep
+  the cover grid spacious on both phones and tablets.
 - **Bring settings along.** Export settings and bookmarks to a file, preview an
   import, or scan an existing settings QR code. Credentials,
   books and reading progress are excluded. Account-specific files require the same
@@ -50,11 +62,15 @@ are rendered by Flutter; they are not device photographs.
 | --- | --- | --- |
 | ![Library home with Continue reading above the cover grid](docs/screenshots/phone-home.png) | ![Library grid with illustrated sample covers](docs/screenshots/phone-library.png) | ![Appearance themes and portrait/landscape Home cover counts](docs/screenshots/phone-appearance.png) |
 
-| Batch downloads | Import / export |
-| --- | --- |
-| ![Series download confirmation](docs/screenshots/phone-batch-download.png) | ![File backup and QR transfer settings](docs/screenshots/phone-transfer.png) |
+| Ebook details | Image quality | Batch downloads |
+| --- | --- | --- |
+| ![Individual ebook detail page](docs/screenshots/phone-ebook.png) | ![Shared image scaling, filters and sharpening](docs/screenshots/phone-quality.png) | ![Series download confirmation](docs/screenshots/phone-batch-download.png) |
 
 ![Inkora library home on a tablet](docs/screenshots/tablet-home.png)
+
+![Series information, volumes and floating selection actions on a tablet](docs/screenshots/tablet-selection.png)
+
+![Rendering and sharpening settings on a tablet](docs/screenshots/tablet-quality.png)
 
 ## Get started
 

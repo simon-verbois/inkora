@@ -172,12 +172,6 @@ void main() {
       await tester.pump();
       await backEvent(tester, 'commitBackGesture');
       await tester.pumpAndSettle();
-      expect(router.routeInformationProvider.value.uri.path, '/settings');
-      expect(await backEvent(tester, 'startBackGesture'), isTrue);
-      await backEvent(tester, 'updateBackGestureProgress');
-      await tester.pump();
-      await backEvent(tester, 'commitBackGesture');
-      await tester.pumpAndSettle();
       expect(router.routeInformationProvider.value.uri.path, '/');
       expect(tester.takeException(), isNull);
       await harness.close(tester);

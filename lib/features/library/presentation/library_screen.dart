@@ -13,6 +13,9 @@ import '../../../app/widgets/inkora_widgets.dart';
 import '../application/catalogue_providers.dart';
 import '../application/cover_providers.dart';
 import '../domain/catalogue.dart';
+import '../domain/resume_entry.dart';
+import '../../connection/application/session_controller.dart';
+import 'volume_actions.dart';
 import 'resume_carousel.dart';
 import 'catalogue_screen.dart';
 
@@ -125,9 +128,47 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 class _ResumeSection extends ConsumerWidget {
   const _ResumeSection();
 
+  Future<void> _mark(
+    BuildContext context,
+    WidgetRef ref,
+    ResumeEntry entry,
+    String accountId, {
+    required bool read,
+  }) async {
+    if (!context.mounted) return;
+    if (read &&
+        !await confirmInk(
+          context,
+          title: 'Mark as read?',
+          message: '“{0}” is in progress. Marking it as read replaces its current reading position.',
+          messageArguments: [entry.item.title],
+          confirmLabel: 'Mark read',
+        )) {
+      return;
+    }
+    if (!context.mounted) return;
+    try {
+      await markResumeBook(ref, entry, accountId: accountId, read: read);
+      if (context.mounted) {
+        notifyInk(
+          context,
+          'Reading status updated: {0}',
+          arguments: [AppStrings.of(context).quantity(1, 'volume')],
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        notifyInk(context, 'Unable to save reading progress.');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final resume = ref.watch(resumeEntriesProvider);
+    final accountId = ref.watch(
+      sessionProvider.select((state) => state.session?.accountId),
+    );
     return resume.when(
       loading: () => const SizedBox.shrink(),
       error: (_, _) => const InkEmptyState(
@@ -154,7 +195,14 @@ class _ResumeSection extends ConsumerWidget {
           child: InkPanel(
             framed: false,
             title: 'Continue reading',
-            child: ResumeCarousel(entries: reading, columns: columns),
+            child: ResumeCarousel(
+              entries: reading,
+              columns: columns,
+              onMarkReading: accountId == null
+                  ? null
+                  : (entry, read) =>
+                        _mark(context, ref, entry, accountId, read: read),
+            ),
           ),
         );
       },

@@ -17,7 +17,12 @@ void main() {
 
   test('rejects unsafe server URLs and prefix-discarding API paths', () {
     for (final value in [
-      'http://example.test',
+      'ftp://example.test',
+      'file:///tmp/server',
+      '//example.test',
+      'http://user:secret@example.test',
+      'http://example.test?a=b',
+      'http://example.test#x',
       'https://user:secret@example.test',
       'https://example.test?a=b',
       'https://example.test#x',
@@ -34,4 +39,23 @@ void main() {
       expect(() => endpoint.resolveApiPath(path), throwsArgumentError);
     }
   });
+
+  for (final address in [
+    'http://example.test/komga',
+    'http://192.168.1.20:25600/komga',
+    'http://[::1]:25600/komga',
+  ]) {
+    test('accepts explicit HTTP and retains its proxy path: $address', () {
+      final endpoint = ServerEndpoint(address);
+      expect(endpoint.uri.scheme, 'http');
+      expect(
+        endpoint.resolveApiPath('api/v2/users/me').toString(),
+        '$address/api/v2/users/me',
+      );
+      final client = createHttpClient(endpoint);
+      addTearDown(client.close);
+      expect(client.options.baseUrl, '$address/');
+      expect(client.options.followRedirects, isFalse);
+    });
+  }
 }

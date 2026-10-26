@@ -1,10 +1,12 @@
 package dev.inkora.inkora
 
 import android.os.Bundle
+import android.view.View
 import android.content.pm.ApplicationInfo
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.Lifecycle
 import dk.nota.flutterreadium.ReadiumReader
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.plugin.common.BinaryMessenger
@@ -12,6 +14,7 @@ import io.flutter.plugin.common.MethodChannel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
@@ -19,14 +22,22 @@ import org.readium.r2.navigator.input.InputListener
 import org.readium.r2.navigator.input.KeyEvent
 import org.readium.r2.navigator.input.TapEvent
 import org.readium.r2.navigator.util.DirectionalNavigationAdapter
+import org.readium.r2.navigator.preferences.ColumnCount
+import org.json.JSONObject
+import org.json.JSONTokener
 
 /** UI-only extension of the pinned navigator, using its public input/CSS APIs. */
 class EbookPresentation(private val activity: FlutterFragmentActivity, messenger: BinaryMessenger) {
     private var animations = true
     private var separator = false
+    private var paperTexture = false
+    private var dividerColor = 0xff252320.toInt()
+    private var tapToTurnPages = false
     private var imageEnhancement = 0
     private val navigators = mutableSetOf<EpubNavigatorFragment>()
     private val jobs = mutableMapOf<EpubNavigatorFragment, Job>()
+    private val dividers = mutableMapOf<EpubNavigatorFragment, EbookSpreadDivider>()
+
     private val callbacks = object : FragmentManager.FragmentLifecycleCallbacks() {
         override fun onFragmentCreated(manager: FragmentManager, fragment: Fragment, state: Bundle?) {
             if (fragment !is EpubNavigatorFragment) return
@@ -36,27 +47,53 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
             val animated = DirectionalNavigationAdapter(fragment, animatedTransition = true)
             val instant = DirectionalNavigationAdapter(fragment, animatedTransition = false)
             fragment.addInputListener(object : InputListener {
-                override fun onTap(event: TapEvent) = (if (animations) animated else instant).onTap(event)
+                // Consume unhandled taps before the plugin's default edge-tap
+                // adapter. Native drags, text selection and keys stay intact;
+                // Flutter's existing pointer listener owns control toggling.
+                override fun onTap(event: TapEvent) =
+                    !tapToTurnPages || (if (animations) animated else instant).onTap(event)
                 override fun onKey(event: KeyEvent) = (if (animations) animated else instant).onKey(event)
             })
+        }
+
+        override fun onFragmentViewCreated(manager: FragmentManager, fragment: Fragment, view: View, state: Bundle?) {
+            if (fragment is EpubNavigatorFragment) {
+                dividers.remove(fragment)?.close()
+                dividers[fragment] = EbookSpreadDivider(view) {
+                    if (fragment.isAdded && fragment.isResumed) {
+                        fragment.lifecycleScope.launch { refreshDivider(fragment) }
+                    }
+                }
+            }
+        }
+
+        override fun onFragmentViewDestroyed(manager: FragmentManager, fragment: Fragment) {
+            if (fragment is EpubNavigatorFragment) dividers.remove(fragment)?.close()
         }
 
         override fun onFragmentStarted(manager: FragmentManager, fragment: Fragment) {
             if (fragment !is EpubNavigatorFragment) return
             jobs.remove(fragment)?.cancel()
             jobs[fragment] = fragment.lifecycleScope.launch {
-                fragment.currentLocator.map { it.href }.distinctUntilChanged().collect {
+                combine(
+                    fragment.currentLocator.map { it.href }.distinctUntilChanged(),
+                    fragment.settings.map { it.columnCount to it.scroll }.distinctUntilChanged(),
+                ) { href, layout -> href to layout }.collect {
                     applyDivider(fragment)
                 }
             }
         }
 
         override fun onFragmentStopped(manager: FragmentManager, fragment: Fragment) {
-            if (fragment is EpubNavigatorFragment) jobs.remove(fragment)?.cancel()
+            if (fragment is EpubNavigatorFragment) {
+                jobs.remove(fragment)?.cancel()
+                dividers[fragment]?.show(false)
+            }
         }
 
         override fun onFragmentDestroyed(manager: FragmentManager, fragment: Fragment) {
             if (fragment is EpubNavigatorFragment) jobs.remove(fragment)?.cancel()
+            if (fragment is EpubNavigatorFragment) dividers.remove(fragment)?.close()
             navigators.remove(fragment)
         }
     }
@@ -66,15 +103,20 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
         MethodChannel(messenger, "inkora/ebook_presentation").setMethodCallHandler { call, result ->
             val args = call.arguments as? Map<*, *>
             when (call.method) {
+                "trimMemory" -> { EbookPaperTexture.trimMemory(); result.success(null) }
                 "configure" -> {
                     val animationValue = args?.get("animations") as? Boolean
                     val separatorValue = args?.get("separator") as? Boolean
+                    val tapValue = args?.get("tapToTurnPages") as? Boolean ?: false
                     val imageValue = (args?.get("imageEnhancement") as? Number)?.toInt() ?: 0
                     if (animationValue == null || separatorValue == null || imageValue !in 0..3) {
                         result.error("invalid_argument", "Expected presentation booleans.", null)
                     } else {
                         animations = animationValue
                         separator = separatorValue
+                        paperTexture = args?.get("paperTexture") as? Boolean ?: false
+                        dividerColor = (args?.get("dividerColor") as? Number)?.toInt() ?: 0xff252320.toInt()
+                        tapToTurnPages = tapValue
                         imageEnhancement = imageValue
                         activity.lifecycleScope.launch {
                             navigators.toList().forEach { applyDivider(it) }
@@ -104,7 +146,7 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
                         result.notImplemented()
                     } else activity.lifecycleScope.launch {
                         try {
-                            result.success(ReadiumReader.epubEvaluateJavascript(
+                            val raw = ReadiumReader.epubEvaluateJavascript(
                                 """(() => {
                                   const root = document.documentElement, style = getComputedStyle(root);
                                   const body = getComputedStyle(document.body);
@@ -119,9 +161,29 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
                                       if (rect.width > 0 && rect.left < middle - 1 && rect.right > middle + 1) crossingLines++;
                                     }
                                   }
-                                  return JSON.stringify({firstText,fontsLoaded:document.fonts.status === 'loaded',lateLayoutStyle:!!document.getElementById('inkora-spread-style'),columns:style.columnCount,rule:style.columnRuleStyle,width:style.columnRuleWidth,paddingLeft:body.paddingLeft,paddingRight:body.paddingRight,crossingLines,viewportWidth:innerWidth,viewportHeight:innerHeight,enhancedImages:document.querySelectorAll('.inkora-enhanced-image').length});
+                                  return JSON.stringify({paperTexture:!!document.getElementById('inkora-paper-style'),paperImage:getComputedStyle(root).backgroundImage.includes('data:image/png'),devicePixelRatio,visualScale:visualViewport?.scale ?? 1,rootTransform:style.transform,bodyTransform:body.transform,textRendering:body.textRendering,rootZoom:style.zoom,firstText,fontsLoaded:document.fonts.status === 'loaded',fontFamily:body.fontFamily,fontSize:parseFloat(body.fontSize),loadedFontFamilies:Array.from(document.fonts).filter(face => face.status === 'loaded').slice(0,32).map(face => face.family),lateLayoutStyle:!!document.getElementById('inkora-spread-style'),columns:style.columnCount,rule:style.columnRuleStyle,width:style.columnRuleWidth,paddingLeft:body.paddingLeft,paddingRight:body.paddingRight,crossingLines,viewportWidth:innerWidth,viewportHeight:innerHeight,enhancedImages:document.querySelectorAll('.inkora-enhanced-image').length});
                                 })()"""
-                            ))
+                            )
+                            val decoded = JSONTokener(raw ?: "null").nextValue()
+                            val probe = if (decoded is String) JSONObject(decoded) else decoded as JSONObject
+                            val divider = dividers.entries.firstOrNull { it.key.isResumed }?.value
+                            val visible = divider != null && divider.alpha > 0 && divider.segments.isNotEmpty()
+                            val scale = if (divider == null || divider.view.width == 0) 0.0
+                                else probe.optDouble("viewportWidth") / divider.view.width
+                            probe.put("dividerCount", if (visible) divider!!.segments.size else 0)
+                            probe.put("dividerAlpha", divider?.alpha ?: 0)
+                            probe.put("dividerGradientBuilds", divider?.gradientBuilds ?: 0)
+                            probe.put("paperTileWidth", EbookPaperTexture.tileWidth)
+                            probe.put("paperTileHeight", EbookPaperTexture.tileHeight)
+                            probe.put("paperEncodedLength", EbookPaperTexture.encodedLength)
+                            probe.put("paperDecodeCount", EbookPaperTexture.decodeCount)
+                            probe.put("dividerColor", divider?.color?.toLong()?.and(0xffffffffL) ?: 0)
+                            probe.put("dividerSegments", org.json.JSONArray(divider?.segments?.map { listOf(it.left * scale, it.top * scale, it.width() * scale, it.height() * scale) } ?: emptyList<List<Double>>()))
+                            probe.put("dividerVisible", visible)
+                            probe.put("dividerLeft", (divider?.segments?.firstOrNull()?.left ?: 0) * scale)
+                            probe.put("dividerWidth", (divider?.segments?.firstOrNull()?.width() ?: 0) * scale)
+                            probe.put("dividerHeight", (divider?.segments?.firstOrNull()?.height() ?: 0) * scale)
+                            result.success(probe.toString())
                         } catch (_: Exception) { result.success(null) }
                     }
                 }
@@ -133,14 +195,25 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
     private suspend fun applyDivider(navigator: EpubNavigatorFragment) {
         if (!navigator.isAdded) return
         try {
-            // CSS draws a rule only between actual columns. Single-column and
-            // fixed-layout pages never get a spurious Flutter overlay line.
-            val rule = if (separator) "1px solid black" else "none"
+            // Remove column rules at clipped pagination edges. The only line is
+            // native page-attached geometry outside HTML pagination.
+            val selectedPaper = paperTexture
+            val paper = if (selectedPaper) EbookPaperTexture.url(activity) else null
+            if (!navigator.isAdded || selectedPaper != paperTexture) return
+            val paperCSS = if (paper == null) "" else "html{background-image:url(\"$paper\")!important;background-repeat:repeat!important;background-size:256px 256px!important}body{background-color:transparent!important}"
             val amount = doubleArrayOf(0.0, 0.2, 0.45, 0.7)[imageEnhancement]
             val kernel = "0 ${-amount} 0 ${-amount} ${1 + 4 * amount} ${-amount} 0 ${-amount} 0"
             navigator.evaluateJavascript(
                 """(() => {
-                  document.documentElement.style.setProperty('column-rule', '$rule', 'important');
+                  const root = document.documentElement;
+                  document.getElementById('inkora-paper-style')?.remove();
+                  if (${paper != null}) {
+                    const paper = document.createElement('style');
+                    paper.id = 'inkora-paper-style';
+                    paper.textContent = ${JSONObject.quote(paperCSS)};
+                    document.head.appendChild(paper);
+                  }
+                  root.style.setProperty('column-rule', 'none', 'important');
                   // Text geometry belongs to initial Readium preferences.
                   // Never add body padding after the resource becomes visible.
                   window.__inkoraImageObserver?.disconnect();
@@ -181,9 +254,31 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
                   return true;
                 })()"""
             )
+            refreshDivider(navigator)
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Exception) { /* A resource or navigator may be closing. */ }
+    }
+
+    private suspend fun refreshDivider(navigator: EpubNavigatorFragment) {
+        val divider = dividers[navigator] ?: return
+        divider.color = dividerColor
+        if (!navigator.isAdded || !separator || navigator.settings.value.scroll ||
+            navigator.settings.value.columnCount == ColumnCount.ONE) {
+            divider.show(false)
+            return
+        }
+        try {
+            val columns = navigator.evaluateJavascript("getComputedStyle(document.documentElement).columnCount")
+                ?.trim('"')?.toIntOrNull() ?: 1
+            if (dividers[navigator] === divider) {
+                divider.show(columns > 1 && separator && navigator.isAdded &&
+                    navigator.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED) &&
+                    !navigator.settings.value.scroll && navigator.settings.value.columnCount != ColumnCount.ONE)
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) { divider.show(false) }
     }
 
     fun close() {
@@ -191,5 +286,8 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
         jobs.values.forEach { it.cancel() }
         jobs.clear()
         navigators.clear()
+        dividers.values.forEach { it.close() }
+        dividers.clear()
+        EbookPaperTexture.trimMemory()
     }
 }

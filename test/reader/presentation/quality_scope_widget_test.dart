@@ -42,9 +42,9 @@ void main() {
           () => Future<void>.delayed(const Duration(milliseconds: 50)),
         );
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text('Reset to default'));
+        await tester.tap(find.byKey(const Key('reader-settings-menu')));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Reset to default'));
+        await tester.tap(find.byKey(const Key('reader-settings-reset')));
         await tester.pumpAndSettle();
         // Confirmed reset applies at once; there is no Save step.
         expect(find.text('Save'), findsNothing);

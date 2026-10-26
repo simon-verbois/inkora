@@ -86,6 +86,67 @@ void main() {
     },
   );
 
+  for (final corrupt in ['{', '{}', 'null', '42', '[null]', '[""]']) {
+    test(
+      'invalid account index $corrupt recovers every verified connection',
+      () async {
+        await store.save(savedSession);
+        await store.remember(second());
+        final previousSecret = credentials.values[savedSession.accountId];
+        credentials.values['session.accounts'] = corrupt;
+        credentials.values['broken-record'] = '{}';
+        expect(
+          (await store.savedSessions()).map((session) => session.accountId),
+          unorderedEquals([savedSession.accountId, second().accountId]),
+        );
+        expect(credentials.values[savedSession.accountId], previousSecret);
+        expect(
+          (await store.activate(second().accountId))!.accountId,
+          second().accountId,
+        );
+        await store.forget(savedSession.accountId);
+        expect(
+          (await store.savedSessions()).single.accountId,
+          second().accountId,
+        );
+        expect(jsonDecode(credentials.values['session.accounts']!), [
+          second().accountId,
+        ]);
+        await store.clear();
+        expect(await store.restore(), isNull);
+      },
+    );
+  }
+
+  test(
+    'a missing index recovers inactive accounts even without an active pointer',
+    () async {
+      await store.save(savedSession);
+      await store.remember(second());
+      credentials.values.remove('session.accounts');
+      credentials.values.remove('session.active');
+      expect(await store.restore(), isNull);
+      expect(await store.savedSessions(), hasLength(2));
+      await store.save(second());
+      expect(await store.savedSessions(), hasLength(2));
+      expect((await store.restore())!.accountId, second().accountId);
+    },
+  );
+
+  test('HTTP and HTTPS connections keep separate identities and restore their scheme', () async {
+    final http = SavedSession(
+      endpoint: ServerEndpoint('http://example.test/komga/'),
+      user: savedSession.user,
+      credentials: savedSession.credentials,
+    );
+    await store.save(savedSession);
+    await store.remember(http);
+    expect(http.accountId, isNot(savedSession.accountId));
+    expect((await store.activate(http.accountId))!.endpoint.uri.scheme, 'http');
+    expect((await store.restore())!.endpoint.uri.scheme, 'http');
+    expect(await store.savedSessions(), hasLength(2));
+  });
+
   test('verified profile and credentials round-trip independently; logout preserves metadata', () async {
     expect(await store.restore(), isNull);
     await store.save(savedSession);

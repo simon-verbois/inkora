@@ -159,6 +159,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                         decoration: InputDecoration(
                           labelText: context.tr("Server URL"),
                           hintText: context.tr("https://komga.example.com"),
+                          errorMaxLines: 8,
                         ),
                         keyboardType: TextInputType.url,
                         autofillHints: null,
@@ -170,7 +171,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                             return null;
                           } catch (_) {
                             return context.tr(
-                              'Enter an HTTPS URL, including any server subpath.',
+                              'Enter an HTTP or HTTPS URL, including any server subpath.',
                             );
                           }
                         },

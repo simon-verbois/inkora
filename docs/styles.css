@@ -279,6 +279,20 @@ section {
   color:var(--page);
 }
 
+.coffee-link {
+  display:block;
+  width:178px;
+  max-width:100%;
+  margin-top:1.5rem;
+  border-radius:8px;
+}
+
+.coffee-link img {
+  width:178px;
+  max-width:100%;
+  height:auto;
+}
+
 .text-link {
   display:inline-flex;
   align-items:center;

@@ -290,6 +290,7 @@ class _ReaderViewportState extends State<ReaderViewport>
                                 layout: _pagedLayout!,
                                 onPosition: _position,
                                 onTap: widget.onToggleControls,
+                                onEnd: widget.onEnd,
                               );
                       },
                     ),
@@ -410,6 +411,7 @@ class _PagedViewport extends StatefulWidget {
     required this.layout,
     required this.onPosition,
     required this.onTap,
+    required this.onEnd,
     super.key,
   });
   final OpenReader reader;
@@ -418,6 +420,7 @@ class _PagedViewport extends StatefulWidget {
   final PagedLayout layout;
   final void Function(ReaderLocator) onPosition;
   final VoidCallback? onTap;
+  final VoidCallback? onEnd;
   @override
   State<_PagedViewport> createState() => _PagedViewportState();
 }
@@ -431,6 +434,10 @@ class _PagedViewportState extends State<_PagedViewport> {
   Object? _lastWarm;
   void _turn(int delta) {
     final current = widget.layout.groupFor(widget.locator.pageIndex);
+    if (delta > 0 && current == widget.layout.groups.length - 1) {
+      widget.onEnd?.call();
+      return;
+    }
     final next = (current + delta).clamp(0, widget.layout.groups.length - 1);
     if (next != current) {
       if (!widget.settings.pageAnimation ||
@@ -581,6 +588,47 @@ class _PagedViewportState extends State<_PagedViewport> {
 
   bool _programmaticJump = false;
 
+  bool _dragStartedAtEnd = false;
+  double _endDragDistance = 0;
+
+  // PageView may win the gesture arena instead of InteractiveViewer. Only a
+  // new forward drag starting at the final group can leave this volume; merely
+  // landing on the final group or a ballistic bounce must not trigger handoff.
+  bool _endDrag(ScrollNotification notification) {
+    if (notification.depth != 0) return false;
+    if (notification is ScrollStartNotification) {
+      _dragStartedAtEnd =
+          notification.dragDetails != null &&
+          !_zoomed &&
+          notification.metrics.extentAfter == 0 &&
+          widget.layout.groupFor(widget.locator.pageIndex) ==
+              widget.layout.groups.length - 1;
+      _endDragDistance = 0;
+    } else if (_dragStartedAtEnd) {
+      if (notification is OverscrollNotification &&
+          notification.dragDetails != null) {
+        _endDragDistance = math.max(
+          0,
+          _endDragDistance + notification.overscroll,
+        );
+      } else if (notification is ScrollUpdateNotification &&
+          notification.dragDetails != null) {
+        _endDragDistance = math.max(
+          0,
+          notification.metrics.pixels - notification.metrics.maxScrollExtent,
+        );
+      } else if (notification is ScrollEndNotification) {
+        _dragStartedAtEnd = false;
+        if (!_zoomed &&
+            _endDragDistance >=
+                math.min(80, notification.metrics.viewportDimension * .15)) {
+          widget.onEnd?.call();
+        }
+      }
+    }
+    return false;
+  }
+
   @override
   void dispose() {
     _warmTimer?.cancel();
@@ -601,46 +649,52 @@ class _PagedViewportState extends State<_PagedViewport> {
           );
         }
       });
-      return PageView.builder(
-        key: const Key('paged-reader'),
-        controller: _controller,
-        // Keep the neighbouring spreads mounted (and decoding) so a swipe
-        // reveals finished images instead of starting work mid-gesture.
-        allowImplicitScrolling: true,
-        itemCount: widget.layout.groups.length,
-        reverse: widget.settings.direction == ReadingDirection.rightToLeft,
-        scrollDirection: widget.settings.direction == ReadingDirection.vertical
-            ? Axis.vertical
-            : Axis.horizontal,
-        physics: _zoomed
-            ? const NeverScrollableScrollPhysics()
-            : const PageScrollPhysics(),
-        onPageChanged: (page) {
-          if (_programmaticJump) return;
-          _zoomed = false;
-          widget.onPosition(ReaderLocator(widget.layout.groups[page].last));
-        },
-        itemBuilder: (context, group) {
-          final indexes = widget.layout.groups[group];
-          return _ZoomSpread(
-            key: ValueKey(indexes.first),
-            reader: widget.reader,
-            indexes: indexes,
-            fit: widget.settings.fit,
-            imageQuality: widget.settings.imageQuality,
-            spacing: widget.settings.spacing,
-            reverse: widget.settings.direction == ReadingDirection.rightToLeft,
-            visible: widget.layout.groupFor(widget.locator.pageIndex) == group,
-            direction: widget.settings.direction,
-            onTap: widget.onTap,
-            onSwipe: _turn,
-            onZoom: (zoomed) {
-              if (mounted && _zoomed != zoomed) {
-                setState(() => _zoomed = zoomed);
-              }
-            },
-          );
-        },
+      return NotificationListener<ScrollNotification>(
+        onNotification: _endDrag,
+        child: PageView.builder(
+          key: const Key('paged-reader'),
+          controller: _controller,
+          // Keep the neighbouring spreads mounted (and decoding) so a swipe
+          // reveals finished images instead of starting work mid-gesture.
+          allowImplicitScrolling: true,
+          itemCount: widget.layout.groups.length,
+          reverse: widget.settings.direction == ReadingDirection.rightToLeft,
+          scrollDirection:
+              widget.settings.direction == ReadingDirection.vertical
+              ? Axis.vertical
+              : Axis.horizontal,
+          physics: _zoomed
+              ? const NeverScrollableScrollPhysics()
+              : const PageScrollPhysics(),
+          onPageChanged: (page) {
+            if (_programmaticJump) return;
+            _zoomed = false;
+            widget.onPosition(ReaderLocator(widget.layout.groups[page].last));
+          },
+          itemBuilder: (context, group) {
+            final indexes = widget.layout.groups[group];
+            return _ZoomSpread(
+              key: ValueKey(indexes.first),
+              reader: widget.reader,
+              indexes: indexes,
+              fit: widget.settings.fit,
+              imageQuality: widget.settings.imageQuality,
+              spacing: widget.settings.spacing,
+              reverse:
+                  widget.settings.direction == ReadingDirection.rightToLeft,
+              visible:
+                  widget.layout.groupFor(widget.locator.pageIndex) == group,
+              direction: widget.settings.direction,
+              onTap: widget.onTap,
+              onSwipe: _turn,
+              onZoom: (zoomed) {
+                if (mounted && _zoomed != zoomed) {
+                  setState(() => _zoomed = zoomed);
+                }
+              },
+            );
+          },
+        ),
       );
     },
   );

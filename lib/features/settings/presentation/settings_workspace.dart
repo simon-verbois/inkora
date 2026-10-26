@@ -97,8 +97,9 @@ class _SettingsWorkspaceState extends State<SettingsWorkspace> {
                       key: const Key('settings-sidebar-back'),
                       tooltip: MaterialLocalizations.of(context)
                           .backButtonTooltip,
-                      onPressed: () =>
-                          context.canPop() ? context.pop() : context.go('/'),
+                      onPressed: () => Navigator.of(context).canPop()
+                          ? Navigator.of(context).pop()
+                          : context.go('/'),
                       icon: const Icon(InkIcons.caretLeft),
                     ),
                     Expanded(

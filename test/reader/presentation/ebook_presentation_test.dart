@@ -21,6 +21,10 @@ void main() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(EbookPresentation.channel, null);
   });
+  test('memory pressure trims the optional native paper cache', () async {
+    await EbookPresentation.trimMemory();
+    expect(calls.single.method, 'trimMemory');
+  });
   test(
     'presentation and page turns carry only bounded configuration values',
     () async {
@@ -38,10 +42,30 @@ void main() {
       expect(calls[0].arguments, {
         'animations': false,
         'separator': true,
+        'dividerColor': 0xff252320,
+        'paperTexture': false,
+        'tapToTurnPages': false,
         'imageEnhancement': 2,
       });
       expect(calls[1].arguments, {'forward': true, 'animated': false});
       expect(calls[2].arguments, {'forward': false, 'animated': true});
+    },
+  );
+  test(
+    'tap page turns require explicit opt-in and can be disabled again',
+    () async {
+      for (final enabled in [true, false]) {
+        expect(
+          await EbookPresentation.configure(
+            animations: true,
+            separator: false,
+            tapToTurnPages: enabled,
+          ),
+          isTrue,
+        );
+        expect((calls.last.arguments as Map)['tapToTurnPages'], enabled);
+      }
+      expect(calls.map((call) => call.method), ['configure', 'configure']);
     },
   );
   test('unsupported platforms do not receive a native command', () async {

@@ -1,3 +1,5 @@
+import 'reader_settings_scope_selector.dart';
+import '../../app/icons/inkora_icons.dart';
 import 'ebook_style_picker.dart';
 import 'ebook_settings_controls.dart';
 import 'ebook_presentation.dart';
@@ -16,12 +18,19 @@ import '../domain/reader_manifest.dart';
 import '../domain/reading_settings.dart';
 import '../domain/webtoon_layout.dart';
 
-enum _PreferenceTab { layout, style, typography, rendering, preloading }
+enum _PreferenceTab {
+  appearance,
+  layout,
+  navigation,
+  style,
+  rendering,
+  preloading,
+}
 
 /// Scoped reading preferences. Every change applies immediately: it is
 /// persisted to the selected scope (latest value wins, unchanged values are
 /// skipped) and the open reader follows the account's settings stream. There
-/// is no Save or Cancel; Reset to default is a confirmed header action.
+/// is no Save or Cancel; the header menu provides confirmed tab resets.
 class ReaderSettingsSheet extends StatefulWidget {
   const ReaderSettingsSheet({
     required this.store,
@@ -61,7 +70,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
   late final double _maximumStripRatio;
   int _generation = 0;
   String? _message;
-  _PreferenceTab _tab = _PreferenceTab.layout;
+  _PreferenceTab? _tab;
 
   // Live persistence: one writer, latest value per change, no duplicate rows.
   final _persisted = <_Target, String>{};
@@ -79,17 +88,19 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
   List<_PreferenceTab> get _tabs => widget.qualityOnly
       ? [_PreferenceTab.rendering, _PreferenceTab.preloading]
       : [
-          _PreferenceTab.layout,
           if (_supportsTypography) ...[
+            _PreferenceTab.appearance,
+            _PreferenceTab.layout,
+            _PreferenceTab.navigation,
             _PreferenceTab.style,
-            _PreferenceTab.typography,
-          ],
+          ] else
+            _PreferenceTab.layout,
           if (widget.manifest != null && !widget.manifest!.isDocument)
             _PreferenceTab.rendering,
           if (widget.manifest != null && _effective.mode == ReadingMode.webtoon)
             _PreferenceTab.preloading,
         ];
-  _PreferenceTab get _activeTab => _tabs.contains(_tab) ? _tab : _tabs.first;
+  _PreferenceTab get _activeTab => _tabs.contains(_tab) ? _tab! : _tabs.first;
   bool get _showQuality =>
       _activeTab == _PreferenceTab.rendering ||
       _activeTab == _PreferenceTab.preloading;
@@ -206,6 +217,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
   void _change(String key, Object? value) {
     final values = {..._overrides.toJson(), key: value};
     if (key == 'layout') values['spreads'] = null;
+    if (key == 'spreadPairing') values['spreadOffset'] = null;
     if (key == 'mode' && value != _overrides.mode?.name) {
       if (value == 'ebook') values['background'] = 'sepia';
       for (final field in [
@@ -215,6 +227,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
         'spreads',
         'layout',
         'spreadOffset',
+        'spreadPairing',
       ]) {
         values[field] = null;
       }
@@ -238,10 +251,12 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
       'direction' => settings.direction.name,
       'fit' => settings.fit.name,
       'layout' => settings.layout.name,
+      'spreadPairing' => settings.spreadPairing.name,
       _ => throw ArgumentError('Unknown reading setting'),
     };
     return ReaderChoiceGroup(
       id: key,
+      wrapLabels: key == 'spreadPairing',
       label: label,
       choices: choices,
       selected: raw,
@@ -510,6 +525,8 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
   }
 
   Future<void> _reset() async {
+    final targetScope = _scope;
+    final targetTab = _activeTab;
     final confirmed = await confirmInk(
       context,
       title: 'Reset to default?',
@@ -518,10 +535,54 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
       confirmLabel: 'Reset to default',
       destructive: true,
     );
-    if (!confirmed || !mounted) return;
+    if (!confirmed ||
+        !mounted ||
+        _scope != targetScope ||
+        _activeTab != targetTab) {
+      return;
+    }
     final values = {..._overrides.toJson()};
-    final targetScope = _scope;
-    final targetTab = _activeTab;
+    if (_supportsTypography && !_showQuality) {
+      final ebook = {...?_overrides.ebook};
+      final fields = switch (targetTab) {
+        _PreferenceTab.appearance => [
+          'font',
+          'fontSize',
+          'lineHeight',
+          'justify',
+          'publisherStyles',
+        ],
+        _PreferenceTab.layout => [
+          'margins',
+          'pageInsets',
+          'columns',
+          'columnSeparator',
+        ],
+        _PreferenceTab.navigation => ['scroll', 'tapToTurnPages'],
+        _PreferenceTab.style => [
+          'font',
+          'fontSize',
+          'lineHeight',
+          'margins',
+          'justify',
+          'publisherStyles',
+        ],
+        _ => <String>[],
+      };
+      for (final field in fields) {
+        ebook.remove(field);
+      }
+      if (targetTab == _PreferenceTab.appearance ||
+          targetTab == _PreferenceTab.style) {
+        values.remove('background');
+      }
+      if (targetTab == _PreferenceTab.navigation) {
+        values.remove('pageAnimation');
+      }
+      values['ebook'] = ebook.isEmpty ? null : ebook;
+      _apply(ReadingOverrides.fromJson(values));
+      return;
+    }
     if (_activeTab == _PreferenceTab.rendering &&
         widget.onResetRendering != null) {
       try {
@@ -551,6 +612,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
                 'spreads',
                 'layout',
                 'spreadOffset',
+                'spreadPairing',
                 'pageAnimation',
                 'ebook',
               ]) {
@@ -563,21 +625,71 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
     _apply(ReadingOverrides.fromJson(values));
   }
 
-  Widget _scopeControl() => ReaderChoiceGroup(
-    id: 'scope',
-    label: 'Apply to',
+  Map<SettingsScope, String> get _scopeChoices => {
+    if (widget.manifest != null) SettingsScope.book: 'This book',
+    if (widget.manifest?.seriesId != null) SettingsScope.series: 'Series',
+    if (widget.libraryId != null || widget.manifest?.libraryId != null)
+      SettingsScope.library: 'Library',
+    SettingsScope.global: 'Global',
+  };
+
+  Widget _backgroundControls({required bool ebook}) => ReaderBackgroundSwatches(
     choices: {
-      if (widget.manifest != null) SettingsScope.book.name: 'This book',
-      if (widget.manifest?.seriesId != null)
-        SettingsScope.series.name: 'Series',
-      if (widget.manifest?.libraryId != null)
-        SettingsScope.library.name: 'Library',
-      SettingsScope.global.name: 'Global',
+      ReadingBackground.white: 'White',
+      if (ebook &&
+          EbookPresentation.supported &&
+          widget.manifest?.documentType != 'application/pdf')
+        ReadingBackground.paper: 'Paper',
+      ReadingBackground.sepia: 'Sepia',
+      if (ebook) ...{
+        ReadingBackground.gray: 'Gray',
+        ReadingBackground.slate: 'Night',
+      },
+      ReadingBackground.black: 'Black',
     },
-    selected: _scope.name,
-    onSelected: _loading
-        ? null
-        : (name) => _load(SettingsScope.values.byName(name)),
+    selected: _effective.background.current,
+    onSelected: _loading ? null : (value) => _change('background', value.name),
+  );
+
+  Widget _ebookControls(EbookControlsSection section) => EbookSettingsControls(
+    section: section,
+    settings: _effective.ebook,
+    onChanged: (key, value) =>
+        _change('ebook', {...?_overrides.ebook, key: value}),
+  );
+
+  Widget _appearanceControls() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      if (widget.manifest == null) ...[
+        _select('Mode', 'mode', {
+          'manga': 'Manga',
+          'comics': 'Comics',
+          'webtoon': 'Webtoon',
+          'ebook': 'Ebooks',
+        }),
+        const SizedBox(height: 20),
+      ],
+      _backgroundControls(ebook: true),
+      const SizedBox(height: 20),
+      _ebookControls(EbookControlsSection.typography),
+    ],
+  );
+
+  Widget _animationControl() => SwitchListTile.adaptive(
+    contentPadding: EdgeInsets.zero,
+    title: const LText('Page turn animation'),
+    value: _effective.pageAnimation,
+    onChanged: _loading ? null : (value) => _change('pageAnimation', value),
+  );
+
+  Widget _navigationControls() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _ebookControls(EbookControlsSection.navigation),
+      if (!_effective.ebook.scroll && EbookPresentation.supported)
+        _animationControl(),
+    ],
   );
 
   Widget _layoutControls() {
@@ -640,34 +752,14 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
-          SwitchListTile.adaptive(
-            key: const Key('reader-spread-offset-default'),
-            contentPadding: EdgeInsets.zero,
-            title: const LText('Shift page pairing by one'),
-            value: _effective.spreadOffset,
-            onChanged: _loading
-                ? null
-                : (value) => _change('spreadOffset', value),
-          ),
+          _select('Pages', 'spreadPairing', {
+            SpreadPairing.automatic.name: 'Automatic',
+            SpreadPairing.unshifted.name: 'Pair pages from the first page',
+            SpreadPairing.shifted.name: 'Shift page pairing by one',
+          }),
           const SizedBox(height: 20),
         ],
-        ReaderBackgroundSwatches(
-          choices: {
-            ReadingBackground.black: 'Black',
-            ReadingBackground.white: 'White',
-            ReadingBackground.sepia: 'Sepia',
-            if (mode == ReadingMode.ebook) ...{
-              ReadingBackground.ivory: 'Ivory',
-              ReadingBackground.sage: 'Soft sage',
-              ReadingBackground.mist: 'Blue mist',
-              ReadingBackground.slate: 'Slate night',
-            },
-          },
-          selected: _effective.background,
-          onSelected: _loading
-              ? null
-              : (value) => _change('background', value.name),
-        ),
+        _backgroundControls(ebook: mode == ReadingMode.ebook),
         const SizedBox(height: 20),
         if (mode != ReadingMode.ebook)
           InkSlider(
@@ -683,7 +775,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
           ),
         if (mode == ReadingMode.ebook) ...[
           EbookSettingsControls(
-            section: EbookControlsSection.layout,
+            section: EbookControlsSection.all,
             settings: _effective.ebook,
             pdf: widget.manifest?.documentType == 'application/pdf',
             onChanged: (key, value) =>
@@ -694,29 +786,21 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
             (mode != ReadingMode.ebook || !_effective.ebook.scroll) &&
             (widget.manifest?.documentType != 'application/epub+zip' ||
                 EbookPresentation.supported))
-          SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            title: const LText('Page turn animation'),
-            value: _effective.pageAnimation,
-            onChanged: _loading
-                ? null
-                : (value) => _change('pageAnimation', value),
-          ),
+          _animationControl(),
       ],
     );
   }
 
   Widget _tabContent() => switch (_activeTab) {
-    _PreferenceTab.layout => _layoutControls(),
+    _PreferenceTab.appearance => _appearanceControls(),
+    _PreferenceTab.layout =>
+      _supportsTypography
+          ? _ebookControls(EbookControlsSection.layout)
+          : _layoutControls(),
+    _PreferenceTab.navigation => _navigationControls(),
     _PreferenceTab.style => EbookStylePicker(
       settings: _effective,
       onSelected: (style) => _apply(style.apply(_overrides)),
-    ),
-    _PreferenceTab.typography => EbookSettingsControls(
-      section: EbookControlsSection.typography,
-      settings: _effective.ebook,
-      onChanged: (key, value) =>
-          _change('ebook', {...?_overrides.ebook, key: value}),
     ),
     _PreferenceTab.rendering => Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -751,35 +835,80 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
             ? math.min(preferredHeight, 420 * scale)
             : preferredHeight;
         // Large type can make the header taller than a phone sheet. Let the
-        // whole editor scroll then; ordinary sizes keep the header pinned.
+        // header and body scroll then, keeping the scope footer pinned.
         final short = scale > 1.3 || height < (widget.modal ? 420 : 180);
         final reset = widget.showReset
-            ? TextButton(
-                key: const Key('reader-settings-reset'),
-                onPressed: _loading ? null : _reset,
-                child: const LText('Reset to default'),
+            ? PopupMenuButton<String>(
+                key: const Key('reader-settings-menu'),
+                tooltip: context.tr('More'),
+                enabled: !_loading,
+                useRootNavigator: true,
+                icon: const Icon(InkIcons.dotsThree),
+                itemBuilder: (_) => [
+                  const PopupMenuItem(
+                    value: 'reset',
+                    key: Key('reader-settings-reset'),
+                    child: LText('Reset this tab'),
+                  ),
+                ],
+                onSelected: (_) => _reset(),
               )
             : null;
         final scope = widget.manifest != null && widget.libraryId == null;
+        final actions = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!widget.qualityOnly)
+              Flexible(
+                child: ReaderSettingsScopeSelector(
+                  scope: _scope,
+                  choices: scope
+                      ? _scopeChoices
+                      : {_scope: _scopeChoices[_scope]!},
+                  onSelected: scope && !_loading
+                      ? (value) => _load(value)
+                      : null,
+                ),
+              ),
+            ?reset,
+          ],
+        );
         final header = Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (widget.modal)
-              InkSheetHeader(
-                title: widget.qualityOnly
-                    ? 'Image quality'
-                    : 'Reading preferences',
-                action: reset,
+              LayoutBuilder(
+                builder: (context, bounds) {
+                  final title = widget.qualityOnly
+                      ? 'Image quality'
+                      : 'Reading preferences';
+                  if (bounds.maxWidth / scale < 420) {
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        InkSheetHeader(title: title),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 8, 8),
+                          child: Align(
+                            alignment: AlignmentDirectional.centerEnd,
+                            child: actions,
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+                  return InkSheetHeader(title: title, action: actions);
+                },
               )
-            else if (reset != null)
+            else
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 4, 8, 0),
-                child: Align(alignment: Alignment.centerRight, child: reset),
-              ),
-            if (scope)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                child: _scopeControl(),
+                child: Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: actions,
+                ),
               ),
             if (_loading) const LinearProgressIndicator(),
           ],
@@ -799,9 +928,11 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
                         MediaQuery.textScalerOf(context).scale(14 * 1.6) + 16,
                       ),
                       text: context.tr(switch (tab) {
-                        _PreferenceTab.layout => 'Layout',
-                        _PreferenceTab.style => 'Reading style',
-                        _PreferenceTab.typography => 'Typography',
+                        _PreferenceTab.layout =>
+                          _supportsTypography ? 'Page layout' : 'Layout',
+                        _PreferenceTab.style => 'Templates',
+                        _PreferenceTab.appearance => 'Appearance',
+                        _PreferenceTab.navigation => 'Navigation',
                         _PreferenceTab.rendering => 'Rendering',
                         _PreferenceTab.preloading => 'Preloading',
                       }),
@@ -837,11 +968,6 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
                 const SizedBox(height: 12),
                 LText(_message!, key: const Key('reader-settings-message')),
               ],
-              const SizedBox(height: 12),
-              LText(
-                'Changes apply immediately.',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
             ],
           ),
         );
@@ -851,8 +977,11 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 760),
-            child: SizedBox(
-              height: height,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: widget.modal ? 0 : height,
+                maxHeight: height,
+              ),
               child: DefaultTabController(
                 key: ValueKey(tabs.map((tab) => tab.name).join(',')),
                 length: tabs.length,
@@ -860,31 +989,44 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
                 animationDuration: MediaQuery.disableAnimationsOf(context)
                     ? Duration.zero
                     : null,
-                child: short
-                    ? SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [header, navigation, body],
-                        ),
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          header,
-                          navigation,
-                          Expanded(
-                            child: SingleChildScrollView(
-                              key: PageStorageKey((
-                                'reader-settings',
-                                _activeTab,
-                                _scope,
-                              )),
-                              child: body,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Flexible(
+                      fit: widget.modal ? FlexFit.loose : FlexFit.tight,
+                      child: short
+                          ? SingleChildScrollView(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [header, navigation, body],
+                              ),
+                            )
+                          : Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                header,
+                                navigation,
+                                Flexible(
+                                  fit: widget.modal
+                                      ? FlexFit.loose
+                                      : FlexFit.tight,
+                                  child: SingleChildScrollView(
+                                    key: PageStorageKey((
+                                      'reader-settings',
+                                      _activeTab,
+                                      _scope,
+                                    )),
+                                    child: body,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

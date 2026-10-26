@@ -166,16 +166,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
     }
   }
 
-  Future<bool> _nextChapter(OpenReader reader) async {
+  Future<bool> _nextChapter(OpenReader reader, String next) async {
     setState(() => _changingChapter = true);
     try {
-      final repository = await ref.read(readerRepositoryProvider.future);
-      final next = await repository?.nextChapterId(reader.manifest);
       if (!mounted) return false;
-      if (next == null) {
-        notifyInk(context, 'No next chapter is available.');
-        return false;
-      }
       reader.prefetch?.suspend(true);
       if (GoRouterState.of(context).name != 'series-reader' ||
           reader.manifest.seriesId == null) {
@@ -220,23 +214,28 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
     if (mounted && result != null) _navigation.value = result;
   }
 
-  Future<void> _end(OpenReader reader) async {
+  Future<void> _end(OpenReader reader, {bool continueReading = false}) async {
     if (_ending) return;
     _ending = true;
     try {
       final repository = await ref.read(readerRepositoryProvider.future);
-      final catalogue = await ref.read(catalogueRepositoryProvider.future);
       if (repository == null || !mounted) return;
       final nextId = await repository.nextChapterId(reader.manifest);
-      // Exact lookup remains account/publication scoped; never infer remote IDs.
-      final nextItem = nextId == null
-          ? null
-          : await catalogue?.store.item(CatalogueKind.book, nextId).first;
-      if (!mounted) return;
-      final action = await showInkSheet<String>(
-        context: context,
-        child: _VolumeEndSheet(next: nextItem),
-      );
+      String? action;
+      if (continueReading && nextId != null) {
+        action = 'next';
+      } else {
+        final catalogue = await ref.read(catalogueRepositoryProvider.future);
+        // Exact lookup remains account/publication scoped; never infer remote IDs.
+        final nextItem = nextId == null
+            ? null
+            : await catalogue?.store.item(CatalogueKind.book, nextId).first;
+        if (!mounted) return;
+        action = await showInkSheet<String>(
+          context: context,
+          child: _VolumeEndSheet(next: nextItem),
+        );
+      }
       if (action == null || !mounted) return;
       final last = ReaderLocator(reader.manifest.pages.length - 1, 1);
       final previous = _suppressedReader;
@@ -252,7 +251,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
       }
       if (!mounted) return;
       if (action == 'next' && nextId != null) {
-        if (!await _nextChapter(reader)) _suppressedReader = previous;
+        if (!await _nextChapter(reader, nextId)) _suppressedReader = previous;
       } else {
         final seriesId = reader.manifest.seriesId;
         if (seriesId == null || seriesId.isEmpty) {
@@ -413,7 +412,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
               : _positionRevision,
         )),
         navigation: _navigation,
-        onEnd: () => _end(reader),
+        onEnd: () => _end(reader, continueReading: true),
         onLocatorChanged: (locator) {
           _currentLocator = locator;
           _page.value = locator.pageIndex;

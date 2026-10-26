@@ -270,6 +270,34 @@ final class ProgressStore {
       )
       .watch()
       .map((rows) => rows.map(_intent).toList());
+
+  /// Only each book's oldest intent may run. A conflict blocks its successors;
+  /// sending heads keep policy observation alive without scheduling a retry.
+  /// The account/book/sequence primary key covers both the filter and lookup.
+  Selectable<QueryRow> get _replaySchedule => database.customSelect(
+    """SELECT COUNT(*) > 0 AS has_work,
+          MIN(CASE WHEN e.state = 'queued' THEN e.retry_at END) AS due_at
+          FROM progress_events e
+          WHERE e.account_id = ? AND e.state IN ('queued', 'sending')
+          AND NOT EXISTS (SELECT 1 FROM progress_events previous
+            WHERE previous.account_id = e.account_id
+              AND previous.book_id = e.book_id AND previous.sequence < e.sequence)""",
+    variables: [Variable(accountId)],
+    readsFrom: {database.progressEvents},
+  );
+
+  Stream<({bool hasWork, int? dueAt})> watchReplaySchedule() => _replaySchedule
+      .watchSingle()
+      .map(
+        (row) => (
+          hasWork: row.read<int>('has_work') != 0,
+          dueAt: row.readNullable<int>('due_at'),
+        ),
+      )
+      .distinct();
+
+  Future<int?> nextReplayAt() async =>
+      (await _replaySchedule.getSingle()).readNullable<int>('due_at');
   Future<void> recover() => database.customStatement(
     "UPDATE progress_events SET state = 'queued' WHERE account_id = ? AND state = 'sending'",
     [accountId],

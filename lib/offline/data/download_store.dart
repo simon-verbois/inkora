@@ -269,6 +269,18 @@ final class DownloadStore {
     return true;
   }
 
+  /// Policy observation needs only queue activity, never manifests/part writes.
+  /// Uses the account/state prefix of download_retention_jobs.
+  Stream<bool> watchActiveWork() => database
+      .customSelect(
+        "SELECT EXISTS(SELECT 1 FROM download_jobs WHERE account_id = ? AND state IN ('queued', 'running', 'verifying')) AS active",
+        variables: [Variable(accountId)],
+        readsFrom: {database.downloadJobs},
+      )
+      .watchSingle()
+      .map((row) => row.read<int>('active') != 0)
+      .distinct();
+
   /// One published, account-scoped snapshot; covers reuse catalogue cache keys.
   /// Saved manifests still identify books removed from the remote catalogue.
   /// Catalogue identities (`book:ID`, `series:ID`) with at least one

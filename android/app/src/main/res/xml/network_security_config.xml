@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Server addresses are entered by the user and may use HTTP. HTTPS
+         connections retain the platform's normal certificate validation. -->
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

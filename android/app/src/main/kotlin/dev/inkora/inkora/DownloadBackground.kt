@@ -77,7 +77,7 @@ object DownloadBackground {
             require(id.matches(Regex("[a-f0-9]{64}-[0-9]+")))
             if ((0 until entries.length()).any { entries.getJSONObject(it).getString("id") == id }) continue
             val url = URL(task["url"] as String)
-            require(url.protocol == "https" && url.userInfo == null)
+            require((url.protocol == "http" || url.protocol == "https") && url.userInfo == null)
             val output = File(task["path"] as String).canonicalFile
             require(output.path.startsWith(context.filesDir.canonicalPath + File.separator))
             val maximum = (task["maximumBytes"] as Number).toLong()

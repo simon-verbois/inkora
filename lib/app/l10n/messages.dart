@@ -27,7 +27,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Applied in addition to your device text size.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Apply these preferences to every series and book in this library, replacing their custom reading preferences.",
-    "Apply to": "Apply to",
     "Apply to all series and books": "Apply to all series and books",
     "Authentication failed. Please sign in again.":
         "Authentication failed. Please sign in again.",
@@ -113,8 +112,6 @@ const Map<String, Map<String, String>> messages = {
     "Enter a username or email.": "Enter a username or email.",
     "Enter a valid HTTPS server URL.": "Enter a valid HTTPS server URL.",
     "Enter an API key": "Enter an API key",
-    "Enter an HTTPS URL, including any server subpath.":
-        "Enter an HTTPS URL, including any server subpath.",
     "Enter your API key.": "Enter your API key.",
     "Enter your password.": "Enter your password.",
     "Expected a JSON object": "Expected a JSON object",
@@ -618,7 +615,6 @@ const Map<String, Map<String, String>> messages = {
     "Publisher font": "Publisher font",
     "Serif": "Serif",
     "Sans serif": "Sans serif",
-    "Text size": "Text size",
     "Line spacing": "Line spacing",
     "Page margins": "Page margins",
     "Text columns": "Text columns",
@@ -651,7 +647,6 @@ const Map<String, Map<String, String>> messages = {
     "Search is unavailable for this book.":
         "Search is unavailable for this book.",
     "Layout": "Layout",
-    "Typography": "Typography",
     "Rendering": "Rendering",
     "Preloading": "Preloading",
     "{0}×": "{0}×",
@@ -673,18 +668,11 @@ const Map<String, Map<String, String>> messages = {
     "Saved catalogue unavailable.": "Saved catalogue unavailable.",
     "Bookmark added": "Bookmark added",
     "Copy": "Copy",
-    "Reading style": "Reading style",
     "Fantasy": "Fantasy",
     "Science fiction": "Science fiction",
     "Detective fiction": "Detective fiction",
     "Classics": "Classics",
     "Study": "Study",
-    "Ivory": "Ivory",
-    "Soft sage": "Soft sage",
-    "Blue mist": "Blue mist",
-    "Slate night": "Slate night",
-    "Choose a style manually. You can adjust it afterwards.":
-        "Choose a style manually. You can adjust it afterwards.",
     "Hold a word or line, then choose Add bookmark.":
         "Hold a word or line, then choose Add bookmark.",
     "Unable to display bookmarks.": "Unable to display bookmarks.",
@@ -824,7 +812,6 @@ const Map<String, Map<String, String>> messages = {
     "Series details": "Series details",
     "Two pages in landscape windows and on tablets.":
         "Two pages in landscape windows and on tablets.",
-    "Changes apply immediately.": "Changes apply immediately.",
     "Reset to default?": "Reset to default?",
     "The custom settings of this tab are removed for the selected scope.":
         "The custom settings of this tab are removed for the selected scope.",
@@ -868,6 +855,25 @@ const Map<String, Map<String, String>> messages = {
         "Restore the default settings for this page?",
     "Unable to reset settings. Try again.":
         "Unable to reset settings. Try again.",
+    "Tap to turn pages": "Tap to turn pages",
+    "Enter an HTTP or HTTPS URL, including any server subpath.":
+        "Enter an HTTP or HTTPS URL, including any server subpath.",
+    "Buy Me a Coffee": "Buy Me a Coffee",
+    "Templates": "Templates",
+    "Choose a template. You can adjust it afterwards.":
+        "Choose a template. You can adjust it afterwards.",
+    "Atkinson Hyperlegible": "Atkinson Hyperlegible",
+    "Crimson Text": "Crimson Text",
+    "Gentium Book Plus": "Gentium Book Plus",
+    "Lato": "Lato",
+    "PT Serif": "PT Serif",
+    "Navigation": "Navigation",
+    "Reading mode": "Reading mode",
+    "Page by page": "Page by page",
+    "Reset this tab": "Reset this tab",
+    "Paper": "Paper",
+    "Gray": "Gray",
+    "Night": "Night",
   },
   "fr": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Un conflit nécessite votre choix. Ouvrez le livre concerné et sélectionnez « Progression de lecture ».",
@@ -896,7 +902,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Appliqué en plus de la taille du texte de votre appareil.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Appliquez ces préférences à toutes les séries et à tous les livres de cette bibliothèque, en remplaçant leurs préférences de lecture personnalisées.",
-    "Apply to": "Appliquer à",
     "Apply to all series and books":
         "Appliquer à toutes les séries et à tous les livres",
     "Authentication failed. Please sign in again.":
@@ -988,8 +993,6 @@ const Map<String, Map<String, String>> messages = {
     "Enter a valid HTTPS server URL.":
         "Saisissez une URL de serveur HTTPS valide.",
     "Enter an API key": "Saisissez une clé API",
-    "Enter an HTTPS URL, including any server subpath.":
-        "Saisissez une URL HTTPS, y compris tout sous-chemin du serveur.",
     "Enter your API key.": "Saisissez votre clé API.",
     "Enter your password.": "Saisissez votre mot de passe.",
     "Expected a JSON object": "Objet JSON attendu",
@@ -1494,7 +1497,6 @@ const Map<String, Map<String, String>> messages = {
     "Publisher font": "Police de l’éditeur",
     "Serif": "Avec empattements",
     "Sans serif": "Sans empattements",
-    "Text size": "Taille du texte",
     "Line spacing": "Interligne",
     "Page margins": "Marges de page",
     "Text columns": "Colonnes de texte",
@@ -1529,7 +1531,6 @@ const Map<String, Map<String, String>> messages = {
     "Search is unavailable for this book.":
         "La fonction de recherche n’est pas disponible pour ce livre.",
     "Layout": "Disposition",
-    "Typography": "Typographie",
     "Rendering": "Rendu",
     "Preloading": "Préchargement",
     "{0}×": "{0}×",
@@ -1552,17 +1553,11 @@ const Map<String, Map<String, String>> messages = {
     "Saved catalogue unavailable.": "Catalogue enregistré indisponible.",
     "Bookmark added": "Signet ajouté",
     "Copy": "Copier",
-    "Reading style": "Style de lecture",
     "Fantasy": "Fantasy",
     "Science fiction": "Science-fiction",
     "Detective fiction": "Polar",
     "Classics": "Classiques",
     "Study": "Étude",
-    "Ivory": "Ivoire",
-    "Soft sage": "Vert sauge doux",
-    "Blue mist": "Brume bleue",
-    "Slate night": "Nuit ardoise",
-    "Choose a style manually. You can adjust it afterwards.": "Choisissez un style manuellement. Vous pourrez l’ajuster par la suite.",
     "Hold a word or line, then choose Add bookmark.": "Maintenez votre doigt sur un mot ou une ligne, puis sélectionnez « Ajouter un signet ».",
     "Unable to display bookmarks.": "Impossible d’afficher les signets.",
     "Connect your Komga server to start reading.":
@@ -1699,8 +1694,6 @@ const Map<String, Map<String, String>> messages = {
     "Series details": "Détails de la série",
     "Two pages in landscape windows and on tablets.":
         "Deux pages en fenêtre paysage et sur tablette.",
-    "Changes apply immediately.":
-        "Les modifications s’appliquent immédiatement.",
     "Reset to default?": "Réinitialiser aux paramètres par défaut ?",
     "The custom settings of this tab are removed for the selected scope.": "Les paramètres personnalisés de cet onglet seront supprimés pour la portée sélectionnée.",
     "Apply to all series and books?":
@@ -1743,6 +1736,24 @@ const Map<String, Map<String, String>> messages = {
         "Restaurer les paramètres par défaut de cette page ?",
     "Unable to reset settings. Try again.":
         "Impossible de réinitialiser les paramètres. Réessayez.",
+    "Tap to turn pages": "Tourner les pages au toucher",
+    "Enter an HTTP or HTTPS URL, including any server subpath.": "Saisissez une URL HTTP ou HTTPS, y compris tout sous-chemin du serveur.",
+    "Buy Me a Coffee": "Buy Me a Coffee",
+    "Templates": "Templates",
+    "Choose a template. You can adjust it afterwards.":
+        "Choisissez un template. Vous pourrez l’ajuster par la suite.",
+    "Atkinson Hyperlegible": "Atkinson Hyperlegible",
+    "Crimson Text": "Crimson Text",
+    "Gentium Book Plus": "Gentium Book Plus",
+    "Lato": "Lato",
+    "PT Serif": "PT Serif",
+    "Navigation": "Navigation",
+    "Reading mode": "Mode de lecture",
+    "Page by page": "Par pages",
+    "Reset this tab": "Réinitialiser cet onglet",
+    "Paper": "Papier",
+    "Gray": "Gris",
+    "Night": "Nuit",
   },
   "de": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Bei einem Konflikt müssen Sie eine Entscheidung treffen. Öffnen Sie das betroffene Buch und wählen Sie „Lesefortschritt“ aus.",
@@ -1771,7 +1782,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Wird zusätzlich zur Textgröße Ihres Geräts angewendet.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Wenden Sie diese Einstellungen auf alle Serien und Bücher in dieser Bibliothek an und ersetzen Sie dabei deren benutzerdefinierte Leseeinstellungen.",
-    "Apply to": "Gilt für",
     "Apply to all series and books": "Auf alle Serien und Bücher anwenden",
     "Authentication failed. Please sign in again.": "Die Authentifizierung ist fehlgeschlagen. Bitte melden Sie sich erneut an.",
     "Authorization": "Autorisierung",
@@ -1858,7 +1868,6 @@ const Map<String, Map<String, String>> messages = {
     "Enter a valid HTTPS server URL.":
         "Geben Sie eine gültige HTTPS-Server-URL ein.",
     "Enter an API key": "Geben Sie einen API-Schlüssel ein",
-    "Enter an HTTPS URL, including any server subpath.": "Geben Sie eine HTTPS-URL ein, einschließlich etwaiger Server-Teilpfade.",
     "Enter your API key.": "Geben Sie Ihren API-Schlüssel ein.",
     "Enter your password.": "Geben Sie Ihr Passwort ein.",
     "Expected a JSON object": "Erwartet wurde ein JSON-Objekt",
@@ -2356,7 +2365,6 @@ const Map<String, Map<String, String>> messages = {
     "Publisher font": "Verlagsschrift",
     "Serif": "Serifenschrift",
     "Sans serif": "Serifenlose Schrift",
-    "Text size": "Textgröße",
     "Line spacing": "Zeilenabstand",
     "Page margins": "Seitenränder",
     "Text columns": "Textspalten",
@@ -2391,7 +2399,6 @@ const Map<String, Map<String, String>> messages = {
     "Search is unavailable for this book.":
         "Die Suchfunktion ist für dieses Buch nicht verfügbar.",
     "Layout": "Layout",
-    "Typography": "Typografie",
     "Rendering": "Darstellung",
     "Preloading": "Vorladen",
     "{0}×": "{0}×",
@@ -2413,17 +2420,11 @@ const Map<String, Map<String, String>> messages = {
     "Saved catalogue unavailable.": "Gespeicherter Katalog nicht verfügbar.",
     "Bookmark added": "Lesezeichen hinzugefügt",
     "Copy": "Kopieren",
-    "Reading style": "Lesestil",
     "Fantasy": "Fantasy",
     "Science fiction": "Science-Fiction",
     "Detective fiction": "Krimis",
     "Classics": "Klassiker",
     "Study": "Studium",
-    "Ivory": "Elfenbein",
-    "Soft sage": "Sanftes Salbeigrün",
-    "Blue mist": "Blauer Nebel",
-    "Slate night": "Schiefernacht",
-    "Choose a style manually. You can adjust it afterwards.": "Wählen Sie einen Stil manuell aus. Sie können ihn anschließend anpassen.",
     "Hold a word or line, then choose Add bookmark.": "Halten Sie ein Wort oder eine Zeile gedrückt und wählen Sie anschließend „Lesezeichen hinzufügen“.",
     "Unable to display bookmarks.":
         "Lesezeichen können nicht angezeigt werden.",
@@ -2559,7 +2560,6 @@ const Map<String, Map<String, String>> messages = {
     "Series details": "Seriendetails",
     "Two pages in landscape windows and on tablets.":
         "Zwei Seiten in Querformat-Fenstern und auf Tablets.",
-    "Changes apply immediately.": "Änderungen werden sofort übernommen.",
     "Reset to default?": "Auf Standard zurücksetzen?",
     "The custom settings of this tab are removed for the selected scope.": "Die benutzerdefinierten Einstellungen dieser Registerkarte werden für den ausgewählten Geltungsbereich entfernt.",
     "Apply to all series and books?": "Auf alle Serien und Bücher anwenden?",
@@ -2600,6 +2600,24 @@ const Map<String, Map<String, String>> messages = {
     "Restore the default settings for this page?":
         "Standardeinstellungen für diese Seite wiederherstellen?",
     "Unable to reset settings. Try again.": "Einstellungen können nicht zurückgesetzt werden. Versuchen Sie es erneut.",
+    "Tap to turn pages": "Seiten durch Tippen umblättern",
+    "Enter an HTTP or HTTPS URL, including any server subpath.": "Geben Sie eine HTTP- oder HTTPS-URL ein, einschließlich etwaiger Server-Teilpfade.",
+    "Buy Me a Coffee": "Buy Me a Coffee",
+    "Templates": "Vorlagen",
+    "Choose a template. You can adjust it afterwards.":
+        "Wählen Sie eine Vorlage. Sie können sie anschließend anpassen.",
+    "Atkinson Hyperlegible": "Atkinson Hyperlegible",
+    "Crimson Text": "Crimson Text",
+    "Gentium Book Plus": "Gentium Book Plus",
+    "Lato": "Lato",
+    "PT Serif": "PT Serif",
+    "Navigation": "Navigation",
+    "Reading mode": "Lesemodus",
+    "Page by page": "Seitenweise",
+    "Reset this tab": "Diesen Tab zurücksetzen",
+    "Paper": "Papier",
+    "Gray": "Grau",
+    "Night": "Nacht",
   },
   "es": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Un conflicto requiere que usted elija. Abra el libro afectado y seleccione «Progreso de lectura».",
@@ -2628,7 +2646,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Se aplica además del tamaño de texto de su dispositivo.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Aplique estas preferencias a todas las series y libros de esta biblioteca para sustituir sus preferencias de lectura personalizadas.",
-    "Apply to": "Aplicar a",
     "Apply to all series and books": "Aplicar a todas las series y libros",
     "Authentication failed. Please sign in again.":
         "Error de autenticación. Inicie sesión de nuevo.",
@@ -2717,8 +2734,6 @@ const Map<String, Map<String, String>> messages = {
     "Enter a valid HTTPS server URL.":
         "Introduzca una URL válida de un servidor HTTPS.",
     "Enter an API key": "Introduzca una clave de API",
-    "Enter an HTTPS URL, including any server subpath.":
-        "Introduzca una URL HTTPS, incluyendo cualquier subruta del servidor.",
     "Enter your API key.": "Introduzca su clave de API.",
     "Enter your password.": "Introduzca su contraseña.",
     "Expected a JSON object": "Se esperaba un objeto JSON",
@@ -3227,7 +3242,6 @@ const Map<String, Map<String, String>> messages = {
     "Publisher font": "Fuente del editor",
     "Serif": "Con serifa",
     "Sans serif": "Sin serifa",
-    "Text size": "Tamaño del texto",
     "Line spacing": "Interlineado",
     "Page margins": "Márgenes de página",
     "Text columns": "Columnas de texto",
@@ -3261,7 +3275,6 @@ const Map<String, Map<String, String>> messages = {
     "Search is unavailable for this book.":
         "La función de búsqueda no está disponible para este libro.",
     "Layout": "Disposición",
-    "Typography": "Tipografía",
     "Rendering": "Visualización",
     "Preloading": "Precarga",
     "{0}×": "{0}×",
@@ -3283,18 +3296,11 @@ const Map<String, Map<String, String>> messages = {
     "Saved catalogue unavailable.": "Catálogo guardado no disponible.",
     "Bookmark added": "Se ha añadido un marcador",
     "Copy": "Copiar",
-    "Reading style": "Estilo de lectura",
     "Fantasy": "Fantasía",
     "Science fiction": "Ciencia ficción",
     "Detective fiction": "Novela policíaca",
     "Classics": "Clásicos",
     "Study": "Estudio",
-    "Ivory": "Marfil",
-    "Soft sage": "Verde salvia suave",
-    "Blue mist": "Bruma azul",
-    "Slate night": "Noche pizarra",
-    "Choose a style manually. You can adjust it afterwards.":
-        "Elija un estilo manualmente. Podrá ajustarlo posteriormente.",
     "Hold a word or line, then choose Add bookmark.": "Mantenga pulsada una palabra o una línea y, a continuación, seleccione «Añadir marcador».",
     "Unable to display bookmarks.": "No se pueden mostrar los marcadores.",
     "Connect your Komga server to start reading.":
@@ -3432,7 +3438,6 @@ const Map<String, Map<String, String>> messages = {
     "Series details": "Detalles de la serie",
     "Two pages in landscape windows and on tablets.":
         "Dos páginas en ventanas en modo horizontal y en tabletas.",
-    "Changes apply immediately.": "Los cambios se aplican de inmediato.",
     "Reset to default?": "¿Restablecer valores predeterminados?",
     "The custom settings of this tab are removed for the selected scope.": "Los ajustes personalizados de esta pestaña se eliminarán para el ámbito seleccionado.",
     "Apply to all series and books?": "¿Aplicar a todas las series y libros?",
@@ -3474,6 +3479,24 @@ const Map<String, Map<String, String>> messages = {
         "¿Restaurar la configuración predeterminada para esta página?",
     "Unable to reset settings. Try again.":
         "No se puede restablecer la configuración. Inténtalo de nuevo.",
+    "Tap to turn pages": "Pasar páginas con un toque",
+    "Enter an HTTP or HTTPS URL, including any server subpath.": "Introduzca una URL HTTP o HTTPS, incluyendo cualquier subruta del servidor.",
+    "Buy Me a Coffee": "Buy Me a Coffee",
+    "Templates": "Plantillas",
+    "Choose a template. You can adjust it afterwards.":
+        "Elija una plantilla. Podrá ajustarla posteriormente.",
+    "Atkinson Hyperlegible": "Atkinson Hyperlegible",
+    "Crimson Text": "Crimson Text",
+    "Gentium Book Plus": "Gentium Book Plus",
+    "Lato": "Lato",
+    "PT Serif": "PT Serif",
+    "Navigation": "Navegación",
+    "Reading mode": "Modo de lectura",
+    "Page by page": "Por páginas",
+    "Reset this tab": "Restablecer esta pestaña",
+    "Paper": "Papel",
+    "Gray": "Gris",
+    "Night": "Noche",
   },
   "it": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Per risolvere un conflitto è necessaria una sua scelta. Apra il libro interessato e selezioni «Progresso di lettura».",
@@ -3502,7 +3525,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Applicato in aggiunta alla dimensione del testo del suo dispositivo.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Applichi queste preferenze a tutte le serie e a tutti i libri di questa libreria, sostituendo le loro preferenze di lettura personalizzate.",
-    "Apply to": "Applica a",
     "Apply to all series and books":
         "Applica a tutte le serie e a tutti i libri",
     "Authentication failed. Please sign in again.": "Autenticazione non riuscita. Si prega di effettuare nuovamente l’accesso.",
@@ -3592,7 +3614,6 @@ const Map<String, Map<String, String>> messages = {
     "Enter a valid HTTPS server URL.":
         "Inserisca un URL valido di un server HTTPS.",
     "Enter an API key": "Inserisca una chiave API",
-    "Enter an HTTPS URL, including any server subpath.": "Inserisca un URL HTTPS, compreso l’eventuale sottopercorso del server.",
     "Enter your API key.": "Inserisca la sua chiave API.",
     "Enter your password.": "Inserisca la sua password.",
     "Expected a JSON object": "Ci si aspettava un oggetto JSON",
@@ -4096,7 +4117,6 @@ const Map<String, Map<String, String>> messages = {
     "Publisher font": "Carattere dell’editore",
     "Serif": "Con grazie",
     "Sans serif": "Senza grazie",
-    "Text size": "Dimensione del testo",
     "Line spacing": "Interlinea",
     "Page margins": "Margini della pagina",
     "Text columns": "Colonne di testo",
@@ -4130,7 +4150,6 @@ const Map<String, Map<String, String>> messages = {
     "Search is unavailable for this book.":
         "La funzione di ricerca non è disponibile per questo libro.",
     "Layout": "Impaginazione",
-    "Typography": "Tipografia",
     "Rendering": "Resa delle immagini",
     "Preloading": "Precaricamento",
     "{0}×": "{0}×",
@@ -4153,18 +4172,11 @@ const Map<String, Map<String, String>> messages = {
     "Saved catalogue unavailable.": "Catalogo salvato non disponibile.",
     "Bookmark added": "Segnalibro aggiunto",
     "Copy": "Copia",
-    "Reading style": "Stile di lettura",
     "Fantasy": "Fantasy",
     "Science fiction": "Fantascienza",
     "Detective fiction": "Romanzi gialli",
     "Classics": "Classici",
     "Study": "Studio",
-    "Ivory": "Avorio",
-    "Soft sage": "Salvia tenue",
-    "Blue mist": "Nebbia azzurra",
-    "Slate night": "Notte ardesia",
-    "Choose a style manually. You can adjust it afterwards.":
-        "Scegli uno stile manualmente. Puoi modificarlo in seguito.",
     "Hold a word or line, then choose Add bookmark.": "Tieni premuto su una parola o una riga, poi scegli «Aggiungi segnalibro».",
     "Unable to display bookmarks.": "Impossibile visualizzare i segnalibri.",
     "Connect your Komga server to start reading.":
@@ -4302,8 +4314,6 @@ const Map<String, Map<String, String>> messages = {
     "Series details": "Dettagli della serie",
     "Two pages in landscape windows and on tablets.":
         "Due pagine nelle finestre in orientamento orizzontale e sui tablet.",
-    "Changes apply immediately.":
-        "Le modifiche vengono applicate immediatamente.",
     "Reset to default?": "Ripristinare le impostazioni predefinite?",
     "The custom settings of this tab are removed for the selected scope.": "Le impostazioni personalizzate di questa scheda vengono rimosse per l’ambito selezionato.",
     "Apply to all series and books?":
@@ -4347,6 +4357,24 @@ const Map<String, Map<String, String>> messages = {
         "Ripristinare le impostazioni predefinite per questa pagina?",
     "Unable to reset settings. Try again.":
         "Impossibile ripristinare le impostazioni. Riprova.",
+    "Tap to turn pages": "Voltare pagina con un tocco",
+    "Enter an HTTP or HTTPS URL, including any server subpath.": "Inserisca un URL HTTP o HTTPS, compreso l’eventuale sottopercorso del server.",
+    "Buy Me a Coffee": "Buy Me a Coffee",
+    "Templates": "Modelli",
+    "Choose a template. You can adjust it afterwards.":
+        "Scegli un modello. Puoi modificarlo in seguito.",
+    "Atkinson Hyperlegible": "Atkinson Hyperlegible",
+    "Crimson Text": "Crimson Text",
+    "Gentium Book Plus": "Gentium Book Plus",
+    "Lato": "Lato",
+    "PT Serif": "PT Serif",
+    "Navigation": "Navigazione",
+    "Reading mode": "Modalità di lettura",
+    "Page by page": "Pagina per pagina",
+    "Reset this tab": "Ripristina questa scheda",
+    "Paper": "Carta",
+    "Gray": "Grigio",
+    "Night": "Notte",
   },
   "pl": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "W przypadku konfliktu należy dokonać wyboru. Proszę otworzyć daną książkę i wybrać opcję „Postęp czytania”.",
@@ -4374,7 +4402,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Stosowane dodatkowo do rozmiaru tekstu ustawionego na urządzeniu.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Zastosuj te preferencje do wszystkich serii i książek w tej bibliotece, zastępując ich niestandardowe preferencje czytania.",
-    "Apply to": "Zastosuj do",
     "Apply to all series and books": "Zastosuj do wszystkich serii i książek",
     "Authentication failed. Please sign in again.":
         "Uwierzytelnianie nie powiodło się. Proszę zalogować się ponownie.",
@@ -4465,7 +4492,6 @@ const Map<String, Map<String, String>> messages = {
     "Enter a valid HTTPS server URL.":
         "Wprowadź prawidłowy adres URL serwera HTTPS.",
     "Enter an API key": "Wprowadź klucz API",
-    "Enter an HTTPS URL, including any server subpath.": "Proszę wprowadzić adres URL w protokole HTTPS, łącznie z ewentualną podścieżką serwera.",
     "Enter your API key.": "Wprowadź swój klucz API.",
     "Enter your password.": "Wprowadź swoje hasło.",
     "Expected a JSON object": "Oczekiwany obiekt JSON",
@@ -4969,7 +4995,6 @@ const Map<String, Map<String, String>> messages = {
     "Publisher font": "Czcionka wydawcy",
     "Serif": "Szeryfowa",
     "Sans serif": "Bezszeryfowa",
-    "Text size": "Rozmiar tekstu",
     "Line spacing": "Odstępy między wierszami",
     "Page margins": "Marginesy stron",
     "Text columns": "Kolumny tekstowe",
@@ -5000,7 +5025,6 @@ const Map<String, Map<String, String>> messages = {
     "Search is unavailable for this book.":
         "W tej książce funkcja wyszukiwania jest niedostępna.",
     "Layout": "Układ",
-    "Typography": "Typografia",
     "Rendering": "Wyświetlanie",
     "Preloading": "Wstępne ładowanie",
     "{0}×": "{0}×",
@@ -5022,18 +5046,11 @@ const Map<String, Map<String, String>> messages = {
     "Saved catalogue unavailable.": "Zapisany katalog jest niedostępny.",
     "Bookmark added": "Dodano zakładkę",
     "Copy": "Kopiuj",
-    "Reading style": "Styl czytania",
     "Fantasy": "Fantasy",
     "Science fiction": "Science fiction",
     "Detective fiction": "Kryminały",
     "Classics": "Klasyka",
     "Study": "Nauka",
-    "Ivory": "Kość słoniowa",
-    "Soft sage": "Delikatna zieleń szałwiowa",
-    "Blue mist": "Błękitna mgła",
-    "Slate night": "Łupkowa noc",
-    "Choose a style manually. You can adjust it afterwards.":
-        "Wybierz styl ręcznie. Później możesz go dostosować.",
     "Hold a word or line, then choose Add bookmark.": "Należy przytrzymać słowo lub wiersz, a następnie wybrać opcję „Dodaj zakładkę”.",
     "Unable to display bookmarks.": "Nie można wyświetlić zakładek.",
     "Connect your Komga server to start reading.":
@@ -5170,7 +5187,6 @@ const Map<String, Map<String, String>> messages = {
     "Series details": "Szczegóły serii",
     "Two pages in landscape windows and on tablets.":
         "Dwie strony w oknach w orientacji poziomej oraz na tabletach.",
-    "Changes apply immediately.": "Zmiany są stosowane natychmiast.",
     "Reset to default?": "Przywrócić ustawienia domyślne?",
     "The custom settings of this tab are removed for the selected scope.": "Ustawienia niestandardowe tej zakładki zostaną usunięte dla wybranego zakresu.",
     "Apply to all series and books?":
@@ -5214,6 +5230,24 @@ const Map<String, Map<String, String>> messages = {
         "Przywrócić ustawienia domyślne tej strony?",
     "Unable to reset settings. Try again.":
         "Nie można zresetować ustawień. Spróbuj ponownie.",
+    "Tap to turn pages": "Przewracanie stron dotknięciem",
+    "Enter an HTTP or HTTPS URL, including any server subpath.": "Proszę wprowadzić adres URL HTTP lub HTTPS, łącznie z ewentualną podścieżką serwera.",
+    "Buy Me a Coffee": "Buy Me a Coffee",
+    "Templates": "Szablony",
+    "Choose a template. You can adjust it afterwards.":
+        "Wybierz szablon. Później możesz go dostosować.",
+    "Atkinson Hyperlegible": "Atkinson Hyperlegible",
+    "Crimson Text": "Crimson Text",
+    "Gentium Book Plus": "Gentium Book Plus",
+    "Lato": "Lato",
+    "PT Serif": "PT Serif",
+    "Navigation": "Nawigacja",
+    "Reading mode": "Tryb czytania",
+    "Page by page": "Strona po stronie",
+    "Reset this tab": "Przywróć ustawienia tej karty",
+    "Paper": "Papier",
+    "Gray": "Szary",
+    "Night": "Noc",
   },
   "nl": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Bij een conflict dient u een keuze te maken. Open het betreffende boek en selecteer ‘Leesvoortgang’.",
@@ -5241,7 +5275,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Wordt toegepast naast de tekstgrootte van uw apparaat.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Pas deze voorkeuren toe op elke reeks en elk boek in deze bibliotheek, ter vervanging van hun aangepaste leesvoorkeuren.",
-    "Apply to": "Van toepassing op",
     "Apply to all series and books": "Toepassen op alle series en boeken",
     "Authentication failed. Please sign in again.":
         "De authenticatie is mislukt. Meld u alstublieft opnieuw aan.",
@@ -5329,8 +5362,6 @@ const Map<String, Map<String, String>> messages = {
     "Enter a username or email.": "Voer een gebruikersnaam of e-mailadres in.",
     "Enter a valid HTTPS server URL.": "Voer een geldige HTTPS-server-URL in.",
     "Enter an API key": "Voer een API-sleutel in",
-    "Enter an HTTPS URL, including any server subpath.":
-        "Voer een HTTPS-URL in, inclusief eventuele subpaden van de server.",
     "Enter your API key.": "Voer uw API-sleutel in.",
     "Enter your password.": "Voer uw wachtwoord in.",
     "Expected a JSON object": "Verwacht een JSON-object",
@@ -5843,7 +5874,6 @@ const Map<String, Map<String, String>> messages = {
     "Publisher font": "Lettertype van de uitgever",
     "Serif": "Met schreef",
     "Sans serif": "Schreefloos",
-    "Text size": "Tekstgrootte",
     "Line spacing": "Regelafstand",
     "Page margins": "Paginamarges",
     "Text columns": "Tekstkolommen",
@@ -5878,7 +5908,6 @@ const Map<String, Map<String, String>> messages = {
     "Search is unavailable for this book.":
         "Zoeken is niet beschikbaar voor dit boek.",
     "Layout": "Lay-out",
-    "Typography": "Typografie",
     "Rendering": "Weergave",
     "Preloading": "Voorladen",
     "{0}×": "{0}×",
@@ -5900,18 +5929,11 @@ const Map<String, Map<String, String>> messages = {
     "Saved catalogue unavailable.": "Opgeslagen catalogus niet beschikbaar.",
     "Bookmark added": "Bladwijzer toegevoegd",
     "Copy": "Kopiëren",
-    "Reading style": "Leesstijl",
     "Fantasy": "Fantasy",
     "Science fiction": "Sciencefiction",
     "Detective fiction": "Detectiveromans",
     "Classics": "Klassiekers",
     "Study": "Studie",
-    "Ivory": "Ivoor",
-    "Soft sage": "Zacht saliegroen",
-    "Blue mist": "Blauwe nevel",
-    "Slate night": "Leisteennacht",
-    "Choose a style manually. You can adjust it afterwards.":
-        "Kies handmatig een stijl. U kunt deze achteraf aanpassen.",
     "Hold a word or line, then choose Add bookmark.": "Houd een woord of regel ingedrukt en kies vervolgens ‘Bladwijzer toevoegen’.",
     "Unable to display bookmarks.":
         "Het is niet mogelijk om bladwijzers weer te geven.",
@@ -6050,8 +6072,6 @@ const Map<String, Map<String, String>> messages = {
     "Series details": "Details van de serie",
     "Two pages in landscape windows and on tablets.":
         "Twee pagina’s in liggende vensters en op tablets.",
-    "Changes apply immediately.":
-        "Wijzigingen worden onmiddellijk doorgevoerd.",
     "Reset to default?": "Terugzetten naar standaardinstellingen?",
     "The custom settings of this tab are removed for the selected scope.": "De aangepaste instellingen van dit tabblad worden voor het geselecteerde toepassingsgebied verwijderd.",
     "Apply to all series and books?": "Toepassen op alle series en boeken?",
@@ -6093,6 +6113,24 @@ const Map<String, Map<String, String>> messages = {
         "De standaardinstellingen voor deze pagina herstellen?",
     "Unable to reset settings. Try again.":
         "Kan instellingen niet resetten. Probeer het opnieuw.",
+    "Tap to turn pages": "Pagina’s omslaan door te tikken",
+    "Enter an HTTP or HTTPS URL, including any server subpath.": "Voer een HTTP- of HTTPS-URL in, inclusief eventuele subpaden van de server.",
+    "Buy Me a Coffee": "Buy Me a Coffee",
+    "Templates": "Sjablonen",
+    "Choose a template. You can adjust it afterwards.":
+        "Kies een sjabloon. U kunt dit achteraf aanpassen.",
+    "Atkinson Hyperlegible": "Atkinson Hyperlegible",
+    "Crimson Text": "Crimson Text",
+    "Gentium Book Plus": "Gentium Book Plus",
+    "Lato": "Lato",
+    "PT Serif": "PT Serif",
+    "Navigation": "Navigatie",
+    "Reading mode": "Leesmodus",
+    "Page by page": "Per pagina",
+    "Reset this tab": "Dit tabblad herstellen",
+    "Paper": "Papier",
+    "Gray": "Grijs",
+    "Night": "Nacht",
   },
   "pt": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Um conflito requer a sua escolha. Abra o livro afetado e selecione «Progresso de leitura».",
@@ -6121,7 +6159,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Aplicado para além do tamanho do texto do seu dispositivo.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Aplique estas preferências a todas as séries e livros desta biblioteca, substituindo as respetivas preferências de leitura personalizadas.",
-    "Apply to": "Aplicar a",
     "Apply to all series and books": "Aplicar a todas as séries e livros",
     "Authentication failed. Please sign in again.":
         "Falha na autenticação. Por favor, inicie sessão novamente.",
@@ -6211,8 +6248,6 @@ const Map<String, Map<String, String>> messages = {
     "Enter a valid HTTPS server URL.":
         "Introduza um URL válido de um servidor HTTPS.",
     "Enter an API key": "Introduza uma chave de API",
-    "Enter an HTTPS URL, including any server subpath.":
-        "Introduza um URL HTTPS, incluindo qualquer subcaminho do servidor.",
     "Enter your API key.": "Introduza a sua chave de API.",
     "Enter your password.": "Introduza a sua palavra-passe.",
     "Expected a JSON object": "Esperava-se um objeto JSON",
@@ -6717,7 +6752,6 @@ const Map<String, Map<String, String>> messages = {
     "Publisher font": "Tipo de letra do editor",
     "Serif": "Com serifa",
     "Sans serif": "Sem serifa",
-    "Text size": "Tamanho do texto",
     "Line spacing": "Espaçamento entre linhas",
     "Page margins": "Margens da página",
     "Text columns": "Colunas de texto",
@@ -6751,7 +6785,6 @@ const Map<String, Map<String, String>> messages = {
     "Search is unavailable for this book.":
         "A função de pesquisa não está disponível para este livro.",
     "Layout": "Disposição",
-    "Typography": "Tipografia",
     "Rendering": "Renderização",
     "Preloading": "Pré-carregamento",
     "{0}×": "{0}×",
@@ -6774,18 +6807,11 @@ const Map<String, Map<String, String>> messages = {
     "Saved catalogue unavailable.": "Catálogo guardado indisponível.",
     "Bookmark added": "Marcador adicionado",
     "Copy": "Copiar",
-    "Reading style": "Estilo de leitura",
     "Fantasy": "Fantasia",
     "Science fiction": "Ficção científica",
     "Detective fiction": "Romances policiais",
     "Classics": "Clássicos",
     "Study": "Estudo",
-    "Ivory": "Marfim",
-    "Soft sage": "Verde-sálvia suave",
-    "Blue mist": "Névoa azul",
-    "Slate night": "Noite de ardósia",
-    "Choose a style manually. You can adjust it afterwards.":
-        "Escolha um estilo manualmente. Pode ajustá-lo posteriormente.",
     "Hold a word or line, then choose Add bookmark.": "Mantenha premida uma palavra ou linha e, em seguida, selecione «Adicionar marcador».",
     "Unable to display bookmarks.": "Não é possível apresentar os marcadores.",
     "Connect your Komga server to start reading.":
@@ -6922,7 +6948,6 @@ const Map<String, Map<String, String>> messages = {
     "Series details": "Detalhes da série",
     "Two pages in landscape windows and on tablets.":
         "Duas páginas em janelas no modo paisagem e em tablets.",
-    "Changes apply immediately.": "As alterações são aplicadas imediatamente.",
     "Reset to default?": "Redefinir para os valores predefinidos?",
     "The custom settings of this tab are removed for the selected scope.": "As definições personalizadas deste separador são removidas para o âmbito selecionado.",
     "Apply to all series and books?": "Aplicar a todas as séries e livros?",
@@ -6964,6 +6989,24 @@ const Map<String, Map<String, String>> messages = {
         "Restaurar as predefinições desta página?",
     "Unable to reset settings. Try again.":
         "Não foi possível repor as definições. Tente novamente.",
+    "Tap to turn pages": "Virar páginas com um toque",
+    "Enter an HTTP or HTTPS URL, including any server subpath.": "Introduza um URL HTTP ou HTTPS, incluindo qualquer subcaminho do servidor.",
+    "Buy Me a Coffee": "Buy Me a Coffee",
+    "Templates": "Modelos",
+    "Choose a template. You can adjust it afterwards.":
+        "Escolha um modelo. Pode ajustá-lo posteriormente.",
+    "Atkinson Hyperlegible": "Atkinson Hyperlegible",
+    "Crimson Text": "Crimson Text",
+    "Gentium Book Plus": "Gentium Book Plus",
+    "Lato": "Lato",
+    "PT Serif": "PT Serif",
+    "Navigation": "Navegação",
+    "Reading mode": "Modo de leitura",
+    "Page by page": "Página a página",
+    "Reset this tab": "Repor este separador",
+    "Paper": "Papel",
+    "Gray": "Cinzento",
+    "Night": "Noite",
   },
   "ro": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Un conflict necesită alegerea dvs. Deschideți cartea afectată și selectați „Progresul lecturii”.",
@@ -6990,7 +7033,6 @@ const Map<String, Map<String, String>> messages = {
     "Application theme": "Tema aplicației",
     "Applied in addition to your device text size.": "Se aplică în plus față de dimensiunea textului de pe dispozitivul dumneavoastră.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Aplicați aceste preferințe la fiecare serie și carte din această bibliotecă, înlocuind preferințele de citire personalizate ale acestora.",
-    "Apply to": "Aplicare la",
     "Apply to all series and books": "Aplicare la toate seriile și cărțile",
     "Authentication failed. Please sign in again.":
         "Autentificarea a eșuat. Vă rugăm să vă autentificați din nou.",
@@ -7081,7 +7123,6 @@ const Map<String, Map<String, String>> messages = {
     "Enter a valid HTTPS server URL.":
         "Introduceți o adresă URL validă a unui server HTTPS.",
     "Enter an API key": "Introduceți o cheie API",
-    "Enter an HTTPS URL, including any server subpath.": "Introduceți o adresă URL de tip HTTPS, inclusiv orice subcale a serverului.",
     "Enter your API key.": "Introduceți cheia dvs. API.",
     "Enter your password.": "Introduceți parola.",
     "Expected a JSON object": "Se aștepta un obiect JSON",
@@ -7586,7 +7627,6 @@ const Map<String, Map<String, String>> messages = {
     "Publisher font": "Fontul editorului",
     "Serif": "Cu serife",
     "Sans serif": "Fără serife",
-    "Text size": "Dimensiunea textului",
     "Line spacing": "Spațierea între rânduri",
     "Page margins": "Marginile paginii",
     "Text columns": "Coloane de text",
@@ -7619,7 +7659,6 @@ const Map<String, Map<String, String>> messages = {
     "Search is unavailable for this book.":
         "Funcția de căutare nu este disponibilă pentru această carte.",
     "Layout": "Aspect",
-    "Typography": "Tipografie",
     "Rendering": "Afișare",
     "Preloading": "Preîncărcare",
     "{0}×": "{0}×",
@@ -7642,18 +7681,11 @@ const Map<String, Map<String, String>> messages = {
     "Saved catalogue unavailable.": "Catalogul salvat nu este disponibil.",
     "Bookmark added": "Semn de carte adăugat",
     "Copy": "Copiere",
-    "Reading style": "Stil de lectură",
     "Fantasy": "Fantasy",
     "Science fiction": "Științifico-fantastic",
     "Detective fiction": "Roman polițist",
     "Classics": "Literatură clasică",
     "Study": "Studiu",
-    "Ivory": "Fildeș",
-    "Soft sage": "Verde-salvie delicat",
-    "Blue mist": "Ceață albăstruie",
-    "Slate night": "Noapte de ardezie",
-    "Choose a style manually. You can adjust it afterwards.":
-        "Alegeți manual un stil. Îl puteți ajusta ulterior.",
     "Hold a word or line, then choose Add bookmark.":
         "Ține apăsat un cuvânt sau un rând, apoi alege „Adaugă semn de carte”.",
     "Unable to display bookmarks.": "Semnele de carte nu pot fi afișate.",
@@ -7791,7 +7823,6 @@ const Map<String, Map<String, String>> messages = {
     "Series details": "Detaliile seriei",
     "Two pages in landscape windows and on tablets.":
         "Două pagini în ferestrele cu orientare peisaj și pe tablete.",
-    "Changes apply immediately.": "Modificările se aplică imediat.",
     "Reset to default?": "Resetați la setările implicite?",
     "The custom settings of this tab are removed for the selected scope.": "Setările personalizate din această filă sunt eliminate pentru domeniul de aplicare selectat.",
     "Apply to all series and books?": "Aplicați la toate seriile și cărțile?",
@@ -7833,6 +7864,24 @@ const Map<String, Map<String, String>> messages = {
         "Restabiliți setările implicite pentru această pagină?",
     "Unable to reset settings. Try again.":
         "Nu se pot reseta setările. Încercați din nou.",
+    "Tap to turn pages": "Întoarcerea paginilor prin atingere",
+    "Enter an HTTP or HTTPS URL, including any server subpath.": "Introduceți o adresă URL de tip HTTP sau HTTPS, inclusiv orice subcale a serverului.",
+    "Buy Me a Coffee": "Buy Me a Coffee",
+    "Templates": "Șabloane",
+    "Choose a template. You can adjust it afterwards.":
+        "Alegeți un șablon. Îl puteți ajusta ulterior.",
+    "Atkinson Hyperlegible": "Atkinson Hyperlegible",
+    "Crimson Text": "Crimson Text",
+    "Gentium Book Plus": "Gentium Book Plus",
+    "Lato": "Lato",
+    "PT Serif": "PT Serif",
+    "Navigation": "Navigare",
+    "Reading mode": "Mod de citire",
+    "Page by page": "Pagină cu pagină",
+    "Reset this tab": "Resetați această filă",
+    "Paper": "Hârtie",
+    "Gray": "Gri",
+    "Night": "Noapte",
   },
   "el": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Μια διένεξη απαιτεί την επιλογή σας. Ανοίξτε το σχετικό βιβλίο και επιλέξτε «Πρόοδος ανάγνωσης».",
@@ -7861,7 +7910,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Εφαρμόζεται επιπλέον του μεγέθους κειμένου της συσκευής σας.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Εφαρμόστε αυτές τις προτιμήσεις σε κάθε σειρά και βιβλίο αυτής της βιβλιοθήκης, αντικαθιστώντας τις προσαρμοσμένες προτιμήσεις ανάγνωσής τους.",
-    "Apply to": "Εφαρμογή σε",
     "Apply to all series and books":
         "Εφαρμογή σε όλες τις σειρές και τα βιβλία",
     "Authentication failed. Please sign in again.":
@@ -7952,7 +8000,6 @@ const Map<String, Map<String, String>> messages = {
     "Enter a valid HTTPS server URL.":
         "Εισάγετε μια έγκυρη διεύθυνση URL διακομιστή HTTPS.",
     "Enter an API key": "Εισάγετε ένα κλειδί API",
-    "Enter an HTTPS URL, including any server subpath.": "Εισάγετε μια διεύθυνση URL HTTPS, συμπεριλαμβανομένης οποιασδήποτε υποδιαδρομής διακομιστή.",
     "Enter your API key.": "Εισάγετε το κλειδί API σας.",
     "Enter your password.": "Εισάγετε τον κωδικό πρόσβασής σας.",
     "Expected a JSON object": "Αναμενόμενο αντικείμενο JSON",
@@ -8463,7 +8510,6 @@ const Map<String, Map<String, String>> messages = {
     "Publisher font": "Γραμματοσειρά εκδότη",
     "Serif": "Με πατούρες",
     "Sans serif": "Χωρίς πατούρες",
-    "Text size": "Μέγεθος κειμένου",
     "Line spacing": "Διάστιχο",
     "Page margins": "Περιθώρια σελίδας",
     "Text columns": "Στήλες κειμένου",
@@ -8499,7 +8545,6 @@ const Map<String, Map<String, String>> messages = {
     "Search is unavailable for this book.":
         "Η αναζήτηση δεν είναι διαθέσιμη για αυτό το βιβλίο.",
     "Layout": "Διάταξη",
-    "Typography": "Τυπογραφία",
     "Rendering": "Εμφάνιση",
     "Preloading": "Προφόρτωση",
     "{0}×": "{0}×",
@@ -8523,18 +8568,11 @@ const Map<String, Map<String, String>> messages = {
         "Ο αποθηκευμένος κατάλογος δεν είναι διαθέσιμος.",
     "Bookmark added": "Προστέθηκε σελιδοδείκτης",
     "Copy": "Αντιγραφή",
-    "Reading style": "Στυλ ανάγνωσης",
     "Fantasy": "Λογοτεχνία φαντασίας",
     "Science fiction": "Επιστημονική φαντασία",
     "Detective fiction": "Αστυνομική λογοτεχνία",
     "Classics": "Κλασικά",
     "Study": "Μελέτη",
-    "Ivory": "Ελεφαντόδοντο",
-    "Soft sage": "Απαλό πράσινο του φασκόμηλου",
-    "Blue mist": "Γαλάζια ομίχλη",
-    "Slate night": "Νυχτερινό σχιστολιθί",
-    "Choose a style manually. You can adjust it afterwards.":
-        "Επιλέξτε ένα στυλ χειροκίνητα. Μπορείτε να το προσαρμόσετε αργότερα.",
     "Hold a word or line, then choose Add bookmark.": "Κρατήστε πατημένη μια λέξη ή μια γραμμή και, στη συνέχεια, επιλέξτε «Προσθήκη σελιδοδείκτη».",
     "Unable to display bookmarks.":
         "Δεν είναι δυνατή η εμφάνιση των σελιδοδεικτών.",
@@ -8674,7 +8712,6 @@ const Map<String, Map<String, String>> messages = {
     "Series details": "Λεπτομέρειες σειράς",
     "Two pages in landscape windows and on tablets.":
         "Δύο σελίδες σε παράθυρα με οριζόντια διάταξη και σε tablet.",
-    "Changes apply immediately.": "Οι αλλαγές εφαρμόζονται αμέσως.",
     "Reset to default?": "Επαναφορά στις προεπιλεγμένες ρυθμίσεις;",
     "The custom settings of this tab are removed for the selected scope.": "Οι προσαρμοσμένες ρυθμίσεις αυτής της καρτέλας καταργούνται για το επιλεγμένο πεδίο εφαρμογής.",
     "Apply to all series and books?":
@@ -8718,6 +8755,24 @@ const Map<String, Map<String, String>> messages = {
         "Επαναφορά των προεπιλεγμένων ρυθμίσεων για αυτήν τη σελίδα;",
     "Unable to reset settings. Try again.":
         "Δεν είναι δυνατή η επαναφορά των ρυθμίσεων. Προσπαθήστε ξανά.",
+    "Tap to turn pages": "Αλλαγή σελίδας με πάτημα",
+    "Enter an HTTP or HTTPS URL, including any server subpath.": "Εισάγετε μια διεύθυνση URL HTTP ή HTTPS, συμπεριλαμβανομένης οποιασδήποτε υποδιαδρομής διακομιστή.",
+    "Buy Me a Coffee": "Buy Me a Coffee",
+    "Templates": "Πρότυπα",
+    "Choose a template. You can adjust it afterwards.":
+        "Επιλέξτε ένα πρότυπο. Μπορείτε να το προσαρμόσετε αργότερα.",
+    "Atkinson Hyperlegible": "Atkinson Hyperlegible",
+    "Crimson Text": "Crimson Text",
+    "Gentium Book Plus": "Gentium Book Plus",
+    "Lato": "Lato",
+    "PT Serif": "PT Serif",
+    "Navigation": "Πλοήγηση",
+    "Reading mode": "Λειτουργία ανάγνωσης",
+    "Page by page": "Ανά σελίδα",
+    "Reset this tab": "Επαναφορά αυτής της καρτέλας",
+    "Paper": "Χαρτί",
+    "Gray": "Γκρι",
+    "Night": "Νύχτα",
   },
   "hu": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Egy ütközés esetén döntést kell hoznia. Nyissa meg az érintett könyvet, és válassza az Olvasási előrehaladás menüpontot.",
@@ -8745,7 +8800,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Az eszközön beállított szövegméreten felül érvényesül.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Ezeket a beállításokat alkalmazza a könyvtárban található összes sorozatra és könyvre, felülírva azok egyéni olvasási beállításait.",
-    "Apply to": "Alkalmazás",
     "Apply to all series and books": "Alkalmazás minden sorozatra és könyvre",
     "Authentication failed. Please sign in again.":
         "A hitelesítés sikertelen volt. Kérjük, jelentkezzen be újra.",
@@ -8832,7 +8886,6 @@ const Map<String, Map<String, String>> messages = {
     "Enter a valid HTTPS server URL.":
         "Adjon meg egy érvényes HTTPS-szervercímet.",
     "Enter an API key": "Adja meg az API-kulcsot",
-    "Enter an HTTPS URL, including any server subpath.": "Adjon meg egy HTTPS-URL-t, beleértve az esetleges szerver alkönyvtári elérési útvonalat is.",
     "Enter your API key.": "Adja meg az API-kulcsát.",
     "Enter your password.": "Írja be a jelszavát.",
     "Expected a JSON object": "Várt érték: egy JSON-objektum",
@@ -9332,7 +9385,6 @@ const Map<String, Map<String, String>> messages = {
     "Publisher font": "Kiadói betűtípus",
     "Serif": "Talpas",
     "Sans serif": "Talpatlan",
-    "Text size": "Betűméret",
     "Line spacing": "Sorok közötti távolság",
     "Page margins": "Oldalmargók",
     "Text columns": "Szövegoszlopok",
@@ -9366,7 +9418,6 @@ const Map<String, Map<String, String>> messages = {
     "Search is unavailable for this book.":
         "A keresés ebben a könyvben nem elérhető.",
     "Layout": "Elrendezés",
-    "Typography": "Tipográfia",
     "Rendering": "Megjelenítés",
     "Preloading": "Előtöltés",
     "{0}×": "{0}×",
@@ -9390,18 +9441,11 @@ const Map<String, Map<String, String>> messages = {
     "Saved catalogue unavailable.": "A mentett katalógus nem érhető el.",
     "Bookmark added": "Könyvjelző hozzáadva",
     "Copy": "Másolás",
-    "Reading style": "Olvasási stílus",
     "Fantasy": "Fantasy",
     "Science fiction": "Sci-fi",
     "Detective fiction": "Krimi",
     "Classics": "Klasszikusok",
     "Study": "Tanulás",
-    "Ivory": "Elefántcsont",
-    "Soft sage": "Lágy zsályazöld",
-    "Blue mist": "Kék köd",
-    "Slate night": "Palaszürke éjszaka",
-    "Choose a style manually. You can adjust it afterwards.":
-        "Válasszon stílust manuálisan. Később módosíthatja.",
     "Hold a word or line, then choose Add bookmark.": "Tartsa lenyomva egy szót vagy sort, majd válassza a Könyvjelző hozzáadása lehetőséget.",
     "Unable to display bookmarks.": "A könyvjelzők nem jeleníthetők meg.",
     "Connect your Komga server to start reading.":
@@ -9538,7 +9582,6 @@ const Map<String, Map<String, String>> messages = {
     "Series details": "Sorozat részletei",
     "Two pages in landscape windows and on tablets.":
         "Két oldal fekvő ablakokban és táblagépeken.",
-    "Changes apply immediately.": "A módosítások azonnal érvényesülnek.",
     "Reset to default?": "Visszaállítja az alapértelmezett beállításokat?",
     "The custom settings of this tab are removed for the selected scope.":
         "A lap egyéni beállításai törlődnek a kiválasztott hatókörben.",
@@ -9581,6 +9624,24 @@ const Map<String, Map<String, String>> messages = {
         "Visszaállítja az oldal alapértelmezett beállításait?",
     "Unable to reset settings. Try again.":
         "A beállítások nem állíthatók vissza. Próbálja újra.",
+    "Tap to turn pages": "Lapozás koppintással",
+    "Enter an HTTP or HTTPS URL, including any server subpath.": "Adjon meg egy HTTP- vagy HTTPS-URL-t, beleértve az esetleges szerver alkönyvtári elérési útvonalat is.",
+    "Buy Me a Coffee": "Buy Me a Coffee",
+    "Templates": "Sablonok",
+    "Choose a template. You can adjust it afterwards.":
+        "Válasszon egy sablont. Később módosíthatja.",
+    "Atkinson Hyperlegible": "Atkinson Hyperlegible",
+    "Crimson Text": "Crimson Text",
+    "Gentium Book Plus": "Gentium Book Plus",
+    "Lato": "Lato",
+    "PT Serif": "PT Serif",
+    "Navigation": "Navigáció",
+    "Reading mode": "Olvasási mód",
+    "Page by page": "Oldalanként",
+    "Reset this tab": "A lap beállításainak visszaállítása",
+    "Paper": "Papír",
+    "Gray": "Szürke",
+    "Night": "Éjszaka",
   },
   "cs": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Konflikt vyžaduje vaše rozhodnutí. Otevřete příslušnou knihu a vyberte „Průběh čtení“.",
@@ -9609,7 +9670,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Používá se navíc k velikosti textu nastavené na vašem zařízení.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Tato nastavení se použijí na všechny série a knihy v této knihovně a nahradí jejich vlastní nastavení čtení.",
-    "Apply to": "Použít na",
     "Apply to all series and books": "Použít na všechny série a knihy",
     "Authentication failed. Please sign in again.":
         "Ověření se nezdařilo. Přihlaste se prosím znovu.",
@@ -9697,7 +9757,6 @@ const Map<String, Map<String, String>> messages = {
     "Enter a valid HTTPS server URL.":
         "Zadejte platnou adresu URL serveru HTTPS.",
     "Enter an API key": "Zadejte klíč API",
-    "Enter an HTTPS URL, including any server subpath.": "Zadejte adresu URL v protokolu HTTPS, včetně případné podcesty k serveru.",
     "Enter your API key.": "Zadejte svůj klíč API.",
     "Enter your password.": "Zadejte své heslo.",
     "Expected a JSON object": "Očekáván objekt JSON",
@@ -10193,7 +10252,6 @@ const Map<String, Map<String, String>> messages = {
     "Publisher font": "Písmo vydavatele",
     "Serif": "Patkové písmo",
     "Sans serif": "Bezpatkové písmo",
-    "Text size": "Velikost textu",
     "Line spacing": "Řádkování",
     "Page margins": "Okraje stránky",
     "Text columns": "Textové sloupce",
@@ -10225,7 +10283,6 @@ const Map<String, Map<String, String>> messages = {
     "Search is unavailable for this book.":
         "Vyhledávání není pro tuto knihu k dispozici.",
     "Layout": "Rozložení",
-    "Typography": "Typografie",
     "Rendering": "Zobrazení",
     "Preloading": "Přednačítání",
     "{0}×": "{0}×",
@@ -10247,18 +10304,11 @@ const Map<String, Map<String, String>> messages = {
     "Saved catalogue unavailable.": "Uložený katalog není k dispozici.",
     "Bookmark added": "Přidána záložka",
     "Copy": "Kopírovat",
-    "Reading style": "Styl čtení",
     "Fantasy": "Fantasy",
     "Science fiction": "Vědecká fantastika",
     "Detective fiction": "Detektivní literatura",
     "Classics": "Klasika",
     "Study": "Studium",
-    "Ivory": "Slonová kost",
-    "Soft sage": "Jemná šalvějová",
-    "Blue mist": "Modrý opar",
-    "Slate night": "Břidlicová noc",
-    "Choose a style manually. You can adjust it afterwards.":
-        "Styl vyberte ručně. Později jej můžete upravit.",
     "Hold a word or line, then choose Add bookmark.": "Podržte prst na slově nebo řádku a poté vyberte možnost Přidat záložku.",
     "Unable to display bookmarks.": "Nelze zobrazit záložky.",
     "Connect your Komga server to start reading.":
@@ -10394,7 +10444,6 @@ const Map<String, Map<String, String>> messages = {
     "Series details": "Podrobnosti o sérii",
     "Two pages in landscape windows and on tablets.":
         "Dvě stránky v oknech na šířku a na tabletech.",
-    "Changes apply immediately.": "Změny se uplatní okamžitě.",
     "Reset to default?": "Obnovit výchozí nastavení?",
     "The custom settings of this tab are removed for the selected scope.":
         "Vlastní nastavení této záložky jsou pro vybraný rozsah odstraněna.",
@@ -10438,5 +10487,23 @@ const Map<String, Map<String, String>> messages = {
         "Obnovit výchozí nastavení pro tuto stránku?",
     "Unable to reset settings. Try again.":
         "Nastavení nelze resetovat. Zkuste to znovu.",
+    "Tap to turn pages": "Otáčení stránek klepnutím",
+    "Enter an HTTP or HTTPS URL, including any server subpath.": "Zadejte adresu URL v protokolu HTTP nebo HTTPS, včetně případné podcesty k serveru.",
+    "Buy Me a Coffee": "Buy Me a Coffee",
+    "Templates": "Šablony",
+    "Choose a template. You can adjust it afterwards.":
+        "Vyberte šablonu. Později ji můžete upravit.",
+    "Atkinson Hyperlegible": "Atkinson Hyperlegible",
+    "Crimson Text": "Crimson Text",
+    "Gentium Book Plus": "Gentium Book Plus",
+    "Lato": "Lato",
+    "PT Serif": "PT Serif",
+    "Navigation": "Navigace",
+    "Reading mode": "Režim čtení",
+    "Page by page": "Stránku po stránce",
+    "Reset this tab": "Obnovit tuto kartu",
+    "Paper": "Papír",
+    "Gray": "Šedá",
+    "Night": "Noc",
   },
 };

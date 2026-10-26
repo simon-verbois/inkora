@@ -281,6 +281,31 @@ final class ReaderAssetStore {
     }
   }
 
+  /// Optional local-only evidence. Check size before read() so a small analysis
+  /// budget never invalidates a valid larger cache entry as a corrupt asset.
+  Future<EncodedPage?> readForPairing(
+    ContentKey key,
+    CancellationSignal cancellation, {
+    required int maximumBytes,
+  }) async {
+    final rows = await database
+        .customSelect(
+          'SELECT tier FROM reader_assets WHERE asset_id = ? AND byte_length <= ? ORDER BY tier DESC',
+          variables: [Variable(assetId(key)), Variable(maximumBytes)],
+        )
+        .get();
+    for (final row in rows) {
+      final page = await read(
+        key,
+        row.read<String>('tier'),
+        cancellation,
+        maximumBytes: maximumBytes,
+      );
+      if (page != null) return page;
+    }
+    return null;
+  }
+
   Future<EncodedPage?> read(
     ContentKey key,
     String tier,

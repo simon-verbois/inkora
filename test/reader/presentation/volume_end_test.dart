@@ -2,6 +2,7 @@ import 'package:inkora/features/connection/application/session_controller.dart';
 
 import 'dart:io';
 
+import 'package:drift/drift.dart' hide Column;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,11 +23,26 @@ import 'package:inkora/reader/data/reader_store.dart';
 import 'package:inkora/reader/domain/reader_manifest.dart';
 import 'package:inkora/reader/domain/reading_settings.dart';
 import 'package:inkora/reader/presentation/reader_screen.dart';
+import 'package:inkora/reader/presentation/reader_viewport.dart';
 
 import '../../support/reader_fakes.dart';
 import '../../support/reader_widget_support.dart';
 import '../../support/catalogue_fakes.dart';
 import '../../support/connection_fakes.dart';
+
+class _SequenceQueries extends QueryInterceptor {
+  int count = 0;
+
+  @override
+  Future<List<Map<String, Object?>>> runSelect(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) {
+    if (statement.contains('ORDER BY e.number ASC, e.sort_title ASC')) count++;
+    return super.runSelect(executor, statement, args);
+  }
+}
 
 Future<void> _asyncFrames(WidgetTester tester) async {
   for (var i = 0; i < 8; i++) {
@@ -39,15 +55,21 @@ Future<void> _asyncFrames(WidgetTester tester) async {
 }
 
 void main() {
-  for (final available in [true, false]) {
+  for (final (seriesOrigin, automatic, available) in [
+    for (final seriesOrigin in [false, true])
+      for (final automatic in [false, true])
+        for (final available in [true, false])
+          (seriesOrigin, automatic, available),
+  ]) {
     testWidgets(
-      'finish sheet cancel preserves progress and handoff keeps origin ($available)',
+      'volume handoff: available=$available/automatic=$automatic/series=$seriesOrigin',
       (tester) async {
         tester.view.physicalSize = const Size(390, 844);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
-        final db = AppDatabase(NativeDatabase.memory());
+        final queries = _SequenceQueries();
+        final db = AppDatabase(NativeDatabase.memory().interceptWith(queries));
         final dir = (await tester.runAsync(
           () => Directory.systemTemp.createTemp('inkora-end-test-'),
         ))!;
@@ -110,7 +132,7 @@ void main() {
                 (ref) async => OpenReader(
                   readerManifest(book: id),
                   FixturePageSource(),
-                  ReaderLocator(0),
+                  ReaderLocator(automatic ? 3 : 0),
                 ),
               ),
               readingSettingsProvider(id).overrideWith(
@@ -127,8 +149,12 @@ void main() {
               path: '/',
               builder: (context, _) => Scaffold(
                 body: TextButton(
-                  onPressed: () =>
-                      context.pushNamed('reader', pathParameters: {'id': 'a'}),
+                  onPressed: () => context.pushNamed(
+                    seriesOrigin ? 'series-reader' : 'reader',
+                    pathParameters: seriesOrigin
+                        ? {'kind': 'series', 'id': 'series', 'bookId': 'a'}
+                        : {'id': 'a'},
+                  ),
                   child: const Text('Open'),
                 ),
               ),
@@ -141,7 +167,7 @@ void main() {
             ),
             GoRoute(
               name: 'series-reader',
-              path: '/series/:id/read/:bookId',
+              path: '/catalogue/:kind/:id/read/:bookId',
               builder: (_, state) =>
                   ReaderScreen(bookId: state.pathParameters['bookId']!),
             ),
@@ -160,38 +186,58 @@ void main() {
         );
         await tester.tap(find.text('Open'));
         await _asyncFrames(tester);
-        await tester.tapAt(const Offset(195, 420));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('reader-more')));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Finish volume'));
-        await _asyncFrames(tester);
-        if (available) {
-          expect(find.text('Next volume'), findsOneWidget);
-          expect(
-            find.text('Download required for offline reading'),
-            findsOneWidget,
-          );
-        } else {
-          expect(find.text('No next chapter is available.'), findsOneWidget);
+        Future<void> finish() async {
+          if (automatic) {
+            await tester.drag(
+              find.byKey(const Key('paged-reader')),
+              const Offset(-290, 0),
+            );
+            // A repeated advance while the catalogue/save is pending coalesces.
+            tester.widget<ReaderViewport>(find.byType(ReaderViewport)).onEnd!();
+          } else {
+            await tester.tap(find.byKey(const Key('reader-more')));
+            await tester.pumpAndSettle();
+            await tester.tap(find.text('Finish volume'));
+          }
+          await _asyncFrames(tester);
         }
-        await tester.tap(find.byType(CloseButton));
-        await tester.pumpAndSettle();
-        expect(
-          await tester.runAsync(() => db.select(db.progressEvents).get()),
-          isEmpty,
-        );
-        await tester.tap(find.byKey(const Key('reader-more')));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Finish volume'));
-        await _asyncFrames(tester);
-        await tester.tap(
-          find.text(available ? 'Read next volume' : 'Return to series'),
-        );
-        await _asyncFrames(tester);
+
+        if (!automatic) {
+          await tester.tapAt(const Offset(195, 420));
+          await tester.pumpAndSettle();
+        }
+        await finish();
+        if (!automatic || !available) {
+          if (available) {
+            expect(find.text('Next volume'), findsOneWidget);
+            expect(
+              find.text('Download required for offline reading'),
+              findsOneWidget,
+            );
+          } else {
+            expect(find.text('No next chapter is available.'), findsOneWidget);
+          }
+          await tester.tap(find.byType(CloseButton));
+          await tester.pumpAndSettle();
+          expect(
+            await tester.runAsync(() => db.select(db.progressEvents).get()),
+            isEmpty,
+          );
+          await finish();
+          await tester.tap(
+            find.text(available ? 'Read next volume' : 'Return to series'),
+          );
+          await _asyncFrames(tester);
+        } else {
+          expect(find.text('Read next volume'), findsNothing);
+        }
+        final nextPath = seriesOrigin
+            ? '/catalogue/series/series/read/b'
+            : '/reader/b';
+        final returnPath = seriesOrigin ? '/' : '/catalogue/series/series';
         expect(
           router.routerDelegate.currentConfiguration.last.matchedLocation,
-          available ? '/reader/b' : '/catalogue/series/series',
+          available ? nextPath : returnPath,
         );
         final events = await tester.runAsync(
           () => db.select(db.progressEvents).get(),
@@ -200,6 +246,16 @@ void main() {
           events!.where((e) => e.bookId == 'a').single.operation,
           'complete',
         );
+        expect(queries.count, automatic && available ? 1 : 2);
+        if (available) {
+          expect(
+            tester.widget<ReaderScreen>(find.byType(ReaderScreen)).bookId,
+            'b',
+          );
+          await tester.binding.handlePopRoute();
+          await tester.pumpAndSettle();
+          expect(router.routeInformationProvider.value.uri.path, '/');
+        }
         await tester.pumpWidget(const SizedBox.shrink());
         container.dispose();
         await tester.pump(const Duration(milliseconds: 20));

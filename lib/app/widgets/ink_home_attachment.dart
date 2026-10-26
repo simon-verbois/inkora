@@ -115,31 +115,33 @@ class _Outline extends CustomPainter {
     var cursor = rect.left + radius;
     final end = rect.right - radius;
     for (final (bounds, opacity) in regions) {
-      final left = bounds.left.clamp(cursor, end);
-      final right = bounds.right.clamp(left, end);
-      if (right <= left) continue;
-      canvas.drawLine(
-        Offset(cursor, rect.bottom),
-        Offset(left, rect.bottom),
-        paint..color = color,
-      );
+      final left = bounds.left;
+      final right = bounds.right;
+      if (left > cursor) {
+        canvas.drawLine(
+          Offset(cursor, rect.bottom),
+          Offset(left, rect.bottom),
+          paint..color = color,
+        );
+      }
       canvas.drawLine(
         Offset(left, rect.bottom),
         Offset(right, rect.bottom),
         paint..color = color.withValues(alpha: color.a * (1 - opacity)),
       );
-      final lobe = Rect.fromLTRB(left, rect.bottom, right, bounds.bottom);
       canvas.drawPath(
-        InkHomeToolShape.openPath(lobe),
+        InkHomeToolShape.openPath(bounds),
         paint..color = color.withValues(alpha: color.a * opacity),
       );
       cursor = right;
     }
-    canvas.drawLine(
-      Offset(cursor, rect.bottom),
-      Offset(end, rect.bottom),
-      paint..color = color,
-    );
+    if (cursor < end) {
+      canvas.drawLine(
+        Offset(cursor, rect.bottom),
+        Offset(end, rect.bottom),
+        paint..color = color,
+      );
+    }
   }
 
   @override
@@ -253,15 +255,16 @@ class _InkHomeToolGroupState extends State<InkHomeToolGroup>
         child: Padding(
           padding: EdgeInsets.fromLTRB(
             widget.horizontalPadding,
-            widget.compact ? 0 : 4,
+            widget.compact && widget.attached ? 0 : 4,
             widget.horizontalPadding,
-            widget.compact ? 8 : 4,
+            widget.compact && widget.attached ? 8 : 4,
           ),
           child: widget.compact
               ? Transform.translate(
-                  offset: const Offset(0, -6),
-                  // Paint the controls within the shallow surface while keeping
-                  // their full 48 dp input regions in the toolbar layout.
+                  offset: widget.attached ? const Offset(0, -6) : Offset.zero,
+                  // Raise attached side controls into their shallow surface;
+                  // detached controls align with the central chips. Both keep
+                  // the same group height and full 48 dp input regions.
                   transformHitTests: false,
                   child: widget.child,
                 )

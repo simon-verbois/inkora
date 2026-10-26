@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import '../reader/presentation/ebook_presentation.dart';
 import '../offline/application/offline_coordinator.dart';
 import '../offline/data/progress_sync.dart';
 
@@ -9,11 +12,12 @@ import '../reader/application/reader_providers.dart';
 import '../reader/presentation/reader_content_bounds.dart';
 
 /// On OS memory pressure Flutter already clears its decoded ImageCache; this
-/// also drops Inkora's own encoded LRUs (reader pages, covers). Both refill
+/// also drops Inkora's encoded LRUs and optional native paper tile. These refill
 /// from their disk tiers, so trimming never loses user data.
 final memoryPressureProvider = Provider<void>((ref) {
   final observer = _MemoryPressureObserver(() {
     ReaderContentBounds.cache.clear();
+    unawaited(EbookPresentation.trimMemory());
     ref.read(coverRepositoryProvider).asData?.value?.trimMemory();
     if (ref.exists(offlineCoordinatorProvider)) {
       final remote = ref

@@ -50,7 +50,7 @@ void main() {
       // Shell layout already consumes IME insets before the editor sees them.
       expect(tester.view.viewInsets.bottom, greaterThan(0));
       expect(
-        find.byKey(const Key('reader-settings-reset')).hitTestable(),
+        find.byKey(const Key('reader-settings-menu')).hitTestable(),
         findsOneWidget,
       );
       FocusManager.instance.primaryFocus?.unfocus();

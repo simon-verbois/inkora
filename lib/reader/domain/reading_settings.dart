@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import 'ebook_settings.dart';
+import 'spread_pairing.dart';
+export 'spread_pairing.dart';
 export 'ebook_settings.dart';
 import 'webtoon_quality.dart';
 import 'image_quality.dart';
@@ -24,7 +26,24 @@ enum ReadingDirection { leftToRight, rightToLeft, vertical }
 
 enum ReadingFit { page, width, comfort, content }
 
-enum ReadingBackground { black, white, sepia, ivory, sage, mist, slate }
+enum ReadingBackground {
+  black,
+  white,
+  sepia,
+  // Retained IDs accept old scoped settings/transfers; no longer offered.
+  ivory,
+  sage,
+  mist,
+  slate,
+  paper,
+  gray;
+
+  ReadingBackground get current => switch (this) {
+    ivory => paper,
+    sage || mist => gray,
+    _ => this,
+  };
+}
 
 enum SettingsScope { global, library, series, book }
 
@@ -43,6 +62,8 @@ final class ReadingOverrides {
     this.webtoonPreload,
     this.webtoonMemoryMiB,
     this.spreadOffset,
+    this.spreadPairing,
+    this.spreadAnalysis,
     this.pageAnimation,
     this.imageQuality,
     this.ebook,
@@ -66,6 +87,10 @@ final class ReadingOverrides {
 
   /// Shift double-page pairing by one page (the first page stands alone).
   final bool? spreadOffset;
+  final SpreadPairing? spreadPairing;
+
+  /// Derived book/revision evidence; never overrides an explicit user choice.
+  final SpreadPairingAnalysis? spreadAnalysis;
   final bool? pageAnimation;
   final Map<RasterFormat, RasterQuality>? imageQuality;
   ReadingLayout? get effectiveLayout =>
@@ -90,6 +115,8 @@ final class ReadingOverrides {
     'webtoonPreload': webtoonPreload,
     'webtoonMemoryMiB': webtoonMemoryMiB,
     'spreadOffset': spreadOffset,
+    'spreadPairing': spreadPairing?.name,
+    if (spreadAnalysis != null) 'spreadAnalysis': spreadAnalysis!.toJson(),
     'pageAnimation': pageAnimation,
     'imageQuality': imageQuality == null
         ? null
@@ -136,6 +163,8 @@ final class ReadingOverrides {
       webtoonPreload: preload,
       webtoonMemoryMiB: memory,
       spreadOffset: json['spreadOffset'] as bool?,
+      spreadPairing: parse(SpreadPairing.values, 'spreadPairing'),
+      spreadAnalysis: SpreadPairingAnalysis.fromJson(json['spreadAnalysis']),
       pageAnimation: json['pageAnimation'] as bool?,
       imageQuality: json['imageQuality'] is Map
           ? Map.unmodifiable({
@@ -164,6 +193,8 @@ final class ReadingSettings {
     this.webtoonQuality = WebtoonQuality.sharp,
     this.customWebtoon = WebtoonQualityProfile.balanced,
     bool? spreadOffset,
+    SpreadPairing? spreadPairing,
+    bool? automaticSpreadOffset,
     this.pageAnimation = true,
     this.imageQuality = const {},
     this.ebook = const EbookSettings(),
@@ -182,9 +213,20 @@ final class ReadingSettings {
        fit =
            fit ??
            (mode == ReadingMode.webtoon ? ReadingFit.comfort : ReadingFit.page),
-       // Right-to-left manga volumes ship with the cover alone, so pairing
-       // starts one page late unless the user opts out.
-       spreadOffset = spreadOffset ?? mode == ReadingMode.manga,
+       spreadPairing =
+           spreadPairing ??
+           (spreadOffset == null
+               ? SpreadPairing.automatic
+               : spreadOffset
+               ? SpreadPairing.shifted
+               : SpreadPairing.unshifted),
+       spreadOffset = spreadPairing == SpreadPairing.shifted
+           ? true
+           : spreadPairing == SpreadPairing.unshifted
+           ? false
+           : spreadPairing == SpreadPairing.automatic
+           ? automaticSpreadOffset ?? mode == ReadingMode.manga
+           : spreadOffset ?? automaticSpreadOffset ?? mode == ReadingMode.manga,
        spacing = spacing ?? 0,
        layout =
            layout ??
@@ -203,6 +245,7 @@ final class ReadingSettings {
   final ReadingLayout layout;
   final WebtoonQuality webtoonQuality;
   final bool spreadOffset;
+  final SpreadPairing spreadPairing;
   final bool pageAnimation;
   final Map<RasterFormat, RasterQuality> imageQuality;
   RasterQuality qualityFor(String mediaType) =>
@@ -243,6 +286,7 @@ final class ReadingSettings {
       webtoonQuality == other.webtoonQuality &&
       customWebtoon == other.customWebtoon &&
       spreadOffset == other.spreadOffset &&
+      spreadPairing == other.spreadPairing &&
       pageAnimation == other.pageAnimation &&
       RasterFormat.values.every(
         (format) =>
@@ -261,6 +305,7 @@ final class ReadingSettings {
     webtoonQuality,
     customWebtoon,
     spreadOffset,
+    spreadPairing,
     pageAnimation,
     Object.hashAll(
       RasterFormat.values.map(
@@ -270,16 +315,20 @@ final class ReadingSettings {
   );
 
   static ReadingSettings resolveScopes(
-    Map<SettingsScope, ReadingOverrides> layers,
-  ) => resolve([
+    Map<SettingsScope, ReadingOverrides> layers, {
+    bool? automaticSpreadOffset,
+  }) => resolve([
     for (final scope in SettingsScope.values)
       if (layers[scope] != null &&
           !(scope == SettingsScope.series &&
               layers[SettingsScope.book]?.libraryDefaults == true))
         layers[scope]!,
-  ]);
+  ], automaticSpreadOffset: automaticSpreadOffset);
 
-  static ReadingSettings resolve(Iterable<ReadingOverrides> layers) {
+  static ReadingSettings resolve(
+    Iterable<ReadingOverrides> layers, {
+    bool? automaticSpreadOffset,
+  }) {
     var mode = ReadingMode.comics;
     ReadingDirection? direction;
     ReadingFit? fit;
@@ -291,6 +340,7 @@ final class ReadingSettings {
     int? preload;
     int? memory;
     bool? offset;
+    SpreadPairing? pairing;
     bool? animation;
     final ebook = <String, dynamic>{};
     final images = <RasterFormat, RasterQuality>{};
@@ -308,6 +358,7 @@ final class ReadingSettings {
         spacing = null;
         layout = null;
         offset = null;
+        pairing = null;
       }
       direction = layer.direction ?? direction;
       fit = layer.fit ?? fit;
@@ -318,7 +369,13 @@ final class ReadingSettings {
       sharpness = layer.webtoonSharpness ?? sharpness;
       preload = layer.webtoonPreload ?? preload;
       memory = layer.webtoonMemoryMiB ?? memory;
-      offset = layer.spreadOffset ?? offset;
+      if (layer.spreadPairing != null) {
+        pairing = layer.spreadPairing;
+        offset = null;
+      } else if (layer.spreadOffset != null) {
+        offset = layer.spreadOffset;
+        pairing = null;
+      }
       animation = layer.pageAnimation ?? animation;
       ebook.addAll(layer.ebook ?? const {});
       final rendering = layer.imageQuality;
@@ -340,6 +397,8 @@ final class ReadingSettings {
       webtoonQuality: quality ?? WebtoonQuality.sharp,
       imageQuality: Map.unmodifiable(images),
       spreadOffset: offset,
+      spreadPairing: pairing,
+      automaticSpreadOffset: automaticSpreadOffset,
       pageAnimation: animation ?? true,
       customWebtoon: WebtoonQualityProfile(
         sharpness: sharpness ?? WebtoonQualityProfile.balanced.sharpness,

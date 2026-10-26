@@ -85,14 +85,15 @@ final class DownloadBackground: NSObject, URLSessionDownloadDelegate {
       }
       // Background URLSession follows redirects without consulting its redirect
       // delegate. Never attach API-key/custom Authorization headers to these
-      // tasks: Basic auth is supplied only to a matching HTTPS protection space.
+      // tasks: Basic auth is supplied only to the original scheme/host/port.
       guard headers.count == 1, let basic = headers["Authorization"], basic.hasPrefix("Basic ") else {
         result(FlutterError(code: "credential_mode", message: "This authentication mode uses foreground downloads on iOS.", details: nil)); return
       }
       do {
         for task in tasks {
           guard let id = task["id"] as? String, id.range(of: "^[a-f0-9]{64}-[0-9]+$", options: .regularExpression) != nil,
-                let address = task["url"] as? String, let url = URL(string: address), url.scheme == "https", url.user == nil,
+                let address = task["url"] as? String, let url = URL(string: address),
+                (url.scheme == "http" || url.scheme == "https"), url.host != nil, url.user == nil,
                 let path = task["path"] as? String,
                 URL(fileURLWithPath: path).standardizedFileURL.path.hasPrefix(NSHomeDirectory() + "/Library/Application Support/"),
                 let budget = task["maximumBytes"] as? Int, budget > 0, budget <= 512 * 1024 * 1024 else {
@@ -104,7 +105,8 @@ final class DownloadBackground: NSObject, URLSessionDownloadDelegate {
           guard let account = task["account"] as? String else { throw NSError(domain: "InkoraTransfer", code: 5) }
           try storeCredential(account, basic: basic)
           metadata["originHost"] = url.host
-          metadata["originPort"] = url.port ?? 443
+          metadata["originScheme"] = url.scheme
+          metadata["originPort"] = url.port ?? (url.scheme == "https" ? 443 : 80)
           metadata["originalURL"] = url.absoluteString
           metadata["state"] = "queued"
           entries[id] = metadata
@@ -193,7 +195,8 @@ final class DownloadBackground: NSObject, URLSessionDownloadDelegate {
     }
     guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodHTTPBasic,
           challenge.previousFailureCount == 0, let id = task.taskDescription, let entry = entries[id],
-          let account = entry["account"] as? String, challenge.protectionSpace.protocol == "https",
+          let account = entry["account"] as? String,
+          challenge.protectionSpace.protocol == (entry["originScheme"] as? String ?? "https"),
           challenge.protectionSpace.host == entry["originHost"] as? String,
           challenge.protectionSpace.port == entry["originPort"] as? Int,
           let credential = readCredential(account) else { completionHandler(.cancelAuthenticationChallenge, nil); return }

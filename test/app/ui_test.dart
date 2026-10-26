@@ -249,7 +249,7 @@ void main() {
       expect(find.text('This book'), findsNothing);
       expect(find.text('Preference inheritance'), findsNothing);
       expect(find.text('Inherit'), findsNothing);
-      expect(find.text('Reset to default'), findsOneWidget);
+      expect(find.byKey(const Key('reader-settings-menu')), findsOneWidget);
       expect(tester.takeException(), isNull);
       await harness.close(tester);
     },

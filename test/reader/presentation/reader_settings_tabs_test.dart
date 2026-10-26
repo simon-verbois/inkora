@@ -1,10 +1,14 @@
+import 'package:inkora/reader/presentation/ebook_font_picker.dart';
+
 import 'dart:io';
 import 'dart:ui' show ImageByteFormat;
 
 import 'package:drift/native.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inkora/app/l10n/app_strings.dart';
 import 'package:inkora/app/theme/inkora_theme.dart';
 import 'package:inkora/core/storage/app_database.dart';
 import 'package:inkora/reader/data/reader_store.dart';
@@ -23,12 +27,19 @@ Future<void> settle(WidgetTester tester) async {
 Future<void> openSheet(
   WidgetTester tester,
   ReaderStore store,
-  ReaderManifest manifest,
-) async {
+  ReaderManifest manifest, {
+  Locale? locale,
+}) async {
   await tester.pumpWidget(
     RepaintBoundary(
       key: const Key('preferences-capture'),
       child: MaterialApp(
+        locale: locale,
+        supportedLocales: AppStrings.supportedLocales,
+        localizationsDelegates: const [
+          AppStrings.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
         theme: InkoraTheme.dark(),
         home: Builder(
           builder: (context) => Scaffold(
@@ -66,7 +77,7 @@ void main() {
             parentBuilds++;
             return Scaffold(
               body: InkSlider(
-                label: 'Text size',
+                label: 'Line spacing',
                 formatValue: (v) => '$v',
                 value: 1,
                 min: .7,
@@ -187,10 +198,16 @@ void main() {
               tabs,
               kind == 'pdf'
                   ? findsNothing
-                  : findsNWidgets(kind == 'webtoon' || kind == 'epub' ? 3 : 2),
+                  : findsNWidgets(
+                      kind == 'epub'
+                          ? 4
+                          : kind == 'webtoon'
+                          ? 3
+                          : 2,
+                    ),
             );
             expect(
-              find.text('Typography'),
+              find.text('Appearance'),
               kind == 'epub' ? findsOneWidget : findsNothing,
             );
             expect(
@@ -205,7 +222,10 @@ void main() {
               find.text('Direction'),
               document || kind == 'webtoon' ? findsNothing : findsOneWidget,
             );
-            expect(find.byKey(const ValueKey('ebook-fontSize')), findsNothing);
+            expect(
+              find.byKey(const ValueKey('ebook-lineHeight')),
+              kind == 'epub' ? findsOneWidget : findsNothing,
+            );
             if (kind == 'pdf' && size.width == 1024 && scale == 1) {
               expect(
                 find.byKey(const Key('reader-background-sepia')),
@@ -224,14 +244,11 @@ void main() {
             }
 
             if (kind == 'epub') {
-              await tester.ensureVisible(find.text('Typography'));
-              await tester.tap(find.text('Typography'));
+              await tester.ensureVisible(find.text('Appearance'));
+              await tester.tap(find.text('Appearance'));
               await tester.pumpAndSettle();
-              expect(
-                find.byKey(const ValueKey('ebook-fontSize')),
-                findsOneWidget,
-              );
-              expect(find.text('Background'), findsNothing);
+              expect(find.byType(EbookFontPicker), findsOneWidget);
+              expect(find.text('Background'), findsOneWidget);
               expect(find.text('Publisher styles'), findsOneWidget);
             }
             if (const bool.fromEnvironment('CAPTURE_READER_SETTINGS')) {
@@ -254,11 +271,11 @@ void main() {
               }
             }
             expect(find.text('Save'), findsNothing);
-            final reset = find.byKey(const Key('reader-settings-reset'));
+            final reset = find.byKey(const Key('reader-settings-menu'));
             await tester.ensureVisible(reset);
             await tester.pumpAndSettle();
             expect(reset.hitTestable(), findsOneWidget);
-            final scope = find.byKey(const Key('reader-choice-scope-series'));
+            final scope = find.byKey(const Key('reader-settings-scope'));
             await tester.ensureVisible(scope);
             await tester.pumpAndSettle();
             expect(scope.hitTestable(), findsOneWidget);
@@ -291,7 +308,7 @@ void main() {
         pages: [PageDimensions(768, 1152)],
       );
       await openSheet(tester, store, manifest);
-      expect(find.text('Typography'), findsNothing);
+      expect(find.text('Appearance'), findsNothing);
       expect(find.text('Rendering'), findsOneWidget);
       expect(find.text('Direction'), findsOneWidget);
       expect(find.text('Font'), findsNothing);
@@ -320,51 +337,68 @@ void main() {
       );
       await openSheet(tester, store, manifest);
       expect(
-        tester.getSize(find.byType(ReaderSettingsSheet)).height,
+        // The native system inset belongs to SafeArea, outside the capped form.
+        tester.getSize(find.byType(DefaultTabController)).height,
         lessThanOrEqualTo(560),
       );
       expect(
         find.byKey(const Key('reader-choice-ebook-text-columns-auto')),
-        findsOneWidget,
+        findsNothing,
       );
-      await tester.tap(find.text('Typography'));
+      await tester.ensureVisible(find.text('Navigation'));
+      await tester.tap(find.text('Navigation'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Tap to turn pages'));
+      await tester.tap(find.text('Tap to turn pages'));
+      await settle(tester);
+      await tester.tap(find.text('Appearance'));
       await tester.pumpAndSettle();
       tester
-          .widget<Slider>(find.byKey(const ValueKey('ebook-fontSize')))
+          .widget<Slider>(find.byKey(const ValueKey('ebook-lineHeight')))
           .onChangeEnd!(1.8);
       await settle(tester);
       // Applied without Save: the book scope already holds the value.
       expect(
         (await tester.runAsync(
           () => store.overrides(SettingsScope.book, 'epub'),
-        ))!.ebook!['fontSize'],
+        ))!.ebook!['lineHeight'],
         1.8,
       );
-      await tester.tap(find.text('Layout'));
+      await tester.ensureVisible(find.text('Page layout'));
+      await tester.tap(find.text('Page layout'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Appearance'));
       await tester.pumpAndSettle();
       await tester.ensureVisible(
         find.byKey(const Key('reader-background-black')),
       );
       await tester.tap(find.byKey(const Key('reader-background-black')));
       await settle(tester);
+      await tester.ensureVisible(find.text('Page layout'));
+      await tester.tap(find.text('Page layout'));
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Center page divider'));
       await tester.tap(find.text('Center page divider'));
       await settle(tester);
+      await tester.ensureVisible(find.text('Navigation'));
+      await tester.tap(find.text('Navigation'));
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Page turn animation'));
       await tester.tap(find.text('Page turn animation'));
       await settle(tester);
-      await tester.tap(find.text('Typography'));
+      await tester.tap(find.text('Appearance'));
       await tester.pumpAndSettle();
       expect(
         tester
-            .widget<Slider>(find.byKey(const ValueKey('ebook-fontSize')))
+            .widget<Slider>(find.byKey(const ValueKey('ebook-lineHeight')))
             .value,
         1.8,
       );
       final saved = await tester.runAsync(
         () => store.overrides(SettingsScope.book, 'epub'),
       );
-      expect(saved!.ebook!['fontSize'], 1.8);
+      expect(saved!.ebook!['lineHeight'], 1.8);
+      expect(saved.ebook!['tapToTurnPages'], isTrue);
       expect(saved.ebook!['columnSeparator'], isTrue);
       expect(saved.pageAnimation, isFalse);
       expect(saved.background, ReadingBackground.black);

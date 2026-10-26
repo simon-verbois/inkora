@@ -1,0 +1,156 @@
+{
+  "repository": "https://github.com/google/fonts",
+  "revision": "e7db6ca603fd4862010383ff17ffd6cc4ffac1c0",
+  "files": [
+    {
+      "asset": "assets/fonts/AtkinsonHyperlegible-Regular.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/atkinsonhyperlegible/AtkinsonHyperlegible-Regular.ttf",
+      "bytes": 54348,
+      "sha256": "7fb917c89019896d0b52ee84b7cbb3304c18cb90b19a62f5e32712bd23e97669"
+    },
+    {
+      "asset": "assets/fonts/AtkinsonHyperlegible-Italic.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/atkinsonhyperlegible/AtkinsonHyperlegible-Italic.ttf",
+      "bytes": 54892,
+      "sha256": "021beda4d3c6edfc78872e436d74009f9a1bcb294331908fe5747c61d3dcc514"
+    },
+    {
+      "asset": "assets/fonts/AtkinsonHyperlegible-Bold.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/atkinsonhyperlegible/AtkinsonHyperlegible-Bold.ttf",
+      "bytes": 55256,
+      "sha256": "5a3b0c8cc8ca545155150b4512a1fa248298df121c50d6557e651e61fbdab92f"
+    },
+    {
+      "asset": "assets/fonts/AtkinsonHyperlegible-BoldItalic.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/atkinsonhyperlegible/AtkinsonHyperlegible-BoldItalic.ttf",
+      "bytes": 55288,
+      "sha256": "7a46f1b0ef2f64b61065c1a6b5a11fcb9b019b44062d88ba121a083cc39e86bf"
+    },
+    {
+      "asset": "assets/fonts/AtkinsonHyperlegible-OFL.txt",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/atkinsonhyperlegible/OFL.txt",
+      "bytes": 4352,
+      "sha256": "f32d22b3908fcad2c86a74000614ec22e6a7f66ea7e867e616026a27aebdc143"
+    },
+    {
+      "asset": "assets/fonts/PTSerif-Regular.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/ptserif/PT_Serif-Web-Regular.ttf",
+      "bytes": 359048,
+      "sha256": "a4951fade06ff8f09b7673aa81ffb65a8cd409e24d3289a6dc670bc4dda2557a"
+    },
+    {
+      "asset": "assets/fonts/PTSerif-Italic.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/ptserif/PT_Serif-Web-Italic.ttf",
+      "bytes": 375356,
+      "sha256": "f57e95ff9dc85691a3b2e193f2028db36f6663939a46c0fc4f286d618b80b7ce"
+    },
+    {
+      "asset": "assets/fonts/PTSerif-Bold.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/ptserif/PT_Serif-Web-Bold.ttf",
+      "bytes": 339996,
+      "sha256": "038ba7336bd7ea14f12ad155bed51a4345cac5153275d521dec3ba04021c526e"
+    },
+    {
+      "asset": "assets/fonts/PTSerif-BoldItalic.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/ptserif/PT_Serif-Web-BoldItalic.ttf",
+      "bytes": 337580,
+      "sha256": "f003788ba08981eb0988b3557a6f224a53dab49c20e283e8b74d5af3c466f8be"
+    },
+    {
+      "asset": "assets/fonts/PTSerif-OFL.txt",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/ptserif/OFL.txt",
+      "bytes": 4434,
+      "sha256": "ddf311c28ddf5a5ad9747649837346b67bed9d356789c3072bb27dbce49e514d"
+    },
+    {
+      "asset": "assets/fonts/GentiumBookPlus-Regular.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/gentiumbookplus/GentiumBookPlus-Regular.ttf",
+      "bytes": 818952,
+      "sha256": "fe7b64eeacc430fcf46836a6f0dfe00d2c5a15483ed36692a2a185cb23ec2a5c"
+    },
+    {
+      "asset": "assets/fonts/GentiumBookPlus-Italic.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/gentiumbookplus/GentiumBookPlus-Italic.ttf",
+      "bytes": 882904,
+      "sha256": "7a0ab4bd78701fa46d325e362654c41a47e2a0a5cb4a3eebc94dce89c2ee7df1"
+    },
+    {
+      "asset": "assets/fonts/GentiumBookPlus-Bold.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/gentiumbookplus/GentiumBookPlus-Bold.ttf",
+      "bytes": 834852,
+      "sha256": "b39c3fb12e2e15e2336f2ec6d051c778618ec25f7360bc4765bfe755b408c011"
+    },
+    {
+      "asset": "assets/fonts/GentiumBookPlus-BoldItalic.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/gentiumbookplus/GentiumBookPlus-BoldItalic.ttf",
+      "bytes": 891412,
+      "sha256": "e557dd7a7f818fa482c3e63c7576c6d455f6f2e3bf9d84e0a11d1617e2bc1383"
+    },
+    {
+      "asset": "assets/fonts/GentiumBookPlus-OFL.txt",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/gentiumbookplus/OFL.txt",
+      "bytes": 4507,
+      "sha256": "c309a440be606e283ccacc746662d714b9c5b5a7a0a10dd2514b90206b55ddfe"
+    },
+    {
+      "asset": "assets/fonts/CrimsonText-Regular.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/crimsontext/CrimsonText-Regular.ttf",
+      "bytes": 107200,
+      "sha256": "48e6c5d5ad1d01599d374ecb817e15890d1feb3b8a3a88e527d44c90389e1f06"
+    },
+    {
+      "asset": "assets/fonts/CrimsonText-Italic.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/crimsontext/CrimsonText-Italic.ttf",
+      "bytes": 110216,
+      "sha256": "4ed1699ac7c64e8b3d33f6bb8323c3d7206b0d7bacb9ee2d65c697e6014d29de"
+    },
+    {
+      "asset": "assets/fonts/CrimsonText-Bold.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/crimsontext/CrimsonText-Bold.ttf",
+      "bytes": 112796,
+      "sha256": "a3a0765fc5e8d0b49b540a23aefe0184887dd79f06a0bdf4db7035cea6befa93"
+    },
+    {
+      "asset": "assets/fonts/CrimsonText-BoldItalic.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/crimsontext/CrimsonText-BoldItalic.ttf",
+      "bytes": 115112,
+      "sha256": "467013e913e46304760461c46661c994b2aa1769e3fbd31371026300315181b4"
+    },
+    {
+      "asset": "assets/fonts/CrimsonText-OFL.txt",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/crimsontext/OFL.txt",
+      "bytes": 4393,
+      "sha256": "50fd67cddc097377a5c871e8452b778bc5aedfa3480a705cb27c5e3a078218df"
+    },
+    {
+      "asset": "assets/fonts/Lato-Regular.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/lato/Lato-Regular.ttf",
+      "bytes": 656568,
+      "sha256": "d636e4683231f931eda222d588e944d082bfd3bdba02f928bee461c0f185b251"
+    },
+    {
+      "asset": "assets/fonts/Lato-Italic.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/lato/Lato-Italic.ttf",
+      "bytes": 722900,
+      "sha256": "e399c44efe1387100531d26c7e4800c5d12251b890d6654a3098c7c679cb1786"
+    },
+    {
+      "asset": "assets/fonts/Lato-Bold.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/lato/Lato-Bold.ttf",
+      "bytes": 656544,
+      "sha256": "8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1"
+    },
+    {
+      "asset": "assets/fonts/Lato-BoldItalic.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/lato/Lato-BoldItalic.ttf",
+      "bytes": 698364,
+      "sha256": "62c1b7f0d2e74b45960154c3520efc337b553db0961bfdc950d5618334596cc8"
+    },
+    {
+      "asset": "assets/fonts/Lato-OFL.txt",
+      "source": "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/lato/OFL.txt",
+      "bytes": 4407,
+      "sha256": "74ba064d03f1f1c4a952da936c3eb71866c34404916734de3cae73b34357e59e"
+    }
+  ]
+}

@@ -46,9 +46,16 @@ flutter:
 
   uses-material-design: true
   assets:
+    - assets/reader/paper.png
+    - assets/branding/buy-me-a-coffee.png
     - VERSION
     - CHANGELOG.md
     - assets/fonts/OFL.txt
+    - assets/fonts/AtkinsonHyperlegible-OFL.txt
+    - assets/fonts/CrimsonText-OFL.txt
+    - assets/fonts/GentiumBookPlus-OFL.txt
+    - assets/fonts/Lato-OFL.txt
+    - assets/fonts/PTSerif-OFL.txt
     - assets/icons/LICENSE.txt
     - assets/licenses/pdfium-notices.txt
     - assets/licenses/readium-sdk.txt
@@ -56,6 +63,66 @@ flutter:
     - family: LibreBaskerville
       fonts:
         - asset: assets/fonts/LibreBaskerville.ttf
+    - family: AtkinsonHyperlegible
+      fonts:
+        - asset: assets/fonts/AtkinsonHyperlegible-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/AtkinsonHyperlegible-Italic.ttf
+          weight: 400
+          style: italic
+        - asset: assets/fonts/AtkinsonHyperlegible-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/AtkinsonHyperlegible-BoldItalic.ttf
+          weight: 700
+          style: italic
+    - family: CrimsonText
+      fonts:
+        - asset: assets/fonts/CrimsonText-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/CrimsonText-Italic.ttf
+          weight: 400
+          style: italic
+        - asset: assets/fonts/CrimsonText-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/CrimsonText-BoldItalic.ttf
+          weight: 700
+          style: italic
+    - family: GentiumBookPlus
+      fonts:
+        - asset: assets/fonts/GentiumBookPlus-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/GentiumBookPlus-Italic.ttf
+          weight: 400
+          style: italic
+        - asset: assets/fonts/GentiumBookPlus-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/GentiumBookPlus-BoldItalic.ttf
+          weight: 700
+          style: italic
+    - family: Lato
+      fonts:
+        - asset: assets/fonts/Lato-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Lato-Italic.ttf
+          weight: 400
+          style: italic
+        - asset: assets/fonts/Lato-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Lato-BoldItalic.ttf
+          weight: 700
+          style: italic
+    - family: PTSerif
+      fonts:
+        - asset: assets/fonts/PTSerif-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/PTSerif-Italic.ttf
+          weight: 400
+          style: italic
+        - asset: assets/fonts/PTSerif-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/PTSerif-BoldItalic.ttf
+          weight: 700
+          style: italic
     - family: PhosphorRegular
       fonts:
         - asset: assets/icons/Phosphor-Regular.ttf

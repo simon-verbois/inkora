@@ -24,7 +24,7 @@ SCREENSHOTS = (
     'phone-batch-download', 'phone-transfer', 'phone-series', 'tablet-series',
     'phone-quality', 'phone-ebook', 'tablet-library', 'tablet-quality', 'tablet-selection',
 )
-ASSETS = ('styles.css', 'site.js', 'favicon.svg', 'font-license.txt',
+ASSETS = ('styles.css', 'site.js', 'favicon.svg', 'buy-me-a-coffee.png', 'font-license.txt',
           'fonts/LibreBaskerville.ttf') + tuple(f'screenshots/{name}.png' for name in SCREENSHOTS)
 PLACEHOLDER = re.compile(r'{{([a-z_]+)}}')
 

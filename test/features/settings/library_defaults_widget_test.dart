@@ -81,16 +81,18 @@ void main() {
           () => Future<void>.delayed(const Duration(milliseconds: 50)),
         );
         await tester.pumpAndSettle();
-        final offset = find.byKey(const Key('reader-spread-offset-default'));
+        final offset = find.byKey(
+          const Key('reader-choice-spreadPairing-unshifted'),
+        );
         await tester.ensureVisible(offset);
         await tester.pumpAndSettle();
-        expect(tester.widget<SwitchListTile>(offset).value, true);
+        expect(tester.widget<RadioListTile<String>>(offset).selected, false);
         await tester.tap(offset);
         await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 50)),
         );
         await tester.pumpAndSettle();
-        expect(tester.widget<SwitchListTile>(offset).value, false);
+        expect(tester.widget<RadioListTile<String>>(offset).selected, true);
         final offsetRow = (await tester.runAsync(
           () => harness.database
               .select(harness.database.readingPreferences)
@@ -106,8 +108,8 @@ void main() {
         expect(
           (await tester.runAsync(
             () => offsetStore.overrides(SettingsScope.library, 'library-a'),
-          ))!.spreadOffset,
-          false,
+          ))!.spreadPairing,
+          SpreadPairing.unshifted,
         );
         final mode = find.byKey(const Key('reader-choice-mode-webtoon'));
         await tester.ensureVisible(mode);
@@ -168,9 +170,13 @@ void main() {
         await tester.tap(find.text('Manga shelf'));
         await tester.pumpAndSettle();
         expect(find.text('Webtoon'), findsOneWidget);
-        await tester.ensureVisible(find.text('Reset to default'));
+        await tester.ensureVisible(
+          find.byKey(const Key('reader-settings-menu')),
+        );
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Reset to default'));
+        await tester.tap(find.byKey(const Key('reader-settings-menu')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('reader-settings-reset')));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Reset to default').last);
         await tester.runAsync(

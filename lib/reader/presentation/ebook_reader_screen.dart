@@ -9,6 +9,7 @@ import 'reader_details.dart';
 import 'ebook_presentation.dart';
 import 'ebook_selection.dart';
 import 'ebook_page_insets.dart';
+import 'ebook_fonts.dart';
 import 'reading_colors.dart';
 
 import 'dart:isolate';
@@ -95,7 +96,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   bool _bookmarkDecorationsReady = false;
   bool _presentationReady = false;
   bool _disableAnimations = false;
-  (bool, bool, ImageEnhancement)? _lastPresentation;
+  (bool, bool, ImageEnhancement, bool, int, bool)? _lastPresentation;
   ImageEnhancement _imageEnhancement = ImageEnhancement.off;
   EPUBPreferences? _lastEPUBPreferences;
   bool _backgrounded = false;
@@ -237,7 +238,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
         goForwardSemanticLabel: context.tr('Next page'),
         toggleShowControlsSemanticLabel: context.tr('Reading controls'),
         onExternalLinkActivated: (_) {},
-        fontFamilyDeclarations: [_baskerville],
+        fontFamilyDeclarations: ebookFontDeclarations,
         selectionActions: [
           SelectionAction(
             id: 'inkora-bookmark',
@@ -271,12 +272,6 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
       }
     }
   }
-
-  static final _baskerville = ReaderFontFamily(
-    name: 'InkoraBaskerville',
-    fallbacks: const ['serif'],
-    faces: const [ReaderFontFace(asset: 'assets/fonts/LibreBaskerville.ttf')],
-  );
 
   Widget _pdfSurface() => EbookPdfSurface(
     path: _pdfPath!,
@@ -367,11 +362,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
     final background = settings.background.paperColor;
     if (_epub) {
       final prefs = EPUBPreferences(
-        fontFamily: ebook.font == 'publisher'
-            ? null
-            : ebook.font == 'baskerville'
-            ? 'InkoraBaskerville'
-            : ebook.font,
+        fontFamily: ebook.fontChoice.nativeFamily,
         fontSize: ebook.fontSize,
         lineHeight: ebook.lineHeight,
         // Reserve the spread gutter before native pagination, including
@@ -403,6 +394,9 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
       widget.settings.pageAnimation && !_disableAnimations,
       widget.settings.ebook.columnSeparator && !widget.settings.ebook.scroll,
       _imageEnhancement,
+      widget.settings.ebook.tapToTurnPages,
+      widget.settings.background.inkColor.toARGB32(),
+      widget.settings.background.current == ReadingBackground.paper,
     );
     if (!force && _lastPresentation == value) return;
     try {
@@ -410,6 +404,9 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
         animations: value.$1,
         separator: value.$2,
         imageEnhancement: value.$3,
+        tapToTurnPages: value.$4,
+        dividerColor: value.$5,
+        paperTexture: value.$6,
       )) {
         _lastPresentation = value;
       }
@@ -901,6 +898,9 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
                             widget.settings.ebook,
                             MediaQuery.viewPaddingOf(context),
                             MediaQuery.sizeOf(context),
+                            devicePixelRatio: MediaQuery.devicePixelRatioOf(
+                              context,
+                            ),
                           ),
                           child: _surface,
                         ),

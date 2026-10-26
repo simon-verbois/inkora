@@ -343,13 +343,19 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
         child: InkFilterBar(
           controlPrefix: 'catalogue',
           padding: widget.embedded
-              ? const EdgeInsets.fromLTRB(16, 0, 8, 0)
+              ? const EdgeInsets.symmetric(horizontal: InkSpace.md)
               : const EdgeInsets.fromLTRB(16, 4, 8, 4),
           attachedGroups: widget.embedded,
           groupsAttached: attached,
           startChipsWhenCompact: widget.embedded,
           compactMenu: widget.embedded
               ? _toolsMenu(selectedLibrary, libraries)
+              : null,
+          compactChips: widget.embedded
+              ? ReadingFilterMenu(
+                  filters: _metadataFilters,
+                  onChanged: _quickFilters,
+                )
               : null,
           leading: librarySelection
               ? _libraryButton(selectedLibrary, libraries)
@@ -434,6 +440,13 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
               onRefresh: () => refreshCatalogue(ref),
               child: CustomScrollView(
                 controller: _scroll,
+                // Stretch transforms the pinned tool fills but not the shared
+                // header outline above this viewport. Keep Home chrome rigid;
+                // scroll physics and pull-to-refresh retain their own owners.
+                scrollBehavior: widget.embedded
+                    ? ScrollConfiguration.of(context)
+                          .copyWith(overscroll: false)
+                    : null,
                 scrollCacheExtent: const ScrollCacheExtent.viewport(1),
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [

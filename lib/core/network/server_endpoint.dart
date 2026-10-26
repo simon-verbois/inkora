@@ -6,12 +6,16 @@ final class ServerEndpoint {
 
   static Uri _normalize(String value) {
     final uri = Uri.parse(value);
-    if (uri.scheme != 'https' ||
+    if ((uri.scheme != 'https' && uri.scheme != 'http') ||
         uri.host.isEmpty ||
         uri.userInfo.isNotEmpty ||
         uri.hasQuery ||
         uri.hasFragment) {
-      throw ArgumentError.value(value, 'value', 'Expected an HTTPS server URL');
+      throw ArgumentError.value(
+        value,
+        'value',
+        'Expected an HTTP or HTTPS server URL',
+      );
     }
     return uri.replace(
       path: uri.path.endsWith('/') ? uri.path : '${uri.path}/',

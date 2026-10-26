@@ -1,21 +1,41 @@
+/// Stable persisted identities; font files and renderer declarations live in UI.
+enum EbookFont {
+  publisher('publisher', 'Publisher font'),
+  serif('serif', 'Serif'),
+  sansSerif('sans-serif', 'Sans serif'),
+  baskerville('baskerville', 'Libre Baskerville'),
+  atkinson('atkinson', 'Atkinson Hyperlegible'),
+  crimson('crimson', 'Crimson Text'),
+  gentium('gentium', 'Gentium Book Plus'),
+  lato('lato', 'Lato'),
+  ptSerif('pt-serif', 'PT Serif');
+
+  const EbookFont(this.id, this.label);
+  final String id, label;
+}
+
 /// Persisted ebook typography; no dependency on a rendering toolkit.
 final class EbookSettings {
   const EbookSettings({
     this.font = 'publisher',
-    this.fontSize = 1.1,
     this.lineHeight = 1.5,
     this.margins = 1.0,
     this.pageInsets,
     this.scroll = false,
     this.columns = 'auto',
-    this.publisherStyles = false,
+    this.publisherStyles = true,
     this.justify = false,
     this.columnSeparator = false,
+    this.tapToTurnPages = false,
   });
   final EbookPageInsets? pageInsets;
   final String font, columns;
-  final double fontSize, lineHeight, margins;
-  final bool scroll, publisherStyles, justify, columnSeparator;
+
+  /// Text zoom is fixed; legacy saved factors are validated but not applied.
+  final double fontSize = 1.0;
+  final double lineHeight, margins;
+  EbookFont get fontChoice => EbookFont.values.firstWhere((v) => v.id == font);
+  final bool scroll, publisherStyles, justify, columnSeparator, tapToTurnPages;
   Map<String, dynamic> toJson() => {
     'font': font,
     'fontSize': fontSize,
@@ -27,6 +47,7 @@ final class EbookSettings {
     'publisherStyles': publisherStyles,
     'justify': justify,
     'columnSeparator': columnSeparator,
+    'tapToTurnPages': tapToTurnPages,
   };
   factory EbookSettings.fromJson(Map<String, dynamic> json) {
     double value(String key, double fallback, double min, double max) {
@@ -40,14 +61,15 @@ final class EbookSettings {
 
     final font = json['font'] as String? ?? 'publisher';
     final columns = json['columns'] as String? ?? 'auto';
-    if (!['publisher', 'serif', 'sans-serif', 'baskerville'].contains(font) ||
+    if (!EbookFont.values.any((choice) => choice.id == font) ||
         !['auto', 'one', 'two'].contains(columns)) {
       throw const FormatException('Invalid ebook layout');
     }
+    // Retain validation for old settings/imports without retaining text zoom.
+    value('fontSize', 1, .7, 2.5);
     return EbookSettings(
       font: font,
       columns: columns,
-      fontSize: value('fontSize', 1.1, .7, 2.5),
       lineHeight: value('lineHeight', 1.5, 1, 2.5),
       margins: value('margins', 1, .2, 2),
       pageInsets: json['pageInsets'] == null
@@ -56,9 +78,10 @@ final class EbookSettings {
               json['pageInsets'] as Map<String, dynamic>,
             ),
       scroll: json['scroll'] as bool? ?? false,
-      publisherStyles: json['publisherStyles'] as bool? ?? false,
+      publisherStyles: json['publisherStyles'] as bool? ?? true,
       justify: json['justify'] as bool? ?? false,
       columnSeparator: json['columnSeparator'] as bool? ?? false,
+      tapToTurnPages: json['tapToTurnPages'] as bool? ?? false,
     );
   }
   @override
@@ -73,7 +96,8 @@ final class EbookSettings {
       scroll == other.scroll &&
       publisherStyles == other.publisherStyles &&
       justify == other.justify &&
-      columnSeparator == other.columnSeparator;
+      columnSeparator == other.columnSeparator &&
+      tapToTurnPages == other.tapToTurnPages;
   @override
   int get hashCode => Object.hash(
     font,
@@ -86,6 +110,7 @@ final class EbookSettings {
     publisherStyles,
     justify,
     columnSeparator,
+    tapToTurnPages,
   );
 }
 

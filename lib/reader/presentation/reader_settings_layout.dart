@@ -40,6 +40,7 @@ class ReaderChoiceGroup extends StatelessWidget {
     required this.selected,
     required this.onSelected,
     required this.id,
+    this.wrapLabels = false,
   });
 
   /// Source message of the group heading.
@@ -52,6 +53,7 @@ class ReaderChoiceGroup extends StatelessWidget {
 
   /// Stable key prefix: each chip is keyed `reader-choice-$id-$choice`.
   final String id;
+  final bool wrapLabels;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -62,24 +64,45 @@ class ReaderChoiceGroup extends StatelessWidget {
         child: LText(label, style: Theme.of(context).textTheme.labelLarge),
       ),
       const SizedBox(height: InkSpace.sm),
-      Wrap(
-        spacing: InkSpace.sm,
-        runSpacing: InkSpace.sm,
-        children: [
-          for (final choice in choices.entries)
-            ChoiceChip(
-              key: Key('reader-choice-$id-${choice.key}'),
-              showCheckmark: false,
-              label: LText(choice.value),
-              selected: choice.key == selected,
-              onSelected: onSelected == null
-                  ? null
-                  : (_) {
-                      if (choice.key != selected) onSelected!(choice.key);
-                    },
-            ),
-        ],
-      ),
+      if (wrapLabels)
+        RadioGroup<String>(
+          groupValue: selected,
+          onChanged: (value) {
+            if (value != null && value != selected) onSelected?.call(value);
+          },
+          child: Column(
+            children: [
+              for (final choice in choices.entries)
+                RadioListTile<String>(
+                  key: Key('reader-choice-$id-${choice.key}'),
+                  value: choice.key,
+                  selected: choice.key == selected,
+                  enabled: onSelected != null,
+                  contentPadding: EdgeInsets.zero,
+                  title: LText(choice.value, softWrap: true),
+                ),
+            ],
+          ),
+        )
+      else
+        Wrap(
+          spacing: InkSpace.sm,
+          runSpacing: InkSpace.sm,
+          children: [
+            for (final choice in choices.entries)
+              ChoiceChip(
+                key: Key('reader-choice-$id-${choice.key}'),
+                showCheckmark: false,
+                label: LText(choice.value),
+                selected: choice.key == selected,
+                onSelected: onSelected == null
+                    ? null
+                    : (_) {
+                        if (choice.key != selected) onSelected!(choice.key);
+                      },
+              ),
+          ],
+        ),
     ],
   );
 }
@@ -138,8 +161,25 @@ class ReaderBackgroundSwatches extends StatelessWidget {
                             width: 36,
                             height: 36,
                             decoration: BoxDecoration(
-                              color: choice.key.paperColor,
+                              color:
+                                  choice.key.current == ReadingBackground.paper
+                                  ? const Color(0xfff8f7f2)
+                                  : choice.key.paperColor,
                               shape: BoxShape.circle,
+                              image:
+                                  choice.key.current == ReadingBackground.paper
+                                  ? DecorationImage(
+                                      image: ResizeImage.resizeIfNeeded(
+                                        64,
+                                        64,
+                                        const AssetImage(
+                                          ebookPaperTextureAsset,
+                                        ),
+                                      ),
+                                      fit: BoxFit.cover,
+                                      opacity: .55,
+                                    )
+                                  : null,
                               border: Border.all(
                                 color: choice.key == selected
                                     ? scheme.primary

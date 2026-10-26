@@ -6,8 +6,9 @@ import '../../app/icons/inkora_icons.dart';
 import 'reader_settings_layout.dart';
 import 'ebook_presentation.dart';
 import 'ebook_margins_dialog.dart';
+import 'ebook_font_picker.dart';
 
-enum EbookControlsSection { all, layout, typography }
+enum EbookControlsSection { all, layout, typography, navigation }
 
 /// Shared by scoped library settings and the active ebook reader.
 class EbookSettingsControls extends StatelessWidget {
@@ -26,15 +27,31 @@ class EbookSettingsControls extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      if (section != EbookControlsSection.typography)
+      if (section == EbookControlsSection.all ||
+          section == EbookControlsSection.navigation)
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _choice(
+              context,
+              'Reading mode',
+              settings.scroll ? 'scroll' : 'pages',
+              {'pages': 'Page by page', 'scroll': 'Continuous scrolling'},
+              (value) => onChanged('scroll', value == 'scroll'),
+            ),
+            if (!pdf && EbookPresentation.supported && !settings.scroll)
+              _toggle(
+                context,
+                'Tap to turn pages',
+                settings.tapToTurnPages,
+                (value) => onChanged('tapToTurnPages', value),
+              ),
+          ],
+        ),
+      if (section == EbookControlsSection.all ||
+          section == EbookControlsSection.layout) ...[
         ReaderSettingsGrid(
           children: [
-            _toggle(
-              context,
-              'Continuous scrolling',
-              settings.scroll,
-              (v) => onChanged('scroll', v),
-            ),
             if (!pdf)
               OutlinedButton.icon(
                 key: const Key('ebook-margin-picker'),
@@ -56,64 +73,52 @@ class EbookSettingsControls extends StatelessWidget {
                 'one': 'One column',
                 'two': 'Two columns',
               }, (v) => onChanged('columns', v)),
-            if (!pdf &&
-                EbookPresentation.supported &&
-                !settings.scroll &&
-                settings.columns != 'one')
-              _toggle(
-                context,
-                'Center page divider',
-                settings.columnSeparator,
-                (v) => onChanged('columnSeparator', v),
-              ),
           ],
         ),
-      if (!pdf && section != EbookControlsSection.layout) ...[
+        if (!pdf &&
+            EbookPresentation.supported &&
+            !settings.scroll &&
+            settings.columns != 'one') ...[
+          const SizedBox(height: 16),
+          _toggle(
+            context,
+            'Center page divider',
+            settings.columnSeparator,
+            (v) => onChanged('columnSeparator', v),
+          ),
+        ],
+      ],
+
+      if (!pdf &&
+          (section == EbookControlsSection.all ||
+              section == EbookControlsSection.typography)) ...[
         if (section == EbookControlsSection.all) const SizedBox(height: 20),
-        ReaderSettingsGrid(
-          children: [
-            _choice(context, 'Font', settings.font, {
-              'publisher': 'Publisher font',
-              'serif': 'Serif',
-              'sans-serif': 'Sans serif',
-              'baskerville': 'Libre Baskerville',
-            }, (v) => onChanged('font', v)),
-            _toggle(
-              context,
-              'Publisher styles',
-              settings.publisherStyles,
-              (v) => onChanged('publisherStyles', v),
-            ),
-          ],
+        EbookFontPicker(
+          font: settings.fontChoice,
+          onSelected: (font) => onChanged('font', font.id),
         ),
-        const SizedBox(height: 24),
-        ReaderSettingsGrid(
-          children: [
-            _slider(
-              context,
-              'Text size',
-              'fontSize',
-              settings.fontSize,
-              .7,
-              2.5,
-              18,
-            ),
-            _slider(
-              context,
-              'Line spacing',
-              'lineHeight',
-              settings.lineHeight,
-              1,
-              2.5,
-              15,
-            ),
-            _toggle(
-              context,
-              'Justify text',
-              settings.justify,
-              (v) => onChanged('justify', v),
-            ),
-          ],
+        const SizedBox(height: 16),
+        _slider(
+          context,
+          'Line spacing',
+          'lineHeight',
+          settings.lineHeight,
+          1,
+          2.5,
+          15,
+        ),
+        const SizedBox(height: 16),
+        _toggle(
+          context,
+          'Justify text',
+          settings.justify,
+          (value) => onChanged('justify', value),
+        ),
+        _toggle(
+          context,
+          'Publisher styles',
+          settings.publisherStyles,
+          (value) => onChanged('publisherStyles', value),
         ),
       ],
     ],
@@ -125,7 +130,7 @@ class EbookSettingsControls extends StatelessWidget {
     bool value,
     ValueChanged<bool> onChanged,
   ) => SwitchListTile.adaptive(
-    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+    contentPadding: EdgeInsets.zero,
     title: LText(label),
     value: value,
     onChanged: onChanged,
@@ -141,6 +146,9 @@ class EbookSettingsControls extends StatelessWidget {
     label: label,
     choices: options,
     selected: value,
+    wrapLabels:
+        label == 'Reading mode' &&
+        MediaQuery.textScalerOf(context).scale(1) > 1.3,
     onSelected: change,
   );
   Widget _slider(
@@ -154,9 +162,8 @@ class EbookSettingsControls extends StatelessWidget {
   ) => InkSlider(
     sliderKey: ValueKey('ebook-$key'),
     label: context.tr(label),
-    formatValue: (v) => key == 'fontSize'
-        ? context.tr('{0} %', [(v * 100).round()])
-        : context.tr('{0}×', [double.parse(v.toStringAsFixed(1))]),
+    formatValue: (v) =>
+        context.tr('{0}×', [double.parse(v.toStringAsFixed(1))]),
     value: value,
     min: min,
     max: max,

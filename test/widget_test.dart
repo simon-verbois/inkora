@@ -196,20 +196,20 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const Key('server-url')),
-      'http://example.test',
+      'ftp://example.test',
     );
     await tester.enterText(find.byKey(const Key('secret')), 'fixture-key');
     await tester.ensureVisible(find.text('Sign in'));
     await tester.tap(find.text('Sign in'));
     await tester.pumpAndSettle();
     expect(
-      find.text('Enter an HTTPS URL, including any server subpath.'),
+      find.text('Enter an HTTP or HTTPS URL, including any server subpath.'),
       findsOneWidget,
     );
     expect(adapter.requests, isEmpty);
     await tester.enterText(
       find.byKey(const Key('server-url')),
-      'https://example.test',
+      'http://example.test',
     );
     await tester.ensureVisible(find.text('Sign in'));
     await tester.tap(find.text('Sign in'));
@@ -219,6 +219,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Your next great read'), findsNothing);
+    expect(adapter.requests.single.uri.scheme, 'http');
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(milliseconds: 10));
   });

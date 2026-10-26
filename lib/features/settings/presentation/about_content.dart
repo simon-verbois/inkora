@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/l10n/app_strings.dart';
 import '../../../app/release_information.dart';
@@ -39,6 +40,8 @@ class AboutContent extends ConsumerWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 20),
+              const _SupportButton(),
             ],
           ),
         ),
@@ -80,6 +83,63 @@ class AboutContent extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// The official image is bundled locally; only an explicit press opens the
+/// creator's fixed support address in the external browser.
+class _SupportButton extends StatefulWidget {
+  const _SupportButton();
+
+  @override
+  State<_SupportButton> createState() => _SupportButtonState();
+}
+
+class _SupportButtonState extends State<_SupportButton> {
+  static final _destination = Uri.https('buymeacoffee.com', '/simonverbois');
+  bool _opening = false;
+
+  Future<void> _open() async {
+    if (_opening) return;
+    setState(() => _opening = true);
+    try {
+      if (!await launchUrl(
+        _destination,
+        mode: LaunchMode.externalApplication,
+      )) {
+        throw StateError('External browser unavailable');
+      }
+    } catch (_) {
+      if (mounted) notifyInk(context, 'Unable to open this link.');
+    } finally {
+      if (mounted) setState(() => _opening = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: context.tr('Buy Me a Coffee'),
+    link: true,
+    enabled: !_opening,
+    child: TextButton(
+      key: const Key('about-support'),
+      onPressed: _opening ? null : _open,
+      style: TextButton.styleFrom(
+        padding: EdgeInsets.zero,
+        fixedSize: const Size(178, 50),
+      ),
+      child: Image.asset(
+        'assets/branding/buy-me-a-coffee.png',
+        width: 178,
+        height: 50,
+        fit: BoxFit.contain,
+        cacheWidth: (178 * MediaQuery.devicePixelRatioOf(context)).ceil().clamp(
+          1,
+          545,
+        ),
+        excludeFromSemantics: true,
+      ),
+    ),
+  );
 }
 
 class _ChangelogSection extends StatelessWidget {

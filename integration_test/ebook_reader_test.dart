@@ -1,3 +1,7 @@
+import '../test/reader/presentation/reader_settings_order_test.dart'
+    show registerSettingsDensityTest;
+
+import 'package:inkora/reader/presentation/ebook_font_picker.dart';
 import 'package:inkora/reader/presentation/ebook_presentation.dart';
 import 'package:inkora/reader/presentation/reader_system_ui.dart';
 import 'package:inkora/reader/presentation/ebook_pdf_surface.dart';
@@ -30,6 +34,8 @@ import 'package:inkora/reader/domain/reader_manifest.dart';
 import 'package:inkora/reader/domain/reading_settings.dart';
 import 'package:inkora/reader/domain/page_source.dart';
 import 'package:inkora/reader/presentation/ebook_reader_screen.dart';
+import 'package:inkora/reader/presentation/ebook_fonts.dart';
+import 'package:inkora/reader/presentation/reading_colors.dart';
 
 import '../test/support/connection_fakes.dart';
 import '../test/support/reader_fakes.dart';
@@ -57,9 +63,12 @@ Future<Map<String, dynamic>> epubLayout() async {
 void main() {
   final binding = UiFixtureIntegrationBinding()
     ..framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
-  if (const bool.fromEnvironment('BOOKMARK_NATIVE_GESTURE')) {
+  if (const bool.fromEnvironment('BOOKMARK_NATIVE_GESTURE') ||
+      const bool.fromEnvironment('EPUB_REFINEMENT_CAPTURE') ||
+      const bool.fromEnvironment('READING_PAPER_CAPTURE')) {
     binding.shouldPropagateDevicePointerEvents = true;
   }
+  registerSettingsDensityTest();
   for (final epub in [true, false]) {
     testWidgets(
       'local ${epub ? "EPUB" : "PDF"} opens, navigates, searches and persists position',
@@ -152,6 +161,9 @@ void main() {
           EbookPageInsets? pageInsets,
           String font = 'publisher',
           bool separator = false,
+          bool publisherStyles = true,
+          ReadingBackground background = ReadingBackground.sepia,
+          bool scroll = false,
           bool animation = true,
           String columns = 'auto',
         }) => tester.pumpWidget(
@@ -177,10 +189,13 @@ void main() {
                   settings: ReadingSettings(
                     mode: ReadingMode.ebook,
                     pageAnimation: animation,
+                    background: background,
                     ebook: EbookSettings(
                       margins: margins,
+                      publisherStyles: publisherStyles,
                       pageInsets: pageInsets,
                       font: font,
+                      scroll: scroll,
                       columnSeparator: separator,
                       columns: columns,
                     ),
@@ -231,6 +246,22 @@ void main() {
         expect(systemUiCalls, uiCallsBeforeControls);
         if (epub) {
           final layout = await epubLayout();
+          if (const bool.fromEnvironment('EPUB_REFINEMENT_CAPTURE') ||
+              const bool.fromEnvironment('READING_PAPER_CAPTURE')) {
+            await EbookPresentation.configure(
+              animations: true,
+              separator: true,
+            );
+            await tester.pump(const Duration(milliseconds: 200));
+            debugPrint('EPUB_REFINEMENT_CAPTURE: divider-sepia');
+            await tester.pump(const Duration(seconds: 3));
+            await EbookPresentation.configure(
+              animations: true,
+              separator: true,
+            );
+            debugPrint('EPUB_REFINEMENT_CAPTURE: divider-slide');
+            await tester.pump(const Duration(seconds: 5));
+          }
           expect(layout['viewportWidth'], initialLayout!['viewportWidth']);
           expect(layout['viewportHeight'], initialLayout['viewportHeight']);
         }
@@ -295,15 +326,69 @@ void main() {
             expect(layout['crossingLines'], 0);
           }
 
+          expect(layout['rule'], 'none');
+          expect(layout['dividerCount'], wide ? 1 : 0);
+          expect(layout['dividerVisible'], wide);
+          for (final enabled in [false, true, false, true]) {
+            await EbookPresentation.configure(
+              animations: false,
+              separator: enabled,
+            );
+            final toggled = await epubLayout();
+            expect(toggled['dividerVisible'], enabled && wide);
+            expect(toggled['dividerCount'], enabled && wide ? 1 : 0);
+            expect(toggled['rule'], 'none');
+          }
           if (wide) {
-            expect(layout['rule'], 'solid');
+            expect(
+              (layout['dividerLeft'] as num).toDouble(),
+              closeTo((layout['viewportWidth'] as num) / 2, 1),
+            );
             // WebView quantizes a CSS pixel to its physical-pixel grid.
             expect(
-              double.parse((layout['width'] as String).replaceAll('px', '')),
+              layout['dividerWidth'],
               allOf(greaterThan(0), lessThanOrEqualTo(1)),
             );
           }
+          if (wide) {
+            await EbookPresentation.configure(
+              animations: true,
+              separator: true,
+            );
+            final gradientsBefore =
+                (await epubLayout())['dividerGradientBuilds'];
+            await EbookPresentation.turn(1, animated: true);
+            var moved = false;
+            for (var frame = 0; frame < 10; frame++) {
+              await tester.pump(const Duration(milliseconds: 20));
+              final motion = await epubLayout();
+              final left = (motion['dividerLeft'] as num).toDouble();
+              final center = (motion['viewportWidth'] as num).toDouble() / 2;
+              if ((left - center).abs() > 2) moved = true;
+              expect(motion['dividerGradientBuilds'], gradientsBefore);
+            }
+            expect(
+              moved,
+              true,
+              reason: 'The divider must follow animated page content.',
+            );
+            await tester.pump(const Duration(milliseconds: 500));
+            expect((await epubLayout())['dividerCount'], 1);
+            await EbookPresentation.turn(-1, animated: false);
+            await tester.pump(const Duration(milliseconds: 400));
+          }
           expect(await EbookPresentation.turn(1, animated: false), isTrue);
+          await tester.pump(const Duration(milliseconds: 400));
+          final turned = await epubLayout();
+          expect(turned['rule'], 'none');
+          expect(turned['dividerCount'], wide ? 1 : 0);
+          expect(turned['dividerVisible'], wide);
+          if (wide) {
+            expect(
+              turned['dividerLeft'],
+              closeTo((turned['viewportWidth'] as num) / 2, 1),
+            );
+          }
           tester
                   .widget<ReadiumReaderWidget>(find.byType(ReadiumReaderWidget))
                   .shouldShowControls!
@@ -329,6 +414,7 @@ void main() {
           );
           await tester.pump(const Duration(milliseconds: 700));
           expect((await epubLayout())['columns'], '1');
+          expect((await epubLayout())['dividerVisible'], false);
           expect(
             tester.state(find.byType(ReadiumReaderWidget)),
             same(publicationState),
@@ -336,6 +422,17 @@ void main() {
           await open(ReaderLocator(0), columns: 'one', separator: false);
           await tester.pump(const Duration(milliseconds: 700));
           expect((await epubLayout())['rule'], 'none');
+          expect((await epubLayout())['dividerCount'], 0);
+          await open(
+            ReaderLocator(0),
+            columns: 'two',
+            scroll: true,
+            separator: true,
+          );
+          await tester.pump(const Duration(milliseconds: 700));
+          expect((await epubLayout())['dividerVisible'], false);
+          await open(ReaderLocator(0), columns: 'one', separator: false);
+          await tester.pump(const Duration(milliseconds: 700));
         }
         if (epub) {
           await engine.goForward();
@@ -466,7 +563,169 @@ void main() {
           expect(surface.top - screen.top, closeTo(safe.top + 24, 1));
           expect(screen.bottom - surface.bottom, closeTo(safe.bottom + 24, 1));
           await open(ReaderLocator(0), margins: 2, font: 'baskerville');
+          // Every offered bundled family must actually load inside Readium,
+          // while changing only typography above the same publication surface.
+          final chapter = location!.href;
+          for (final font in EbookFont.values.where(
+            (font) => font.previewFamily != null,
+          )) {
+            await open(
+              ReaderLocator(0),
+              margins: 2,
+              font: font.id,
+              publisherStyles: false,
+            );
+            Map<String, dynamic> probe = {};
+            for (var attempt = 0; attempt < 50; attempt++) {
+              await tester.pump(const Duration(milliseconds: 100));
+              probe = await epubLayout();
+              if (probe['fontsLoaded'] == true &&
+                  (probe['loadedFontFamilies'] as List).any(
+                    (family) => family.toString().contains(font.nativeFamily!),
+                  ) &&
+                  probe['fontFamily'].toString().contains(font.nativeFamily!)) {
+                break;
+              }
+            }
+            expect(probe['fontsLoaded'], true);
+            expect(probe['fontFamily'], contains(font.nativeFamily!));
+            expect(
+              (probe['loadedFontFamilies'] as List).any(
+                (family) => family.toString().contains(font.nativeFamily!),
+              ),
+              true,
+            );
+            expect(
+              tester.state(find.byType(ReadiumReaderWidget)),
+              same(surfaceState),
+            );
+            expect(location!.href, chapter);
+          }
+          for (final background in ReadingBackground.values) {
+            await open(
+              ReaderLocator(0),
+              columns: 'two',
+              separator: true,
+              background: background,
+              font: 'gentium',
+              publisherStyles: false,
+            );
+            await tester.pump(const Duration(milliseconds: 300));
+            final tone = await epubLayout();
+            expect(tone['dividerAlpha'], 46);
+            expect(tone['dividerColor'], background.inkColor.toARGB32());
+            expect(
+              tone['paperTexture'],
+              background.current == ReadingBackground.paper,
+            );
+            expect(
+              tone['paperImage'],
+              background.current == ReadingBackground.paper,
+            );
+            if (background.current == ReadingBackground.paper) {
+              expect(tone['paperTileWidth'], inInclusiveRange(1, 256));
+              expect(tone['paperTileHeight'], inInclusiveRange(1, 256));
+              expect(tone['paperDecodeCount'], 1);
+              expect(
+                tone['paperEncodedLength'],
+                inInclusiveRange(1, 128 * 1024),
+              );
+            }
+            if (const bool.fromEnvironment('READING_PAPER_CAPTURE') &&
+                [
+                  ReadingBackground.paper,
+                  ReadingBackground.gray,
+                  ReadingBackground.slate,
+                ].contains(background)) {
+              debugPrint('READING_PAPER_CAPTURE: ${background.name}');
+              await tester.pump(const Duration(seconds: 3));
+            }
+          }
+          await open(
+            ReaderLocator(0),
+            background: ReadingBackground.paper,
+            font: 'gentium',
+            publisherStyles: false,
+          );
+          await tester.pump(const Duration(milliseconds: 400));
+          await EbookPresentation.trimMemory();
+          expect((await epubLayout())['paperEncodedLength'], 0);
+          await EbookPresentation.configure(
+            animations: false,
+            separator: false,
+            paperTexture: true,
+          );
+          final reloaded = await epubLayout();
+          expect(reloaded['paperDecodeCount'], 2);
+          expect(reloaded['paperEncodedLength'], greaterThan(0));
+          if (const bool.fromEnvironment('EPUB_REFINEMENT_CAPTURE')) {
+            for (final family in ['baskerville', 'gentium']) {
+              await open(
+                ReaderLocator(0),
+                margins: 1.3,
+                font: family,
+                publisherStyles: false,
+              );
+              for (final factor in [1.0, 1.125, 1.25]) {
+                await engine.setEPUBPreferences(
+                  EPUBPreferences(
+                    fontFamily: EbookFont.values
+                        .firstWhere((font) => font.id == family)
+                        .nativeFamily,
+                    fontSize: factor,
+                    publisherStyles: false,
+                    lineHeight: 1.5,
+                    pageMargins: 1.3,
+                    backgroundColor: ReadingBackground.sepia.paperColor,
+                    textColor: ReadingBackground.sepia.inkColor,
+                  ),
+                );
+                await tester.pump(const Duration(milliseconds: 700));
+                final raster = await epubLayout();
+                expect(raster['fontsLoaded'], true);
+                expect(
+                  raster['fontFamily'],
+                  contains(
+                    EbookFont.values
+                        .firstWhere((font) => font.id == family)
+                        .nativeFamily!,
+                  ),
+                );
+                expect(raster['visualScale'], 1);
+                expect(raster['rootTransform'], 'none');
+                expect(raster['bodyTransform'], 'none');
+                final nativeRect = tester.getRect(
+                  find.byType(ReadiumReaderWidget),
+                );
+                final ratio = tester.view.devicePixelRatio;
+                for (final edge in [
+                  nativeRect.left,
+                  nativeRect.top,
+                  nativeRect.right,
+                  nativeRect.bottom,
+                ]) {
+                  expect(
+                    edge * ratio,
+                    closeTo((edge * ratio).roundToDouble(), .001),
+                  );
+                }
+                debugPrint(
+                  'EPUB_REFINEMENT_METRICS: $family/$factor ${jsonEncode(raster)}',
+                );
+                debugPrint('EPUB_REFINEMENT_CAPTURE: $family-$factor');
+                await tester.pump(const Duration(seconds: 3));
+              }
+            }
+          }
+
           await tester.pump(const Duration(milliseconds: 900));
+          await open(
+            ReaderLocator(0),
+            margins: 2,
+            font: 'gentium',
+            publisherStyles: false,
+          );
+          await tester.pump(const Duration(milliseconds: 400));
           final wideSurface = tester.getRect(find.byType(ReadiumReaderWidget));
           expect(wideSurface.top - screen.top, closeTo(safe.top + 48, 1));
           expect(
@@ -530,11 +789,12 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.byTooltip('Settings'));
         await tester.pumpAndSettle();
-        expect(find.text('Typography'), epub ? findsOneWidget : findsNothing);
+        expect(find.text('Appearance'), epub ? findsOneWidget : findsNothing);
         if (epub) {
-          await tester.tap(find.text('Typography'));
+          await tester.tap(find.text('Appearance'));
           await tester.pumpAndSettle();
-          expect(find.byKey(const ValueKey('ebook-fontSize')), findsOneWidget);
+          expect(find.byKey(const ValueKey('ebook-fontSize')), findsNothing);
+          expect(find.byType(EbookFontPicker), findsOneWidget);
         }
         // The live settings sheet has no Close button: system Back closes it.
         await tester.binding.handlePopRoute();

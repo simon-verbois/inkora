@@ -73,3 +73,16 @@ published APKs may differ. Keep release links generic. Android is available;
 native iOS validation remains pending. Never include personal server data or
 credentials. Keep the bundled font/license identical to
 `assets/fonts/LibreBaskerville.ttf` and `assets/fonts/OFL.txt`.
+
+
+## Support button
+
+Each language page contains one official Buy Me a Coffee button in the hero,
+linking to `https://buymeacoffee.com/simonverbois`. The local
+`buy-me-a-coffee.png` image retains its original artwork and displays at 178×50
+pixels. It loads from the site artifact, with a visible keyboard focus indicator
+and an accessible brand name; there is no third-party image request, embedded
+payment widget or tracking script. The source brand name stays unchanged in all
+languages. The same image appears once near the top of the README and in the
+app's About screen. Keep the fixed destination and identical artwork together
+when maintaining these placements.

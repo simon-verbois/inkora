@@ -139,6 +139,8 @@ class MemoryCredentials extends CredentialStore {
   @override
   Future<String?> read(String accountId) async => values[accountId];
   @override
+  Future<Set<String>> keys() async => values.keys.toSet();
+  @override
   Future<void> write(String accountId, String secret) async {
     if (accountId == failWriteKey) throw StateError('secure write failure');
     values[accountId] = secret;

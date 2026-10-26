@@ -10,9 +10,23 @@ abstract final class EbookPresentation {
   static bool get supported =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
+  static Future<void> trimMemory() async {
+    if (!supported) return;
+    try {
+      await channel.invokeMethod<void>('trimMemory');
+    } on MissingPluginException {
+      // Reader may never have been initialized in the current process.
+    } on PlatformException {
+      // Memory-pressure handling must not interrupt the active view.
+    }
+  }
+
   static Future<bool> configure({
     required bool animations,
     required bool separator,
+    bool tapToTurnPages = false,
+    int dividerColor = 0xff252320,
+    bool paperTexture = false,
     ImageEnhancement imageEnhancement = ImageEnhancement.off,
   }) async {
     if (!supported) return false;
@@ -20,6 +34,9 @@ abstract final class EbookPresentation {
       return await channel.invokeMethod<bool>('configure', {
             'animations': animations,
             'separator': separator,
+            'dividerColor': dividerColor,
+            'paperTexture': paperTexture,
+            'tapToTurnPages': tapToTurnPages,
             'imageEnhancement': imageEnhancement.index,
           }) ??
           false;

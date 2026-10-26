@@ -13,6 +13,7 @@ import '../data/reader_store.dart';
 import '../data/reading_history.dart';
 import '../data/tiered_page_source.dart';
 import '../domain/reading_settings.dart';
+import '../domain/page_source.dart';
 import '../presentation/reader_image_provider.dart';
 
 final readerAssetStoreProvider = Provider<Future<ReaderAssetStore>>((
@@ -103,8 +104,33 @@ final openReaderProvider = FutureProvider.autoDispose
     }, retry: (_, _) => null);
 final readingSettingsProvider = StreamProvider.autoDispose
     .family<ReadingSettings, String>((ref, bookId) async* {
+      final cancellation = CancellationController();
+      ref.onDispose(cancellation.cancel);
       final opened = await ref.watch(openReaderProvider(bookId).future);
       final repository = await ref.watch(readerRepositoryProvider.future);
       if (repository == null) return;
-      yield* repository.store.settings(opened.manifest);
+      (ReadingMode, ReadingDirection)? analyzed;
+      ReadingSettings? emitted;
+      await for (final settings in repository.store.settings(opened.manifest)) {
+        final identity =
+            settings.spreadPairing == SpreadPairing.automatic &&
+                settings.mode != ReadingMode.webtoon &&
+                !opened.manifest.isDocument
+            ? (settings.mode, settings.direction)
+            : null;
+        var effective = settings;
+        if (identity != null && identity != analyzed) {
+          analyzed = identity;
+          await repository.prepareSpreadPairing(opened.manifest, cancellation);
+          if (cancellation.isCancelled) return;
+          effective = await repository.store.settings(opened.manifest).first;
+        } else if (identity == null) {
+          analyzed = null;
+        }
+        if (cancellation.isCancelled) return;
+        if (effective != emitted) {
+          emitted = effective;
+          yield effective;
+        }
+      }
     });

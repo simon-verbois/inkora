@@ -20,6 +20,40 @@ void main() {
   });
   tearDown(() => database.close());
 
+  test('ebook tap navigation defaults off and preserves scoped false across accounts', () async {
+    final manifest = readerManifest();
+    expect(
+      (await store.settings(manifest).first).ebook.tapToTurnPages,
+      isFalse,
+    );
+    await store.saveOverrides(
+      SettingsScope.global,
+      '',
+      const ReadingOverrides(
+        mode: ReadingMode.ebook,
+        ebook: {'tapToTurnPages': true, 'fontSize': 1.6},
+      ),
+    );
+    expect((await store.settings(manifest).first).ebook.tapToTurnPages, isTrue);
+    await store.saveOverrides(
+      SettingsScope.book,
+      manifest.bookId,
+      const ReadingOverrides(ebook: {'tapToTurnPages': false}),
+    );
+    final restored = await ReaderStore(
+      database,
+      'reader-account',
+    ).settings(manifest).first;
+    expect(restored.ebook.tapToTurnPages, isFalse);
+    expect(restored.ebook.fontSize, 1.0);
+    final other = ReaderStore(database, 'other-account');
+    expect((await other.overrides(SettingsScope.global, '')).ebook, isNull);
+    expect(
+      (await other.overrides(SettingsScope.book, manifest.bookId)).ebook,
+      isNull,
+    );
+  });
+
   test(
     'offset toggle uses inherited defaults and serializes rapid presses',
     () async {

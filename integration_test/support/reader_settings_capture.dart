@@ -78,7 +78,7 @@ void registerSettingsCaptures() {
         await tester.pump(const Duration(milliseconds: 100));
       }
       final panels = kind == 'epub'
-          ? ['Disposition', 'Typographie']
+          ? ['Apparence', 'Mise en page', 'Navigation', 'Templates']
           : kind == 'webtoon'
           ? ['Disposition', 'Préchargement']
           : kind == 'manga'
@@ -92,7 +92,7 @@ void registerSettingsCaptures() {
         }
         expect(tester.takeException(), isNull);
         expect(
-          find.byKey(const Key('reader-settings-reset')).hitTestable(),
+          find.byKey(const Key('reader-settings-menu')).hitTestable(),
           findsOneWidget,
         );
         debugPrint('SETTINGS_CAPTURE_READY: $kind-$label');

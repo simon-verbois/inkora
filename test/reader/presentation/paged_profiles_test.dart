@@ -80,15 +80,15 @@ void main() {
             ..sort());
       await show(false);
       final viewport = tester.state(find.byType(ReaderViewport));
-      expect(find.text('p. 11–12'), findsOneWidget);
-      expect(visible(), [10, 11]);
-      await show(true);
       expect(find.text('p. 12–13'), findsOneWidget);
       expect(visible(), [11, 12]);
-      expect(tester.state(find.byType(ReaderViewport)), same(viewport));
-      await show(false);
+      await show(true);
       expect(find.text('p. 11–12'), findsOneWidget);
       expect(visible(), [10, 11]);
+      expect(tester.state(find.byType(ReaderViewport)), same(viewport));
+      await show(false);
+      expect(find.text('p. 12–13'), findsOneWidget);
+      expect(visible(), [11, 12]);
       expect(saved, isEmpty);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
@@ -125,8 +125,9 @@ void main() {
     WidgetTester tester,
     OpenReader reader,
     ReadingSettings settings,
-    List<ReaderLocator> saved,
-  ) => tester.pumpWidget(
+    List<ReaderLocator> saved, {
+    bool controlsVisible = true,
+  }) => tester.pumpWidget(
     MaterialApp(
       home: Scaffold(
         body: RepaintBoundary(
@@ -134,6 +135,7 @@ void main() {
           child: ReaderViewport(
             reader: reader,
             settings: settings,
+            controlsVisible: controlsVisible,
             saveLocator: (locator) async => saved.add(locator),
           ),
         ),
@@ -178,22 +180,47 @@ void main() {
         ),
         const ReadingSettings(mode: ReadingMode.manga, spreadOffset: false),
         [],
+        controlsVisible: false,
       );
       await settleReaderImages(tester);
       final seam = tester
           .getRect(find.byKey(const ValueKey('page-image-0')))
           .left;
+      final first = tester.getRect(find.byKey(const ValueKey('page-image-0')));
+      final second = tester.getRect(find.byKey(const ValueKey('page-image-1')));
+      final boundary = tester.renderObject<RenderRepaintBoundary>(
+        find.byKey(captureKey),
+      );
+      final top = boundary
+          .globalToLocal(
+            Offset(seam, first.top > second.top ? first.top : second.top),
+          )
+          .dy;
+      final bottom = boundary
+          .globalToLocal(
+            Offset(
+              seam,
+              first.bottom < second.bottom ? first.bottom : second.bottom,
+            ),
+          )
+          .dy;
+      final seamX = boundary.globalToLocal(Offset(seam, top)).dx;
+      expect(bottom - top, greaterThan(100));
       await tester.runAsync(() async {
-        final capture = await tester
-            .renderObject<RenderRepaintBoundary>(find.byKey(captureKey))
-            .toImage(pixelRatio: 1.5);
+        final capture = await boundary.toImage(pixelRatio: 1.5);
         final data = (await capture.toByteData(
           format: ui.ImageByteFormat.rawRgba,
         ))!;
-        for (var y = 150; y < capture.height - 150; y += 80) {
+        // Sample the actual shared image edge, excluding letterboxed margins.
+        // A native surface can be taller than the mocked host viewport.
+        for (
+          var y = ((top + 4) * 1.5).ceil();
+          y < ((bottom - 4) * 1.5).floor();
+          y += 80
+        ) {
           for (
-            var x = (seam * 1.5).floor() - 2;
-            x <= (seam * 1.5).ceil() + 2;
+            var x = (seamX * 1.5).floor() - 2;
+            x <= (seamX * 1.5).ceil() + 2;
             x++
           ) {
             expect(

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/widgets/ink_filter_bar.dart';
+import 'package:inkora/app/widgets/ink_home_attachment.dart';
 import 'package:inkora/features/library/presentation/catalogue_grid.dart';
 import 'package:inkora/features/library/presentation/catalogue_card.dart';
 import 'package:inkora/features/library/domain/catalogue.dart';
+import 'package:inkora/features/library/domain/resume_entry.dart';
+import 'package:inkora/features/settings/domain/ui_preferences.dart';
 
 import '../../support/catalogue_fakes.dart';
 import '../../support/ui_harness.dart';
@@ -50,9 +53,11 @@ void main() {
         await harness.mount(tester, textScale: scale);
         final bar = find.byType(InkFilterBar);
         final tools = find.byKey(const Key('catalogue-pinned-tools'));
-        final chips = find.byKey(const Key('catalogue-chips'));
         final menu = find.byKey(const Key('catalogue-tools-menu'));
         final effective = (tester.getSize(bar).width - 24) / scale;
+        final chips = find.byKey(
+          Key(effective < 600 ? 'reading-filter-menu' : 'catalogue-chips'),
+        );
         if (scale <= 1.5) {
           final grid = find.byKey(const Key('catalogue-grid'));
           final padding = tester.widget<CatalogueGrid>(grid).topPadding;
@@ -134,5 +139,88 @@ void main() {
         await harness.close(tester);
       },
     );
+  }
+
+  for (final (size, scale) in [
+    (const Size(1280, 800), 1.0),
+    (const Size(1600, 900), 1.25),
+  ]) {
+    for (final reduceMotion in [false, true]) {
+      testWidgets(
+        'wide Home side controls lower only while detached at $size/$scale, reduced motion=$reduceMotion',
+        (tester) async {
+          tester.view.physicalSize = size;
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          final harness = await UiHarness.create(
+            tester,
+            resumeEntries: [
+              ResumeEntry(
+                item: entry('resume-book'),
+                pageIndex: 1,
+                pageCount: 10,
+                fraction: 0,
+              ),
+            ],
+            preferences: UiPreferences(reduceMotion: reduceMotion),
+            catalogue: [
+              for (var i = 0; i < 180; i++)
+                entry('series-$i', kind: CatalogueKind.series),
+            ],
+          );
+          addTearDown(() => harness.close(tester));
+          await harness.mount(tester, textScale: scale);
+          final tools = find.byKey(const Key('catalogue-pinned-tools'));
+          final chips = find.byKey(const Key('catalogue-chips'));
+          final selector = find.byKey(const Key('library-selector'));
+          final sort = find.byKey(const Key('catalogue-sort'));
+          final height = tester.getSize(tools).height;
+          final scroll = tester
+              .state<ScrollableState>(
+                find
+                    .descendant(
+                      of: find.byType(CustomScrollView),
+                      matching: find.byType(Scrollable),
+                    )
+                    .first,
+              )
+              .position;
+
+          void expectAlignment(bool attached) {
+            final groups = tester.widgetList<InkHomeToolGroup>(
+              find.byType(InkHomeToolGroup),
+            );
+            expect(groups, hasLength(3));
+            expect(groups.every((group) => group.attached == attached), isTrue);
+            final bottom = tester.getBottomLeft(chips).dy;
+            for (final control in [selector, sort]) {
+              expect(
+                tester.getBottomLeft(control).dy - bottom,
+                closeTo(attached ? -10 : 0, .01),
+              );
+              expect(control.hitTestable(), findsOneWidget);
+            }
+            expect(tester.getSize(tools).height, height);
+          }
+
+          expectAlignment(false);
+          for (final offset in [800.0, 0.0, 800.0, 0.0]) {
+            scroll.jumpTo(offset);
+            await tester.pumpAndSettle();
+            expect(scroll.pixels, offset);
+            expectAlignment(offset > 0);
+            // Both visual positions retain an operable library popup.
+            await tester.tap(selector);
+            await tester.pumpAndSettle();
+            expect(find.byKey(const Key('library-choice-all')), findsOneWidget);
+            await tester.binding.handlePopRoute();
+            await tester.pumpAndSettle();
+          }
+          expect(tester.takeException(), isNull);
+          await harness.close(tester);
+        },
+      );
+    }
   }
 }

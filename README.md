@@ -1,5 +1,7 @@
 # Inkora
 
+<a href="https://buymeacoffee.com/simonverbois"><img src="assets/branding/buy-me-a-coffee.png" width="178" height="50" alt="Buy Me a Coffee"></a>
+
 Your Komga library, wherever you read.
 
 Inkora is a reader for manga, comics, webtoons and ebooks, built for phones and
@@ -77,10 +79,13 @@ are rendered by Flutter; they are not device photographs.
 You need a reachable Komga server and an account with access to its libraries.
 Inkora does not provide books or a hosted server.
 
-1. Open Inkora and enter your server URL, including its subpath if applicable.
-2. Sign in with a Komga API key or your username and password. Use HTTPS for
-   connections outside a trusted local network.
+1. Open Inkora and enter your `http://` or `https://` server address, including
+   its port and subpath if applicable.
+2. Sign in with a Komga API key or your username and password.
 3. Complete the guided setup, browse your libraries and open a book.
+
+HTTP is supported for self-hosted servers; it sends credentials and reading data
+without encryption. Prefer HTTPS, especially outside a trusted local network.
 
 Server credentials are kept in platform secure storage. Downloads, local reading
 positions and pending progress updates remain scoped to their server account.

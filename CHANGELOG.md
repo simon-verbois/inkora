@@ -10,6 +10,47 @@ remain in progress.
 
 ## [Unreleased]
 
+## [2026.44.1] - 2026-10-26
+
+- Simplify ebook backgrounds to White, subtle textured Paper, Sepia, Gray, Night and Black; preserve older saved colors through compatible aliases.
+- Fade the moving EPUB divider at its top and bottom.
+- Align the EPUB layout divider switch with the form’s right edge and keep template font samples on one line at large text.
+
+- Default ebooks to publisher fonts and styles, refine six reading templates and keep the font menu compact.
+- Make the subtle EPUB divider adapt to the paper color and move with sliding pages; align native publication bounds to physical pixels.
+
+- Fit reader preference panels to their contents and align document switches; remove the automatic-saving caption.
+- Organize EPUB preferences into Appearance, Page layout, Navigation and Templates, with a compact scope selector beside More and separate tab resets.
+
+- Bound each development Android emulator to 2 GiB guest RAM, 5 GiB host RAM and 1 GiB swap in a separate systemd scope.
+
+- Expand EPUB fonts with five bundled families and a font-preview dropdown, rename reading styles to Templates and keep text size at 100% without a zoom slider.
+- Draw the EPUB page divider only at the center of a two-page view, keeping the outer edges clear.
+
+- Lower the wide Home toolbar's side controls toward the covers while detached, retaining their raised position when attached to the header.
+
+- Fit the narrow Home quick-filter button to its content, aligned left with the tools menu at the right edge of the toolbar.
+
+- Add the official Buy Me a Coffee support button to the website introduction, README opening and app About page.
+
+- Add Mark read and Mark unread to Continue reading cover menus, targeting the exact saved book and synchronizing changes when connected.
+
+- Support explicitly entered HTTP server addresses alongside HTTPS for authentication, reading and downloads.
+- Recover saved connections when their secure account index is missing or malformed.
+- Wake offline synchronization from pending work and retry deadlines, stopping periodic work when queues are idle.
+
+- Stabilize manga page pairing across merged double-page scans; add automatic and forced alignment choices with remembered per-volume analysis and manual priority.
+
+- Adapt Home quick filters to narrow windows with a current-status selector and a Downloaded option, keeping all choices accessible at large text sizes.
+
+- Align Home toolbar backgrounds and outlines around their controls, remove the dark join seam and keep the extensions rigid when pulling beyond the list boundaries.
+
+- Disable tap-to-turn by default in the Android EPUB reader; add an optional layout setting while retaining swipe navigation.
+
+- Return directly to Home from tablet settings categories and keep sidebar selection backgrounds stable during back gestures.
+
+- Continue directly into the next available series volume when turning beyond the final comic or manga page, including single pages, spreads and all reading directions.
+
 ## [2026.43.7] - 2026-10-23
 
 - Strengthen public release checks to exclude private AI configuration, editor settings and agent instructions before GitHub publication, including checks of prepared files and public history.

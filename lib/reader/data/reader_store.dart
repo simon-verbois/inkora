@@ -182,8 +182,50 @@ final class ReaderStore {
               'background': 'sepia',
           });
         }
-        return ReadingSettings.resolveScopes(layers);
+        return effectiveSettings(manifest, layers);
       }).distinct();
+
+  ReadingSettings effectiveSettings(
+    ReaderManifest manifest,
+    Map<SettingsScope, ReadingOverrides> layers,
+  ) {
+    final base = ReadingSettings.resolveScopes(layers);
+    final analysis = layers[SettingsScope.book]?.spreadAnalysis;
+    final rtl = base.direction == ReadingDirection.rightToLeft;
+    return analysis != null && analysis.matches(manifest, rtl)
+        ? ReadingSettings.resolveScopes(
+            layers,
+            automaticSpreadOffset: analysis.shifted,
+          )
+        : base;
+  }
+
+  /// Merge with the latest book draft: analysis must never erase a concurrent
+  /// manual choice, and duplicate openings must not emit identical writes.
+  Future<void> saveSpreadAnalysis(
+    ReaderManifest manifest,
+    SpreadPairingAnalysis analysis,
+  ) async {
+    if (manifest.accountId != accountId ||
+        analysis.revision != manifest.revision) {
+      throw ArgumentError('Mismatched spread analysis');
+    }
+    await database.transaction(() async {
+      final book = await overrides(SettingsScope.book, manifest.bookId);
+      if (book.spreadAnalysis?.matches(manifest, analysis.rightToLeft) ??
+          false) {
+        return;
+      }
+      await saveOverrides(
+        SettingsScope.book,
+        manifest.bookId,
+        ReadingOverrides.fromJson({
+          ...book.toJson(),
+          'spreadAnalysis': analysis.toJson(),
+        }),
+      );
+    });
+  }
 
   Stream<Map<String, ReadingOverrides>> libraryDefaults() => database
       .customSelect(
@@ -236,11 +278,15 @@ final class ReaderStore {
         bookId: manifest.bookId,
       );
       final book = layers[SettingsScope.book] ?? const ReadingOverrides();
-      final current = ReadingSettings.resolveScopes(layers).spreadOffset;
+      final current = effectiveSettings(manifest, layers).spreadOffset;
       await saveOverrides(
         SettingsScope.book,
         manifest.bookId,
-        ReadingOverrides.fromJson({...book.toJson(), 'spreadOffset': !current}),
+        ReadingOverrides.fromJson({
+          ...book.toJson(),
+          'spreadOffset': !current,
+          'spreadPairing': current ? 'unshifted' : 'shifted',
+        }),
       );
     });
   }

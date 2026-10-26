@@ -35,17 +35,29 @@ void main() {
   });
 
   test(
-    'malformed, incomplete and non-HTTPS files are consumed safely',
+    'malformed, incomplete and unsupported-scheme files are consumed safely',
     () async {
       for (final encoded in [
         'invalid JSON',
         '{}',
-        '{"url":"http://example.test","apiKey":"fixture"}',
+        '{"url":"ftp://example.test","apiKey":"fixture"}',
       ]) {
         await file.writeAsString(encoded);
         expect(await takeDevelopmentLogin(file), isNull);
         expect(await file.exists(), isFalse);
       }
+    },
+  );
+
+  test(
+    'takes an explicit HTTP development endpoint without rewriting its scheme',
+    () async {
+      await file.writeAsString(
+        '{"url":"http://example.test:25600/komga","apiKey":"fixture"}',
+      );
+      final login = await takeDevelopmentLogin(file);
+      expect(login!.serverUrl, 'http://example.test:25600/komga/');
+      expect(await file.exists(), isFalse);
     },
   );
 }

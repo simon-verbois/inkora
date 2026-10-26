@@ -43,9 +43,11 @@ class ResumeCarousel extends StatelessWidget {
     required this.entries,
     this.onViewAll,
     this.columns,
+    this.onMarkReading,
   });
   final List<ResumeEntry> entries;
   final int? columns;
+  final void Function(ResumeEntry entry, bool read)? onMarkReading;
 
   /// Destination of the end card shown when more than
   /// [CatalogueShelf.maxItems] positions exist (reading history on Home).
@@ -61,6 +63,14 @@ class ResumeCarousel extends StatelessWidget {
       viewAllLabel: 'Reading history',
       items: [for (final entry in reading.values) resumeShelfItem(entry)!],
       resumeEntries: reading,
+      onMarkReading: onMarkReading == null
+          ? null
+          : (item, read) {
+              final entry = reading[item.identity];
+              if (entry != null && entry.item.canOpen && !entry.onDeck) {
+                onMarkReading!(entry, read);
+              }
+            },
       onOpen: (item) {
         final book = reading[item.identity]?.item;
         if (book == null || !book.canOpen) return;

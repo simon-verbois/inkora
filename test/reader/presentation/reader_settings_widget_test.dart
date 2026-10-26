@@ -93,6 +93,10 @@ void main() {
       }
 
       Future<void> choose(String key) async {
+        if (key.startsWith('reader-choice-scope-')) {
+          await tester.tap(find.byKey(const Key('reader-settings-scope')));
+          await tester.pumpAndSettle();
+        }
         final chip = find.byKey(Key(key));
         await tester.ensureVisible(chip);
         await tester.pumpAndSettle();
@@ -109,9 +113,10 @@ void main() {
         expect(find.byType(ReaderSettingsSheet), findsOneWidget);
         expect(find.text('Save'), findsNothing);
         expect(find.text('Cancel'), findsNothing);
-        expect(find.text('Changes apply immediately.'), findsOneWidget);
-        // Scope chips sit at the top: This book / Series / Library / Global.
-        expect(find.byKey(const Key('reader-choice-scope-book')), findsOne);
+        expect(find.text('Automatic saving'), findsNothing);
+        // The editing target stays visible in the compact footer menu.
+        expect(find.byKey(const Key('reader-settings-scope')), findsOne);
+        expect(find.text('Apply to'), findsNothing);
         expect(find.byType(DropdownButtonFormField<String>), findsNothing);
 
         await choose('reader-choice-mode-manga');
@@ -167,11 +172,15 @@ void main() {
 
         // Reset is confirmed first; cancelling keeps the values.
         await choose('reader-choice-scope-book');
+        await tester.tap(find.byKey(const Key('reader-settings-menu')));
+        await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('reader-settings-reset')));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Cancel'));
         await settle();
         expect((await book()).mode, ReadingMode.manga);
+        await tester.tap(find.byKey(const Key('reader-settings-menu')));
+        await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('reader-settings-reset')));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Reset to default').last);

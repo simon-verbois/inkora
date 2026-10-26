@@ -24,6 +24,7 @@ class InkFilterBar extends StatelessWidget {
     this.chips = const [],
     this.startChipsWhenCompact = false,
     this.compactMenu,
+    this.compactChips,
     this.lowerWideSides = false,
     this.attachedGroups = false,
     this.groupsAttached = true,
@@ -43,6 +44,9 @@ class InkFilterBar extends StatelessWidget {
   final String controlPrefix;
   final bool startChipsWhenCompact;
   final Widget? compactMenu;
+
+  /// A fitted alternative to the scrolling chip row in the narrow tools row.
+  final Widget? compactChips;
   final bool lowerWideSides;
 
   /// Home-only surfaces joining the header through concave upper corners.
@@ -160,13 +164,18 @@ class InkFilterBar extends StatelessWidget {
         if (compactMenu != null && effectiveWidth < 600) {
           final row = Row(
             children: [
-              Expanded(child: chipRow),
+              Expanded(
+                child: compactChips == null
+                    ? chipRow
+                    : Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: compactChips,
+                      ),
+              ),
               compactMenu!,
             ],
           );
-          return attachedGroups
-              ? InkHomeToolGroup(attached: groupsAttached, child: row)
-              : row;
+          return attachedGroups ? compactGroup(row) : row;
         }
         // Compact windows give filters a full-width centered row. Search,
         // sort and actions share the other row so they cannot offset it.
@@ -203,11 +212,16 @@ class InkFilterBar extends StatelessWidget {
             if (chips.isNotEmpty) chipRow,
           ],
         );
-        return attachedGroups
-            ? InkHomeToolGroup(attached: groupsAttached, child: rows)
-            : rows;
+        return attachedGroups ? compactGroup(rows) : rows;
       },
     ),
+  );
+
+  // Reserve the header's rounded corners in layout, so fill, outline and
+  // controls share the same bounds instead of narrowing only the outline.
+  Widget compactGroup(Widget child) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: InkRadius.l),
+    child: InkHomeToolGroup(attached: groupsAttached, child: child),
   );
 }
 

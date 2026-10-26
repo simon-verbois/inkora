@@ -179,20 +179,29 @@ class InkHomeHeader extends StatelessWidget {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        IgnorePointer(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                stops: const [0, .5, 1],
-                                colors: [
-                                  Theme.of(context).scaffoldBackgroundColor,
-                                  Theme.of(context).scaffoldBackgroundColor
-                                      .withValues(alpha: .94),
-                                  Theme.of(context).scaffoldBackgroundColor
-                                      .withValues(alpha: 0),
-                                ],
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          // The attached surfaces begin at the header fill's
+                          // lower edge. Stop the backdrop there so it cannot
+                          // darken their roots into a horizontal seam.
+                          bottom: InkSpace.sm,
+                          child: IgnorePointer(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  stops: const [0, .5, 1],
+                                  colors: [
+                                    Theme.of(context).scaffoldBackgroundColor,
+                                    Theme.of(context).scaffoldBackgroundColor
+                                        .withValues(alpha: .94),
+                                    Theme.of(context).scaffoldBackgroundColor
+                                        .withValues(alpha: 0),
+                                  ],
+                                ),
                               ),
                             ),
                           ),

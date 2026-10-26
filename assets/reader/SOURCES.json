@@ -1,0 +1,10 @@
+{
+  "asset": "assets/reader/paper.png",
+  "sha256": "cd27d11a8ebd6fc4011013fe31e096fb07ae6de42ba414e7c1d339a2baeacf9b",
+  "bytes": 2368901,
+  "width": 1254,
+  "height": 1254,
+  "tool": "built-in image_gen",
+  "prompt": "Create a production texture asset for an ebook reader: a small SEAMLESS repeating 256 by 256 pixel square tile of extremely subtle warm off-white fine book paper. Flat scan orthogonal to the sheet, completely even illumination from edge to edge. Base color close to #f3eee3. Only very faint tiny natural cellulose fibers and micrograin, low contrast under 2%, virtually uniform from a distance. This will repeat behind black body text, so readability comes first. No large patches, stains, folds, shadows, border, writing, text, objects, page edges, vignette, gradients, or decorative elements. All four opposite edges must tile seamlessly. Output only the small flat square paper texture.",
+  "runtime_use": "The original is retained unchanged. Native code decodes a <=256 px tile off the UI thread, encodes it once on demand and drops it on memory pressure/activity disposal; Flutter swatches decode 64 px previews. The prepared native tile blends original grain at 140/255 over the matching paper color, once on the I/O dispatcher; preview opacity is 0.55."
+}

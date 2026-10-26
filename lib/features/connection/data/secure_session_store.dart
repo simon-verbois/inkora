@@ -65,12 +65,28 @@ final class SecureSessionStore implements SessionStore {
 
   Future<Set<String>> _ids() async {
     final encoded = await _credentials.read(_accounts);
-    final ids = encoded == null
-        ? <String>{}
-        : (jsonDecode(encoded) as List).cast<String>().toSet();
+    Set<String>? ids;
+    if (encoded != null) {
+      try {
+        final decoded = jsonDecode(encoded);
+        if (decoded is List &&
+            decoded.every((id) => id is String && id.isNotEmpty)) {
+          ids = decoded.cast<String>().toSet();
+        }
+      } on FormatException {
+        // Recover from verified records below, without deleting any secret.
+      }
+    }
+    if (ids == null) {
+      ids = <String>{};
+      for (final id in await _credentials.keys()) {
+        if (id.isEmpty || id == _active || id == _accounts) continue;
+        if (await _read(id) != null) ids.add(id);
+      }
+    }
     // Adopt the existing single-account installation without a database migration.
     final active = await _credentials.read(_active);
-    if (active != null) ids.add(active);
+    if (active != null && active.isNotEmpty) ids.add(active);
     return ids;
   }
 

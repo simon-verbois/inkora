@@ -48,6 +48,7 @@ class InkCoverTile extends ConsumerWidget {
     this.onRemoveDownload,
     this.offlineBadge = true,
     this.resumeOpensBook = true,
+    this.onMarkReading,
   });
   final CatalogueItem item;
   final CatalogueItem? coverItem;
@@ -70,6 +71,9 @@ class InkCoverTile extends ConsumerWidget {
   /// reading) or the series details (Up next, which then offers the book in
   /// its context menu).
   final bool resumeOpensBook;
+
+  /// Optional explicit book status actions supplied by Continue reading.
+  final ValueChanged<bool>? onMarkReading;
 
   void _open(BuildContext context) =>
       onOpen == null ? openCatalogueItem(context, item) : onOpen!(item);
@@ -158,6 +162,18 @@ class InkCoverTile extends ConsumerWidget {
                 icon: InkIcons.bookOpen,
                 run: () => openBookReader(context, resume!.item),
               ),
+      if (onMarkReading != null) ...[
+        (
+          label: 'Mark read',
+          icon: InkIcons.check,
+          run: () => onMarkReading!(true),
+        ),
+        (
+          label: 'Mark unread',
+          icon: InkIcons.arrowCounterClockwise,
+          run: () => onMarkReading!(false),
+        ),
+      ],
       if (book && downloaded)
         (
           label: 'Remove download',
@@ -208,7 +224,7 @@ class InkCoverTile extends ConsumerWidget {
           ),
       ],
     );
-    selected?.run();
+    if (context.mounted) selected?.run();
   }
 
   @override
@@ -438,6 +454,7 @@ class CatalogueShelf extends StatelessWidget {
     this.onViewAll,
     this.viewAllLabel = 'Browse all books',
     this.resumeOpensBook = true,
+    this.onMarkReading,
   });
   final List<CatalogueItem> items;
   final double cardWidth;
@@ -449,6 +466,7 @@ class CatalogueShelf extends StatelessWidget {
 
   /// See [InkCoverTile.resumeOpensBook].
   final bool resumeOpensBook;
+  final void Function(CatalogueItem item, bool read)? onMarkReading;
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
@@ -519,6 +537,9 @@ class CatalogueShelf extends StatelessWidget {
                         resumeEntries[visible[index].id],
                     resumeOpensBook: resumeOpensBook,
                     onOpen: onOpen,
+                    onMarkReading: onMarkReading == null
+                        ? null
+                        : (read) => onMarkReading!(visible[index], read),
                   ),
           ),
         ),

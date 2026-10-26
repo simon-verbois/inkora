@@ -9,8 +9,9 @@
     <application
         android:label="${inkoraAppLabel}"
         android:allowBackup="false"
-        android:usesCleartextTraffic="false"
-        tools:replace="android:usesCleartextTraffic"
+        android:usesCleartextTraffic="true"
+        android:networkSecurityConfig="@xml/network_security_config"
+        tools:replace="android:usesCleartextTraffic,android:networkSecurityConfig"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <service android:name="dk.nota.flutterreadium.PluginMediaService" tools:node="remove"/>

@@ -277,85 +277,83 @@ final routerProvider = Provider<GoRouter>((ref) {
                     child: child,
                   ),
                   reveal: true,
-                  // Only the visible category may accept predictive Back when
-                  // the inner Navigator has a page above its settings root.
-                  canPop: state.uri.path == '/settings',
                 ),
                 routes: [
+                  // Categories are siblings of the index/default page. The
+                  // compact index pushes its selection; the wide sidebar uses
+                  // go(), leaving one category and no hidden Appearance parent.
                   GoRoute(
                     path: 'settings',
                     pageBuilder: (_, state) =>
                         page(state, const SettingsScreen(), primary: true),
+                  ),
+                  GoRoute(
+                    path: 'settings/servers',
+                    pageBuilder: (_, state) =>
+                        page(state, const ServersScreen()),
                     routes: [
                       GoRoute(
-                        path: 'servers',
-                        pageBuilder: (_, state) =>
-                            page(state, const ServersScreen()),
-                        routes: [
-                          GoRoute(
-                            path: 'add',
-                            pageBuilder: (_, state) => page(
-                              state,
-                              const ConnectionScreen(addServer: true),
-                            ),
-                          ),
-                        ],
-                      ),
-                      GoRoute(
-                        path: 'library-defaults',
-                        redirect: (_, state) =>
-                            state.uri.path == '/settings/library-defaults'
-                            ? '/settings/reading'
-                            : null,
-                        pageBuilder: (_, state) =>
-                            page(state, const LibraryDefaultsScreen()),
-                        routes: [
-                          GoRoute(
-                            path: ':id',
-                            pageBuilder: (_, state) => page(
-                              state,
-                              LibraryDefaultsScreen(
-                                libraryId: state.pathParameters['id'],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      GoRoute(
-                        path: ':section',
-                        redirect: (_, state) =>
-                            state.pathParameters['section'] == 'sync'
-                            ? '/settings'
-                            : state.pathParameters['section'] == 'account'
-                            ? '/settings/servers'
-                            : null,
-                        pageBuilder: (_, state) {
-                          final section = state.pathParameters['section'];
-                          return page(
-                            state,
-                            const {
-                                  'transfer',
-                                  'appearance',
-                                  'language',
-                                  'gestures',
-                                  'reading',
-                                  'reading-defaults',
-                                  'quality',
-                                  'downloads',
-                                  'accessibility',
-                                  'about',
-                                }.contains(section)
-                                ? SettingsScreen(section: section)
-                                : const Center(
-                                    child: InkEmptyState(
-                                      icon: InkIcons.compass,
-                                      title: 'Unknown settings section.',
-                                    ),
-                                  ),
-                          );
-                        },
+                        path: 'add',
+                        pageBuilder: (_, state) => page(
+                          state,
+                          const ConnectionScreen(addServer: true),
+                        ),
                       ),
                     ],
+                  ),
+                  GoRoute(
+                    path: 'settings/library-defaults',
+                    redirect: (_, state) =>
+                        state.uri.path == '/settings/library-defaults'
+                        ? '/settings/reading'
+                        : null,
+                    pageBuilder: (_, state) =>
+                        page(state, const LibraryDefaultsScreen()),
+                    routes: [
+                      GoRoute(
+                        path: ':id',
+                        pageBuilder: (_, state) => page(
+                          state,
+                          LibraryDefaultsScreen(
+                            libraryId: state.pathParameters['id'],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'settings/:section',
+                    redirect: (_, state) =>
+                        state.pathParameters['section'] == 'sync'
+                        ? '/settings'
+                        : state.pathParameters['section'] == 'account'
+                        ? '/settings/servers'
+                        : null,
+                    pageBuilder: (_, state) {
+                      final section = state.pathParameters['section'];
+                      return page(
+                        state,
+                        const {
+                              'transfer',
+                              'appearance',
+                              'language',
+                              'gestures',
+                              'reading',
+                              'reading-defaults',
+                              'quality',
+                              'downloads',
+                              'accessibility',
+                              'about',
+                            }.contains(section)
+                            ? SettingsScreen(section: section)
+                            : const Center(
+                                child: InkEmptyState(
+                                  icon: InkIcons.compass,
+                                  title: 'Unknown settings section.',
+                                ),
+                              ),
+                      );
+                    },
                   ),
                 ],
               ),

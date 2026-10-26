@@ -87,7 +87,7 @@ void main() {
         () => Future<void>.delayed(const Duration(milliseconds: 50)),
       );
       await tester.pumpAndSettle();
-      final reset = find.byKey(const Key('reader-settings-reset'));
+      final reset = find.byKey(const Key('reader-settings-menu'));
       for (final keyboardHeight in [300.0, 450.0, 500.0]) {
         tester.view.viewInsets = FakeViewPadding(bottom: keyboardHeight);
         await tester.pumpAndSettle();

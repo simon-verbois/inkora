@@ -140,16 +140,21 @@ class SettingsNavTile extends StatelessWidget {
     padding: const EdgeInsets.only(bottom: 2),
     child: Semantics(
       selected: selected,
-      child: ListTile(
-        minTileHeight: InkoraLayout.touchTarget,
-        contentPadding: const EdgeInsets.symmetric(horizontal: InkSpace.md),
-        shape: const RoundedRectangleBorder(borderRadius: InkRadius.medium),
-        selected: selected,
-        selectedTileColor: Theme.of(context).colorScheme.secondaryContainer,
-        leading: leading,
-        title: title,
-        subtitle: subtitle,
-        onTap: onTap,
+      // Ink belongs to this moving tile, rather than the shell's Material
+      // behind the route transition (which can expose a stray selected fill).
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListTile(
+          minTileHeight: InkoraLayout.touchTarget,
+          contentPadding: const EdgeInsets.symmetric(horizontal: InkSpace.md),
+          shape: const RoundedRectangleBorder(borderRadius: InkRadius.medium),
+          selected: selected,
+          selectedTileColor: Theme.of(context).colorScheme.secondaryContainer,
+          leading: leading,
+          title: title,
+          subtitle: subtitle,
+          onTap: onTap,
+        ),
       ),
     ),
   );

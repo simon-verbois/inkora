@@ -182,8 +182,6 @@ void main() {
       expect(router.canPop(), isTrue);
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
       expect(router.routeInformationProvider.value.uri.path, '/');
       expect(tester.state(find.byType(CatalogueScreen)), same(screen));
       expect(scroll.pixels, offset);

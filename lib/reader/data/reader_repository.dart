@@ -16,6 +16,8 @@ import 'reader_asset_store.dart';
 import 'reader_store.dart';
 import 'tiered_page_source.dart';
 import 'encoded_page_cache.dart';
+import 'spread_pairing_analysis.dart';
+import '../domain/reading_settings.dart';
 import 'prefetch_session.dart';
 import '../domain/prefetch_policy.dart';
 import '../../features/library/data/catalogue_store.dart';
@@ -56,6 +58,41 @@ final class ReaderRepository {
   final _tokens = <CancelToken>{};
   final _sources = <ContentKey, _ReaderSourceRef>{};
   bool _closed = false;
+
+  Future<void> prepareSpreadPairing(
+    ReaderManifest manifest,
+    CancellationSignal cancellation,
+  ) async {
+    _check();
+    if (manifest.accountId != store.accountId) {
+      throw ArgumentError('Mismatched pairing account');
+    }
+    if (manifest.isDocument || cancellation.isCancelled) return;
+    final layers = await store.preferenceLayers(
+      libraryId: manifest.libraryId,
+      seriesId: manifest.seriesId,
+      bookId: manifest.bookId,
+    );
+    final settings = store.effectiveSettings(manifest, layers);
+    final rtl = settings.direction == ReadingDirection.rightToLeft;
+    if (settings.mode == ReadingMode.webtoon ||
+        settings.spreadPairing != SpreadPairing.automatic ||
+        (layers[SettingsScope.book]?.spreadAnalysis?.matches(manifest, rtl) ??
+            false)) {
+      return;
+    }
+    final analysis = await analyzeSpreadPairing(
+      manifest,
+      rightToLeft: rtl,
+      cancellation: cancellation,
+      sample: LocalPairingSamples(assets, manifest).read,
+    );
+    _check();
+    if (!cancellation.isCancelled) {
+      await store.saveSpreadAnalysis(manifest, analysis);
+    }
+  }
+
   void _check() {
     if (_closed || !isCurrent()) {
       throw const ReaderFailure(

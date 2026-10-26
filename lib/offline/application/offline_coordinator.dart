@@ -164,7 +164,7 @@ final progressIntentsProvider = StreamProvider<List<ProgressIntent>>((
 });
 
 /// Owns one account generation. Native transfers stop before foreground reader
-/// admission; periodic replay never blocks a local locator transaction.
+/// admission; event-driven replay never blocks a local locator transaction.
 final class OfflineCoordinator with WidgetsBindingObserver {
   OfflineCoordinator(
     this.store,
@@ -186,10 +186,14 @@ final class OfflineCoordinator with WidgetsBindingObserver {
   final bool Function(String) bookInUse;
   static bool _notInUse(String _) => false;
   Timer? _timer;
+  StreamSubscription<({bool hasWork, int? dueAt})>? _progressSubscription;
+  StreamSubscription<bool>? _downloadSubscription;
+  bool _progressWork = false, _downloadWork = false;
+  int _monitorGeneration = 0, _retryGeneration = 0;
+  Future<void>? _replayWork;
   bool _closed = false, _backgrounded = false, _recovered = false;
   Future<void> _lifecycle = Future.value();
   bool get current => !_closed && isCurrent();
-  bool _started = false;
   Future<void> start() async {
     _backgrounded = _initiallyBackgrounded();
     WidgetsBinding.instance.addObserver(this);
@@ -197,30 +201,51 @@ final class OfflineCoordinator with WidgetsBindingObserver {
     // transfers. Recovery and foreground admission must wait for an actual resume.
     _lifecycle = _foreground();
     await _lifecycle;
-    if (!current) return;
-    _started = true;
-    _startTimer();
   }
 
-  /// Policy/replay polling runs only while foregrounded; handoff stops it.
-  void _startTimer() {
-    if (!current || _backgrounded || _timer != null) return;
-    _timer = Timer.periodic(
-      const Duration(seconds: 5),
-      (_) => unawaited(_tick().catchError((Object _) {})),
-    );
-    // Policy changes arrive as events (Android) and apply immediately; the
-    // periodic tick only drives progress replay with the cached policy.
-    _policySubscription = ReaderNetworkPolicy.watch().listen((snapshot) {
-      final changed = snapshot != _policy;
-      _policy = snapshot;
-      if (changed) unawaited(_tick().catchError((Object _) {}));
+  /// Durable writes wake replay; only a queued head's due time arms a timer.
+  void _startMonitoring() {
+    if (!current || _backgrounded || _progressSubscription != null) return;
+    final generation = ++_monitorGeneration;
+    _progressSubscription = sync.store.watchReplaySchedule().listen((work) {
+      if (!current || _backgrounded || generation != _monitorGeneration) return;
+      _progressWork = work.hasWork;
+      _updatePolicyWatch();
+      _armReplay(work.dueAt);
+    });
+    _downloadSubscription = store.watchActiveWork().listen((active) {
+      if (!current || _backgrounded || generation != _monitorGeneration) return;
+      _downloadWork = active;
+      _updatePolicyWatch();
     });
   }
 
-  void _stopTimer() {
+  void _updatePolicyWatch() {
+    if (!_progressWork && !_downloadWork) {
+      unawaited(_policySubscription?.cancel());
+      _policySubscription = null;
+      _policy = null;
+      return;
+    }
+    if (_policySubscription != null) return;
+    final generation = _monitorGeneration;
+    _policySubscription = ReaderNetworkPolicy.watch().listen((snapshot) {
+      if (!current || _backgrounded || generation != _monitorGeneration) return;
+      _policy = snapshot;
+      unawaited(_tick().catchError((Object _) {}));
+    });
+  }
+
+  void _stopMonitoring() {
+    _monitorGeneration++;
+    _retryGeneration++;
     _timer?.cancel();
     _timer = null;
+    unawaited(_progressSubscription?.cancel());
+    _progressSubscription = null;
+    unawaited(_downloadSubscription?.cancel());
+    _downloadSubscription = null;
+    _progressWork = _downloadWork = false;
     unawaited(_policySubscription?.cancel());
     _policySubscription = null;
     _policy = null;
@@ -228,6 +253,46 @@ final class OfflineCoordinator with WidgetsBindingObserver {
 
   StreamSubscription<ReaderNetworkSnapshot>? _policySubscription;
   ReaderNetworkSnapshot? _policy;
+
+  void _armReplay(int? dueAt) {
+    _retryGeneration++;
+    _timer?.cancel();
+    _timer = null;
+    if (!current ||
+        _backgrounded ||
+        _policy == null ||
+        _policy!.paused ||
+        sync.authenticationExpired ||
+        _replayWork != null ||
+        dueAt == null) {
+      return;
+    }
+    final delay = dueAt - sync.now();
+    _timer = Timer(Duration(milliseconds: delay < 0 ? 0 : delay), _wakeReplay);
+  }
+
+  void _wakeReplay() {
+    _timer?.cancel();
+    _timer = null;
+    if (!current || _backgrounded || sync.paused || _replayWork != null) return;
+    final work = _replayWork = sync.replay();
+    unawaited(
+      work.catchError((Object _) {}).whenComplete(() {
+        _replayWork = null;
+        if (!current || _backgrounded) return;
+        final generation = ++_retryGeneration;
+        // A fresh aggregate also catches writes made while this replay ran.
+        unawaited(
+          sync.store
+              .nextReplayAt()
+              .then((dueAt) {
+                if (generation == _retryGeneration) _armReplay(dueAt);
+              })
+              .catchError((Object _) {}),
+        );
+      }),
+    );
+  }
 
   Future<void> _tick() async {
     if (!current || _backgrounded) return;
@@ -238,7 +303,7 @@ final class OfflineCoordinator with WidgetsBindingObserver {
     );
     if (!current || _backgrounded) return;
     sync.paused = policy.paused;
-    unawaited(sync.replay().catchError((Object _) {}));
+    _wakeReplay();
   }
 
   Future<void> configure({required int quota, required bool wifiOnly}) async {
@@ -274,7 +339,7 @@ final class OfflineCoordinator with WidgetsBindingObserver {
       // Dart work during handoff. Serialize rapid pause/resume transitions.
       _backgrounded = state != AppLifecycleState.resumed;
       final toBackground = _backgrounded;
-      if (toBackground) _stopTimer();
+      if (toBackground) _stopMonitoring();
       _lifecycle = _lifecycle
           .then((_) => toBackground ? _handoff() : _foreground())
           .catchError((Object _) {});
@@ -352,8 +417,7 @@ final class OfflineCoordinator with WidgetsBindingObserver {
         if (bookInUse(candidate.bookId)) continue;
         await downloads.cancel(candidate.jobId);
       }
-      // start() owns the first timer; later resumes restart polling here.
-      if (_recovered && _timer == null && _started) _startTimer();
+      _startMonitoring();
       await _tick();
     }
   }
@@ -417,7 +481,7 @@ final class OfflineCoordinator with WidgetsBindingObserver {
   void close() {
     if (_closed) return;
     _closed = true;
-    _stopTimer();
+    _stopMonitoring();
     WidgetsBinding.instance.removeObserver(this);
     sync.close();
     downloads.close();

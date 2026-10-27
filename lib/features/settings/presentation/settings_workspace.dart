@@ -10,7 +10,7 @@ import 'settings_navigation.dart';
 String settingsSectionForPath(String path) {
   final section = path.split('/').elementAtOrNull(2);
   return switch (section) {
-    null || '' => 'appearance',
+    null || '' => 'servers',
     'reading-defaults' || 'library-defaults' => 'reading',
     _ => section,
   };
@@ -200,7 +200,7 @@ class _SettingsWorkspaceState extends State<SettingsWorkspace> {
                                       if (widget.path !=
                                               '/settings/${entry.id}' &&
                                           !(widget.path == '/settings' &&
-                                              entry.id == 'appearance')) {
+                                              entry.id == 'servers')) {
                                         context.go('/settings/${entry.id}');
                                       }
                                     },

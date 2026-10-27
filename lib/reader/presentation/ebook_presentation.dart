@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+
 import 'package:flutter/services.dart';
 
 import '../../core/images/image_enhancement.dart';
@@ -9,6 +10,14 @@ abstract final class EbookPresentation {
   static const channel = MethodChannel('inkora/ebook_presentation');
   static bool get supported =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
+  static Future<Uint8List> paperTile() async {
+    final bytes = await channel.invokeMethod<Uint8List>('paperTile');
+    if (bytes == null || bytes.isEmpty || bytes.length > 256 * 1024) {
+      throw const FormatException('Invalid paper tile');
+    }
+    return bytes;
+  }
 
   static Future<void> trimMemory() async {
     if (!supported) return;

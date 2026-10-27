@@ -5,10 +5,59 @@ import 'package:inkora/reader/presentation/reading_colors.dart';
 
 void main() {
   test(
+    'paper texture roundtrips independently across every color and scope',
+    () {
+      for (final background in ReadingBackground.values) {
+        for (final enabled in [true, false]) {
+          final saved = ReadingOverrides.fromJson({
+            'mode': 'ebook',
+            'background': background.name,
+            'ebook': {'paperTexture': enabled},
+          });
+          final settings = ReadingSettings.resolve([saved]);
+          expect(settings.paperTexture, enabled);
+          expect(
+            EbookSettings.fromJson(settings.ebook.toJson()),
+            settings.ebook,
+          );
+          expect(
+            ReadingSettings.resolve([
+              ReadingOverrides.fromJson(saved.toJson()),
+            ]),
+            settings,
+          );
+          for (final scope in SettingsScope.values) {
+            final layers = {
+              SettingsScope.global: saved,
+              scope: const ReadingOverrides(ebook: {'paperTexture': false}),
+            };
+            expect(ReadingSettings.resolveScopes(layers).paperTexture, false);
+          }
+        }
+        expect(
+          ReadingSettings.resolve([ReadingOverrides(background: background)])
+              .paperTexture,
+          background == ReadingBackground.paper ||
+              background == ReadingBackground.ivory,
+        );
+      }
+      expect(
+        () => EbookSettings.fromJson({'paperTexture': 'true'}),
+        throwsA(isA<TypeError>()),
+      );
+      expect(
+        const EbookSettings(paperTexture: true),
+        isNot(const EbookSettings(paperTexture: false)),
+      );
+    },
+  );
+
+  test(
     'retired background IDs remain serializable and map to the reduced palette',
     () {
       for (final (old, current) in [
-        (ReadingBackground.ivory, ReadingBackground.paper),
+        (ReadingBackground.ivory, ReadingBackground.white),
+        (ReadingBackground.paper, ReadingBackground.white),
         (ReadingBackground.sage, ReadingBackground.gray),
         (ReadingBackground.mist, ReadingBackground.gray),
       ]) {
@@ -16,7 +65,7 @@ void main() {
         expect(saved.toJson()['background'], old.name);
         expect(ReadingSettings.resolve([saved]).background.current, current);
       }
-      expect(EbookStyle.classics.background, ReadingBackground.paper);
+      expect(EbookStyle.classics.background, ReadingBackground.white);
       expect(EbookStyle.scienceFiction.background, ReadingBackground.gray);
       expect(EbookStyle.study.background, ReadingBackground.white);
     },

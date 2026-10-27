@@ -17,11 +17,13 @@ class EbookSettingsControls extends StatelessWidget {
     required this.settings,
     required this.onChanged,
     this.pdf = false,
+    this.backgroundPicker,
     this.section = EbookControlsSection.all,
   });
   final EbookSettings settings;
   final void Function(String key, Object value) onChanged;
   final bool pdf;
+  final Widget? backgroundPicker;
   final EbookControlsSection section;
   @override
   Widget build(BuildContext context) => Column(
@@ -93,10 +95,26 @@ class EbookSettingsControls extends StatelessWidget {
           (section == EbookControlsSection.all ||
               section == EbookControlsSection.typography)) ...[
         if (section == EbookControlsSection.all) const SizedBox(height: 20),
-        EbookFontPicker(
-          font: settings.fontChoice,
-          onSelected: (font) => onChanged('font', font.id),
-        ),
+        if (backgroundPicker case final background?)
+          Row(
+            key: const Key('ebook-color-font-row'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: background),
+              const SizedBox(width: 16),
+              Expanded(
+                child: EbookFontPicker(
+                  font: settings.fontChoice,
+                  onSelected: (font) => onChanged('font', font.id),
+                ),
+              ),
+            ],
+          )
+        else
+          EbookFontPicker(
+            font: settings.fontChoice,
+            onSelected: (font) => onChanged('font', font.id),
+          ),
         const SizedBox(height: 16),
         _slider(
           context,

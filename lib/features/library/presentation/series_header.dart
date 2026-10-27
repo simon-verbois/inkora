@@ -79,10 +79,10 @@ SeriesVolume? currentVolume(
   return index == null ? null : progress.volumes[index];
 }
 
-/// Blurred cover behind the compact header or wide hero. One instance per page,
-/// never inside list items: the artwork is decoded at the smallest cover
-/// bucket (64 px) and blurred inside a RepaintBoundary, so scrolling moves a
-/// cached layer and no BackdropFilter samples the screen. A gradient fades it
+/// Blurred cover behind the compact page or wide information pane. One instance
+/// stays outside the scrolling content: artwork is decoded at 32 px and blurred
+/// inside a RepaintBoundary, without sampling the screen with a BackdropFilter.
+/// A gradient fades it
 /// into the page background, which is also the floating header band's color.
 class SeriesBackdrop extends ConsumerWidget {
   const SeriesBackdrop({super.key, required this.item});

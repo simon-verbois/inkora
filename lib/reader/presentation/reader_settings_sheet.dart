@@ -1,6 +1,8 @@
 import 'reader_settings_scope_selector.dart';
 import '../../app/icons/inkora_icons.dart';
 import 'ebook_style_picker.dart';
+import 'ebook_colors_dialog.dart';
+import 'ebook_background_picker.dart';
 import 'ebook_settings_controls.dart';
 import 'ebook_presentation.dart';
 import 'reader_settings_layout.dart';
@@ -551,6 +553,10 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
           'lineHeight',
           'justify',
           'publisherStyles',
+          'paperTexture',
+          'customColors',
+          'backgroundColor',
+          'textColor',
         ],
         _PreferenceTab.layout => [
           'margins',
@@ -566,6 +572,10 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
           'margins',
           'justify',
           'publisherStyles',
+          'paperTexture',
+          'customColors',
+          'backgroundColor',
+          'textColor',
         ],
         _ => <String>[],
       };
@@ -636,10 +646,6 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
   Widget _backgroundControls({required bool ebook}) => ReaderBackgroundSwatches(
     choices: {
       ReadingBackground.white: 'White',
-      if (ebook &&
-          EbookPresentation.supported &&
-          widget.manifest?.documentType != 'application/pdf')
-        ReadingBackground.paper: 'Paper',
       ReadingBackground.sepia: 'Sepia',
       if (ebook) ...{
         ReadingBackground.gray: 'Gray',
@@ -647,9 +653,44 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
       },
       ReadingBackground.black: 'Black',
     },
-    selected: _effective.background.current,
-    onSelected: _loading ? null : (value) => _change('background', value.name),
+    selected: ebook && _effective.ebook.customColors
+        ? null
+        : _effective.background.current,
+    onCustom: ebook && _supportsTypography && !_loading ? _customColors : null,
+    customSelected: _effective.ebook.customColors,
+    onSelected: _loading
+        ? null
+        : (value) {
+            // Freeze the legacy Paper fallback before changing its base color.
+            _apply(
+              ReadingOverrides.fromJson({
+                ..._overrides.toJson(),
+                'background': value.name,
+                if (ebook)
+                  'ebook': {
+                    ...?_overrides.ebook,
+                    'paperTexture': _effective.paperTexture,
+                    'customColors': false,
+                  },
+              }),
+            );
+          },
   );
+
+  Future<void> _customColors() async {
+    final scope = _scope;
+    final result = await showDialog<({int background, int? text})>(
+      context: context,
+      builder: (_) => EbookColorsDialog(settings: _effective.ebook),
+    );
+    if (result == null || !mounted || _scope != scope) return;
+    _change('ebook', {
+      ...?_overrides.ebook,
+      'customColors': true,
+      'backgroundColor': result.background,
+      'textColor': result.text,
+    });
+  }
 
   Widget _ebookControls(EbookControlsSection section) => EbookSettingsControls(
     section: section,
@@ -670,9 +711,42 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
         }),
         const SizedBox(height: 20),
       ],
-      _backgroundControls(ebook: true),
-      const SizedBox(height: 20),
-      _ebookControls(EbookControlsSection.typography),
+      EbookSettingsControls(
+        section: EbookControlsSection.typography,
+        settings: _effective.ebook,
+        backgroundPicker: EbookBackgroundPicker(
+          settings: _effective,
+          onSelected: _loading
+              ? null
+              : (background) => _apply(
+                  ReadingOverrides.fromJson({
+                    ..._overrides.toJson(),
+                    'background': background.name,
+                    'ebook': {
+                      ...?_overrides.ebook,
+                      'customColors': false,
+                      'paperTexture': _effective.paperTexture,
+                    },
+                  }),
+                ),
+          onCustom: _loading ? null : _customColors,
+        ),
+        onChanged: (key, value) =>
+            _change('ebook', {...?_overrides.ebook, key: value}),
+      ),
+      if (EbookPresentation.supported)
+        SwitchListTile.adaptive(
+          key: const Key('ebook-paper-texture'),
+          contentPadding: EdgeInsets.zero,
+          title: const LText('Paper texture'),
+          value: _effective.paperTexture,
+          onChanged: _loading
+              ? null
+              : (value) => _change('ebook', {
+                  ...?_overrides.ebook,
+                  'paperTexture': value,
+                }),
+        ),
     ],
   );
 

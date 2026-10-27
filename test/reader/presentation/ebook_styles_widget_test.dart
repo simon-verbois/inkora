@@ -201,9 +201,10 @@ void main() {
           await openSheet(tester, store, manifest);
           // An existing explicit background must not be replaced on opening.
           expect(
-            find.byKey(const Key('reader-background-white')),
+            find.byKey(const Key('ebook-background-picker')),
             findsOneWidget,
           );
+          expect(find.text('White'), findsOneWidget);
           await tester.ensureVisible(find.text('Templates'));
           await tester.tap(find.text('Templates'));
           await tester.pumpAndSettle();

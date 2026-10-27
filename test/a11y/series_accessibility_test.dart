@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../features/library/series_detail_widget_test.dart'
-    show openSeries, showVolumes, row;
+    show openSeries, showVolumes, showVolumeList, row;
 import '../support/accessibility.dart';
 
 void main() {
@@ -22,6 +22,7 @@ void main() {
       await expectAccessibilityGuidelines(tester);
       if (size.width < 840) await showVolumes(tester);
       await expectAccessibilityGuidelines(tester);
+      await showVolumeList(tester);
       // Volume rows: one combined label, button role, menu as custom actions.
       await tester.ensureVisible(row('v3'));
       await tester.pumpAndSettle();

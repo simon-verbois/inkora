@@ -7,6 +7,7 @@ import '../../app/theme/appearance_palette.dart';
 import 'reader_chrome.dart';
 import 'reader_details.dart';
 import 'ebook_presentation.dart';
+import 'ebook_paper_background.dart';
 import 'ebook_selection.dart';
 import 'ebook_page_insets.dart';
 import 'ebook_fonts.dart';
@@ -359,7 +360,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   Future<void> _applyPreferences() async {
     final settings = widget.settings;
     final ebook = settings.ebook;
-    final background = settings.background.paperColor;
+    final background = settings.ebookPaperColor;
     if (_epub) {
       final prefs = EPUBPreferences(
         fontFamily: ebook.fontChoice.nativeFamily,
@@ -377,7 +378,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
         publisherStyles: ebook.publisherStyles,
         textAlign: ebook.justify ? TextAlign.justify : TextAlign.start,
         backgroundColor: background,
-        textColor: settings.background.inkColor,
+        textColor: settings.ebookInkColor,
       );
       if (_lastEPUBPreferences != prefs) {
         _engine.setDefaultPreferences(prefs);
@@ -395,8 +396,8 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
       widget.settings.ebook.columnSeparator && !widget.settings.ebook.scroll,
       _imageEnhancement,
       widget.settings.ebook.tapToTurnPages,
-      widget.settings.background.inkColor.toARGB32(),
-      widget.settings.background.current == ReadingBackground.paper,
+      widget.settings.ebookInkColor.toARGB32(),
+      widget.settings.paperTexture,
     );
     if (!force && _lastPresentation == value) return;
     try {
@@ -890,8 +891,9 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
                 (_surface == null
                     ? null
                     : _epub
-                    ? ColoredBox(
-                        color: widget.settings.background.paperColor,
+                    ? EbookPaperBackground(
+                        color: widget.settings.ebookPaperColor,
+                        enabled: widget.settings.paperTexture,
                         child: Padding(
                           key: const Key('ebook-page-margins'),
                           padding: ebookPublicationInsets(

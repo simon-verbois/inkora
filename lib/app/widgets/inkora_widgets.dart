@@ -223,8 +223,9 @@ class InkSettingsRow extends StatelessWidget {
 /// [title] row (plus a secondary [action]), a body that scrolls when
 /// [scrollable] is set and an optional fixed [footer] action bar. The height
 /// follows the content, or [heightFactor] of the screen when given (needed by
-/// bodies that use Expanded lists). Predictive back, the barrier and a
-/// downward drag dismiss it.
+/// bodies that use Expanded lists). Only the native handle accepts dismissal
+/// drags; body gestures and barrier taps stay inside the sheet. Back and explicit
+/// content actions retain their existing route ownership.
 Future<T?> showInkSheet<T>({
   required BuildContext context,
   required Widget child,
@@ -241,84 +242,86 @@ Future<T?> showInkSheet<T>({
   useSafeArea: true,
   backgroundColor: Colors.transparent,
   showDragHandle: false,
+  enableDrag: false,
+  isDismissible: false,
   constraints: const BoxConstraints(maxWidth: 784),
-  builder: (context) {
-    final maxHeight = MediaQuery.sizeOf(context).height * .85;
-    Widget body = scrollable ? SingleChildScrollView(child: child) : child;
-    if (title != null || footer != null) {
-      body = Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (title != null) InkSheetHeader(title: title, action: action),
-          Flexible(child: body),
-          if (footer != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                InkSpace.lg,
-                InkSpace.sm,
-                InkSpace.lg,
-                InkSpace.lg,
-              ),
-              child: footer,
-            ),
-        ],
-      );
-    }
-    // Keep the handle inside the inset surface, rather than above its frame.
-    final framedBody = Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const InkSheetHandle(),
-        Flexible(child: body),
-      ],
-    );
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        InkSpace.md,
-        InkSpace.sm,
-        InkSpace.md,
-        InkSpace.md + MediaQuery.viewInsetsOf(context).bottom,
-      ),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: maxHeight),
-        child: InkOverlaySurface(
-          child: heightFactor == null
-              ? framedBody
-              : SizedBox(
-                  height: (MediaQuery.sizeOf(context).height * heightFactor)
-                      .clamp(0, maxHeight),
-                  child: framedBody,
+  builder: (_) => Builder(
+    builder: (context) {
+      // Reuse the route's controller and drag callbacks, including its linear
+      // finger tracking and settling curve. The inner native sheet puts its
+      // handle INSIDE our inset surface, without enabling drags on the body.
+      final routeSheet = context.findAncestorWidgetOfExactType<BottomSheet>()!;
+      final maxHeight = MediaQuery.sizeOf(context).height * .85;
+      Widget body = scrollable ? SingleChildScrollView(child: child) : child;
+      if (title != null || footer != null) {
+        body = Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (title != null) InkSheetHeader(title: title, action: action),
+            Flexible(child: body),
+            if (footer != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  InkSpace.lg,
+                  InkSpace.sm,
+                  InkSpace.lg,
+                  InkSpace.lg,
                 ),
+                child: footer,
+              ),
+          ],
+        );
+      }
+      final framedBody = Listener(
+        onPointerCancel: (_) {
+          final controller = routeSheet.animationController;
+          if (controller != null &&
+              controller.value < 1 &&
+              controller.status != AnimationStatus.reverse &&
+              ModalRoute.of(context)?.isCurrent == true) {
+            routeSheet.onDragEnd?.call(DragEndDetails(), isClosing: false);
+            controller.forward();
+          }
+        },
+        child: BottomSheet(
+          animationController: routeSheet.animationController,
+          onClosing: routeSheet.onClosing,
+          onDragStart: routeSheet.onDragStart,
+          onDragEnd: routeSheet.onDragEnd,
+          enableDrag: false,
+          showDragHandle: true,
+          dragHandleSize: const Size(36, 4),
+          dragHandleColor: Theme.of(context).colorScheme.onSurfaceVariant
+              .withValues(alpha: .5),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          builder: (_) => body,
         ),
-      ),
-    );
-  },
-);
-
-/// Visual affordance for every draggable reader sheet; the route owns dragging.
-class InkSheetHandle extends StatelessWidget {
-  const InkSheetHandle({super.key});
-  @override
-  Widget build(BuildContext context) => ExcludeSemantics(
-    child: SizedBox(
-      key: const Key('ink-sheet-handle'),
-      height: 24,
-      width: double.infinity,
-      child: Center(
-        child: Container(
-          width: 36,
-          height: 4,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.onSurfaceVariant
-                .withValues(alpha: .5),
-            borderRadius: BorderRadius.circular(2),
+      );
+      return Padding(
+        padding: EdgeInsets.fromLTRB(
+          InkSpace.md,
+          InkSpace.sm,
+          InkSpace.md,
+          InkSpace.md + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxHeight),
+          child: InkOverlaySurface(
+            child: heightFactor == null
+                ? framedBody
+                : SizedBox(
+                    height: (MediaQuery.sizeOf(context).height * heightFactor)
+                        .clamp(0, maxHeight),
+                    child: framedBody,
+                  ),
           ),
         ),
-      ),
-    ),
-  );
-}
+      );
+    },
+  ),
+);
 
 /// Centered choices outside the reader. Keeps the same shared panel content,
 /// bounded height and root Navigator ownership as reader sheets.
@@ -491,8 +494,23 @@ Future<bool> confirmInk(
   return confirmed == true;
 }
 
-/// Shows a short localized notification ([message] is a source message) with
-/// an optional action, such as Retry. Does nothing without a messenger.
+/// Keeps floating notifications inside the current window, including resize.
+class InkNotificationTheme extends StatelessWidget {
+  const InkNotificationTheme({super.key, required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => SnackBarTheme(
+    data: SnackBarTheme.of(context).copyWith(
+      width: (MediaQuery.sizeOf(context).width - 32).clamp(0.0, 480.0),
+    ),
+    child: child,
+  );
+}
+
+/// Shows only the latest localized notification, without an accumulating queue.
+/// Action messages allow more reading time and remain available to screen readers.
+/// Does nothing without a messenger.
 void notifyInk(
   BuildContext context,
   String message, {
@@ -502,12 +520,39 @@ void notifyInk(
 }) {
   final messenger = ScaffoldMessenger.maybeOf(context);
   if (messenger == null) return;
+  final hasAction = actionLabel != null && onAction != null;
+  final accessible = MediaQuery.accessibleNavigationOf(context);
+  var actionTriggered = false;
+  messenger.clearSnackBars();
   messenger.showSnackBar(
     SnackBar(
-      content: LText(message, arguments: arguments),
-      action: actionLabel == null || onAction == null
-          ? null
-          : SnackBarAction(label: context.tr(actionLabel), onPressed: onAction),
+      duration: Duration(seconds: accessible ? 10 : (hasAction ? 6 : 2)),
+      persist: accessible && hasAction,
+      content: !hasAction
+          ? LText(message, arguments: arguments)
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                LText(message, arguments: arguments),
+                const SizedBox(height: 4),
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  // Let long translated actions wrap at large text sizes.
+                  child: TextButton(
+                    onPressed: () {
+                      if (actionTriggered) return;
+                      actionTriggered = true;
+                      messenger.hideCurrentSnackBar(
+                        reason: SnackBarClosedReason.action,
+                      );
+                      onAction();
+                    },
+                    child: LText(actionLabel),
+                  ),
+                ),
+              ],
+            ),
     ),
   );
 }

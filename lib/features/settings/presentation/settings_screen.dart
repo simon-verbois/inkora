@@ -2,6 +2,7 @@ import '../../../app/widgets/ink_screen_header.dart';
 import 'settings_transfer_panel.dart';
 import '../../../app/widgets/ink_slider.dart';
 import 'about_content.dart';
+import 'servers_screen.dart';
 import 'preference_labels.dart';
 import '../../../app/l10n/app_strings.dart';
 import 'language_settings.dart';
@@ -63,10 +64,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final wide = SettingsPaneScope.wideOf(context);
+    final section = widget.section ?? (wide ? 'servers' : null);
+    if (section == 'servers') return const ServersScreen();
     final data = ref.watch(uiPreferencesProvider);
     final preferences = data.asData?.value ?? const UiPreferences();
-    final wide = SettingsPaneScope.wideOf(context);
-    final section = widget.section ?? (wide ? 'appearance' : null);
     if (section == null) {
       final host = ref.watch(
         sessionProvider.select((state) => state.session?.endpoint.uri.host),

@@ -56,8 +56,11 @@ List<SeriesVolume> filterVolumes(
 /// Selection membership lives in [selection] so toggling one volume never
 /// rebuilds the page, only the visible rows and the selection bar.
 class VolumeBrowserController extends ChangeNotifier {
+  VolumeBrowserController({this._grid = false});
+
   VolumeFilter _filter = VolumeFilter.all;
-  bool _descending = false, _grid = false, _selecting = false;
+  bool _descending = false, _selecting = false;
+  bool _grid;
   final selection = ValueNotifier<Set<String>>(const {});
 
   VolumeFilter get filter => _filter;
@@ -806,13 +809,22 @@ class VolumeRow extends ConsumerWidget with _VolumeState {
           if (!selecting)
             IconButton(
               key: ValueKey('volume-mark-read-${volume.id}'),
-              tooltip: context.tr('Mark read'),
+              tooltip: context.tr(progress.read ? 'Mark unread' : 'Mark read'),
               isSelected: progress.read,
-              icon: const Icon(InkIcons.check),
-              onPressed: volume.available && !progress.read
-                  ? () =>
-                        _markVolumeRead(context, ref, seriesId, volume, actions)
-                  : null,
+              icon: Icon(
+                progress.read ? InkIcons.arrowCounterClockwise : InkIcons.check,
+              ),
+              onPressed: !volume.available
+                  ? null
+                  : progress.read
+                  ? () => actions.mark(volume, read: false)
+                  : () => _markVolumeRead(
+                      context,
+                      ref,
+                      seriesId,
+                      volume,
+                      actions,
+                    ),
             ),
           if (!selecting)
             DownloadBookAction(

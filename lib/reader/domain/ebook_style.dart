@@ -19,7 +19,14 @@ enum EbookStyle {
     1.55,
     1.1,
   ),
-  classics('Classics', ReadingBackground.paper, 'crimson', 1.5, 1.1),
+  classics(
+    'Classics',
+    ReadingBackground.white,
+    'crimson',
+    1.5,
+    1.1,
+    paperTexture: true,
+  ),
   study('Study', ReadingBackground.white, 'atkinson', 1.6, 1.1);
 
   const EbookStyle(
@@ -29,9 +36,10 @@ enum EbookStyle {
     this.lineHeight,
     this.margins, {
     this.publisherStyles = false,
+    this.paperTexture = false,
   });
   final String label, font;
-  final bool publisherStyles;
+  final bool publisherStyles, paperTexture;
   EbookFont get fontChoice =>
       EbookFont.values.firstWhere((value) => value.id == font);
   final ReadingBackground background;
@@ -47,11 +55,15 @@ enum EbookStyle {
       'margins': margins,
       'justify': false,
       'publisherStyles': publisherStyles,
+      'paperTexture': paperTexture,
+      'customColors': false,
     },
   });
 
   bool matches(ReadingSettings value) =>
+      !value.ebook.customColors &&
       value.background.current == background &&
+      value.paperTexture == paperTexture &&
       value.ebook.font == font &&
       value.ebook.lineHeight == lineHeight &&
       value.ebook.margins == margins &&

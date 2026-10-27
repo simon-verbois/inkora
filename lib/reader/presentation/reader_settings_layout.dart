@@ -3,6 +3,7 @@ export '../../app/widgets/ink_slider.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/l10n/app_strings.dart';
+import '../../app/icons/inkora_icons.dart';
 import '../../app/theme/inkora_theme.dart';
 import '../domain/reading_settings.dart';
 import 'reading_colors.dart';
@@ -114,9 +115,13 @@ class ReaderBackgroundSwatches extends StatelessWidget {
     required this.choices,
     required this.selected,
     required this.onSelected,
+    this.onCustom,
+    this.customSelected = false,
   });
+  final VoidCallback? onCustom;
+  final bool customSelected;
   final Map<ReadingBackground, String> choices;
-  final ReadingBackground selected;
+  final ReadingBackground? selected;
   final ValueChanged<ReadingBackground>? onSelected;
 
   @override
@@ -161,25 +166,8 @@ class ReaderBackgroundSwatches extends StatelessWidget {
                             width: 36,
                             height: 36,
                             decoration: BoxDecoration(
-                              color:
-                                  choice.key.current == ReadingBackground.paper
-                                  ? const Color(0xfff8f7f2)
-                                  : choice.key.paperColor,
+                              color: choice.key.paperColor,
                               shape: BoxShape.circle,
-                              image:
-                                  choice.key.current == ReadingBackground.paper
-                                  ? DecorationImage(
-                                      image: ResizeImage.resizeIfNeeded(
-                                        64,
-                                        64,
-                                        const AssetImage(
-                                          ebookPaperTextureAsset,
-                                        ),
-                                      ),
-                                      fit: BoxFit.cover,
-                                      opacity: .55,
-                                    )
-                                  : null,
                               border: Border.all(
                                 color: choice.key == selected
                                     ? scheme.primary
@@ -191,6 +179,67 @@ class ReaderBackgroundSwatches extends StatelessWidget {
                           const SizedBox(height: InkSpace.xs),
                           LText(
                             choice.value,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.labelSmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            if (onCustom != null)
+              Semantics(
+                button: true,
+                selected: customSelected,
+                label: context.tr('Custom colors'),
+                excludeSemantics: true,
+                child: InkWell(
+                  key: const Key('reader-background-custom'),
+                  borderRadius: InkRadius.medium,
+                  onTap: onCustom,
+                  child: SizedBox(
+                    width: 72,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: InkSpace.xs,
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: const SweepGradient(
+                                colors: [
+                                  Color(0xffe53935),
+                                  Color(0xffffc107),
+                                  Color(0xff43a047),
+                                  Color(0xff00acc1),
+                                  Color(0xff3949ab),
+                                  Color(0xff8e24aa),
+                                  Color(0xffe53935),
+                                ],
+                              ),
+                              border: Border.all(
+                                color: customSelected
+                                    ? scheme.primary
+                                    : scheme.outlineVariant,
+                                width: customSelected ? 3 : 1,
+                              ),
+                            ),
+                            child: customSelected
+                                ? const Icon(
+                                    InkIcons.check,
+                                    color: Colors.white,
+                                    size: 20,
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(height: InkSpace.xs),
+                          LText(
+                            'Custom',
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.labelSmall,
                           ),

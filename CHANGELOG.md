@@ -10,6 +10,22 @@ remain in progress.
 
 ## [Unreleased]
 
+## [2026.44.2] - 2026-10-27
+
+### Changed
+
+- Open tablet series pages with the cover grid by default, while keeping the list option.
+- Open tablet Settings on Servers and account, and center the About support button below Open-source licenses.
+- Place EPUB background and font list selectors side by side, with paper texture grouped among appearance switches.
+- Make EPUB paper texture independent of background color and add custom backgrounds with automatic or manual text color.
+
+### Fixed
+
+- Replace queued notifications with the latest message, shorten confirmations and show compact floating feedback with horizontal swipe and a close button.
+- Keep the series information backdrop continuous during scrolling and let completed book rows switch to Mark unread.
+- Restrict reader sheet dismissal drags to the top handle; content gestures and outside taps keep the sheet open.
+- Preserve visible paper fiber detail at higher resolution across the full EPUB background, including outer margins.
+
 ## [2026.44.1] - 2026-10-26
 
 - Simplify ebook backgrounds to White, subtle textured Paper, Sepia, Gray, Night and Black; preserve older saved colors through compatible aliases.

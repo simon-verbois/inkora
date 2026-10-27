@@ -750,7 +750,15 @@
   "Reading mode": "Mod de citire",
   "Page by page": "Pagină cu pagină",
   "Reset this tab": "Resetați această filă",
-  "Paper": "Hârtie",
   "Gray": "Gri",
-  "Night": "Noapte"
+  "Night": "Noapte",
+  "Paper texture": "Textura hârtiei",
+  "Custom colors": "Culori personalizate",
+  "Automatic text color": "Culoarea automată a textului",
+  "Text color": "Culoarea textului",
+  "Hex color": "Culoare hexazecimală",
+  "Enter six hexadecimal digits.": "Introduceți șase cifre hexazecimale.",
+  "Hue": "Nuanță",
+  "Saturation": "Saturație",
+  "Brightness": "Luminozitate"
 }

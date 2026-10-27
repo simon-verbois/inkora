@@ -750,7 +750,15 @@
   "Reading mode": "Lesemodus",
   "Page by page": "Seitenweise",
   "Reset this tab": "Diesen Tab zurücksetzen",
-  "Paper": "Papier",
   "Gray": "Grau",
-  "Night": "Nacht"
+  "Night": "Nacht",
+  "Paper texture": "Papierstruktur",
+  "Custom colors": "Benutzerdefinierte Farben",
+  "Automatic text color": "Automatische Textfarbe",
+  "Text color": "Textfarbe",
+  "Hex color": "Hex-Farbe",
+  "Enter six hexadecimal digits.": "Geben Sie sechs hexadezimale Ziffern ein.",
+  "Hue": "Farbton",
+  "Saturation": "Sättigung",
+  "Brightness": "Helligkeit"
 }

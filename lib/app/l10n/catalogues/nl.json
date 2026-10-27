@@ -750,7 +750,15 @@
   "Reading mode": "Leesmodus",
   "Page by page": "Per pagina",
   "Reset this tab": "Dit tabblad herstellen",
-  "Paper": "Papier",
   "Gray": "Grijs",
-  "Night": "Nacht"
+  "Night": "Nacht",
+  "Paper texture": "Papiertextuur",
+  "Custom colors": "Aangepaste kleuren",
+  "Automatic text color": "Automatische tekstkleur",
+  "Text color": "Tekstkleur",
+  "Hex color": "Hex-kleur",
+  "Enter six hexadecimal digits.": "Voer zes hexadecimale cijfers in.",
+  "Hue": "Tint",
+  "Saturation": "Verzadiging",
+  "Brightness": "Helderheid"
 }

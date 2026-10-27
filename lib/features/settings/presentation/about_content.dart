@@ -40,8 +40,6 @@ class AboutContent extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
-              const _SupportButton(),
             ],
           ),
         ),
@@ -71,6 +69,7 @@ class AboutContent extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         OutlinedButton(
+          key: const Key('about-licenses'),
           onPressed: information.asData == null
               ? null
               : () => showLicensePage(
@@ -80,6 +79,8 @@ class AboutContent extends ConsumerWidget {
                 ),
           child: const LText('Open-source licenses'),
         ),
+        const SizedBox(height: 16),
+        const Center(child: _SupportButton()),
       ],
     );
   }

@@ -750,7 +750,15 @@
   "Reading mode": "Tryb czytania",
   "Page by page": "Strona po stronie",
   "Reset this tab": "Przywróć ustawienia tej karty",
-  "Paper": "Papier",
   "Gray": "Szary",
-  "Night": "Noc"
+  "Night": "Noc",
+  "Paper texture": "Tekstura papieru",
+  "Custom colors": "Kolory niestandardowe",
+  "Automatic text color": "Automatyczny kolor tekstu",
+  "Text color": "Kolor tekstu",
+  "Hex color": "Kolor szesnastkowy",
+  "Enter six hexadecimal digits.": "Wprowadź sześć cyfr szesnastkowych.",
+  "Hue": "Odcień",
+  "Saturation": "Nasycenie",
+  "Brightness": "Jasność"
 }

@@ -122,7 +122,9 @@ void main() {
           await tester.tap(find.byKey(const Key('series-tab-volumes')));
           await tester.pumpAndSettle();
         }
-        final bookAlpha = find.byKey(const ValueKey('volume-book-a'));
+        final bookAlpha = find.byKey(
+          ValueKey(size.width >= 840 ? 'volume-tile-book-a' : 'volume-book-a'),
+        );
         await tester.scrollUntilVisible(
           bookAlpha,
           250,

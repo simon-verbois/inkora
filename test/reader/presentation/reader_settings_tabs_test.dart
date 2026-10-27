@@ -24,6 +24,19 @@ Future<void> settle(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> chooseBackground(WidgetTester tester, String color) async {
+  final option = find.byKey(Key('reader-background-$color'));
+  if (option.evaluate().isEmpty) {
+    final picker = find.byKey(const Key('ebook-background-picker'));
+    await tester.ensureVisible(picker);
+    await tester.tap(picker);
+    await tester.pumpAndSettle();
+  }
+  await tester.ensureVisible(option);
+  await tester.tap(option);
+  await tester.pumpAndSettle();
+}
+
 Future<void> openSheet(
   WidgetTester tester,
   ReaderStore store,
@@ -369,10 +382,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Appearance'));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(
-        find.byKey(const Key('reader-background-black')),
-      );
-      await tester.tap(find.byKey(const Key('reader-background-black')));
+      await chooseBackground(tester, 'black');
       await settle(tester);
       await tester.ensureVisible(find.text('Page layout'));
       await tester.tap(find.text('Page layout'));

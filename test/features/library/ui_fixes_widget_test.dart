@@ -9,7 +9,8 @@ import 'package:inkora/offline/data/progress_store.dart';
 import 'package:inkora/offline/presentation/download_book_action.dart';
 
 import '../../support/ui_harness.dart';
-import 'series_detail_widget_test.dart' show openSeries, showVolumes;
+import 'series_detail_widget_test.dart'
+    show openSeries, showVolumes, showVolumeList;
 
 Future<List<String>?> intentBooks(UiHarness harness, WidgetTester tester) =>
     tester.runAsync(
@@ -51,6 +52,7 @@ void main() {
       (tester) async {
         final harness = await openSeries(tester, size: size);
         if (size.width < 840) await showVolumes(tester);
+        await showVolumeList(tester);
         final row = find.byWidgetPredicate(
           (w) => w is VolumeRow && w.volume.id == 'v3',
         );

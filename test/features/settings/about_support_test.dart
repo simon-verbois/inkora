@@ -96,6 +96,11 @@ void main() {
         );
         expect(resized.width, 178);
         final rect = tester.getRect(button);
+        final licenses = tester.getRect(
+          find.byKey(const Key('about-licenses')),
+        );
+        expect(rect.top, greaterThan(licenses.bottom));
+        expect(rect.center.dx, closeTo(licenses.center.dx, 1));
         expect(rect.height, greaterThanOrEqualTo(48));
         expect(rect.right, lessThanOrEqualTo(320));
         expect(button.hitTestable(), findsOneWidget);
@@ -156,6 +161,9 @@ void main() {
         expect(tester.widget<TextButton>(button).onPressed, isNotNull);
         launcher.succeeds = true;
         launcher.throws = false;
+        ScaffoldMessenger.of(tester.element(button)).hideCurrentSnackBar();
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(button);
         await tester.tap(button);
         await tester.pumpAndSettle();
         expect(launcher.calls, hasLength(2));

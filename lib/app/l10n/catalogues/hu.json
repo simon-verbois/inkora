@@ -750,7 +750,15 @@
   "Reading mode": "Olvasási mód",
   "Page by page": "Oldalanként",
   "Reset this tab": "A lap beállításainak visszaállítása",
-  "Paper": "Papír",
   "Gray": "Szürke",
-  "Night": "Éjszaka"
+  "Night": "Éjszaka",
+  "Paper texture": "Papírtextúra",
+  "Custom colors": "Egyedi színek",
+  "Automatic text color": "Automatikus szövegszín",
+  "Text color": "Szöveg színe",
+  "Hex color": "Hexadecimális szín",
+  "Enter six hexadecimal digits.": "Adjon meg hat hexadecimális számjegyet.",
+  "Hue": "Színárnyalat",
+  "Saturation": "Telítettség",
+  "Brightness": "Fényerő"
 }

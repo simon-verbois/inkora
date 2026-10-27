@@ -44,7 +44,8 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
     with TickerProviderStateMixin, RouteVisibilityMixin {
   final _scroll = ScrollController();
   final _volumesScroll = ScrollController();
-  final _browser = VolumeBrowserController();
+  late final VolumeBrowserController _browser;
+  bool _browserInitialized = false;
   final _sliverKey = GlobalKey<VolumeSliverState>();
   final _tabsKey = GlobalKey();
   final _volumeToolbarKey = GlobalKey();
@@ -62,6 +63,14 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (!_browserInitialized) {
+      _browser = VolumeBrowserController(
+        grid:
+            MediaQuery.sizeOf(context).width >=
+            SeriesDetailScreen.paneBreakpoint,
+      )..addListener(_browserChanged);
+      _browserInitialized = true;
+    }
     final reduced = MediaQuery.disableAnimationsOf(context);
     if ((_tabs.animationDuration == Duration.zero) != reduced) {
       final previous = _tabs;
@@ -98,7 +107,6 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
   @override
   void initState() {
     super.initState();
-    _browser.addListener(_browserChanged);
     _observeVisibility();
   }
 
@@ -139,7 +147,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
     if (!mounted) return;
     // A notification from an earlier action would cover the selection bar.
     if (_browser.selecting && !_selecting) {
-      ScaffoldMessenger.maybeOf(context)?.hideCurrentSnackBar();
+      ScaffoldMessenger.maybeOf(context)?.clearSnackBars();
     }
     setState(() => _selecting = _browser.selecting);
   }
@@ -709,42 +717,53 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
       children: [
         SizedBox(
           width: left,
-          child: ScrollConfiguration(
-            behavior: ScrollConfiguration.of(context)
-                .copyWith(overscroll: false),
-            child: CustomScrollView(
-              key: const Key('series-about-pane'),
-              controller: _scroll,
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const CatalogueRefreshStatus(),
-                      if (focusedBook != null)
-                        _focusedHero(focusedBook, wide: true)
-                      else ...[
-                        SeriesHero(
-                          item: item,
-                          volumeCount: count,
-                          coverWidth: 120,
-                          topInset: InkFloatingHeader.contentInset(context),
-                        ),
-                        _readingBlock(item),
-                      ],
-                    ],
-                  ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Positioned.fill(child: SeriesBackdrop(item: focusedBook ?? item)),
+              ScrollConfiguration(
+                behavior: ScrollConfiguration.of(context)
+                    .copyWith(overscroll: false),
+                child: CustomScrollView(
+                  key: const Key('series-about-pane'),
+                  controller: _scroll,
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const CatalogueRefreshStatus(),
+                          if (focusedBook != null)
+                            _focusedHero(
+                              focusedBook,
+                              wide: true,
+                              showBackdrop: false,
+                            )
+                          else ...[
+                            SeriesHero(
+                              item: item,
+                              volumeCount: count,
+                              coverWidth: 120,
+                              topInset: InkFloatingHeader.contentInset(context),
+                              showBackdrop: false,
+                            ),
+                            _readingBlock(item),
+                          ],
+                        ],
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsets.all(InkSpace.lg),
+                      sliver: SliverToBoxAdapter(
+                        key: const Key('series-about'),
+                        child: SeriesAbout(item: focusedBook ?? item),
+                      ),
+                    ),
+                    SliverToBoxAdapter(child: SizedBox(height: bottom)),
+                  ],
                 ),
-                SliverPadding(
-                  padding: const EdgeInsets.all(InkSpace.lg),
-                  sliver: SliverToBoxAdapter(
-                    key: const Key('series-about'),
-                    child: SeriesAbout(item: focusedBook ?? item),
-                  ),
-                ),
-                SliverToBoxAdapter(child: SizedBox(height: bottom)),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
         const VerticalDivider(key: Key('series-pane-divider'), width: 1),
@@ -770,9 +789,14 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
     );
   }
 
-  Widget _focusedHero(CatalogueItem item, {required bool wide}) => Stack(
+  Widget _focusedHero(
+    CatalogueItem item, {
+    required bool wide,
+    bool showBackdrop = true,
+  }) => Stack(
     children: [
-      if (wide) Positioned.fill(child: SeriesBackdrop(item: item)),
+      if (wide && showBackdrop)
+        Positioned.fill(child: SeriesBackdrop(item: item)),
       Padding(
         padding: EdgeInsets.fromLTRB(
           InkSpace.lg,

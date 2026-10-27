@@ -39,7 +39,7 @@ enum ReadingBackground {
   gray;
 
   ReadingBackground get current => switch (this) {
-    ivory => paper,
+    ivory || paper => white,
     sage || mist => gray,
     _ => this,
   };
@@ -238,6 +238,10 @@ final class ReadingSettings {
                : ReadingLayout.single);
   final ReadingMode mode;
   final EbookSettings ebook;
+  bool get paperTexture =>
+      ebook.paperTexture ??
+      (background == ReadingBackground.paper ||
+          background == ReadingBackground.ivory);
   final ReadingDirection direction;
   final ReadingFit fit;
   final ReadingBackground background;

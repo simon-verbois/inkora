@@ -126,7 +126,7 @@ void main() {
   }
 
   testWidgets(
-    'default appearance selection keeps its color during predictive Back',
+    'default servers selection keeps its color during predictive Back',
     (tester) async {
       tester.view.physicalSize = const Size(1280, 800);
       tester.view.devicePixelRatio = 1;
@@ -142,7 +142,7 @@ void main() {
       await harness.mount(tester, captureKey: captureKey);
       await tester.tap(find.byKey(const Key('open-settings')));
       await tester.pumpAndSettle();
-      final tile = find.byKey(const Key('settings-category-appearance'));
+      final tile = find.byKey(const Key('settings-category-servers'));
       final bounds = tester.getRect(tile);
       final point = Offset(bounds.right - 12, bounds.center.dy);
       Future<Uint8List> sample() async {

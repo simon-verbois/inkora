@@ -311,6 +311,15 @@ abstract final class InkoraTheme {
         shape: const RoundedRectangleBorder(borderRadius: InkRadius.medium),
       ),
       snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        dismissDirection: DismissDirection.horizontal,
+        showCloseIcon: true,
+        closeIconColor: text,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: InkRadius.medium,
+          side: BorderSide(color: border),
+        ),
         backgroundColor: raised,
         contentTextStyle: TextStyle(color: text),
         actionTextColor: amber,

@@ -27,7 +27,20 @@ final class EbookSettings {
     this.justify = false,
     this.columnSeparator = false,
     this.tapToTurnPages = false,
+    this.paperTexture,
+    this.customColors = false,
+    this.backgroundColor = 0xf4ecd8,
+    this.textColor,
   });
+
+  /// Null retains the textured legacy Paper background until explicitly set.
+  final bool? paperTexture;
+
+  /// Opaque RGB values; null text uses automatic contrast. Values are retained
+  /// while a standard background is selected so Custom can be reopened.
+  final bool customColors;
+  final int backgroundColor;
+  final int? textColor;
   final EbookPageInsets? pageInsets;
   final String font, columns;
 
@@ -48,6 +61,10 @@ final class EbookSettings {
     'justify': justify,
     'columnSeparator': columnSeparator,
     'tapToTurnPages': tapToTurnPages,
+    if (paperTexture != null) 'paperTexture': paperTexture,
+    'customColors': customColors,
+    'backgroundColor': backgroundColor,
+    'textColor': textColor,
   };
   factory EbookSettings.fromJson(Map<String, dynamic> json) {
     double value(String key, double fallback, double min, double max) {
@@ -57,6 +74,15 @@ final class EbookSettings {
         throw const FormatException('Invalid ebook typography');
       }
       return raw.toDouble();
+    }
+
+    int? color(String key) {
+      final raw = json[key];
+      if (raw == null) return null;
+      if (raw is! int || raw < 0 || raw > 0xffffff) {
+        throw const FormatException('Invalid ebook color');
+      }
+      return raw;
     }
 
     final font = json['font'] as String? ?? 'publisher';
@@ -82,11 +108,19 @@ final class EbookSettings {
       justify: json['justify'] as bool? ?? false,
       columnSeparator: json['columnSeparator'] as bool? ?? false,
       tapToTurnPages: json['tapToTurnPages'] as bool? ?? false,
+      paperTexture: json['paperTexture'] as bool?,
+      customColors: json['customColors'] as bool? ?? false,
+      backgroundColor: color('backgroundColor') ?? 0xf4ecd8,
+      textColor: color('textColor'),
     );
   }
   @override
   bool operator ==(Object other) =>
       other is EbookSettings &&
+      customColors == other.customColors &&
+      backgroundColor == other.backgroundColor &&
+      textColor == other.textColor &&
+      paperTexture == other.paperTexture &&
       font == other.font &&
       columns == other.columns &&
       fontSize == other.fontSize &&
@@ -100,6 +134,10 @@ final class EbookSettings {
       tapToTurnPages == other.tapToTurnPages;
   @override
   int get hashCode => Object.hash(
+    customColors,
+    backgroundColor,
+    textColor,
+    paperTexture,
     font,
     columns,
     fontSize,

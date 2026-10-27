@@ -4,6 +4,7 @@ import 'package:inkora/app/l10n/app_strings.dart';
 import 'package:inkora/app/router.dart';
 import 'package:inkora/app/widgets/ink_screen_header.dart';
 import 'package:inkora/features/library/domain/catalogue.dart';
+import 'package:inkora/features/library/data/cover_repository.dart';
 import 'package:inkora/features/library/application/catalogue_providers.dart';
 import 'package:inkora/features/library/domain/catalogue_filters.dart';
 import 'package:inkora/features/library/domain/catalogue_metadata.dart';
@@ -106,6 +107,9 @@ Future<UiHarness> openSeries(
   bool ebooks = false,
   int summaryRepeats = 14,
   List<ResumeEntry> resumeEntries = const [],
+  CoverRepository? covers,
+  Key? captureKey,
+  AppAppearance appearance = AppAppearance.system,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -113,9 +117,10 @@ Future<UiHarness> openSeries(
   addTearDown(tester.view.resetDevicePixelRatio);
   final harness = await UiHarness.create(
     tester,
-    preferences: UiPreferences(locale: locale),
+    preferences: UiPreferences(locale: locale, appearance: appearance),
     resumeEntries: resumeEntries,
     refreshCatalogue: false,
+    covers: covers,
   );
   addTearDown(() => harness.close(tester));
   await seedSeries(
@@ -128,10 +133,18 @@ Future<UiHarness> openSeries(
     ebooks: ebooks,
     summaryRepeats: summaryRepeats,
   );
-  await harness.mount(tester, textScale: textScale);
+  await harness.mount(tester, textScale: textScale, captureKey: captureKey);
   harness.container.read(routerProvider).push('/catalogue/series/series-a');
   await tester.pumpAndSettle();
   return harness;
+}
+
+Future<void> showVolumeList(WidgetTester tester) async {
+  final toolbar = tester.widget<VolumeToolbar>(find.byType(VolumeToolbar));
+  if (toolbar.controller.grid) {
+    await tester.tap(find.byKey(const Key('volume-view')));
+    await tester.pumpAndSettle();
+  }
 }
 
 Finder mainScroll() => find
@@ -194,6 +207,68 @@ void main() {
   ) async => (await tester.runAsync(
     () => ProgressStore(harness.database, savedSession.accountId).pending(),
   ))!.map((e) => (e.bookId, e.operation.name, e.revision)).toList();
+
+  for (final size in [const Size(390, 844), const Size(1280, 800)]) {
+    testWidgets(
+      'row mark action follows effective read/unread progress at $size',
+      (tester) async {
+        final harness = await openSeries(tester, size: size);
+        if (size.width < 840) await showVolumes(tester);
+        await showVolumeList(tester);
+        final mark = find.byKey(const Key('volume-mark-read-v1'));
+        await tester.ensureVisible(mark);
+        await tester.pumpAndSettle();
+        expect(tester.widget<IconButton>(mark).tooltip, 'Mark unread');
+        expect(tester.widget<IconButton>(mark).onPressed, isNotNull);
+        await tester.tap(mark);
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 30)),
+        );
+        await tester.pumpAndSettle();
+        expect((await intents(harness, tester)).first.$1, 'v1');
+        expect((await intents(harness, tester)).first.$2, 'markUnread');
+        expect(tester.widget<IconButton>(mark).tooltip, 'Mark read');
+        expect(
+          harness.container
+              .read(seriesProgressProvider('series-a'))
+              .requireValue
+              .of('v1')
+              .read,
+          false,
+        );
+        await tester.tap(mark);
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 30)),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.widget<IconButton>(mark).tooltip, 'Mark unread');
+        expect(
+          harness.container
+              .read(seriesProgressProvider('series-a'))
+              .requireValue
+              .of('v1')
+              .read,
+          true,
+        );
+        final current = find.byKey(const Key('volume-mark-read-v3'));
+        await tester.ensureVisible(current);
+        await tester.tap(current);
+        await tester.pumpAndSettle();
+        expect(find.text('Mark as read?'), findsOneWidget);
+        await tester.tap(find.byKey(const Key('ink-confirm-cancel')));
+        await tester.pumpAndSettle();
+        expect(
+          harness.container
+              .read(seriesProgressProvider('series-a'))
+              .requireValue
+              .of('v3')
+              .reading,
+          true,
+        );
+        await harness.close(tester);
+      },
+    );
+  }
 
   testWidgets(
     'phone: About is the first and default tab, visible without scrolling below the header',
@@ -398,7 +473,7 @@ void main() {
   });
 
   testWidgets(
-    'volumes default to a list with status rows; the grid is optional',
+    'compact volumes default to a list with status rows; the grid is optional',
     (tester) async {
       final harness = await openSeries(tester);
       await showVolumes(tester);
@@ -714,7 +789,7 @@ void main() {
   for (final readWithButton in [false, true]) {
     for (final size in [const Size(1280, 800), const Size(1000, 1400)]) {
       testWidgets(
-        'ebook first tap focuses metadata, next action reads at $size (button $readWithButton)',
+        'ebook list first tap focuses metadata, next action reads at $size (button $readWithButton)',
         (tester) async {
           final harness = await openSeries(
             tester,
@@ -723,6 +798,7 @@ void main() {
             read: 0,
             current: null,
           );
+          await showVolumeList(tester);
           final router = harness.container.read(routerProvider);
           final pane = find.byKey(const Key('series-volumes-pane'));
           final scroll = tester
@@ -807,8 +883,7 @@ void main() {
         read: 0,
         current: null,
       );
-      await tester.tap(find.byKey(const Key('volume-view')));
-      await tester.pumpAndSettle();
+      expect(find.byType(VolumeTile), findsWidgets);
       for (final id in ['v2', 'v4']) {
         final tile = find.byKey(ValueKey('volume-tile-$id'));
         await tester.ensureVisible(tile);
@@ -974,13 +1049,14 @@ void main() {
         final top = tester.getTopLeft(synopsis).dy;
         expect(top, greaterThanOrEqualTo(tester.getTopLeft(pane).dy));
         expect(toggle.hitTestable(), findsOneWidget);
-        final volumes = tester.getTopLeft(row('v1'));
+        final firstVolume = find.byKey(const ValueKey('volume-tile-v1'));
+        final volumes = tester.getTopLeft(firstVolume);
         await tester.tap(toggle);
         await tester.pumpAndSettle();
         expect(find.text('Read more'), findsOneWidget);
         expect(position.pixels, before);
         expect(tester.getTopLeft(synopsis).dy, top);
-        expect(tester.getTopLeft(row('v1')), volumes);
+        expect(tester.getTopLeft(firstVolume), volumes);
         expect(tester.takeException(), isNull);
         await harness.close(tester);
       },
@@ -1011,13 +1087,19 @@ void main() {
       expect(find.text('Volumes (30)'), findsNothing);
       // About content and volumes are visible together.
       expect(find.byType(SeriesAbout), findsOneWidget);
-      expect(row('v1'), findsOneWidget);
-      // A single column in the volume pane.
+      final first = find.byKey(const ValueKey('volume-tile-v1'));
+      final second = find.byKey(const ValueKey('volume-tile-v2'));
+      expect(find.byType(VolumeRow), findsNothing);
+      // The wide pane starts with covers side by side.
+      expect(tester.getTopLeft(first).dy, tester.getTopLeft(second).dy);
       expect(
-        tester.getTopLeft(row('v1')).dy,
-        lessThan(tester.getTopLeft(row('v2')).dy),
+        tester.getTopLeft(first).dx,
+        lessThan(tester.getTopLeft(second).dx),
       );
-      expect(tester.getTopLeft(row('v1')).dx, tester.getTopLeft(row('v2')).dx);
+      expect(
+        tester.widget<IconButton>(find.byKey(const Key('volume-view'))).tooltip,
+        'Show list',
+      );
       // Hero content clears Back; the volume toolbar starts at the pane top.
       final band = tester
           .getBottomLeft(find.byKey(const Key('floating-header-back')))
@@ -1096,7 +1178,9 @@ void main() {
         );
         await tester.tap(find.byKey(const Key('volume-jump')));
         await tester.pumpAndSettle();
-        final target = tester.getRect(row('v41'));
+        final target = tester.getRect(
+          find.byKey(const ValueKey('volume-tile-v41')),
+        );
         final viewport = tester.getRect(pane);
         final toolbarBottom = tester
             .getBottomLeft(find.byType(VolumeToolbar))
@@ -1109,6 +1193,31 @@ void main() {
       },
     );
   }
+
+  testWidgets('wide series keeps the chosen view across resize', (
+    tester,
+  ) async {
+    final harness = await openSeries(tester, size: const Size(1280, 800));
+    expect(find.byType(VolumeTile), findsWidgets);
+    expect(find.byType(VolumeRow), findsNothing);
+    await showVolumeList(tester);
+    expect(find.byType(VolumeRow), findsWidgets);
+    for (final size in [const Size(800, 1280), const Size(1280, 800)]) {
+      tester.view.physicalSize = size;
+      await tester.pumpAndSettle();
+      if (size.width < 840) await showVolumes(tester);
+      expect(find.byType(VolumeRow), findsWidgets);
+      expect(find.byType(VolumeTile), findsNothing);
+    }
+    await tester.tap(find.byKey(const Key('volume-view')));
+    await tester.pumpAndSettle();
+    expect(find.byType(VolumeTile), findsWidgets);
+    tester.view.physicalSize = const Size(800, 1280);
+    await tester.pumpAndSettle();
+    expect(find.byType(VolumeTile), findsWidgets);
+    expect(tester.takeException(), isNull);
+    await harness.close(tester);
+  });
 
   testWidgets(
     'portrait tablet keeps tabs and shows a single-column volume list',

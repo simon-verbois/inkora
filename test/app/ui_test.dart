@@ -1,4 +1,5 @@
 import '../support/home_navigation.dart';
+import 'home_navigation_widget_test.dart' show backEvent;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -149,6 +150,7 @@ void main() {
     await tester.pumpAndSettle();
     // The shared sheet must cover the detail Back action.
     final context = tester.element(find.byType(CatalogueDetailScreen));
+    expect(Navigator.of(context).canPop(), isTrue);
     showInkSheet<void>(
       context: context,
       child: const SizedBox(height: 200, child: Text('Modal publication')),
@@ -163,7 +165,27 @@ void main() {
       router.routeInformationProvider.value.uri.path,
       '/catalogue/series/series-a',
     );
+    expect(find.text('Modal publication'), findsOneWidget);
+    // The covered series navigator is poppable. Back must target only the root
+    // sheet, including cancellation, rather than popping that inactive stack.
+    final accepted = await backEvent(tester, 'startBackGesture');
+    await backEvent(tester, 'updateBackGestureProgress');
+    await backEvent(tester, 'cancelBackGesture');
+    await tester.pumpAndSettle();
+    expect(find.text('Modal publication'), findsOneWidget);
+    if (accepted == true) {
+      expect(await backEvent(tester, 'startBackGesture'), isTrue);
+      await backEvent(tester, 'updateBackGestureProgress');
+      await backEvent(tester, 'commitBackGesture');
+    } else {
+      await tester.binding.handlePopRoute();
+    }
+    await tester.pumpAndSettle();
     expect(find.text('Modal publication'), findsNothing);
+    expect(
+      router.routeInformationProvider.value.uri.path,
+      '/catalogue/series/series-a',
+    );
     expect(tester.takeException(), isNull);
     await harness.close(tester);
   });

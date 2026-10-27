@@ -750,7 +750,15 @@
   "Reading mode": "Režim čtení",
   "Page by page": "Stránku po stránce",
   "Reset this tab": "Obnovit tuto kartu",
-  "Paper": "Papír",
   "Gray": "Šedá",
-  "Night": "Noc"
+  "Night": "Noc",
+  "Paper texture": "Textura papíru",
+  "Custom colors": "Vlastní barvy",
+  "Automatic text color": "Automatická barva textu",
+  "Text color": "Barva textu",
+  "Hex color": "Hexadecimální barva",
+  "Enter six hexadecimal digits.": "Zadejte šest hexadecimálních číslic.",
+  "Hue": "Odstín",
+  "Saturation": "Nasycení",
+  "Brightness": "Jas"
 }

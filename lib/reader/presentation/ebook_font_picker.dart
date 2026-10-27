@@ -37,8 +37,8 @@ class EbookFontPicker extends StatelessWidget {
           position: PopupMenuPosition.under,
           useRootNavigator: true,
           constraints: BoxConstraints(
-            minWidth: math.min(bounds.maxWidth, 340),
-            maxWidth: math.min(bounds.maxWidth, 340),
+            minWidth: math.min(240, MediaQuery.sizeOf(context).width - 32),
+            maxWidth: math.min(340, MediaQuery.sizeOf(context).width - 32),
             maxHeight: math.min(320, MediaQuery.sizeOf(context).height * .45),
           ),
           onSelected: (value) {

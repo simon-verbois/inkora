@@ -1,8 +1,12 @@
+import '../test/app/ink_helpers_widget_test.dart'
+    show registerReaderSheetGestureTests;
+
 import '../test/reader/presentation/reader_settings_order_test.dart'
     show registerSettingsDensityTest;
 
 import 'package:inkora/reader/presentation/ebook_font_picker.dart';
 import 'package:inkora/reader/presentation/ebook_presentation.dart';
+import 'package:inkora/reader/presentation/ebook_paper_background.dart';
 import 'package:inkora/reader/presentation/reader_system_ui.dart';
 import 'package:inkora/reader/presentation/ebook_pdf_surface.dart';
 import 'package:inkora/app/theme/inkora_theme.dart';
@@ -15,6 +19,7 @@ import 'support/ui_fixture_binding.dart';
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/services.dart';
 
@@ -69,6 +74,7 @@ void main() {
     binding.shouldPropagateDevicePointerEvents = true;
   }
   registerSettingsDensityTest();
+  registerReaderSheetGestureTests();
   for (final epub in [true, false]) {
     testWidgets(
       'local ${epub ? "EPUB" : "PDF"} opens, navigates, searches and persists position',
@@ -161,6 +167,9 @@ void main() {
           EbookPageInsets? pageInsets,
           String font = 'publisher',
           bool separator = false,
+          bool? paperTexture,
+          int? customBackground,
+          int? customText,
           bool publisherStyles = true,
           ReadingBackground background = ReadingBackground.sepia,
           bool scroll = false,
@@ -192,6 +201,10 @@ void main() {
                     background: background,
                     ebook: EbookSettings(
                       margins: margins,
+                      paperTexture: paperTexture,
+                      customColors: customBackground != null,
+                      backgroundColor: customBackground ?? 0xf4ecd8,
+                      textColor: customText,
                       publisherStyles: publisherStyles,
                       pageInsets: pageInsets,
                       font: font,
@@ -616,19 +629,22 @@ void main() {
             expect(tone['dividerColor'], background.inkColor.toARGB32());
             expect(
               tone['paperTexture'],
-              background.current == ReadingBackground.paper,
+              (background == ReadingBackground.paper ||
+                  background == ReadingBackground.ivory),
             );
             expect(
               tone['paperImage'],
-              background.current == ReadingBackground.paper,
+              (background == ReadingBackground.paper ||
+                  background == ReadingBackground.ivory),
             );
-            if (background.current == ReadingBackground.paper) {
-              expect(tone['paperTileWidth'], inInclusiveRange(1, 256));
-              expect(tone['paperTileHeight'], inInclusiveRange(1, 256));
+            if ((background == ReadingBackground.paper ||
+                background == ReadingBackground.ivory)) {
+              expect(tone['paperTileWidth'], inInclusiveRange(1, 512));
+              expect(tone['paperTileHeight'], inInclusiveRange(1, 512));
               expect(tone['paperDecodeCount'], 1);
               expect(
                 tone['paperEncodedLength'],
-                inInclusiveRange(1, 128 * 1024),
+                inInclusiveRange(1, 384 * 1024),
               );
             }
             if (const bool.fromEnvironment('READING_PAPER_CAPTURE') &&
@@ -639,6 +655,122 @@ void main() {
                 ].contains(background)) {
               debugPrint('READING_PAPER_CAPTURE: ${background.name}');
               await tester.pump(const Duration(seconds: 3));
+            }
+          }
+          for (final background in ReadingBackground.values) {
+            for (final enabled in [true, false, true]) {
+              await open(
+                ReaderLocator(0),
+                background: background,
+                paperTexture: enabled,
+              );
+              await tester.pump(const Duration(milliseconds: 300));
+              final tone = await epubLayout();
+              expect(tone['paperTexture'], enabled);
+              expect(tone['paperImage'], enabled);
+              expect(tone['paperDecodeCount'], 1);
+              expect(
+                tester.state(find.byType(ReadiumReaderWidget)),
+                same(surfaceState),
+              );
+            }
+          }
+          String cssColor(int rgb) =>
+              'rgb(${rgb >> 16 & 255}, ${rgb >> 8 & 255}, ${rgb & 255})';
+          for (final rgb in [0x102030, 0xf0e0d0, 0x777777, 0x00a060]) {
+            for (final manual in [null, 0x804020]) {
+              for (final textured in [true, false]) {
+                await open(
+                  ReaderLocator(0),
+                  customBackground: rgb,
+                  customText: manual,
+                  paperTexture: textured,
+                  publisherStyles: false,
+                );
+                await tester.pump(const Duration(milliseconds: 350));
+                final tone = await epubLayout();
+                final ink =
+                    manual ??
+                    (automaticEbookInk(Color(0xff000000 | rgb)).toARGB32() &
+                        0xffffff);
+                expect(tone['backgroundColor'], cssColor(rgb));
+                expect(tone['textColor'], cssColor(ink));
+                expect(tone['paperTexture'], textured);
+                expect(tone['paperDecodeCount'], 1);
+                expect(
+                  tester.state(find.byType(ReadiumReaderWidget)),
+                  same(surfaceState),
+                );
+                if (const bool.fromEnvironment('CUSTOM_COLORS_CAPTURE') &&
+                    manual == null &&
+                    textured) {
+                  debugPrint('CUSTOM_COLORS_CAPTURE: ${rgb.toRadixString(16)}');
+                  await tester.pump(const Duration(seconds: 4));
+                }
+              }
+            }
+          }
+          final tileBytes = await EbookPresentation.paperTile();
+          final codec = await ui.instantiateImageCodec(tileBytes);
+          final frame = await codec.getNextFrame();
+          final pixels = (await frame.image.toByteData(
+            format: ui.ImageByteFormat.rawRgba,
+          ))!;
+          var maximumAlpha = 0;
+          for (var offset = 3; offset < pixels.lengthInBytes; offset += 4) {
+            final alpha = pixels.getUint8(offset);
+            if (alpha > maximumAlpha) maximumAlpha = alpha;
+          }
+          expect(maximumAlpha, inInclusiveRange(1, 16));
+          expect(frame.image.width, 512);
+          expect(frame.image.height, 512);
+          debugPrint(
+            'PAPER_DETAIL_METRICS: width=${frame.image.width} height=${frame.image.height} bytes=${tileBytes.length} alpha=$maximumAlpha',
+          );
+          frame.image.dispose();
+          codec.dispose();
+          for (final background in [0xf0e0d0, 0x102030]) {
+            await open(
+              ReaderLocator(0),
+              customBackground: background,
+              paperTexture: true,
+              publisherStyles: false,
+              pageInsets: const EbookPageInsets(
+                left: 80,
+                top: 64,
+                right: 96,
+                bottom: 80,
+              ),
+            );
+            await tester.pump(const Duration(milliseconds: 500));
+            final backgroundWidget = find.byKey(
+              const Key('ebook-full-background'),
+            );
+            expect(
+              tester.getRect(backgroundWidget),
+              Rect.fromLTWH(
+                0,
+                0,
+                MediaQuery.sizeOf(tester.element(backgroundWidget)).width,
+                MediaQuery.sizeOf(tester.element(backgroundWidget)).height,
+              ),
+            );
+            expect(find.byType(EbookPaperBackground), findsOneWidget);
+            final tone = await epubLayout();
+            expect(tone['paperDecodeCount'], 1);
+            final tileWidth = tone['paperTileWidth'] as num;
+            final cssWidth = double.parse(
+              (tone['paperBackgroundSize'] as String).split('px').first,
+            );
+            expect(
+              cssWidth * (tone['devicePixelRatio'] as num),
+              closeTo(tileWidth, .01),
+            );
+            if (const bool.fromEnvironment('PAPER_REFINEMENT_CAPTURE')) {
+              debugPrint(
+                'PAPER_REFINEMENT_CAPTURE: ${background.toRadixString(16)}',
+              );
+              await tester.pump(const Duration(seconds: 4));
             }
           }
           await open(

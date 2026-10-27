@@ -103,6 +103,16 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
         MethodChannel(messenger, "inkora/ebook_presentation").setMethodCallHandler { call, result ->
             val args = call.arguments as? Map<*, *>
             when (call.method) {
+                "paperTile" -> activity.lifecycleScope.launch {
+                    try { result.success(EbookPaperTexture.bytes(activity)) }
+                    catch (error: CancellationException) { throw error }
+                    catch (error: Exception) {
+                        if (activity.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) {
+                            android.util.Log.w("InkoraPaper", "Paper texture preparation failed", error)
+                        }
+                        result.error("paper_texture", "Unable to prepare paper texture.", null)
+                    }
+                }
                 "trimMemory" -> { EbookPaperTexture.trimMemory(); result.success(null) }
                 "configure" -> {
                     val animationValue = args?.get("animations") as? Boolean
@@ -161,7 +171,7 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
                                       if (rect.width > 0 && rect.left < middle - 1 && rect.right > middle + 1) crossingLines++;
                                     }
                                   }
-                                  return JSON.stringify({paperTexture:!!document.getElementById('inkora-paper-style'),paperImage:getComputedStyle(root).backgroundImage.includes('data:image/png'),devicePixelRatio,visualScale:visualViewport?.scale ?? 1,rootTransform:style.transform,bodyTransform:body.transform,textRendering:body.textRendering,rootZoom:style.zoom,firstText,fontsLoaded:document.fonts.status === 'loaded',fontFamily:body.fontFamily,fontSize:parseFloat(body.fontSize),loadedFontFamilies:Array.from(document.fonts).filter(face => face.status === 'loaded').slice(0,32).map(face => face.family),lateLayoutStyle:!!document.getElementById('inkora-spread-style'),columns:style.columnCount,rule:style.columnRuleStyle,width:style.columnRuleWidth,paddingLeft:body.paddingLeft,paddingRight:body.paddingRight,crossingLines,viewportWidth:innerWidth,viewportHeight:innerHeight,enhancedImages:document.querySelectorAll('.inkora-enhanced-image').length});
+                                  return JSON.stringify({backgroundColor:style.backgroundColor,textColor:body.color,paperBackgroundSize:style.backgroundSize,paperTexture:!!document.getElementById('inkora-paper-style'),paperImage:getComputedStyle(root).backgroundImage.includes('data:image/png'),devicePixelRatio,visualScale:visualViewport?.scale ?? 1,rootTransform:style.transform,bodyTransform:body.transform,textRendering:body.textRendering,rootZoom:style.zoom,firstText,fontsLoaded:document.fonts.status === 'loaded',fontFamily:body.fontFamily,fontSize:parseFloat(body.fontSize),loadedFontFamilies:Array.from(document.fonts).filter(face => face.status === 'loaded').slice(0,32).map(face => face.family),lateLayoutStyle:!!document.getElementById('inkora-spread-style'),columns:style.columnCount,rule:style.columnRuleStyle,width:style.columnRuleWidth,paddingLeft:body.paddingLeft,paddingRight:body.paddingRight,crossingLines,viewportWidth:innerWidth,viewportHeight:innerHeight,enhancedImages:document.querySelectorAll('.inkora-enhanced-image').length});
                                 })()"""
                             )
                             val decoded = JSONTokener(raw ?: "null").nextValue()
@@ -200,12 +210,13 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
             val selectedPaper = paperTexture
             val paper = if (selectedPaper) EbookPaperTexture.url(activity) else null
             if (!navigator.isAdded || selectedPaper != paperTexture) return
-            val paperCSS = if (paper == null) "" else "html{background-image:url(\"$paper\")!important;background-repeat:repeat!important;background-size:256px 256px!important}body{background-color:transparent!important}"
+            val paperCSS = if (paper == null) "" else "html{background-image:url(\"$paper\")!important;background-repeat:repeat!important;background-size:calc(${EbookPaperTexture.tileWidth}px / var(--inkora-paper-dpr, 1)) calc(${EbookPaperTexture.tileHeight}px / var(--inkora-paper-dpr, 1))!important}body{background-color:transparent!important}"
             val amount = doubleArrayOf(0.0, 0.2, 0.45, 0.7)[imageEnhancement]
             val kernel = "0 ${-amount} 0 ${-amount} ${1 + 4 * amount} ${-amount} 0 ${-amount} 0"
             navigator.evaluateJavascript(
                 """(() => {
                   const root = document.documentElement;
+                  root.style.setProperty('--inkora-paper-dpr', String(devicePixelRatio));
                   document.getElementById('inkora-paper-style')?.remove();
                   if (${paper != null}) {
                     const paper = document.createElement('style');

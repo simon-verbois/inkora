@@ -8,6 +8,7 @@ import 'package:inkora/features/connection/application/session_controller.dart';
 import 'package:inkora/features/settings/data/ui_preferences_store.dart';
 import 'package:inkora/features/settings/domain/ui_preferences.dart';
 import 'package:inkora/features/settings/presentation/appearance_picker.dart';
+import 'package:inkora/features/settings/presentation/servers_screen.dart';
 import 'package:inkora/reader/data/reader_store.dart';
 import 'package:inkora/reader/domain/reading_settings.dart';
 import 'package:inkora/reader/presentation/reader_settings_sheet.dart';
@@ -41,7 +42,8 @@ void main() {
       router.go('/settings');
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('settings-sidebar')), findsOneWidget);
-      expect(find.byType(AppearancePicker), findsOneWidget);
+      expect(find.byType(ServersScreen), findsOneWidget);
+      expect(find.byType(AppearancePicker), findsNothing);
       // One header level: wide panes use the sidebar heading (no screen
       // header, no Back); other windows use the page's own screen header.
       // Settings keeps its own title; Home owns the shared logo band.

@@ -17,7 +17,8 @@ import 'package:inkora/reader/presentation/ebook_fonts.dart';
 import 'package:inkora/reader/presentation/reader_settings_scope_selector.dart';
 import 'package:inkora/reader/presentation/reader_settings_sheet.dart';
 
-import 'reader_settings_tabs_test.dart' show openSheet, settle;
+import 'reader_settings_tabs_test.dart'
+    show openSheet, settle, chooseBackground;
 
 final _manifest = ReaderManifest(
   accountId: 'order',
@@ -209,19 +210,71 @@ void main() {
       expect(tester.getRect(scope).height, greaterThanOrEqualTo(48));
       expect(scope.hitTestable(), findsOneWidget);
       expect(find.text('Apply to'), findsNothing);
-      for (final color in [
-        'white',
-        'paper',
-        'sepia',
-        'gray',
-        'slate',
-        'black',
-      ]) {
+      final backgroundPicker = find.byKey(const Key('ebook-background-picker'));
+      final fontPicker = find.byKey(const Key('ebook-font-picker'));
+      expect(
+        tester.getRect(backgroundPicker).left,
+        lessThan(tester.getRect(fontPicker).left),
+      );
+      expect(
+        tester.getRect(backgroundPicker).top,
+        closeTo(tester.getRect(fontPicker).top, 1),
+      );
+      expect(
+        tester.getRect(backgroundPicker).right,
+        lessThanOrEqualTo(tester.getRect(fontPicker).left),
+      );
+      await tester.ensureVisible(backgroundPicker);
+      await tester.tap(backgroundPicker);
+      await tester.pumpAndSettle();
+      for (final color in ['white', 'sepia', 'gray', 'slate', 'black']) {
         expect(find.byKey(Key('reader-background-$color')), findsOneWidget);
       }
-      for (final old in ['ivory', 'sage', 'mist']) {
+      for (final old in ['paper', 'ivory', 'sage', 'mist']) {
         expect(find.byKey(Key('reader-background-$old')), findsNothing);
       }
+      if (const bool.fromEnvironment('CAPTURE_SETTINGS_ORDER')) {
+        await capture(
+          tester,
+          '${locale.languageCode}-${size.width.toInt()}-${(scale * 100).round()}-background-menu',
+        );
+      }
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      if (const bool.fromEnvironment('CAPTURE_SETTINGS_ORDER')) {
+        await tester.tap(fontPicker);
+        await tester.pumpAndSettle();
+        await capture(
+          tester,
+          '${locale.languageCode}-${size.width.toInt()}-${(scale * 100).round()}-font-menu',
+        );
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+      }
+      final texture = find.byKey(const Key('ebook-paper-texture'));
+      expect(find.text(strings.text('Paper texture')), findsOneWidget);
+      expect(
+        tester.getRect(texture).top,
+        greaterThan(
+          tester.getRect(find.text(strings.text('Publisher styles'))).top,
+        ),
+      );
+      await tester.ensureVisible(texture);
+      await tester.tap(texture);
+      await settle(tester);
+      final textured = (await tester.runAsync(
+        () => store.overrides(SettingsScope.book, 'book'),
+      ))!;
+      expect(textured.ebook!['paperTexture'], true);
+      expect(textured.background, isNull);
+      await tester.tap(texture);
+      await settle(tester);
+      expect(
+        (await tester.runAsync(
+          () => store.overrides(SettingsScope.book, 'book'),
+        ))!.ebook!['paperTexture'],
+        false,
+      );
       expect(find.byType(EbookFontPicker), findsOneWidget);
       expect(find.byKey(const Key('ebook-margin-picker')), findsNothing);
       expect(find.text(strings.text('Page turn animation')), findsNothing);
@@ -324,6 +377,36 @@ void main() {
     });
   }
 
+  for (final initiallyEnabled in [true, false]) {
+    testWidgets(
+      'changing background preserves texture $initiallyEnabled and saved legacy paper',
+      (tester) async {
+        final store = await mount(
+          tester,
+          overrides: ReadingOverrides(
+            background: ReadingBackground.paper,
+            ebook: initiallyEnabled ? null : {'paperTexture': false},
+          ),
+        );
+        final texture = find.byKey(const Key('ebook-paper-texture'));
+        for (final color in ['black', 'sepia', 'white', 'gray', 'slate']) {
+          await chooseBackground(tester, color);
+          await settle(tester);
+          final saved = (await tester.runAsync(
+            () => store.overrides(SettingsScope.book, 'book'),
+          ))!;
+          expect(saved.background!.name, color);
+          expect(saved.ebook!['paperTexture'], initiallyEnabled);
+          expect(
+            tester.widget<SwitchListTile>(texture).value,
+            initiallyEnabled,
+          );
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
   for (final name in ['Appearance', 'Page layout', 'Navigation', 'Templates']) {
     testWidgets(
       'reset $name removes only its settings from the selected scope',
@@ -348,6 +431,10 @@ void main() {
               'columnSeparator': true,
               'scroll': true,
               'tapToTurnPages': true,
+              'paperTexture': true,
+              'customColors': true,
+              'backgroundColor': 0x203040,
+              'textColor': 0xabcdef,
             },
           ),
         );
@@ -386,6 +473,16 @@ void main() {
               : ReadingBackground.black,
         );
         expect(saved.pageAnimation, name == 'Navigation' ? isNull : false);
+        for (final key in ['customColors', 'backgroundColor', 'textColor']) {
+          expect(
+            saved.ebook!.containsKey(key),
+            name != 'Appearance' && name != 'Templates',
+          );
+        }
+        expect(
+          saved.ebook!.containsKey('paperTexture'),
+          name != 'Appearance' && name != 'Templates',
+        );
         expect(
           saved.ebook!.containsKey('font'),
           name != 'Appearance' && name != 'Templates',

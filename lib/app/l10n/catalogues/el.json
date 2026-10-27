@@ -750,7 +750,15 @@
   "Reading mode": "Λειτουργία ανάγνωσης",
   "Page by page": "Ανά σελίδα",
   "Reset this tab": "Επαναφορά αυτής της καρτέλας",
-  "Paper": "Χαρτί",
   "Gray": "Γκρι",
-  "Night": "Νύχτα"
+  "Night": "Νύχτα",
+  "Paper texture": "Υφή χαρτιού",
+  "Custom colors": "Προσαρμοσμένα χρώματα",
+  "Automatic text color": "Αυτόματο χρώμα κειμένου",
+  "Text color": "Χρώμα κειμένου",
+  "Hex color": "Δεκαεξαδικό χρώμα",
+  "Enter six hexadecimal digits.": "Εισαγάγετε έξι δεκαεξαδικά ψηφία.",
+  "Hue": "Απόχρωση",
+  "Saturation": "Κορεσμός",
+  "Brightness": "Φωτεινότητα"
 }

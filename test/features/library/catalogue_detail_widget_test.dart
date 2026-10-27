@@ -16,6 +16,7 @@ import 'package:inkora/reader/presentation/reader_screen.dart';
 import 'package:inkora/features/settings/domain/ui_preferences.dart';
 
 import '../../support/ui_harness.dart';
+import 'series_detail_widget_test.dart' show showVolumeList;
 
 const metadata = CatalogueMetadata(
   status: 'ENDED',
@@ -201,6 +202,7 @@ void main() {
           final router = harness.container.read(routerProvider);
           router.go('/catalogue/series/series-a');
           await tester.pumpAndSettle();
+          if (size.width >= 840) await showVolumeList(tester);
           final scrollable = find
               .descendant(
                 of: find.byType(CustomScrollView).first,

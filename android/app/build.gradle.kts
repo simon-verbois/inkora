@@ -18,6 +18,10 @@ val inkoraVersionCode = if (inkoraVersion == "0.1.0") {
 val inkoraKeystorePath = System.getenv("INKORA_KEYSTORE_PATH")
 val inkoraRequireSigning = System.getenv("INKORA_REQUIRE_RELEASE_SIGNING") == "true"
 val inkoraDevRelease = System.getenv("INKORA_DEVELOPMENT_BUILD") == "true"
+val inkoraUnsignedRelease = System.getenv("INKORA_UNSIGNED_BUILD") == "true"
+require(!(inkoraUnsignedRelease && (inkoraRequireSigning || inkoraDevRelease || !inkoraKeystorePath.isNullOrBlank()))) {
+    "Unsigned builds cannot use development identity or distribution signing."
+}
 require(!(inkoraRequireSigning && inkoraDevRelease)) {
     "Distribution signing cannot be combined with a development build."
 }
@@ -75,7 +79,7 @@ android {
             }
             // Local development keeps its existing signature. CI requires the
             // stable distribution keystore; it never publishes a debug-signed APK.
-            signingConfig = signingConfigs.getByName(
+            signingConfig = if (inkoraUnsignedRelease) null else signingConfigs.getByName(
                 if (inkoraDevRelease || inkoraKeystorePath.isNullOrBlank()) "debug" else "distribution"
             )
         }
@@ -93,9 +97,26 @@ flutter {
 }
 
 dependencies {
+    // Upgrade existing transitive artifacts only; constraints add no new engine
+    // or runtime dependency. See the 2026-10-29 code audit and upstream advisories.
+    constraints {
+        implementation("org.jsoup:jsoup:1.23.2") {
+            because("Fix XML namespace memory exhaustion and custom-safelist sanitization")
+        }
+        implementation("com.google.guava:guava:33.7.2-android") {
+            because("Fix collection deserialization memory amplification")
+        }
+        implementation("junit:junit:4.13.2") {
+            because("Keep transitive test temporary directories private")
+        }
+    }
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     // Compile against the exact navigator already supplied by flutter_readium.
     // The app's typed presentation bridge does not add a second engine/version.
     implementation("org.readium.kotlin-toolkit:readium-navigator:3.3.0")
     implementation("org.readium.kotlin-toolkit:readium-shared:3.3.0")
+    // Readium's runtime dependencies are not exported on the compile classpath.
+    testImplementation("org.jsoup:jsoup:1.23.2")
+    testImplementation("com.google.guava:guava:33.7.2-android")
+    testImplementation("junit:junit:4.13.2")
 }

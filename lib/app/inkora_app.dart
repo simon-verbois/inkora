@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'memory_pressure.dart';
 import 'router.dart';
-import '../features/library/application/discovery_providers.dart';
 import '../offline/application/offline_coordinator.dart';
 import '../features/settings/application/ui_preferences_provider.dart';
 import '../features/settings/domain/ui_preferences.dart';
@@ -22,7 +21,6 @@ class InkoraApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Keep app-lifetime services alive without rebuilding MaterialApp (and
     // re-creating both themes) on each coordinator state change.
-    ref.listen(discoveryLaunchDateProvider, (_, _) {});
     ref.listen(offlineCoordinatorProvider, (_, _) {});
     ref.listen(memoryPressureProvider, (_, _) {});
     final preferences = ref.watch(

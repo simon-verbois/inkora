@@ -8,7 +8,6 @@ import 'package:inkora/features/library/domain/catalogue.dart';
 import 'package:inkora/features/settings/domain/ui_preferences.dart';
 
 import '../../support/catalogue_fakes.dart';
-import '../../support/discovery_fakes.dart';
 import '../../support/ui_harness.dart';
 
 void main() {

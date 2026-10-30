@@ -617,6 +617,7 @@ const Map<String, Map<String, String>> messages = {
     "Sans serif": "Sans serif",
     "Line spacing": "Line spacing",
     "Page margins": "Page margins",
+    "Page numbers": "Page numbers",
     "Text columns": "Text columns",
     "Automatic": "Automatic",
     "One column": "One column",
@@ -1770,6 +1771,7 @@ const Map<String, Map<String, String>> messages = {
     "Hue": "Teinte",
     "Saturation": "Saturation",
     "Brightness": "Luminosité",
+    "Page numbers": "Numéros de page",
   },
   "de": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Bei einem Konflikt müssen Sie eine Entscheidung treffen. Öffnen Sie das betroffene Buch und wählen Sie „Lesefortschritt“ aus.",
@@ -2643,6 +2645,7 @@ const Map<String, Map<String, String>> messages = {
     "Hue": "Farbton",
     "Saturation": "Sättigung",
     "Brightness": "Helligkeit",
+    "Page numbers": "Seitenzahlen",
   },
   "es": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Un conflicto requiere que usted elija. Abra el libro afectado y seleccione «Progreso de lectura».",
@@ -3530,6 +3533,7 @@ const Map<String, Map<String, String>> messages = {
     "Hue": "Matiz",
     "Saturation": "Saturación",
     "Brightness": "Brillo",
+    "Page numbers": "Números de página",
   },
   "it": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Per risolvere un conflitto è necessaria una sua scelta. Apra il libro interessato e selezioni «Progresso di lettura».",
@@ -4416,6 +4420,7 @@ const Map<String, Map<String, String>> messages = {
     "Hue": "Tinta",
     "Saturation": "Saturazione",
     "Brightness": "Luminosità",
+    "Page numbers": "Numeri di pagina",
   },
   "pl": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "W przypadku konfliktu należy dokonać wyboru. Proszę otworzyć daną książkę i wybrać opcję „Postęp czytania”.",
@@ -5297,6 +5302,7 @@ const Map<String, Map<String, String>> messages = {
     "Hue": "Odcień",
     "Saturation": "Nasycenie",
     "Brightness": "Jasność",
+    "Page numbers": "Numery stron",
   },
   "nl": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Bij een conflict dient u een keuze te maken. Open het betreffende boek en selecteer ‘Leesvoortgang’.",
@@ -6188,6 +6194,7 @@ const Map<String, Map<String, String>> messages = {
     "Hue": "Tint",
     "Saturation": "Verzadiging",
     "Brightness": "Helderheid",
+    "Page numbers": "Paginanummers",
   },
   "pt": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Um conflito requer a sua escolha. Abra o livro afetado e selecione «Progresso de leitura».",
@@ -7072,6 +7079,7 @@ const Map<String, Map<String, String>> messages = {
     "Hue": "Tonalidade",
     "Saturation": "Saturação",
     "Brightness": "Brilho",
+    "Page numbers": "Números de página",
   },
   "ro": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Un conflict necesită alegerea dvs. Deschideți cartea afectată și selectați „Progresul lecturii”.",
@@ -7955,6 +7963,7 @@ const Map<String, Map<String, String>> messages = {
     "Hue": "Nuanță",
     "Saturation": "Saturație",
     "Brightness": "Luminozitate",
+    "Page numbers": "Numere de pagină",
   },
   "el": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Μια διένεξη απαιτεί την επιλογή σας. Ανοίξτε το σχετικό βιβλίο και επιλέξτε «Πρόοδος ανάγνωσης».",
@@ -8854,6 +8863,7 @@ const Map<String, Map<String, String>> messages = {
     "Hue": "Απόχρωση",
     "Saturation": "Κορεσμός",
     "Brightness": "Φωτεινότητα",
+    "Page numbers": "Αριθμοί σελίδων",
   },
   "hu": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Egy ütközés esetén döntést kell hoznia. Nyissa meg az érintett könyvet, és válassza az Olvasási előrehaladás menüpontot.",
@@ -9731,6 +9741,7 @@ const Map<String, Map<String, String>> messages = {
     "Hue": "Színárnyalat",
     "Saturation": "Telítettség",
     "Brightness": "Fényerő",
+    "Page numbers": "Oldalszámok",
   },
   "cs": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Konflikt vyžaduje vaše rozhodnutí. Otevřete příslušnou knihu a vyberte „Průběh čtení“.",
@@ -10602,5 +10613,6 @@ const Map<String, Map<String, String>> messages = {
     "Hue": "Odstín",
     "Saturation": "Nasycení",
     "Brightness": "Jas",
+    "Page numbers": "Čísla stránek",
   },
 };

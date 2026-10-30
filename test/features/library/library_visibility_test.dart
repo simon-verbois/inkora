@@ -5,7 +5,6 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/core/storage/app_database.dart';
 import 'package:inkora/features/library/data/catalogue_store.dart';
-import 'package:inkora/features/library/data/discovery_repository.dart';
 import 'package:inkora/features/library/data/library_visibility_store.dart';
 import 'package:inkora/features/library/domain/catalogue.dart';
 import 'package:inkora/features/library/domain/resume_entry.dart';
@@ -184,37 +183,6 @@ void main() {
       expect(await ids(CatalogueKind.series), ['series-a', 'series-b']);
     },
   );
-
-  test('discovery renews within the day after selection and restores after clearing it', () async {
-    final discovery = DiscoveryRepository(store, clock: () => now);
-    expect(
-      (await discovery.readSections([]))
-          .expand((page) => page.items)
-          .map((item) => item.id)
-          .toSet(),
-      {'series-a', 'series-b'},
-    );
-    await store.visibility.save({'library-b'});
-    expect(
-      (await discovery.readSections([]))
-          .expand((page) => page.items)
-          .map((item) => item.id),
-      ['series-b'],
-    );
-    await store.visibility.save({});
-    expect(
-      (await discovery.readSections([])).expand((page) => page.items),
-      isEmpty,
-    );
-    await store.visibility.save(null);
-    expect(
-      (await discovery.readSections([]))
-          .expand((page) => page.items)
-          .map((item) => item.id)
-          .toSet(),
-      {'series-a', 'series-b'},
-    );
-  });
 
   test('unchanged selections and unrelated preferences do not emit catalogue publications', () async {
     var emissions = 0;

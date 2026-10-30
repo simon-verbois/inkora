@@ -1,0 +1,56 @@
+Categories:
+  - Ebook Reader
+License: MIT
+AuthorName: Inkora contributors
+WebSite: https://simon-verbois.github.io/inkora/
+SourceCode: https://github.com/simon-verbois/inkora
+IssueTracker: https://github.com/simon-verbois/inkora/issues
+Changelog: https://github.com/simon-verbois/inkora/blob/HEAD/CHANGELOG.md
+Donate: https://buymeacoffee.com/simonverbois
+
+AutoName: Inkora
+
+RepoType: git
+Repo: https://github.com/simon-verbois/inkora.git
+
+Builds:
+  - versionName: 2026.44.3
+    versionCode: 2026440003
+    disable: Awaiting F-Droid VM source-build verification and maintainer review
+    commit: 2026.44.3
+    sudo:
+      - apt-get update
+      - apt-get install -y build-essential git ninja-build pkg-config unzip rustup openjdk-21-jdk-headless
+    output: build/app/outputs/flutter-apk/app-release.apk
+    srclibs:
+      - flutter@abaf9c523780a608bd46686fd5e53740a07077f8
+      - pdfium-binaries@f72e059ccf6dccec9fcf79f1fe4a33bf48133a58
+    prebuild:
+      - export INKORA_PUB_CACHE=$PWD/.fdroid-pub-cache
+      - export PUB_CACHE=$INKORA_PUB_CACHE
+      - $$flutter$$/bin/flutter config --no-analytics
+      - $$flutter$$/bin/flutter pub get --enforce-lockfile
+      - python3 fdroid/prepare.py --pub-cache "$PUB_CACHE" --pdfium $$pdfium-binaries$$
+    scandelete:
+      - .fdroid-pub-cache
+    build:
+      - pushd $$pdfium-binaries$$
+      - export PDFium_BRANCH=chromium/7811 PDFium_VERSION=149.0.7811.0
+      - ./build.sh -b "$PDFium_BRANCH" android arm
+      - ./build.sh -b "$PDFium_BRANCH" android arm64
+      - ./build.sh -b "$PDFium_BRANCH" android x64
+      - popd
+      - export INKORA_PUB_CACHE=$PWD/.fdroid-pub-cache
+      - export PUB_CACHE=$INKORA_PUB_CACHE
+      - export INKORA_FLUTTER_ROOT=$$flutter$$
+      - export INKORA_JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+      - export INKORA_ANDROID_HOME=$$SDK$$
+      - export INKORA_GRADLE_USER_HOME=$HOME/.gradle
+      - scripts/build.sh apk --release --unsigned --target-platform=android-arm,android-arm64,android-x64
+    ndk: 28.2.13676358
+
+AutoUpdateMode: None
+UpdateCheckMode: Tags ^20[0-9]{2}\.[0-9]{1,2}\.[0-9]{1,4}$
+UpdateCheckData: fdroid/version.properties|versionCode=(\d+)|fdroid/version.properties|versionName=(.+)
+CurrentVersion: 2026.44.3
+CurrentVersionCode: 2026440003

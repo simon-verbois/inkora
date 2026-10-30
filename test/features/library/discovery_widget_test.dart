@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/router.dart';
 import 'package:inkora/features/library/application/catalogue_providers.dart';
-import 'package:inkora/features/library/application/discovery_providers.dart';
 import 'package:inkora/features/library/domain/catalogue.dart';
 
 import '../../support/ui_harness.dart';
@@ -41,7 +40,6 @@ void main() {
         expect(find.byKey(const Key('catalogue-pinned-tools')), findsOneWidget);
         expect(find.byKey(const Key('catalogue-grid')), findsOneWidget);
         expect(find.byKey(const Key('home-discovery')), findsNothing);
-        expect(harness.container.exists(discoverySectionsProvider), isFalse);
         expect(
           harness.container.exists(
             cataloguePageProvider(

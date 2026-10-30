@@ -26,6 +26,7 @@ final class EbookSettings {
     this.publisherStyles = true,
     this.justify = false,
     this.columnSeparator = false,
+    this.pageNumbers = true,
     this.tapToTurnPages = false,
     this.paperTexture,
     this.customColors = false,
@@ -49,6 +50,7 @@ final class EbookSettings {
   final double lineHeight, margins;
   EbookFont get fontChoice => EbookFont.values.firstWhere((v) => v.id == font);
   final bool scroll, publisherStyles, justify, columnSeparator, tapToTurnPages;
+  final bool pageNumbers;
   Map<String, dynamic> toJson() => {
     'font': font,
     'fontSize': fontSize,
@@ -60,6 +62,7 @@ final class EbookSettings {
     'publisherStyles': publisherStyles,
     'justify': justify,
     'columnSeparator': columnSeparator,
+    'pageNumbers': pageNumbers,
     'tapToTurnPages': tapToTurnPages,
     if (paperTexture != null) 'paperTexture': paperTexture,
     'customColors': customColors,
@@ -107,6 +110,7 @@ final class EbookSettings {
       publisherStyles: json['publisherStyles'] as bool? ?? true,
       justify: json['justify'] as bool? ?? false,
       columnSeparator: json['columnSeparator'] as bool? ?? false,
+      pageNumbers: json['pageNumbers'] as bool? ?? true,
       tapToTurnPages: json['tapToTurnPages'] as bool? ?? false,
       paperTexture: json['paperTexture'] as bool?,
       customColors: json['customColors'] as bool? ?? false,
@@ -131,6 +135,7 @@ final class EbookSettings {
       publisherStyles == other.publisherStyles &&
       justify == other.justify &&
       columnSeparator == other.columnSeparator &&
+      pageNumbers == other.pageNumbers &&
       tapToTurnPages == other.tapToTurnPages;
   @override
   int get hashCode => Object.hash(
@@ -148,6 +153,7 @@ final class EbookSettings {
     publisherStyles,
     justify,
     columnSeparator,
+    pageNumbers,
     tapToTurnPages,
   );
 }

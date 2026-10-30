@@ -76,6 +76,7 @@ void main() {
   registerSettingsDensityTest();
   registerReaderSheetGestureTests();
   for (final epub in [true, false]) {
+    if (!epub && const bool.fromEnvironment('EPUB_PAGINATION_TEST')) continue;
     testWidgets(
       'local ${epub ? "EPUB" : "PDF"} opens, navigates, searches and persists position',
       (tester) async {
@@ -164,9 +165,11 @@ void main() {
         Future<void> open(
           ReaderLocator initial, {
           double margins = 1,
+          double lineHeight = 1.5,
           EbookPageInsets? pageInsets,
           String font = 'publisher',
           bool separator = false,
+          bool pageNumbers = true,
           bool? paperTexture,
           int? customBackground,
           int? customText,
@@ -201,6 +204,8 @@ void main() {
                     background: background,
                     ebook: EbookSettings(
                       margins: margins,
+                      lineHeight: lineHeight,
+                      pageNumbers: pageNumbers,
                       paperTexture: paperTexture,
                       customColors: customBackground != null,
                       backgroundColor: customBackground ?? 0xf4ecd8,
@@ -240,6 +245,141 @@ void main() {
         );
         final surfaceState = tester.state(surface);
         final surfaceBounds = tester.getRect(surface);
+        if (epub && const bool.fromEnvironment('EPUB_PAGINATION_TEST')) {
+          final first = find.byKey(const ValueKey('ebook-page-number-0'));
+          final second = find.byKey(const ValueKey('ebook-page-number-1'));
+          List<int> folio() => tester
+              .widget<Text>(first)
+              .data!
+              .split(' / ')
+              .map(int.parse)
+              .toList();
+          await until(tester, () => tester.any(first));
+          final initialFolio = folio();
+          final initialProbe = await epubLayout();
+          expect(initialFolio.first, 1);
+          expect(initialFolio.last, greaterThan(4));
+          expect(initialProbe['paginationResourcesMeasured'], 2);
+          expect(initialProbe['paginationActiveResources'], 0);
+          final nativeState = tester.state(surface);
+          await EbookPresentation.turn(1, animated: false);
+          await until(
+            tester,
+            () => tester.any(first) && folio().first > initialFolio.first,
+          );
+          expect(folio().last, initialFolio.last);
+          expect(
+            (await epubLayout())['paginationCalculations'],
+            initialProbe['paginationCalculations'],
+          );
+          if (tester.any(second)) {
+            expect(
+              tester.widget<Text>(second).data,
+              '${folio().first + 1} / ${folio().last}',
+            );
+          }
+          await open(ReaderLocator(0), columns: 'one');
+          await until(tester, () => tester.any(first) && !tester.any(second));
+          final one = folio();
+          expect(one.last, greaterThan(0));
+          expect(tester.state(surface), same(nativeState));
+          final nativeBounds = tester.getRect(surface);
+          expect(
+            tester.getRect(first).top,
+            greaterThanOrEqualTo(nativeBounds.bottom),
+          );
+          final beforeColor = await epubLayout();
+          await open(
+            ReaderLocator(0),
+            columns: 'one',
+            background: ReadingBackground.black,
+          );
+          await until(tester, () => tester.any(first));
+          expect(folio().last, one.last);
+          expect(
+            (await epubLayout())['paginationCalculations'],
+            beforeColor['paginationCalculations'],
+          );
+          await open(
+            ReaderLocator(0),
+            columns: 'one',
+            lineHeight: 2.5,
+            publisherStyles: false,
+            font: 'lato',
+          );
+          await until(
+            tester,
+            () => tester.any(first) && folio().last > one.last,
+          );
+          final spaced = folio();
+          await engine.goToLocator(
+            Locator(
+              href: 'EPUB/chapter2.xhtml',
+              type: 'application/xhtml+xml',
+              locations: const Locations(progression: 0),
+            ),
+          );
+          await until(
+            tester,
+            () => tester.any(first) && folio().first > spaced.last ~/ 2,
+          );
+          expect(folio().last, spaced.last);
+          final chapterTwo = folio();
+          await engine.goToLocator(
+            Locator(
+              href: 'EPUB/chapter2.xhtml',
+              type: 'application/xhtml+xml',
+              locations: const Locations(progression: 1),
+            ),
+          );
+          await until(
+            tester,
+            () => tester.any(first) && folio().first == spaced.last,
+          );
+          debugPrint(
+            'EPUB_PAGINATION_REFLOW: initial=$one spaced=$spaced second=$chapterTwo last=${folio()}',
+          );
+          await open(ReaderLocator(0), columns: 'one', pageNumbers: false);
+          await tester.pump(const Duration(milliseconds: 500));
+          expect(first, findsNothing);
+          expect((await epubLayout())['paginationActiveResources'], 0);
+          await open(ReaderLocator(0), columns: 'one');
+          await until(tester, () => tester.any(first));
+          expect(tester.state(surface), same(nativeState));
+          await open(ReaderLocator(0), scroll: true);
+          await tester.pump(const Duration(milliseconds: 500));
+          expect(first, findsNothing);
+          await open(ReaderLocator(0), columns: 'two', separator: true);
+          await until(tester, () => tester.any(first));
+          final two = folio();
+          expect(tester.any(second), (await epubLayout())['columns'] == '2');
+          final beforeTrim = await epubLayout();
+          await EbookPresentation.trimMemory();
+          final trimmed = jsonDecode(
+            (await EbookPresentation.channel.invokeMethod<String>(
+              'pagination',
+            ))!,
+          ) as Map;
+          expect(trimmed['total'], two.last);
+          expect(
+            (await epubLayout())['paginationCalculations'],
+            (beforeTrim['paginationCalculations'] as int) + 1,
+          );
+          expect((await epubLayout())['paginationActiveResources'], 0);
+          expect(
+            (await epubLayout())['dividerGradientBuilds'],
+            beforeTrim['dividerGradientBuilds'],
+          );
+          expect(tester.state(surface), same(nativeState));
+          debugPrint(
+            'EPUB_PAGINATION_RESULT: one=$one two=$two native=${await epubLayout()}',
+          );
+          // Dedicated screenshot driver captures both the native publication and Flutter footer.
+          await binding.convertFlutterSurfaceToImage();
+          await tester.pump();
+          await binding.takeScreenshot('epub-page-numbers-two');
+          return;
+        }
         await tester.pump(const Duration(milliseconds: 600));
         final uiCallsBeforeControls = systemUiCalls;
         final initialLayout = epub ? await epubLayout() : null;
@@ -624,21 +764,32 @@ void main() {
               publisherStyles: false,
             );
             await tester.pump(const Duration(milliseconds: 300));
-            final tone = await epubLayout();
+            final textured =
+                background == ReadingBackground.paper ||
+                background == ReadingBackground.ivory;
+            var tone = await epubLayout();
+            // Native preference/reflow callbacks can apply the style after the
+            // bridge returns. Await its observable state, retaining both checks
+            // and a bounded failure rather than assuming a 300 ms completion.
+            for (
+              var attempt = 0;
+              attempt < 25 &&
+                  (tone['paperTexture'] != textured ||
+                      tone['paperImage'] != textured);
+              attempt++
+            ) {
+              await tester.pump(const Duration(milliseconds: 200));
+              tone = await epubLayout();
+            }
             expect(tone['dividerAlpha'], 46);
             expect(tone['dividerColor'], background.inkColor.toARGB32());
-            expect(
-              tone['paperTexture'],
-              (background == ReadingBackground.paper ||
-                  background == ReadingBackground.ivory),
-            );
+            expect(tone['paperTexture'], textured);
             expect(
               tone['paperImage'],
-              (background == ReadingBackground.paper ||
-                  background == ReadingBackground.ivory),
+              textured,
+              reason: 'Paper image for ${background.name}: $tone',
             );
-            if ((background == ReadingBackground.paper ||
-                background == ReadingBackground.ivory)) {
+            if (textured) {
               expect(tone['paperTileWidth'], inInclusiveRange(1, 512));
               expect(tone['paperTileHeight'], inInclusiveRange(1, 512));
               expect(tone['paperDecodeCount'], 1);

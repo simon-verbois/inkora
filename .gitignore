@@ -3,6 +3,8 @@
 .flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
+.fdroid-pub-cache/
+.fdroid-native/
 .pub/
 build/
 coverage/

@@ -44,6 +44,7 @@ void main() {
         'separator': true,
         'dividerColor': 0xff252320,
         'paperTexture': false,
+        'pageNumbers': true,
         'tapToTurnPages': false,
         'imageEnhancement': 2,
       });

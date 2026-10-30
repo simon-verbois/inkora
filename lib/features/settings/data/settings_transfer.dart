@@ -19,6 +19,13 @@ final class SettingsTransfer {
   static const maxBytes = 4 * 1024 * 1024;
 
   Future<Uint8List> export() async {
+    // Exact JSON-account prefixes keep other accounts' rows out of the worker.
+    // Their final comma has the next lexical bound '-', so the primary-key
+    // index can serve both ranges without LIKE wildcards or a table scan.
+    final bookmarkPrefixes = [
+      for (final kind in ['ebook', 'raster'])
+        '$kind-bookmarks:[${jsonEncode(account)},',
+    ];
     final data = await database.transaction(() async {
       final ui = await (database.select(
         database.appPreferences,
@@ -32,7 +39,13 @@ final class SettingsTransfer {
               .get();
       final bookmarks = await database
           .customSelect(
-            "SELECT key,payload FROM app_preferences WHERE substr(key,1,16)='ebook-bookmarks:' OR substr(key,1,17)='raster-bookmarks:'",
+            'SELECT key,payload FROM app_preferences WHERE (key>=? AND key<?) OR (key>=? AND key<?)',
+            variables: [
+              for (final prefix in bookmarkPrefixes) ...[
+                Variable(prefix),
+                Variable('${prefix.substring(0, prefix.length - 1)}-'),
+              ],
+            ],
           )
           .get()
           .then(

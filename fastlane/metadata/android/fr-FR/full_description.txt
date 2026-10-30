@@ -1,0 +1,11 @@
+Vos livres restent sur votre serveur Komga. Inkora les retrouve sur votre téléphone ou votre tablette, avec une mise en page pour chaque type de récit.
+
+Reprenez votre livre depuis l’accueil. Filtrez vos étagères sans perdre votre position, parcourez les auteurs d’ebooks et retrouvez vos lectures récentes dans l’historique.
+
+Téléchargez des livres ou des séries entières, suivez les transferts et lisez hors connexion. Vous pouvez supprimer automatiquement les téléchargements terminés d’une série après au moins 24 heures. Votre progression est synchronisée avec Komga à la reconnexion.
+
+Choisissez le sens de lecture, la mise en page et les gestes, avec des réglages propres à chaque bibliothèque visible. Ajustez la typographie des ebooks, ajoutez des signets et consultez les fiches des livres ou des séries depuis le lecteur.
+
+Installez l’APK Android, saisissez l’adresse de votre serveur et connectez-vous avec une clé API ou votre identifiant et votre mot de passe. Choisissez les bibliothèques visibles et ouvrez votre premier livre.
+
+Inkora ne fournit ni livres ni serveur Komga hébergé. Vous gardez le contrôle de votre collection.

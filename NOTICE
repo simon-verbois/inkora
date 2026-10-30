@@ -1,0 +1,19 @@
+Inkora
+Copyright (c) 2026 Inkora contributors
+
+Original project code and project-authored assets are licensed under the MIT
+License in LICENSE. Third-party software, fonts, icons and notices retain their
+respective licenses; the project license does not replace those terms.
+
+Bundled attribution records:
+- assets/licenses/pdfium-notices.txt
+- assets/licenses/readium-sdk.txt
+- assets/fonts/*-OFL.txt and assets/fonts/OFL.txt
+- assets/icons/LICENSE.txt
+
+The app's Open-source licenses screen also includes dependency notices supplied
+by Flutter. Dependencies compiled for a distribution retain their upstream terms.
+
+SQLite is public-domain software: https://sqlite.org/copyright.html
+F-Droid packaging compiles the pinned official amalgamation while retaining the
+SQLite Dart package's own license and build options.

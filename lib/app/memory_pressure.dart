@@ -18,7 +18,9 @@ final memoryPressureProvider = Provider<void>((ref) {
   final observer = _MemoryPressureObserver(() {
     ReaderContentBounds.cache.clear();
     unawaited(EbookPresentation.trimMemory());
-    ref.read(coverRepositoryProvider).asData?.value?.trimMemory();
+    if (ref.exists(coverRepositoryProvider)) {
+      ref.read(coverRepositoryProvider).asData?.value?.trimMemory();
+    }
     if (ref.exists(offlineCoordinatorProvider)) {
       final remote = ref
           .read(offlineCoordinatorProvider)

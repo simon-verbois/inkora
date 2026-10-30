@@ -175,7 +175,6 @@ void main() {
           reduceMotion: true,
         ),
         covers: covers,
-        discoveryClock: () => DateTime.utc(2026, 10, 15),
         resumeEntries: [
           for (final index in [0, 1, 2])
             ResumeEntry(

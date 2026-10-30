@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/features/library/data/cover_repository.dart';
+import 'package:inkora/features/library/presentation/book_cover.dart';
 import 'package:inkora/reader/data/page_network_gate.dart';
 import 'package:inkora/reader/domain/page_source.dart';
 
@@ -12,6 +13,71 @@ import '../../support/connection_fakes.dart';
 import '../../support/reader_fakes.dart';
 
 void main() {
+  test(
+    'reopening a cover repository cannot reuse stale decoded artwork',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'inkora-cover-reopen-',
+      );
+      var changed = false;
+      final newer = Uint8List.fromList([...fixtureRaster, 1]);
+      final adapter = FixtureAdapter(
+        (_) => ResponseBody.fromBytes(
+          changed ? newer : fixtureRaster,
+          200,
+          headers: {
+            'content-type': ['image/png'],
+          },
+        ),
+      );
+      final client = fixtureClient(
+        savedSession.endpoint,
+        savedSession.credentials,
+        adapter,
+      );
+      final first = CoverRepository(
+        client,
+        PageNetworkGate(),
+        directory,
+        'same-account',
+      );
+      final second = CoverRepository(
+        client,
+        PageNetworkGate(),
+        directory,
+        'same-account',
+      );
+      addTearDown(() async {
+        first.close();
+        second.close();
+        client.close();
+        await first.flush();
+        await second.flush();
+        await directory.delete(recursive: true);
+      });
+      const key = (kind: 'book', id: 'same-cover', modified: 1);
+      final original = (await first.load(key, CancellationController()))!;
+      final originalImage = coverImage(first, key, original, 100, 1);
+      changed = true;
+      final replacement = (await first.revalidate(key))!;
+      expect(replacement, newer);
+      expect(coverImage(first, key, replacement, 100, 1), isNot(originalImage));
+      await first.flush();
+      first.close();
+      final reloaded = (await second.load(key, CancellationController()))!;
+      expect(reloaded, newer);
+      expect(coverImage(second, key, reloaded, 100, 1), isNot(originalImage));
+      final beforeTrim = coverImage(second, key, reloaded, 100, 1);
+      expect(second.retainedMetadataEntries, greaterThan(0));
+      second.trimMemory();
+      expect(second.retainedMetadataEntries, 0);
+      final afterTrim = (await second.load(key, CancellationController()))!;
+      expect(afterTrim, newer);
+      expect(coverImage(second, key, afterTrim, 100, 1), isNot(beforeTrim));
+      second.close();
+      expect(second.retainedMetadataEntries, 0);
+    },
+  );
   test(
     'large unchanged artwork keeps decoded identity and coalesces validation',
     () async {

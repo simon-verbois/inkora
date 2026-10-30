@@ -89,6 +89,13 @@ class EbookSettingsControls extends StatelessWidget {
             (v) => onChanged('columnSeparator', v),
           ),
         ],
+        if (!pdf && EbookPresentation.supported && !settings.scroll)
+          _toggle(
+            context,
+            'Page numbers',
+            settings.pageNumbers,
+            (value) => onChanged('pageNumbers', value),
+          ),
       ],
 
       if (!pdf &&

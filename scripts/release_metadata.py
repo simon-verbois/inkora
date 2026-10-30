@@ -105,9 +105,15 @@ def main():
             print(next_version(args.year, args.week, versions))
         elif args.command == 'prepare':
             updated = rollover((ROOT / 'CHANGELOG.md').read_text(), args.tag, args.date)
+            from fdroid_metadata import generated_files
+            store_files = generated_files(ROOT, args.tag, updated)
             # Validate everything before changing either tracked file.
             (ROOT / 'CHANGELOG.md').write_text(updated)
             (ROOT / 'VERSION').write_text(args.tag + '\n')
+            for path, content in store_files.items():
+                destination = ROOT / path
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_text(content)
         else:
             validate_release(ROOT, args.tag)
             print(release_notes((ROOT / 'CHANGELOG.md').read_text(), args.tag))

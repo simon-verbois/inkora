@@ -10,6 +10,26 @@ remain in progress.
 
 ## [Unreleased]
 
+## [2026.44.3] - 2026-10-30
+
+### Added
+
+- Add MIT licensing, English/French F-Droid store metadata, unsigned Android release mode and a pinned native source-build submission candidate.
+- Show EPUB page and book-total numbers in lighter text for the current page layout, with a Page numbers option enabled by default.
+
+### Fixed
+
+- Prevent overlapping fallback network-policy requests and avoid starting inactive cover services under memory pressure.
+- Isolate settings exports from malformed bookmarks belonging to another account.
+- Invalidate decoded cover identities across repository lifetimes and release cover metadata on memory pressure and close.
+- Apply targeted Android security updates to existing jsoup, Guava and JUnit dependencies.
+- Isolate native app verification from normal development credentials/data and synchronize asynchronous reader-style assertions.
+- Stop failed prebuilt Inkora Dev installations before Flutter can uninstall and retry.
+
+### Removed
+
+- Remove the unused discovery implementation and its startup subscription, obsolete catalogue queries and two orphan settings/download widgets.
+
 ## [2026.44.2] - 2026-10-27
 
 ### Changed

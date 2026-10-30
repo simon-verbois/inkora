@@ -29,6 +29,16 @@ final class CoverRepository {
   final Directory directory;
   final String accountId;
   final int diskBudget, memoryBudget;
+  static int _nextGeneration = 0;
+  int _generation = ++_nextGeneration;
+
+  /// A scalar cache identity cannot retain this repository or its transport.
+  /// Reopening/pressure trimming must not reuse an older decoded version zero.
+  int get generation => _generation;
+
+  /// Bounded-work diagnostics for pressure/teardown verification.
+  int get retainedMetadataEntries =>
+      _etags.length + _validated.length + _versions.length;
   final _memory = <String, Uint8List>{};
   final _signals = <CancellationController>{};
   final _active = <CoverKey, int>{};
@@ -46,8 +56,12 @@ final class CoverRepository {
 
   /// Memory-pressure trim: drops encoded bytes; disk cache remains.
   void trimMemory() {
+    _generation = ++_nextGeneration;
     _memory.clear();
     _memoryBytes = 0;
+    _etags.clear();
+    _validated.clear();
+    _versions.clear();
   }
 
   Stream<CoverKey> get changes => _changes.stream;
@@ -384,12 +398,9 @@ final class CoverRepository {
     for (final signal in _signals.toList()) {
       signal.cancel();
     }
-    _memory.clear();
+    trimMemory();
     _active.clear();
-    _etags.clear();
-    _validated.clear();
     unawaited(_changes.close());
-    _memoryBytes = 0;
   }
 
   /// Tests/maintenance may wait for queued best-effort writes without delaying UI.

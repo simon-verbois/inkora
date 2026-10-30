@@ -563,6 +563,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
           'pageInsets',
           'columns',
           'columnSeparator',
+          'pageNumbers',
         ],
         _PreferenceTab.navigation => ['scroll', 'tapToTurnPages'],
         _PreferenceTab.style => [

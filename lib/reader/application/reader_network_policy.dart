@@ -55,6 +55,7 @@ abstract final class ReaderNetworkPolicy {
     StreamSubscription<Object?>? subscription;
     Timer? timer;
     var cancelled = false;
+    var fetching = false;
     ReaderNetworkSnapshot? last;
     void emit(ReaderNetworkSnapshot snapshot) {
       if (cancelled || snapshot == last) return;
@@ -62,8 +63,18 @@ abstract final class ReaderNetworkPolicy {
       controller.add(snapshot);
     }
 
+    Future<void> tick() async {
+      if (cancelled || fetching) return;
+      fetching = true;
+      try {
+        emit(await current());
+      } finally {
+        fetching = false;
+      }
+    }
+
     void poll() {
-      Future<void> tick() async => emit(await current());
+      if (cancelled || timer != null) return;
       unawaited(tick());
       timer = Timer.periodic(pollInterval, (_) => unawaited(tick()));
     }

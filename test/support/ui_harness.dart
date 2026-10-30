@@ -8,7 +8,6 @@ import 'package:inkora/core/storage/app_database.dart';
 import 'package:inkora/features/connection/application/session_controller.dart';
 import 'package:inkora/features/library/application/catalogue_providers.dart';
 import 'package:inkora/features/library/application/cover_providers.dart';
-import 'package:inkora/features/library/application/discovery_providers.dart';
 import 'package:inkora/features/library/data/catalogue_repository.dart';
 import 'package:inkora/features/library/data/catalogue_store.dart';
 import 'package:inkora/features/library/data/cover_repository.dart';
@@ -33,7 +32,6 @@ final class UiHarness {
     WidgetTester tester, {
     UiPreferences preferences = const UiPreferences(),
     List<ResumeEntry>? resumeEntries,
-    DateTime Function()? discoveryClock,
     CoverRepository? covers,
     List<CatalogueItem>? catalogue,
     bool refreshCatalogue = true,
@@ -101,8 +99,6 @@ final class UiHarness {
             ]),
           ]),
         ),
-        if (discoveryClock != null)
-          discoveryClockProvider.overrideWithValue(discoveryClock),
         if (resumeEntries != null)
           resumeEntriesProvider.overrideWith(
             (ref) => Stream.value(resumeEntries),

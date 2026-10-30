@@ -16,6 +16,8 @@ import 'package:inkora/app/inkora_app.dart';
 import 'package:inkora/app/router.dart';
 import 'package:inkora/features/connection/application/session_controller.dart';
 import 'package:inkora/features/connection/data/secure_session_store.dart';
+import 'package:inkora/features/settings/data/ui_preferences_store.dart';
+import 'package:inkora/features/settings/domain/ui_preferences.dart';
 
 import '../test/support/connection_fakes.dart';
 
@@ -25,7 +27,8 @@ import 'package:inkora/core/storage/credential_store.dart';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:drift/native.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:inkora/reader/data/reader_asset_store.dart';
 import 'package:inkora/reader/data/reader_repository.dart';
 import 'package:inkora/reader/data/reader_store.dart';
@@ -39,15 +42,73 @@ import '../test/support/reader_fakes.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  // Exercise native persistence without sharing the normal Dev app's database,
+  // session index or KeyStore aliases. clear()/logout stay inside this fixture.
+  late Directory fixtureRoot;
+  const secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(storageNamespace: 'inkora_native_integration'),
+    iOptions: IOSOptions(accountName: 'inkora_native_integration'),
+  );
+  CredentialStore credentials() => CredentialStore(storage: secureStorage);
+  Future<AppDatabase> openFixtureDatabase() async => AppDatabase(
+    NativeDatabase.createInBackground(
+      File('${fixtureRoot.path}/inkora.sqlite'),
+      setup: (database) => database
+        ..execute('PRAGMA journal_mode = WAL')
+        ..execute('PRAGMA synchronous = NORMAL')
+        ..execute('PRAGMA temp_store = MEMORY'),
+    ),
+  );
+  setUpAll(() async {
+    fixtureRoot = await Directory.systemTemp.createTemp('inkora-app-native-');
+    await secureStorage.deleteAll();
+    final database = await openFixtureDatabase();
+    try {
+      await UiPreferencesStore(database)
+          .save(const UiPreferences(setupCompleted: true));
+    } finally {
+      await database.close();
+    }
+  });
+  tearDownAll(() async {
+    await secureStorage.deleteAll();
+    await fixtureRoot.delete(recursive: true);
+  });
+
+  testWidgets('native SQLite retains JSON and FTS5 in source builds', (
+    tester,
+  ) async {
+    final database = await openFixtureDatabase();
+    try {
+      final json = await database.customSelect(
+        '''SELECT json_extract('{"ready":1}', '\$.ready') AS ready''',
+      ).getSingle();
+      expect(json.read<int>('ready'), 1);
+      await database.customStatement(
+        'CREATE VIRTUAL TABLE temp.native_search_fixture USING fts5(text)',
+      );
+      await database.customStatement(
+        "INSERT INTO temp.native_search_fixture VALUES ('source build reading')",
+      );
+      final found = await database
+          .customSelect(
+            "SELECT COUNT(*) AS total FROM temp.native_search_fixture WHERE text MATCH 'reading'",
+          )
+          .getSingle();
+      expect(found.read<int>('total'), 1);
+    } finally {
+      await database.close();
+    }
+  });
 
   testWidgets(
     'native downloaded reader, preferences and webtoon locator survive database reopening',
     (tester) async {
-      final support = await getApplicationSupportDirectory();
+      final support = fixtureRoot;
       final directory = await Directory('${support.path}/reader-native-fixture')
           .create(recursive: true);
       final manifest = readerManifest(account: 'native-reader-fixture');
-      var database = await openAppDatabase();
+      var database = await openFixtureDatabase();
       final imported = await File('${directory.path}/import.png')
           .writeAsBytes(fixtureRaster);
       var assets = ReaderAssetStore(
@@ -72,7 +133,7 @@ void main() {
         const ReadingOverrides(mode: ReadingMode.webtoon, spacing: 8),
       );
       await database.close();
-      database = await openAppDatabase();
+      database = await openFixtureDatabase();
       store = ReaderStore(database, manifest.accountId);
       assets = ReaderAssetStore(
         database,
@@ -149,7 +210,7 @@ void main() {
         await assets.idle;
         final durablePosition = await store.locator(restored);
         await database.close();
-        database = await openAppDatabase();
+        database = await openFixtureDatabase();
         store = ReaderStore(database, manifest.accountId);
         expect(
           (await store.locator(restored)).pageIndex,
@@ -182,11 +243,11 @@ void main() {
     },
   );
 
-  testWidgets('native login, offline restoration and guarded logout', (
+  testWidgets('native login, offline restoration and guarded server removal', (
     tester,
   ) async {
-    final database = await openAppDatabase();
-    final store = SecureSessionStore(Future.value(database), CredentialStore());
+    final database = await openFixtureDatabase();
+    final store = SecureSessionStore(Future.value(database), credentials());
     await store.clear();
     addTearDown(() async {
       await store.clear();
@@ -240,7 +301,7 @@ void main() {
       overrides: [
         databaseProvider.overrideWithValue(Future.value(database)),
         sessionStoreProvider.overrideWithValue(
-          SecureSessionStore(Future.value(database), CredentialStore()),
+          SecureSessionStore(Future.value(database), credentials()),
         ),
         komgaClientFactoryProvider.overrideWithValue(
           (endpoint, credentials) =>
@@ -257,9 +318,10 @@ void main() {
     expect(find.textContaining('Offline · saved catalogue'), findsOneWidget);
     second.read(routerProvider).go('/settings/account');
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Sign out'));
+    await tester.tap(find.byTooltip('Remove server example.test'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Sign out').last);
+    expect(await store.restore(), isNotNull);
+    await tester.tap(find.byKey(const Key('ink-confirm-accept')));
     await tester.pumpAndSettle();
     expect(
       find.text('Connect your Komga server to start reading.'),
@@ -276,7 +338,7 @@ void main() {
   testWidgets('native credentials remain scoped to their account', (
     tester,
   ) async {
-    final store = CredentialStore();
+    final store = credentials();
     const account = 'bootstrap-native-storage-test';
     addTearDown(() => store.delete(account));
     await store.write(account, 'non-secret-test-fixture');
@@ -290,7 +352,7 @@ void main() {
     tester,
   ) async {
     const id = 'bootstrap-native-database-test';
-    final first = await openAppDatabase();
+    final first = await openFixtureDatabase();
     try {
       await first
           .into(first.serverProfiles)
@@ -304,7 +366,7 @@ void main() {
     } finally {
       await first.close();
     }
-    final second = await openAppDatabase();
+    final second = await openFixtureDatabase();
     try {
       final row = await (second.select(
         second.serverProfiles,
@@ -320,7 +382,7 @@ void main() {
   testWidgets(
     'native catalogue reopens and remains searchable after failed refresh',
     (tester) async {
-      final first = await openAppDatabase();
+      final first = await openFixtureDatabase();
       final remote = FakeCatalogueRemote();
       remote.items[CatalogueKind.book] = [
         entry('native-book', title: 'Offline native book'),
@@ -332,7 +394,7 @@ void main() {
       await repository.refresh();
       repository.close();
       await first.close();
-      final second = await openAppDatabase();
+      final second = await openFixtureDatabase();
       final offline = FakeCatalogueRemote()..failKind = CatalogueKind.library;
       final reopened = CatalogueRepository(
         CatalogueStore(second, savedSession.accountId),
@@ -384,6 +446,11 @@ void main() {
       await tester.pumpAndSettle();
       container.read(routerProvider).go('/catalogue/book');
       await tester.pumpAndSettle();
+      final openSearch = find.byKey(const Key('open-search')).hitTestable();
+      if (openSearch.evaluate().isNotEmpty) {
+        await tester.tap(openSearch.last);
+        await tester.pumpAndSettle();
+      }
       await tester.enterText(
         find.byKey(const Key('catalogue-search')),
         'native',

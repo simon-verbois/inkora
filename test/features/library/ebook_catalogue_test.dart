@@ -6,11 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/core/storage/app_database.dart';
 import 'package:inkora/features/library/data/catalogue_repository.dart';
 import 'package:inkora/features/library/data/catalogue_store.dart';
-import 'package:inkora/features/library/data/discovery_repository.dart';
 import 'package:inkora/features/library/data/komga_catalogue_remote.dart';
 import 'package:inkora/features/library/domain/catalogue.dart';
 import 'package:inkora/features/library/domain/catalogue_metadata.dart';
-import 'package:inkora/features/library/domain/resume_entry.dart';
 import 'package:inkora/offline/data/download_store.dart';
 import 'package:inkora/reader/domain/reader_manifest.dart';
 
@@ -209,45 +207,12 @@ void main() {
     },
   );
 
-  test('discovery includes independent books without excluding every book by the current author', () async {
-    final repository = DiscoveryRepository(store);
-    final pages = await repository.readSections([
-      ResumeEntry(
-        item: ebook('a'),
-        pageIndex: 0,
-        pageCount: 0,
-        fraction: 0,
-        raster: false,
-        totalProgression: .25,
-      ),
-    ]);
-    final items = pages.expand((page) => page.items).toList();
-    expect(items.any((item) => item.identity == 'book:a'), isFalse);
-    expect(items.any((item) => item.identity == 'book:b'), isTrue);
-    expect(items.any((item) => item.identity == 'series:author'), isFalse);
-    expect(items.map((item) => item.identity).toSet(), hasLength(items.length));
-    expect(
-      (await repository.readSections([]))
-          .expand((page) => page.items)
-          .map((item) => item.identity),
-      items.map((item) => item.identity),
-    );
-  });
-
-  test('book and series remote ID collisions remain distinct during discovery restoration', () async {
+  test('book and series remote ID collisions remain distinct during catalogue pagination', () async {
     await store.stage('collision', [
       ebook('shared'),
       entry('shared', kind: CatalogueKind.series, title: 'Novel shared'),
     ]);
     await store.publish('collision', DateTime.now(), () => true);
-    final retained = await store.discoveryCandidates([
-      'book:shared',
-      'series:shared',
-    ], sample: false);
-    expect(retained.map((item) => item.identity).toSet(), {
-      'book:shared',
-      'series:shared',
-    });
     final pages = [
       for (final page in [0, 1])
         await store.read(

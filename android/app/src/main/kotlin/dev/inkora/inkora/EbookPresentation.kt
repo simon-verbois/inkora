@@ -28,20 +28,24 @@ import org.json.JSONTokener
 
 /** UI-only extension of the pinned navigator, using its public input/CSS APIs. */
 class EbookPresentation(private val activity: FlutterFragmentActivity, messenger: BinaryMessenger) {
+    private val channel = MethodChannel(messenger, "inkora/ebook_presentation")
     private var animations = true
     private var separator = false
     private var paperTexture = false
     private var dividerColor = 0xff252320.toInt()
     private var tapToTurnPages = false
+    private var pageNumbers = true
     private var imageEnhancement = 0
     private val navigators = mutableSetOf<EpubNavigatorFragment>()
     private val jobs = mutableMapOf<EpubNavigatorFragment, Job>()
     private val dividers = mutableMapOf<EpubNavigatorFragment, EbookSpreadDivider>()
+    private val pagination = mutableMapOf<EpubNavigatorFragment, EbookBookPagination>()
 
     private val callbacks = object : FragmentManager.FragmentLifecycleCallbacks() {
         override fun onFragmentCreated(manager: FragmentManager, fragment: Fragment, state: Bundle?) {
-            if (fragment !is EpubNavigatorFragment) return
+            if (fragment !is EpubNavigatorFragment || EbookBookPagination.isCounter(fragment)) return
             navigators.add(fragment)
+            pagination[fragment] = EbookBookPagination(fragment)
             // Registered during fragment creation, before the plugin's default
             // navigation adapter. Selection and unhandled gestures still fall through.
             val animated = DirectionalNavigationAdapter(fragment, animatedTransition = true)
@@ -57,11 +61,15 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
         }
 
         override fun onFragmentViewCreated(manager: FragmentManager, fragment: Fragment, view: View, state: Bundle?) {
-            if (fragment is EpubNavigatorFragment) {
+            if (fragment is EpubNavigatorFragment && !EbookBookPagination.isCounter(fragment)) {
                 dividers.remove(fragment)?.close()
                 dividers[fragment] = EbookSpreadDivider(view) {
                     if (fragment.isAdded && fragment.isResumed) {
-                        fragment.lifecycleScope.launch { refreshDivider(fragment) }
+                        fragment.lifecycleScope.launch {
+                            refreshDivider(fragment)
+                            channel.invokeMethod("paginationChanged", null)
+                        }
+                        pagination[fragment]?.invalidate()
                     }
                 }
             }
@@ -72,13 +80,14 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
         }
 
         override fun onFragmentStarted(manager: FragmentManager, fragment: Fragment) {
-            if (fragment !is EpubNavigatorFragment) return
+            if (fragment !is EpubNavigatorFragment || EbookBookPagination.isCounter(fragment)) return
             jobs.remove(fragment)?.cancel()
             jobs[fragment] = fragment.lifecycleScope.launch {
                 combine(
                     fragment.currentLocator.map { it.href }.distinctUntilChanged(),
-                    fragment.settings.map { it.columnCount to it.scroll }.distinctUntilChanged(),
+                    fragment.settings,
                 ) { href, layout -> href to layout }.collect {
+                    pagination[fragment]?.invalidate()
                     applyDivider(fragment)
                 }
             }
@@ -88,19 +97,21 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
             if (fragment is EpubNavigatorFragment) {
                 jobs.remove(fragment)?.cancel()
                 dividers[fragment]?.show(false)
+                pagination[fragment]?.stop()
             }
         }
 
         override fun onFragmentDestroyed(manager: FragmentManager, fragment: Fragment) {
             if (fragment is EpubNavigatorFragment) jobs.remove(fragment)?.cancel()
             if (fragment is EpubNavigatorFragment) dividers.remove(fragment)?.close()
+            if (fragment is EpubNavigatorFragment) pagination.remove(fragment)?.clear()
             navigators.remove(fragment)
         }
     }
 
     init {
         activity.supportFragmentManager.registerFragmentLifecycleCallbacks(callbacks, true)
-        MethodChannel(messenger, "inkora/ebook_presentation").setMethodCallHandler { call, result ->
+        channel.setMethodCallHandler { call, result ->
             val args = call.arguments as? Map<*, *>
             when (call.method) {
                 "paperTile" -> activity.lifecycleScope.launch {
@@ -113,7 +124,11 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
                         result.error("paper_texture", "Unable to prepare paper texture.", null)
                     }
                 }
-                "trimMemory" -> { EbookPaperTexture.trimMemory(); result.success(null) }
+                "trimMemory" -> {
+                    EbookPaperTexture.trimMemory()
+                    pagination.values.forEach { it.clear() }
+                    result.success(null)
+                }
                 "configure" -> {
                     val animationValue = args?.get("animations") as? Boolean
                     val separatorValue = args?.get("separator") as? Boolean
@@ -125,6 +140,8 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
                         animations = animationValue
                         separator = separatorValue
                         paperTexture = args?.get("paperTexture") as? Boolean ?: false
+                        pageNumbers = args?.get("pageNumbers") as? Boolean ?: true
+                        if (!pageNumbers) pagination.values.forEach { it.clear() }
                         dividerColor = (args?.get("dividerColor") as? Number)?.toInt() ?: 0xff252320.toInt()
                         tapToTurnPages = tapValue
                         imageEnhancement = imageValue
@@ -148,6 +165,12 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
                             result.error("ebook_navigation", "Unable to turn the page.", null)
                         }
                     }
+                }
+                "pagination" -> activity.lifecycleScope.launch {
+                    val navigator = navigators.firstOrNull { it.isResumed }
+                    try { result.success(if (pageNumbers) pagination[navigator]?.snapshot()?.toString() else null) }
+                    catch (_: CancellationException) { result.success(null) }
+                    catch (_: Exception) { result.success(null) }
                 }
                 // Fixed scalar geometry for native debug verification; never
                 // exposes document text or accepts an executable argument.
@@ -176,6 +199,10 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
                             )
                             val decoded = JSONTokener(raw ?: "null").nextValue()
                             val probe = if (decoded is String) JSONObject(decoded) else decoded as JSONObject
+                            val counter = pagination.entries.firstOrNull { it.key.isResumed }?.value
+                            probe.put("paginationCalculations", counter?.calculations ?: 0)
+                            probe.put("paginationResourcesMeasured", counter?.resourcesMeasured ?: 0)
+                            probe.put("paginationActiveResources", counter?.activeResources ?: 0)
                             val divider = dividers.entries.firstOrNull { it.key.isResumed }?.value
                             val visible = divider != null && divider.alpha > 0 && divider.segments.isNotEmpty()
                             val scale = if (divider == null || divider.view.width == 0) 0.0
@@ -266,6 +293,7 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
                 })()"""
             )
             refreshDivider(navigator)
+            if (navigator.isResumed) channel.invokeMethod("paginationChanged", null)
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Exception) { /* A resource or navigator may be closing. */ }
@@ -296,6 +324,8 @@ class EbookPresentation(private val activity: FlutterFragmentActivity, messenger
         activity.supportFragmentManager.unregisterFragmentLifecycleCallbacks(callbacks)
         jobs.values.forEach { it.cancel() }
         jobs.clear()
+        pagination.values.forEach { it.clear() }
+        pagination.clear()
         navigators.clear()
         dividers.values.forEach { it.close() }
         dividers.clear()

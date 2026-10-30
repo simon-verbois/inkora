@@ -429,6 +429,7 @@ void main() {
               'pageInsets': {'left': 9, 'top': 10, 'right': 11, 'bottom': 12},
               'columns': 'two',
               'columnSeparator': true,
+              'pageNumbers': false,
               'scroll': true,
               'tapToTurnPages': true,
               'paperTexture': true,
@@ -502,6 +503,7 @@ void main() {
           name != 'Page layout',
         );
         expect(saved.ebook!.containsKey('scroll'), name != 'Navigation');
+        expect(saved.ebook!.containsKey('pageNumbers'), name != 'Page layout');
         expect(
           saved.ebook!.containsKey('tapToTurnPages'),
           name != 'Navigation',

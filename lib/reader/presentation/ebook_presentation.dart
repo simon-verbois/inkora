@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import '../../core/images/image_enhancement.dart';
 
 /// Small typed adapter for the pinned Android EPUB navigator. No document
-/// scripts, metadata or credentials cross this channel.
+/// scripts, publication text or credentials cross this channel.
 abstract final class EbookPresentation {
   static const channel = MethodChannel('inkora/ebook_presentation');
   static bool get supported =>
@@ -36,6 +36,7 @@ abstract final class EbookPresentation {
     bool tapToTurnPages = false,
     int dividerColor = 0xff252320,
     bool paperTexture = false,
+    bool pageNumbers = true,
     ImageEnhancement imageEnhancement = ImageEnhancement.off,
   }) async {
     if (!supported) return false;
@@ -45,6 +46,7 @@ abstract final class EbookPresentation {
             'separator': separator,
             'dividerColor': dividerColor,
             'paperTexture': paperTexture,
+            'pageNumbers': pageNumbers,
             'tapToTurnPages': tapToTurnPages,
             'imageEnhancement': imageEnhancement.index,
           }) ??

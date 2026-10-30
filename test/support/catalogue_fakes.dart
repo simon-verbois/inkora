@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:inkora/core/errors/failure_kind.dart';
 import 'package:inkora/core/network/komga/api_failure.dart';
 import 'package:inkora/features/library/domain/catalogue.dart';
+import 'package:inkora/features/library/domain/catalogue_metadata.dart';
 
 CatalogueItem entry(
   String id, {
@@ -71,3 +72,20 @@ class FakeCatalogueRemote implements CatalogueRemote {
     cancelled = true;
   }
 }
+
+CatalogueItem series(
+  String id, {
+  String status = '',
+  int count = 0,
+  String library = 'a',
+  List<String> genres = const [],
+  bool available = true,
+}) => CatalogueItem(
+  kind: CatalogueKind.series,
+  id: id,
+  title: id,
+  libraryId: library,
+  itemCount: count,
+  available: available,
+  metadata: CatalogueMetadata(status: status, genres: genres),
+);

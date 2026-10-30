@@ -9,7 +9,8 @@ import 'reader_details.dart';
 import 'ebook_presentation.dart';
 import 'ebook_paper_background.dart';
 import 'ebook_selection.dart';
-import 'ebook_page_insets.dart';
+import 'ebook_page_frame.dart';
+import 'ebook_page_numbers.dart';
 import 'ebook_fonts.dart';
 import 'reading_colors.dart';
 
@@ -78,6 +79,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   final _engine = FlutterReadium();
   final _controls = ValueNotifier(false);
   final _position = ValueNotifier<(int, double)>((0, 0));
+  final _pageNumbers = EbookPageNumbersController();
   StreamSubscription<Locator>? _locations;
   StreamSubscription<List<DownloadJob>>? _downloadWatch;
   Completer<void>? _downloadDone;
@@ -97,7 +99,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   bool _bookmarkDecorationsReady = false;
   bool _presentationReady = false;
   bool _disableAnimations = false;
-  (bool, bool, ImageEnhancement, bool, int, bool)? _lastPresentation;
+  (bool, bool, ImageEnhancement, bool, int, bool, bool)? _lastPresentation;
   ImageEnhancement _imageEnhancement = ImageEnhancement.off;
   EPUBPreferences? _lastEPUBPreferences;
   bool _backgrounded = false;
@@ -381,12 +383,27 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
         textColor: settings.ebookInkColor,
       );
       if (_lastEPUBPreferences != prefs) {
+        _pageNumbers.hide();
         _engine.setDefaultPreferences(prefs);
         await _engine.setEPUBPreferences(prefs);
         _lastEPUBPreferences = prefs;
       }
       await _configurePresentation();
+      _refreshPageNumbers();
     }
+  }
+
+  void _refreshPageNumbers() {
+    final positions = _positionMap;
+    if (!mounted || !_epub || positions == null || !_presentationReady) return;
+    if (_backgrounded ||
+        !widget.settings.ebook.pageNumbers ||
+        widget.settings.ebook.scroll ||
+        ModalRoute.of(context)?.isCurrent != true) {
+      _pageNumbers.hide();
+      return;
+    }
+    _pageNumbers.refresh();
   }
 
   Future<void> _configurePresentation({bool force = false}) async {
@@ -398,6 +415,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
       widget.settings.ebook.tapToTurnPages,
       widget.settings.ebookInkColor.toARGB32(),
       widget.settings.paperTexture,
+      widget.settings.ebook.pageNumbers,
     );
     if (!force && _lastPresentation == value) return;
     try {
@@ -408,6 +426,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
         tapToTurnPages: value.$4,
         dividerColor: value.$5,
         paperTexture: value.$6,
+        pageNumbers: value.$7,
       )) {
         _lastPresentation = value;
       }
@@ -481,6 +500,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
       }
       final position = (page, fraction);
       _position.value = position;
+      _refreshPageNumbers();
       final next = ReaderLocator(page, fraction, exact);
       if (_pending?.pageIndex == page &&
           _pending?.fraction == fraction &&
@@ -835,8 +855,10 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
         state == AppLifecycleState.detached;
     if (state != AppLifecycleState.resumed) {
       _flush();
+      if (_backgrounded) _pageNumbers.hide();
     } else if (ModalRoute.of(context)?.isCurrent == true) {
       _chromeChanged();
+      _refreshPageNumbers();
     }
   }
 
@@ -853,6 +875,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
     }
     _controls.dispose();
     _position.dispose();
+    _pageNumbers.dispose();
     if (_epub) unawaited(_native(_engine.closePublication));
     super.dispose();
   }
@@ -894,17 +917,15 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
                     ? EbookPaperBackground(
                         color: widget.settings.ebookPaperColor,
                         enabled: widget.settings.paperTexture,
-                        child: Padding(
-                          key: const Key('ebook-page-margins'),
-                          padding: ebookPublicationInsets(
-                            widget.settings.ebook,
-                            MediaQuery.viewPaddingOf(context),
-                            MediaQuery.sizeOf(context),
-                            devicePixelRatio: MediaQuery.devicePixelRatioOf(
-                              context,
-                            ),
-                          ),
-                          child: _surface,
+                        child: EbookPageFrame(
+                          settings: widget.settings.ebook,
+                          paper: widget.settings.ebookPaperColor,
+                          numbers: _pageNumbers,
+                          onGeometryChanged: () {
+                            _pageNumbers.hide();
+                            _refreshPageNumbers();
+                          },
+                          child: _surface!,
                         ),
                       )
                     : _surface) ??

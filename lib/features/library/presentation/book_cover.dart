@@ -152,6 +152,7 @@ ImageProvider coverImage(
       repository.version(key),
       pixels,
       (pixels / InkoraLayout.coverRatio).ceil().clamp(96, 720),
+      generation: repository.generation,
     ),
     bytes,
   );
@@ -167,21 +168,24 @@ final class CoverImageKey {
     this.cover,
     this.version,
     this.width,
-    this.height,
-  );
+    this.height, {
+    this.generation = 0,
+  });
   final String accountId;
   final CoverKey cover;
-  final int version, width, height;
+  final int version, width, height, generation;
   @override
   bool operator ==(Object other) =>
       other is CoverImageKey &&
       other.accountId == accountId &&
       other.cover == cover &&
       other.version == version &&
+      other.generation == generation &&
       other.width == width &&
       other.height == height;
   @override
-  int get hashCode => Object.hash(accountId, cover, version, width, height);
+  int get hashCode =>
+      Object.hash(accountId, cover, generation, version, width, height);
 }
 
 final class CoverImageProvider extends ImageProvider<CoverImageKey> {

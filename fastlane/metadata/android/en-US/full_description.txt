@@ -1,0 +1,11 @@
+Your books stay on your Komga server. Inkora brings them to your phone or tablet, with layouts for every kind of story.
+
+Continue your current book from Home. Filter your shelves without losing your place, browse ebook authors and reopen recent reads from your history.
+
+Download books or whole series, follow transfers and read offline. Optionally remove a series’ finished downloads after at least 24 hours. Progress syncs to Komga when you reconnect.
+
+Choose reading direction, page layout and gestures, with reading defaults for each visible library. Adjust ebook typography, add bookmarks and open book or series details from the reader.
+
+Install the Android APK, enter your server address and sign in with an API key or your username and password. Choose your visible libraries and open your first book.
+
+Inkora provides neither books nor a hosted Komga server. You keep control of your collection.

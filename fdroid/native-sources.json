@@ -1,0 +1,36 @@
+{
+  "flutter": {
+    "version": "3.47.7",
+    "revision": "abaf9c523780a608bd46686fd5e53740a07077f8"
+  },
+  "pdfium": {
+    "version": "149.0.7811.0",
+    "branch": "chromium/7811",
+    "revision": "9e5d491ff73630b6a423689698290650050e7b3f",
+    "builderRevision": "f72e059ccf6dccec9fcf79f1fe4a33bf48133a58",
+    "depotToolsRevision": "37e67d87efb841c1633c9943cdc334ecb523b921"
+  },
+  "pdfiumDart": {
+    "version": "0.3.1",
+    "hookSha256": "3461424e94103c571bc61e882e26a84797933a846b832760a88e82fd7b750283"
+  },
+  "builderFiles": {
+    "steps/01-install.sh": "e5e93d94437fb1f1a1d8e268a93a9b74a2a68b2097a75aa99d335a4e36bb661a",
+    "steps/02-checkout.sh": "35db5c9fc6ba4c1f3056a6197e2131abdb6684cd0937fa8fae2a7c3cbbf403e2",
+    "steps/09-test.sh": "1ad5762e8defe771dfec6655d80f5e1290f549775e5b71582136fcaaf4e83174",
+    "steps/06-build.sh": "060d0a5125bba13ad2d0659ee610ae5e6fe6555ac4aba662e024994094940659",
+    "build.sh": "71e3de263ec0504c24aebbc9d17b0193bbcd674309ed7163ca9f0c54ded477c7"
+  },
+  "sqlite": {
+    "version": "3.53.4",
+    "dartVersion": "3.5.2",
+    "url": "https://sqlite.org/2026/sqlite-amalgamation-3530400.zip",
+    "archiveRoot": "sqlite-amalgamation-3530400",
+    "sha256": "1e71ddf93849c6a6ecf58b827c0692073d2dd7ee40196158068f7b29f422e87d",
+    "files": {
+      "sqlite3.c": "b1dd5d74ec7f29055a6684fa06fb3c2f6821c87dd38f9a458dfd2e8a1db28189",
+      "sqlite3.h": "919e7f2e8ed1d8f56ac17b412b8971c76aa5d1a879752cc6058f75e7d5910e1d",
+      "sqlite3ext.h": "ac9645e5c9ff0cf176efdd6e75cb5e98f46295d38e02db5c4d208826a39ab4be"
+    }
+  }
+}

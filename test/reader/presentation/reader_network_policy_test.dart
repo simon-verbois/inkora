@@ -1,8 +1,49 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/reader/application/reader_network_policy.dart';
 
 void main() {
+  test(
+    'fallback polls never overlap and cancellation drops late results',
+    () async {
+      final previous = ReaderNetworkPolicy.pollInterval;
+      ReaderNetworkPolicy.pollInterval = const Duration(milliseconds: 10);
+      addTearDown(() => ReaderNetworkPolicy.pollInterval = previous);
+      final requests = <Completer<Map<String, bool>>>[];
+      final firstRequest = Completer<void>(),
+          secondRequest = Completer<void>(),
+          firstValue = Completer<void>();
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(ReaderNetworkPolicy.channel, (call) async {
+            if (call.method == 'events') return false;
+            final response = Completer<Map<String, bool>>();
+            requests.add(response);
+            if (requests.length == 1) firstRequest.complete();
+            if (requests.length == 2) secondRequest.complete();
+            return response.future;
+          });
+      final seen = <ReaderNetworkSnapshot>[];
+      final subscription = ReaderNetworkPolicy.watch().listen((value) {
+        seen.add(value);
+        if (!firstValue.isCompleted) firstValue.complete();
+      });
+      addTearDown(subscription.cancel);
+      await firstRequest.future.timeout(const Duration(seconds: 3));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(requests.length, 1);
+      requests.first.complete({'metered': false, 'dataSaver': false});
+      await firstValue.future.timeout(const Duration(seconds: 3));
+      expect(seen, [(constrained: false, paused: false)]);
+      await secondRequest.future.timeout(const Duration(seconds: 3));
+      await subscription.cancel();
+      requests.last.complete({'metered': true, 'dataSaver': true});
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(requests.length, 2);
+      expect(seen.length, 1);
+    },
+  );
   TestWidgetsFlutterBinding.ensureInitialized();
   tearDown(
     () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger

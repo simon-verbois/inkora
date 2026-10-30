@@ -127,6 +127,16 @@ independent metadata companion for Komga. See [the Pages guide](docs/PAGES.md)
 for local preview and hosting. Committed static locale pages support publishing
 from the default branch’s `/docs` folder or the optional Python build/workflow.
 
+## License and F-Droid
+
+Inkora's original code and project-authored assets are available under the
+[MIT License](LICENSE). Third-party components retain their own licenses; see
+[NOTICE](NOTICE).
+
+The repository includes English/French store descriptions and a source-build
+candidate for F-Droid. Official inclusion and reproducible signing are pending;
+see [F-Droid packaging](fdroid/README.md) for the build recipe and remaining gates.
+
 ## Credits
 
 Inkora is built with Flutter and uses Readium for EPUB and PDFium through pdfrx

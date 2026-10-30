@@ -31,6 +31,31 @@ void main() {
   late AppDatabase db;
   setUp(() => db = AppDatabase(NativeDatabase.memory()));
   tearDown(() => db.close());
+  test('backup ignores malformed foreign bookmark rows and escapes account prefixes', () async {
+    const account = 'a"],/%_';
+    await EbookBookmarks(db, account, 'own').add(
+      EbookLocator({
+        'href': 'own.xhtml',
+        'type': 'application/xhtml+xml',
+        'locations': {'progression': .2},
+      }),
+    );
+    await EbookBookmarks(db, '$account-other', 'foreign').write([]);
+    await db.customStatement(
+      'INSERT INTO app_preferences(key,payload) VALUES (?,?)',
+      ['ebook-bookmarks:not-json', '{'],
+    );
+    await db.customStatement(
+      'INSERT INTO app_preferences(key,payload) VALUES (?,?)',
+      ['raster-bookmarks:not-json', '{'],
+    );
+    final transfer = SettingsTransfer(db, account);
+    final exported = await transfer.inspect(await transfer.export());
+    final bookmarks = exported['bookmarks'] as List;
+    expect(bookmarks, hasLength(1));
+    expect((bookmarks.single as Map)['book'], 'own');
+    expect((await db.select(db.appPreferences).get()).length, 4);
+  });
   test('raster bookmarks retain fractions, replace notes, isolate accounts and revisions', () async {
     final a = RasterBookmarks(db, 'a', 'book');
     await a.add(const RasterBookmark('v1', 2, .42, 'first'));

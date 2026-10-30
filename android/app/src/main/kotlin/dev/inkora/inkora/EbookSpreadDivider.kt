@@ -74,6 +74,7 @@ internal class EbookSpreadDivider(val view: View, private val onSizeChanged: () 
     private fun discover() {
         val found = mutableListOf<WebView>()
         fun visit(child: View) {
+            if (EbookBookPagination.isCounterView(child)) return
             if (child is WebView) found.add(child)
             else if (child is ViewGroup) for (i in 0 until child.childCount) visit(child.getChildAt(i))
         }

@@ -1,3 +1,5 @@
+import '../../support/reader_preferences.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/l10n/app_strings.dart';
@@ -81,22 +83,16 @@ void main() {
       final editor = tester.state<ReaderSettingsSheetState>(
         find.byType(ReaderSettingsSheet),
       );
-      final sampler = find.byKey(
-        const Key('reader-choice-quality-all-sampling-nearest'),
+      await chooseReaderPreference(
+        tester,
+        'reader-choice-quality-all-sampling-nearest',
       );
-      await tester.ensureVisible(sampler);
-      await tester.tap(sampler);
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 50)),
-      );
-      await tester.pumpAndSettle();
-      final reset = find.byKey(const Key('reader-settings-menu'));
       for (final keyboardHeight in [300.0, 450.0, 500.0]) {
         tester.view.viewInsets = FakeViewPadding(bottom: keyboardHeight);
         await tester.pumpAndSettle();
         expect(tester.state(find.byType(ReaderSettingsSheet)), same(editor));
         expect(find.text('Save'), findsNothing);
-        expect(reset.hitTestable(), findsOneWidget);
+        expect(find.byKey(const Key('reader-settings-menu')), findsNothing);
       }
       tester.view.resetViewInsets();
       await tester.pumpAndSettle();
@@ -114,7 +110,10 @@ void main() {
           router.routeInformationProvider.value.uri.path,
           '/settings/quality',
         );
-        expect(tester.widget<ChoiceChip>(sampler).selected, isTrue);
+        expect(
+          selectedReaderPreference(tester, 'quality-all-sampling'),
+          'nearest',
+        );
         expect(
           find.byKey(const Key('settings-sidebar')),
           viewport.width >= 1000 && viewport.width > viewport.height

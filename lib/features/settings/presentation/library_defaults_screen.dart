@@ -122,9 +122,9 @@ class _LibraryDefaultsScreenState extends ConsumerState<LibraryDefaultsScreen> {
               if (libraryId != null) {
                 final editor = ReaderSettingsSheet(
                   key: widget.editorKey ?? ValueKey((account, libraryId)),
-                  showReset: !widget.embedded,
+
                   showScope: !widget.embedded,
-                  sectioned: widget.embedded,
+
                   store: _store!,
                   libraryId: libraryId,
                   onSaved: widget.onSaved,

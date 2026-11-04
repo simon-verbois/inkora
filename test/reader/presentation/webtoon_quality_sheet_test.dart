@@ -1,3 +1,5 @@
+import '../../support/reader_preferences.dart';
+
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -46,24 +48,21 @@ void main() {
     Future<void> open() async {
       await tester.tap(find.text('Preferences'));
       await settle();
-      await tester.tap(find.text('Preloading'));
+      await tester.ensureVisible(find.text('Preloading'));
       await settle();
     }
 
     await open();
-    expect(
-      tester
-          .widget<ChoiceChip>(find.byKey(const Key('webtoon-quality-sharp')))
-          .selected,
-      isTrue,
-    );
+    expect(selectedReaderPreference(tester, 'webtoon-quality'), 'sharp');
     expect(find.byKey(const Key('webtoon-sharpness')), findsNothing);
     // With no book selected, the estimate reserves long strips at both edges.
     expect(find.textContaining('75 % sharpness'), findsOneWidget);
     expect(find.textContaining('(limited by memory)'), findsOneWidget);
 
-    await tester.ensureVisible(find.byKey(const Key('webtoon-quality-custom')));
-    await tester.tap(find.byKey(const Key('webtoon-quality-custom')));
+    await chooseReaderPreference(
+      tester,
+      'reader-choice-webtoon-quality-custom',
+    );
     await settle();
     for (final key in ['sharpness', 'preload', 'memory']) {
       expect(find.byKey(Key('webtoon-$key')), findsOneWidget);
@@ -90,12 +89,7 @@ void main() {
     expect(saved.webtoonMemoryMiB, 96);
 
     await open();
-    expect(
-      tester
-          .widget<ChoiceChip>(find.byKey(const Key('webtoon-quality-custom')))
-          .selected,
-      isTrue,
-    );
+    expect(selectedReaderPreference(tester, 'webtoon-quality'), 'custom');
     expect(find.text('95 %'), findsOneWidget);
   });
 }

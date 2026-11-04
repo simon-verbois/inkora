@@ -47,10 +47,9 @@ void main() {
           ),
           findsNothing,
         );
-        final rendering = find.widgetWithText(Tab, strings.text('Rendering'));
+        expect(find.byType(TabBar), findsNothing);
+        final rendering = find.byType(ImageEnhancementControl);
         await tester.ensureVisible(rendering);
-        await tester.pumpAndSettle();
-        await tester.tap(rendering);
         await tester.pumpAndSettle();
         expect(find.byType(ImageEnhancementControl), findsOneWidget);
         expect(tester.takeException(), isNull);

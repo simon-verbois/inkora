@@ -1,3 +1,5 @@
+import '../../support/reader_preferences.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/l10n/app_strings.dart';
@@ -27,21 +29,19 @@ void main() {
         await harness.mount(tester);
         harness.container.read(routerProvider).go('/settings/quality');
         await tester.pumpAndSettle();
-        final chip = find.byKey(
-          const Key('reader-choice-quality-all-sampling-nearest'),
+
+        await chooseReaderPreference(
+          tester,
+          'reader-choice-quality-all-sampling-nearest',
         );
-        await tester.ensureVisible(chip);
-        await tester.pumpAndSettle();
-        expect(
-          find.text(AppStrings(language).text('Nearest neighbour')),
-          findsWidgets,
-        );
-        await tester.tap(chip);
         await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 50)),
         );
         await tester.pumpAndSettle();
-        expect(tester.widget<ChoiceChip>(chip).selected, isTrue);
+        expect(
+          selectedReaderPreference(tester, 'quality-all-sampling'),
+          'nearest',
+        );
         expect(find.text(AppStrings(language).text('Save')), findsNothing);
         expect(tester.takeException(), isNull);
         await harness.close(tester);

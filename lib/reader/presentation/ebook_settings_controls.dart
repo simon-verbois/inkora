@@ -167,9 +167,6 @@ class EbookSettingsControls extends StatelessWidget {
     label: label,
     choices: options,
     selected: value,
-    wrapLabels:
-        label == 'Reading mode' &&
-        MediaQuery.textScalerOf(context).scale(1) > 1.3,
     onSelected: change,
   );
   Widget _slider(

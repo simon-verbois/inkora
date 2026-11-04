@@ -1,3 +1,5 @@
+import '../test/support/reader_preferences.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -36,12 +38,10 @@ void main() {
       final editor = tester.state<ReaderSettingsSheetState>(
         find.byType(ReaderSettingsSheet),
       );
-      final sampler = find.byKey(
-        const Key('reader-choice-quality-jpeg-sampling-nearest'),
+      await chooseReaderPreference(
+        tester,
+        'reader-choice-quality-all-sampling-nearest',
       );
-      await tester.ensureVisible(sampler);
-      await tester.tap(sampler);
-      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('settings-sidebar-search')));
       await tester.pump(const Duration(milliseconds: 700));
       debugPrint('LANDSCAPE_CAPTURE_READY: keyboard');
@@ -49,10 +49,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       // Shell layout already consumes IME insets before the editor sees them.
       expect(tester.view.viewInsets.bottom, greaterThan(0));
-      expect(
-        find.byKey(const Key('reader-settings-menu')).hitTestable(),
-        findsOneWidget,
-      );
+      expect(find.byKey(const Key('reader-settings-menu')), findsNothing);
       FocusManager.instance.primaryFocus?.unfocus();
       await SystemChannels.textInput.invokeMethod<void>('TextInput.hide');
       await tester.pump(const Duration(milliseconds: 800));
@@ -61,7 +58,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('settings-sidebar')), findsNothing);
       expect(tester.state(find.byType(ReaderSettingsSheet)), same(editor));
-      expect(tester.widget<ChoiceChip>(sampler).selected, isTrue);
+      expect(
+        selectedReaderPreference(tester, 'quality-all-sampling'),
+        'nearest',
+      );
       debugPrint('LANDSCAPE_ROTATE_READY: landscape');
       await Future<void>.delayed(const Duration(seconds: 5));
       await tester.pumpAndSettle();

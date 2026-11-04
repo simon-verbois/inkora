@@ -17,7 +17,7 @@ import 'package:inkora/reader/domain/reader_manifest.dart';
 import 'package:inkora/reader/domain/reading_settings.dart';
 import 'package:inkora/reader/presentation/ebook_fonts.dart';
 
-import 'reader_settings_tabs_test.dart' show openSheet, settle;
+import 'reader_settings_sections_test.dart' show openSheet, settle;
 
 void main() {
   for (final (locale, size, scale) in [

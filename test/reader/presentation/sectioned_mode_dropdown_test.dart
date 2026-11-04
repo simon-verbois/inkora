@@ -55,9 +55,9 @@ void main() {
                   key: editorKey,
                   store: store,
                   libraryId: 'library',
-                  sectioned: true,
+
                   showScope: false,
-                  showReset: false,
+
                   onSaved: () {},
                 ),
               ),

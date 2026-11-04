@@ -105,7 +105,10 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        expect(find.byKey(const Key('catalogue-tools')), findsOneWidget);
+        expect(
+          find.byKey(const Key('catalogue-floating-actions')),
+          findsOneWidget,
+        );
         expect(find.text('Continue reading'), findsNothing);
         await openHomeDestination(tester, 'libraries');
         await tester.pumpAndSettle();

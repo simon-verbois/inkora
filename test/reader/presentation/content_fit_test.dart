@@ -1,3 +1,5 @@
+import '../../support/reader_preferences.dart';
+
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -97,18 +99,7 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        final choice = find.byKey(const Key('reader-choice-fit-content'));
-        await tester.ensureVisible(choice);
-        await tester.pumpAndSettle();
-        expect(
-          find.text(AppStrings(language).text('Fit content')),
-          findsOneWidget,
-        );
-        final rect = tester.getRect(choice);
-        expect(rect.left, greaterThanOrEqualTo(16));
-        expect(rect.right, lessThanOrEqualTo(304));
-        expect(rect.height, greaterThanOrEqualTo(48));
-        await tester.tap(choice);
+        await chooseReaderPreference(tester, 'reader-choice-fit-content');
         expect(chosen, 'content');
         expect(tester.takeException(), isNull);
       },

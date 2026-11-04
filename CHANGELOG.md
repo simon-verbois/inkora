@@ -10,6 +10,27 @@ remain in progress.
 
 ## [Unreleased]
 
+## [2026.45.2] - 2026-11-04
+
+### Changed
+
+- Home keeps larger accent-colored library and filter buttons at the bottom right in portrait and landscape, with no inline toolbar. Sorting, grid/list selection and saved searches are available in the filter panel.
+- A subtle fading separator and breathing room distinguish Continue reading from the library catalogue.
+- All reading and image-quality preferences use one scrolling form with ordered sections and dropdown choices. Rendering and preloading no longer require tabs.
+- Custom gesture preferences use the shared full-width, resizable drawer with a local preview and explicit Save.
+- Series and Author shortcuts use a short reveal transition without native reader route snapshots.
+
+### Fixed
+
+- Genre browsing from a reader's parent page and opening its results stay above the reader, with working Back navigation.
+- MIME format names with parameters, including RAR version 4, display short labels such as CBR in filters.
+- Synopsis expansion actions are centered.
+
+### Removed
+
+- Preference reset links and overflow reset menus, including filter reset chrome. Selected filter values can still be deselected.
+- The preferred-hand setting and its stored/exported value; old imports safely ignore it.
+
 ## [2026.45.1] - 2026-11-04
 
 ### Added

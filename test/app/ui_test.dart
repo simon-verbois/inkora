@@ -38,7 +38,10 @@ void main() {
           );
           addTearDown(() => harness.close(tester));
           await harness.mount(tester);
-          expect(find.byKey(const Key('catalogue-tools')), findsOneWidget);
+          expect(
+            find.byKey(const Key('catalogue-floating-actions')),
+            findsOneWidget,
+          );
           expect(find.byTooltip('Refresh catalogue'), findsNothing);
           expect(find.byTooltip('Search catalogue'), findsNothing);
           expect(find.byIcon(Icons.shield_outlined), findsNothing);
@@ -274,7 +277,7 @@ void main() {
       expect(find.text('This book'), findsNothing);
       expect(find.text('Preference inheritance'), findsNothing);
       expect(find.text('Inherit'), findsNothing);
-      expect(find.byKey(const Key('reader-settings-menu')), findsOneWidget);
+      expect(find.byKey(const Key('reader-settings-menu')), findsNothing);
       expect(tester.takeException(), isNull);
       await harness.close(tester);
     },
@@ -386,7 +389,7 @@ void registerCatalogueRetentionTest() {
     await harness.mount(tester);
     await openHomeDestination(tester, 'libraries');
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('library-selector')));
+    await tester.tap(find.byKey(const Key('catalogue-floating-library')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Manga shelf'));
     await tester.pumpAndSettle();
@@ -427,10 +430,19 @@ void registerCatalogueRetentionTest() {
       'Moonlit',
     );
     await tester.pump(const Duration(milliseconds: 200));
-    // The selector shows the name on wide windows, its tooltip everywhere.
-    expect(find.byTooltip('Manga shelf'), findsOneWidget);
-    await tester.tap(find.byTooltip('Show list'));
-    await tester.tap(find.byKey(const Key('catalogue-filters')));
+    await tester.tap(find.byKey(const Key('catalogue-floating-library')));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<ListTile>(find.byKey(const Key('library-choice-library-a')))
+          .selected,
+      isTrue,
+    );
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('catalogue-floating-filters')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('catalogue-view')));
     await tester.pumpAndSettle();
     expect(find.text('List view'), findsNothing);
     await tester.tap(find.text('Show unavailable items'));

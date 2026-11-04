@@ -35,7 +35,6 @@ final class UiPreferences {
     this.homeLandscapeColumns = 6,
     this.textScale = 1,
     this.reduceMotion = false,
-    this.leftHanded = false,
     this.hideTags = true,
     this.floatingNavigation = true,
     this.locale,
@@ -57,7 +56,6 @@ final class UiPreferences {
       width > height ? homeLandscapeColumns : homePortraitColumns;
   final double textScale;
   final bool reduceMotion, setupCompleted;
-  final bool leftHanded;
   final bool hideTags;
   final bool floatingNavigation;
   final String? locale;
@@ -73,7 +71,6 @@ final class UiPreferences {
     int? homeLandscapeColumns,
     double? textScale,
     bool? reduceMotion,
-    bool? leftHanded,
     bool? hideTags,
     bool? floatingNavigation,
     String? locale,
@@ -90,7 +87,6 @@ final class UiPreferences {
     homeLandscapeColumns: homeLandscapeColumns ?? this.homeLandscapeColumns,
     textScale: textScale ?? this.textScale,
     reduceMotion: reduceMotion ?? this.reduceMotion,
-    leftHanded: leftHanded ?? this.leftHanded,
     hideTags: hideTags ?? this.hideTags,
     floatingNavigation: floatingNavigation ?? this.floatingNavigation,
     locale: systemLocale ? null : locale ?? this.locale,
@@ -108,7 +104,6 @@ final class UiPreferences {
     'homeLandscapeColumns': homeLandscapeColumns,
     'textScale': textScale,
     'reduceMotion': reduceMotion,
-    'leftHanded': leftHanded,
     'hideTags': hideTags,
     'floatingNavigation': floatingNavigation,
     'locale': locale,
@@ -186,7 +181,6 @@ final class UiPreferences {
           ? scale.toDouble()
           : 1,
       reduceMotion: json['reduceMotion'] == true,
-      leftHanded: json['leftHanded'] == true,
       hideTags: json['hideTags'] != false,
       floatingNavigation: json['floatingNavigation'] != false,
       imageEnhancement: ImageEnhancement.parse(json['imageEnhancement']),

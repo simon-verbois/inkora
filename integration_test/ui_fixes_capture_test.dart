@@ -221,13 +221,7 @@ void main() {
     }
 
     await capture('01-home-initial');
-    if (find.byKey(const Key('catalogue-tools-menu')).evaluate().isNotEmpty) {
-      await tap('catalogue-tools-menu');
-      await capture('02a-catalogue-tools-menu');
-      await tap('catalogue-library-menu');
-    } else {
-      await tap('library-selector');
-    }
+    await tap('catalogue-floating-library');
     await capture('02-library-menu');
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();

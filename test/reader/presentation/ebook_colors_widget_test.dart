@@ -8,7 +8,7 @@ import 'package:inkora/reader/domain/reading_settings.dart';
 import 'package:inkora/reader/presentation/ebook_colors_dialog.dart';
 
 import 'reader_settings_order_test.dart' show mount, capture;
-import 'reader_settings_tabs_test.dart' show settle, chooseBackground;
+import 'reader_settings_sections_test.dart' show settle, chooseBackground;
 
 Future<void> tapVisible(WidgetTester tester, Finder finder) async {
   await tester.ensureVisible(finder);

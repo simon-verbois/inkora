@@ -1,5 +1,3 @@
-import '../../../app/widgets/preferred_hand_alignment.dart';
-
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -440,11 +438,21 @@ class SeriesAbout extends ConsumerWidget {
                     vertical: 6,
                   ),
                   label: Text(genre, softWrap: true),
-                  onPressed: () => context.pushNamed(
-                    'catalogue',
-                    pathParameters: {'kind': CatalogueKind.series.name},
-                    queryParameters: {'genre': genre},
-                  ),
+                  onPressed: () {
+                    final route = GoRouterState.of(context);
+                    final fromReader =
+                        route.name?.startsWith('reader-parent') == true;
+                    context.pushNamed(
+                      fromReader ? 'reader-parent-catalogue' : 'catalogue',
+                      pathParameters: fromReader
+                          ? {'id': route.pathParameters['id']!}
+                          : {'kind': CatalogueKind.series.name},
+                      queryParameters: {
+                        if (fromReader) ...route.uri.queryParameters,
+                        'genre': genre,
+                      },
+                    );
+                  },
                 ),
             ],
           ),
@@ -566,7 +574,8 @@ class _SeriesSynopsisState extends State<SeriesSynopsis> {
             else
               collapsed,
             if (overflow)
-              PreferredHandAlignment(
+              Align(
+                alignment: Alignment.center,
                 child: TextButton(
                   key: const Key('detail-summary-toggle'),
                   onPressed: () {

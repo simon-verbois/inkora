@@ -190,20 +190,45 @@ class _ResumeSection extends ConsumerWidget {
             ),
           ),
         );
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: InkPanel(
-            framed: false,
-            title: 'Continue reading',
-            child: ResumeCarousel(
-              entries: reading,
-              columns: columns,
-              onMarkReading: accountId == null
-                  ? null
-                  : (entry, read) =>
-                        _mark(context, ref, entry, accountId, read: read),
+        final divider = Theme.of(context).colorScheme.onSurface
+            .withValues(alpha: .22);
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: InkPanel(
+                framed: false,
+                title: 'Continue reading',
+                child: ResumeCarousel(
+                  entries: reading,
+                  columns: columns,
+                  onMarkReading: accountId == null
+                      ? null
+                      : (entry, read) =>
+                            _mark(context, ref, entry, accountId, read: read),
+                ),
+              ),
             ),
-          ),
+            Padding(
+              key: const Key('home-section-separator'),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: SizedBox(
+                height: 1,
+                width: double.infinity,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        divider.withValues(alpha: 0),
+                        divider,
+                        divider.withValues(alpha: 0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         );
       },
     );

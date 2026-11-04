@@ -1,3 +1,5 @@
+import '../../support/reader_preferences.dart';
+
 import 'package:inkora/features/library/presentation/library_screen.dart';
 
 import 'package:flutter/material.dart';
@@ -136,6 +138,68 @@ void main({bool includeLifecycle = true}) {
       expect(drags, greaterThan(0));
     },
   );
+  testWidgets(
+    'custom gesture preset saves once and repeated unchanged Save skips writes',
+    (tester) async {
+      final harness = await UiHarness.create(tester);
+      addTearDown(() => harness.close(tester));
+      await harness.mount(tester);
+      harness.container.read(routerProvider).go('/settings/gestures');
+      await tester.pumpAndSettle();
+      final before = harness.container
+          .read(uiPreferencesProvider)
+          .requireValue
+          .gestures;
+      var changes = 0;
+      final listener = harness.container.listen(
+        uiPreferencesProvider,
+        (_, _) => changes++,
+      );
+      addTearDown(listener.close);
+      await chooseGesturePreset(tester, 'custom');
+      final save = find.byKey(const Key('gesture-custom-save'));
+      await tester.ensureVisible(save);
+      await tester.pumpAndSettle();
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<DropdownButton<GesturePreset>>(
+              find.byType(DropdownButton<GesturePreset>),
+            )
+            .value,
+        GesturePreset.custom,
+      );
+      expect(
+        harness.container
+            .read(uiPreferencesProvider)
+            .requireValue
+            .gestures
+            .left,
+        before.left,
+      );
+      expect(changes, 1);
+      changes = 0;
+      await tester.tap(find.byKey(const Key('gesture-custom-edit')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(save);
+      await tester.pumpAndSettle();
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<DropdownButton<GesturePreset>>(
+              find.byType(DropdownButton<GesturePreset>),
+            )
+            .value,
+        GesturePreset.custom,
+      );
+      expect(changes, 0);
+      expect(tester.takeException(), isNull);
+      await harness.close(tester);
+    },
+  );
+
   testWidgets('gesture popup saves a draft without rebuilding the app', (
     tester,
   ) async {
@@ -145,7 +209,7 @@ void main({bool includeLifecycle = true}) {
     harness.container.read(routerProvider).go('/settings/gestures');
     await tester.pumpAndSettle();
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
-    await tester.tap(find.byKey(const ValueKey('gesture-preset-custom')));
+    await chooseGesturePreset(tester, 'custom');
     await tester.pumpAndSettle();
     final slider = tester.widget<Slider>(find.byType(Slider).first);
     slider.onChanged!(32);
@@ -157,6 +221,8 @@ void main({bool includeLifecycle = true}) {
       (await tester.runAsync(() => store.watch().first))!.gestures.left,
       16,
     );
+    await tester.ensureVisible(find.byKey(const Key('gesture-custom-save')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('gesture-custom-save')));
     await tester.pumpAndSettle();
     expect(

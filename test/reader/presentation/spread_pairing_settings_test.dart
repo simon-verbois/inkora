@@ -1,6 +1,7 @@
+import '../../support/reader_preferences.dart';
+
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/l10n/app_strings.dart';
@@ -73,32 +74,16 @@ void main() {
         }
 
         await settle();
-        for (final mode in SpreadPairing.values) {
-          final choice = find.byKey(
-            Key('reader-choice-spreadPairing-${mode.name}'),
-          );
-          await tester.ensureVisible(choice);
-          await tester.pumpAndSettle();
-          expect(choice.hitTestable(), findsOneWidget);
-          final paragraph = tester.renderObject<RenderParagraph>(
-            find.descendant(of: choice, matching: find.byType(RichText)).first,
-          );
-          expect(paragraph.didExceedMaxLines, false);
-          expect(tester.getSize(choice).height, greaterThanOrEqualTo(48));
-        }
         for (final mode in [
           SpreadPairing.shifted,
           SpreadPairing.unshifted,
           SpreadPairing.automatic,
         ]) {
-          final choice = find.byKey(
-            Key('reader-choice-spreadPairing-${mode.name}'),
+          await chooseReaderPreference(
+            tester,
+            'reader-choice-spreadPairing-${mode.name}',
           );
-          await tester.ensureVisible(choice);
-          await tester.pumpAndSettle();
-          await tester.tap(choice);
-          await settle();
-          expect(tester.widget<RadioListTile<String>>(choice).selected, true);
+          expect(selectedReaderPreference(tester, 'spreadPairing'), mode.name);
           final settings = await tester.runAsync(
             () => store.settings(manifest).first,
           );

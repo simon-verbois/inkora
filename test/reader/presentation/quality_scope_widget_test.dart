@@ -1,3 +1,5 @@
+import '../../support/reader_preferences.dart';
+
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,7 +11,7 @@ import 'package:inkora/reader/presentation/reader_settings_sheet.dart';
 void main() {
   for (final qualityOnly in [true, false]) {
     testWidgets(
-      '${qualityOnly ? 'quality' : 'reading'} reset preserves the other section and account',
+      '${qualityOnly ? 'quality' : 'reading'} edit preserves the other section and account',
       (tester) async {
         final database = AppDatabase(NativeDatabase.memory());
         final store = ReaderStore(database, 'quality-account');
@@ -42,17 +44,14 @@ void main() {
           () => Future<void>.delayed(const Duration(milliseconds: 50)),
         );
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('reader-settings-menu')));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('reader-settings-reset')));
-        await tester.pumpAndSettle();
-        // Confirmed reset applies at once; there is no Save step.
-        expect(find.text('Save'), findsNothing);
-        await tester.tap(find.text('Reset to default').last);
-        await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        expect(find.byKey(const Key('reader-settings-menu')), findsNothing);
+        expect(find.byType(TabBar), findsNothing);
+        await chooseReaderPreference(
+          tester,
+          qualityOnly
+              ? 'reader-choice-quality-all-filter-sepia'
+              : 'reader-choice-fit-width',
         );
-        await tester.pump();
         final saved = (await tester.runAsync(
           () => store.overrides(SettingsScope.global, ''),
         ))!;
@@ -60,11 +59,15 @@ void main() {
         if (qualityOnly) {
           expect(saved.mode, ReadingMode.manga);
           expect(saved.spacing, 24);
-          expect(saved.imageQuality, isNull);
+          expect(
+            saved.imageQuality![RasterFormat.png]!.filter,
+            VisualFilter.sepia,
+          );
           expect(saved.webtoonQuality, WebtoonQuality.saver);
         } else {
-          expect(saved.mode, isNull);
-          expect(saved.spacing, isNull);
+          expect(saved.mode, ReadingMode.manga);
+          expect(saved.spacing, 24);
+          expect(saved.fit, ReadingFit.width);
           expect(
             saved.imageQuality![RasterFormat.png]!.filter,
             VisualFilter.grayscale,

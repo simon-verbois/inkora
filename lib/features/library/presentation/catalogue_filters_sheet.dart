@@ -46,7 +46,11 @@ String facetValueLabel(
   CatalogueFacet facet,
   String value,
 ) => switch (facet) {
-  CatalogueFacet.mediaType => switch (value) {
+  CatalogueFacet.mediaType => switch (value
+      .split(';')
+      .first
+      .trim()
+      .toLowerCase()) {
     'application/epub+zip' => 'EPUB',
     'application/pdf' => 'PDF',
     'application/zip' ||
@@ -63,7 +67,7 @@ String facetValueLabel(
 
 /// Advanced metadata filters as chips (one value per dimension). Reading
 /// status and Downloaded pass through unchanged unless [showReadingFilters]
-/// exposes them in the draft when Home's toolbar is no longer visible.
+/// exposes them in the draft when Home uses popup-only controls.
 /// The footer shows the draft's result count, queried once per settled change
 /// ([countDelay]); stale answers are ignored.
 class CatalogueFiltersSheet extends StatefulWidget {
@@ -74,10 +78,12 @@ class CatalogueFiltersSheet extends StatefulWidget {
     this.showUnavailable,
     this.showReadingFilters = false,
     this.count,
+    this.catalogueControls,
   });
   final Future<CatalogueFacets> options;
   final MetadataFilters filters;
   final bool showReadingFilters;
+  final Widget? catalogueControls;
 
   /// Null hides the unavailable-items switch (Downloads).
   final bool? showUnavailable;
@@ -163,26 +169,7 @@ class _CatalogueFiltersSheetState extends State<CatalogueFiltersSheet> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        InkSheetHeader(
-          title: 'Filters',
-          action: TextButton(
-            key: const Key('filters-reset'),
-            onPressed:
-                _selected.isEmpty &&
-                    (!widget.showReadingFilters ||
-                        (_readingStatus == ReadingStatus.any &&
-                            !_downloadedOnly))
-                ? null
-                : () => _update(() {
-                    _selected.clear();
-                    if (widget.showReadingFilters) {
-                      _readingStatus = ReadingStatus.any;
-                      _downloadedOnly = false;
-                    }
-                  }),
-            child: const LText('Reset'),
-          ),
-        ),
+        const InkSheetHeader(title: 'Filters'),
         Flexible(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: InkSpace.lg),
@@ -191,6 +178,10 @@ class _CatalogueFiltersSheetState extends State<CatalogueFiltersSheet> {
               builder: (context, snapshot) => Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (widget.catalogueControls != null) ...[
+                    widget.catalogueControls!,
+                    const Divider(height: 24),
+                  ],
                   if (widget.showReadingFilters)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16),

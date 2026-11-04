@@ -50,14 +50,12 @@ void main() {
           }
           expect(colors, hasLength(12));
           final selectors = tester
-              .widgetList<SegmentedButton<int>>(
-                find.byType(SegmentedButton<int>),
-              )
+              .widgetList<DropdownButton<int>>(find.byType(DropdownButton<int>))
               .toList();
           expect(selectors, hasLength(2));
-          expect(selectors.every((s) => !s.showSelectedIcon), isTrue);
-          expect(selectors[0].segments.map((s) => s.value), [2, 3, 4]);
-          expect(selectors[1].segments.map((s) => s.value), [5, 6, 7]);
+
+          expect(selectors[0].items!.map((s) => s.value), [2, 3, 4]);
+          expect(selectors[1].items!.map((s) => s.value), [5, 6, 7]);
           expect(find.byKey(const Key('panel-opacity')), findsNothing);
           router.go('/settings/servers');
           await tester.pumpAndSettle();

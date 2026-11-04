@@ -21,75 +21,151 @@ import 'package:inkora/reader/presentation/reader_screen.dart';
 import '../support/ui_harness.dart';
 
 void main() {
-  for (final sameBook in [true, false]) {
-    testWidgets(
-      'reader parent read action returns or replaces a single reader (same $sameBook)',
-      (tester) async {
-        CatalogueItem book(String id) => CatalogueItem(
-          kind: CatalogueKind.book,
-          id: id,
-          title: id,
-          libraryId: 'library-a',
-          seriesId: 'author',
-          metadata: const CatalogueMetadata(mediaType: 'application/epub+zip'),
-        );
-        final harness = await UiHarness.create(
-          tester,
-          resumeEntries: const [],
-          catalogue: [
-            entry('library-a', kind: CatalogueKind.library),
-            entry('author', kind: CatalogueKind.series),
-            book('current'),
-            book('next'),
-          ],
-        );
-        addTearDown(() => harness.close(tester));
-        await harness.mount(tester);
-        final router = harness.container.read(routerProvider);
-        unawaited(router.push<void>('/reader/current'));
-        await tester.pumpAndSettle();
-        final original = tester.state(find.byType(ReaderScreen));
-        unawaited(
-          openReaderSeries(
-            tester.element(find.byType(ReaderScreen)),
-            ReaderManifest(
-              accountId: 'fixture',
-              bookId: 'current',
-              seriesId: 'author',
-              revision: 'one',
-              title: 'Book',
-              documentType: 'application/epub+zip',
-              pages: [PageDimensions(1, 1)],
-            ),
+  testWidgets(
+    'reader parent opens locally without snapshotting its native surface',
+    (tester) async {
+      final harness = await UiHarness.create(tester);
+      addTearDown(() => harness.close(tester));
+      await harness.mount(tester);
+      final router = harness.container.read(routerProvider);
+      unawaited(router.push<void>('/reader/book-a'));
+      await tester.pumpAndSettle();
+      final reader = tester.state(find.byType(ReaderScreen));
+      final remote = harness.repository.remote as FakeCatalogueRemote;
+      final requests = remote.calls;
+      unawaited(
+        openReaderSeries(
+          tester.element(find.byType(ReaderScreen)),
+          ReaderManifest(
+            accountId: 'fixture',
+            bookId: 'book-a',
+            seriesId: 'series-a',
+            revision: 'one',
+            title: 'Book',
+            pages: [PageDimensions(1, 1)],
           ),
-        );
-        await tester.pumpAndSettle();
-        final parent = find.byType(CatalogueDetailScreen);
-        expect(parent, findsOneWidget);
-        openBookReader(
-          tester.element(parent),
-          book(sameBook ? 'current' : 'next'),
-        );
-        await tester.pumpAndSettle();
-        expect(parent, findsNothing);
-        expect(find.byType(ReaderScreen, skipOffstage: false), findsOneWidget);
-        expect(
-          tester.widget<ReaderScreen>(find.byType(ReaderScreen)).bookId,
-          sameBook ? 'current' : 'next',
-        );
-        if (sameBook) {
-          expect(tester.state(find.byType(ReaderScreen)), same(original));
-        } else {
-          expect(original.mounted, isFalse);
-        }
-        await tester.binding.handlePopRoute();
-        await tester.pumpAndSettle();
-        expect(find.byType(ReaderScreen), findsNothing);
-        expect(find.byKey(const Key('home-header')), findsOneWidget);
-        expect(tester.takeException(), isNull);
-        await harness.close(tester);
-      },
-    );
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      final parent = find.byType(CatalogueDetailScreen);
+      expect(parent, findsOneWidget);
+      final route = ModalRoute.of(tester.element(parent))!;
+      expect(route.settings.name, 'reader-parent');
+      expect(route.allowSnapshotting, isFalse);
+      expect(
+        tester.getTopLeft(parent).dx.abs(),
+        lessThanOrEqualTo(tester.view.physicalSize.width * .04),
+      );
+      await tester.pumpAndSettle();
+      expect(remote.calls, requests);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(tester.state(find.byType(ReaderScreen)), same(reader));
+      await harness.close(tester);
+    },
+  );
+
+  for (final sameBook in [true, false]) {
+    for (final browsed in [false, true]) {
+      testWidgets(
+        'reader parent read action returns or replaces a single reader (same $sameBook, repeated genres $browsed)',
+        (tester) async {
+          CatalogueItem book(String id) => CatalogueItem(
+            kind: CatalogueKind.book,
+            id: id,
+            title: id,
+            libraryId: 'library-a',
+            seriesId: 'author',
+            metadata: const CatalogueMetadata(
+              mediaType: 'application/epub+zip',
+            ),
+          );
+          final harness = await UiHarness.create(
+            tester,
+            resumeEntries: const [],
+            catalogue: [
+              entry('library-a', kind: CatalogueKind.library),
+              entry('author', kind: CatalogueKind.series),
+              book('current'),
+              book('next'),
+            ],
+          );
+          addTearDown(() => harness.close(tester));
+          await harness.mount(tester);
+          final router = harness.container.read(routerProvider);
+          unawaited(router.push<void>('/reader/current'));
+          await tester.pumpAndSettle();
+          final original = tester.state(find.byType(ReaderScreen));
+          unawaited(
+            openReaderSeries(
+              tester.element(find.byType(ReaderScreen)),
+              ReaderManifest(
+                accountId: 'fixture',
+                bookId: 'current',
+                seriesId: 'author',
+                revision: 'one',
+                title: 'Book',
+                documentType: 'application/epub+zip',
+                pages: [PageDimensions(1, 1)],
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          if (browsed) {
+            for (var i = 0; i < 2; i++) {
+              unawaited(
+                router.pushNamed<void>(
+                  'reader-parent-catalogue',
+                  pathParameters: {'id': 'author'},
+                  queryParameters: {'book': 'current', 'genre': 'Fantasy'},
+                ),
+              );
+              await tester.pumpAndSettle();
+              unawaited(
+                router.pushNamed<void>(
+                  'reader-parent-catalogue-detail',
+                  pathParameters: {
+                    'id': 'author',
+                    'kind': 'series',
+                    'itemId': 'author',
+                  },
+                  queryParameters: {'book': 'current', 'genre': 'Fantasy'},
+                ),
+              );
+              await tester.pumpAndSettle();
+            }
+          }
+          final parent = find.byType(CatalogueDetailScreen);
+          expect(parent, findsOneWidget);
+          openBookReader(
+            tester.element(parent),
+            book(sameBook ? 'current' : 'next'),
+          );
+          await tester.pumpAndSettle();
+          expect(parent, findsNothing);
+          expect(
+            find.byType(ReaderScreen, skipOffstage: false),
+            findsOneWidget,
+          );
+          expect(
+            tester.widget<ReaderScreen>(find.byType(ReaderScreen)).bookId,
+            sameBook ? 'current' : 'next',
+          );
+          if (sameBook) {
+            expect(tester.state(find.byType(ReaderScreen)), same(original));
+          } else {
+            expect(original.mounted, isFalse);
+          }
+          await tester.binding.handlePopRoute();
+          await tester.pumpAndSettle();
+          expect(find.byType(ReaderScreen), findsNothing);
+          expect(find.byKey(const Key('home-header')), findsOneWidget);
+          expect(tester.takeException(), isNull);
+          await harness.close(tester);
+        },
+      );
+    }
   }
 
   for (final size in [const Size(390, 844), const Size(1024, 768)]) {

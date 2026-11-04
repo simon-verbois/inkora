@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:inkora/app/router.dart';
-import 'package:inkora/app/l10n/app_strings.dart';
 import 'package:inkora/features/library/domain/catalogue.dart';
 import 'package:inkora/features/library/domain/resume_entry.dart';
 import 'package:inkora/features/library/presentation/reading_history_screen.dart';
@@ -59,18 +58,12 @@ void main() {
       ),
       findsNothing,
     );
+    expect(find.byKey(const Key('catalogue-tools')), findsNothing);
     for (final key in [
-      'reading-filter-any',
-      'reading-filter-unread',
-      'reading-filter-inProgress',
-      'reading-filter-completed',
-      'reading-filter-downloaded',
-      'catalogue-sort',
-      'catalogue-filters',
-      'catalogue-view',
-      'library-selector',
+      'catalogue-floating-library',
+      'catalogue-floating-filters',
     ]) {
-      expect(tester.getSize(find.byKey(ValueKey(key))).height, 48, reason: key);
+      expect(tester.getSize(find.byKey(ValueKey(key))), const Size(60, 60));
     }
     final historyAction = find.byKey(const Key('reading-history-action'));
     expect(
@@ -88,19 +81,17 @@ void main() {
     expect(find.text('View all'), findsNothing);
     await binding.takeScreenshot('home');
 
-    final librarySelector = find.byKey(const Key('library-selector'));
+    final librarySelector = find.byKey(const Key('catalogue-floating-library'));
     await tester.tap(librarySelector);
     await tester.pumpAndSettle();
-    expect(find.byType(BottomSheet), findsNothing);
-    final allLibraries = find.byKey(const Key('library-choice-all'));
-    final librarySurface = find
-        .ancestor(of: allLibraries, matching: find.byType(Material))
-        .first;
-    final libraryBounds = tester.getRect(librarySurface);
-    final selectorBounds = tester.getRect(librarySelector);
-    expect(libraryBounds.width, lessThanOrEqualTo(320));
-    expect(libraryBounds.height, lessThanOrEqualTo(360));
-    expect(libraryBounds.overlaps(selectorBounds.inflate(12)), true);
+    expect(find.byType(BottomSheet), findsOneWidget);
+    final libraryBounds = tester.getRect(
+      find.byKey(const Key('ink-sheet-surface')),
+    );
+    expect(
+      libraryBounds.width,
+      tester.view.physicalSize.width / tester.view.devicePixelRatio,
+    );
     await binding.takeScreenshot('library-menu');
     await tester.tap(find.byKey(const ValueKey('library-choice-library-a')));
     await tester.pumpAndSettle();
@@ -108,27 +99,22 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       tester
-          .widget<CheckedPopupMenuItem<(String?,)>>(
+          .widget<ListTile>(
             find.byKey(const ValueKey('library-choice-library-a')),
           )
-          .checked,
-      true,
+          .selected,
+      isTrue,
     );
-    await tester.tap(allLibraries);
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
-
-    final unreadFilter = find.byKey(const ValueKey('reading-filter-unread'));
-    await tester.ensureVisible(unreadFilter);
-    await tester.tap(unreadFilter);
+    await tester.tap(find.byKey(const Key('catalogue-floating-filters')));
     await tester.pumpAndSettle();
-    final unreadLabel = AppStrings.of(tester.element(unreadFilter))
-        .text('Unread');
-    expect(
-      find.descendant(of: unreadFilter, matching: find.text(unreadLabel)),
-      findsOneWidget,
-    );
+    await tester.tap(find.byKey(const Key('reading-filter-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('reading-menu-unread')));
+    await tester.pumpAndSettle();
     await binding.takeScreenshot('quick-filters-active');
-    await tester.tap(find.byKey(const ValueKey('reading-filter-any')));
+    await tester.tap(find.byKey(const Key('filters-apply')));
     await tester.pumpAndSettle();
 
     final search = find.byKey(const Key('open-search')).hitTestable();

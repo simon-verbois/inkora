@@ -284,7 +284,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
         modal: true,
         showTitle: false,
         showScope: false,
-        showReset: false,
+
         store: repository.store,
         manifest: reader.manifest,
       ),

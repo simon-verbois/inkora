@@ -43,14 +43,17 @@ final routerProvider = Provider<GoRouter>((ref) {
     bool primary = false,
     bool reveal = false,
     bool canPop = true,
+    bool allowSnapshotting = true,
   }) =>
       (primary ||
           ref.read(uiPreferencesProvider).asData?.value.reduceMotion == true)
-      ? NoTransitionPage(key: state.pageKey, child: child)
+      ? NoTransitionPage(key: state.pageKey, name: state.name, child: child)
       : InkoraPage(
           key: state.pageKey,
+          name: state.name,
           reveal: reveal,
           canPop: canPop,
+          allowSnapshotting: allowSnapshotting,
           child: child,
         );
   final router = GoRouter(
@@ -92,6 +95,44 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/reader-parent/:id',
         routes: [
           GoRoute(
+            name: 'reader-parent-catalogue',
+            path: 'browse',
+            pageBuilder: (_, state) => page(
+              state,
+              InkoraShell(
+                currentPath: state.uri.path,
+                child: CatalogueScreen(
+                  kind: CatalogueKind.series,
+                  initialFilters: state.uri.queryParameters['genre'] == null
+                      ? const MetadataFilters()
+                      : MetadataFilters.from({
+                          CatalogueFacet.genres:
+                              state.uri.queryParameters['genre']!,
+                        }),
+                ),
+              ),
+            ),
+            routes: [
+              GoRoute(
+                name: 'reader-parent-catalogue-detail',
+                path: 'detail/:kind/:itemId',
+                pageBuilder: (_, state) => page(
+                  state,
+                  InkoraShell(
+                    currentPath:
+                        '/catalogue/${state.pathParameters['kind']}/${state.pathParameters['itemId']}',
+                    child: CatalogueDetailScreen(
+                      kind: CatalogueKind.values.byName(
+                        state.pathParameters['kind']!,
+                      ),
+                      id: state.pathParameters['itemId']!,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          GoRoute(
             name: 'reader-parent-book',
             path: 'book/:bookId',
             pageBuilder: (_, state) => page(
@@ -116,6 +157,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               id: state.pathParameters['id']!,
             ),
           ),
+          // Keep native reader surfaces live; this header shortcut uses a short
+          // reveal rather than snapshotting/sliding the whole reader viewport.
+          reveal: true,
+          allowSnapshotting: false,
         ),
       ),
       GoRoute(

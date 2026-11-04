@@ -20,14 +20,14 @@ void main() {
     expect(
       find.descendant(
         of: search,
-        matching: find.byKey(const Key('catalogue-tools')),
+        matching: find.byKey(const Key('catalogue-floating-actions')),
       ),
       findsOneWidget,
     );
     await tester.tap(
       find.descendant(
         of: search,
-        matching: find.byKey(const Key('library-selector')),
+        matching: find.byKey(const Key('catalogue-floating-library')),
       ),
     );
     await tester.pumpAndSettle();
@@ -131,19 +131,19 @@ void main() {
       await tester.pumpAndSettle();
       final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
       final store = UiPreferencesStore(harness.database);
-      SegmentedButton<int> selector(String name) =>
-          tester.widget<SegmentedButton<int>>(
+      DropdownButtonFormField<int> selector(String name) =>
+          tester.widget<DropdownButtonFormField<int>>(
             find.descendant(
               of: find.byKey(Key(name)),
-              matching: find.byType(SegmentedButton<int>),
+              matching: find.byType(DropdownButtonFormField<int>),
             ),
           );
-      selector('home-portrait-columns').onSelectionChanged!({4});
+      selector('home-portrait-columns').onChanged!(4);
       await tester.pumpAndSettle();
       var saved = (await tester.runAsync(() => store.watch().first))!;
       expect(saved.homePortraitColumns, 4);
       expect(saved.homeLandscapeColumns, 6);
-      selector('home-landscape-columns').onSelectionChanged!({7});
+      selector('home-landscape-columns').onChanged!(7);
       await tester.pumpAndSettle();
       saved = (await tester.runAsync(() => store.watch().first))!;
       expect(saved.homePortraitColumns, 4);

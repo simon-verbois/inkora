@@ -21,7 +21,7 @@ void main() {
     (const Size(1280, 800), 1.0, 'fr'),
   ]) {
     testWidgets(
-      'Home shortcuts follow real toolbar geometry at $size/$scale/$locale',
+      'Home shortcuts remain visible without rebuilding the catalogue at $size/$scale/$locale',
       (tester) async {
         tester.view.physicalSize = size;
         tester.view.devicePixelRatio = 1;
@@ -62,11 +62,6 @@ void main() {
         addTearDown(() => harness.close(tester));
         const capture = Key('home-actions-capture');
         await harness.mount(tester, textScale: scale, captureKey: capture);
-        final tools = find.byKey(
-          const Key('catalogue-tools'),
-          skipOffstage: false,
-        );
-        final header = find.byKey(const Key('home-header'));
         final scroll = tester
             .state<ScrollableState>(
               find
@@ -77,22 +72,17 @@ void main() {
                   .first,
             )
             .position;
-        final threshold =
-            tester.getBottomLeft(tools).dy -
-            (tester.getBottomLeft(header).dy - 8);
+        const threshold = 100.0;
         final overlay = find.byKey(const Key('catalogue-floating-actions'));
-        expect(overlay, findsNothing);
-        scroll.jumpTo(threshold - 1);
-        await tester.pumpAndSettle();
-        expect(overlay, findsNothing);
+        expect(find.byKey(const Key('catalogue-tools')), findsNothing);
+        expect(overlay, findsOneWidget);
         scroll.jumpTo(threshold + 1);
         await tester.pumpAndSettle();
-        expect(overlay, findsOneWidget);
         final library = find.byKey(const Key('catalogue-floating-library'));
         final filters = find.byKey(const Key('catalogue-floating-filters'));
         expect(library.hitTestable(), findsOneWidget);
         expect(filters.hitTestable(), findsOneWidget);
-        expect(tester.getSize(library).shortestSide, greaterThanOrEqualTo(48));
+        expect(tester.getSize(library).shortestSide, greaterThanOrEqualTo(60));
         expect(
           tester.getRect(filters).bottom,
           lessThanOrEqualTo(size.height - 24 - 16),
@@ -117,7 +107,7 @@ void main() {
           await captureOnboarding(
             tester,
             find.byKey(capture),
-            'home-floating-${size.width.toInt()}-fr',
+            'home-permanent-${size.width.toInt()}-fr',
           );
         }
         await tester.tap(filters);
@@ -127,7 +117,7 @@ void main() {
           await captureOnboarding(
             tester,
             find.byKey(capture),
-            'home-filter-popup-fr',
+            'home-permanent-filter-popup-fr',
           );
         }
         expect(
@@ -167,7 +157,7 @@ void main() {
           await captureOnboarding(
             tester,
             find.byKey(capture),
-            'home-library-popup-fr',
+            'home-permanent-library-popup-fr',
           );
         }
         expect(
@@ -177,22 +167,17 @@ void main() {
         await tester.tap(find.byKey(const Key('library-choice-library-b')));
         await tester.pumpAndSettle();
         expect(scroll.pixels, 0);
-        expect(overlay, findsNothing);
+        expect(overlay, findsOneWidget);
         expect(find.text('Series 001'), findsOneWidget);
         expect(find.text('Series 000'), findsNothing);
-        // A live resize uses the new toolbar height, with no second state owner.
+        // Rotation retains selection and permanent controls.
         tester.view.physicalSize = const Size(1280, 800);
         tester.platformDispatcher.textScaleFactorTestValue = 1;
-        await tester.pumpAndSettle();
-        final newThreshold =
-            tester.getBottomLeft(tools).dy -
-            (tester.getBottomLeft(header).dy - 8);
-        scroll.jumpTo(newThreshold + 1);
         await tester.pumpAndSettle();
         expect(overlay, findsOneWidget);
         scroll.jumpTo(0);
         await tester.pumpAndSettle();
-        expect(overlay, findsNothing);
+        expect(overlay, findsOneWidget);
         expect(tester.takeException(), isNull);
         await harness.close(tester);
       },

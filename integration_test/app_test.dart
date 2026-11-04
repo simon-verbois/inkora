@@ -288,7 +288,7 @@ void main() {
     await tester.ensureVisible(find.text('Sign in'));
     await tester.tap(find.text('Sign in'));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('library-selector')), findsOneWidget);
+    expect(find.byKey(const Key('catalogue-floating-library')), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     first.dispose();
     final offline = FixtureAdapter(
@@ -314,7 +314,7 @@ void main() {
       UncontrolledProviderScope(container: second, child: const InkoraApp()),
     );
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('library-selector')), findsOneWidget);
+    expect(find.byKey(const Key('catalogue-floating-library')), findsOneWidget);
     expect(find.textContaining('Offline · saved catalogue'), findsOneWidget);
     second.read(routerProvider).go('/settings/account');
     await tester.pumpAndSettle();

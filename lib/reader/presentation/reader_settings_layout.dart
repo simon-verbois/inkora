@@ -30,9 +30,7 @@ class ReaderSettingsGrid extends StatelessWidget {
   );
 }
 
-/// A labelled single-choice group of chips: the reader preference control
-/// that replaces dropdowns. Chips wrap at large text sizes and narrow widths
-/// instead of truncating; every choice stays visible and applies on tap.
+/// A full-width single-choice dropdown, shared by all preference forms.
 class ReaderChoiceGroup extends StatelessWidget {
   const ReaderChoiceGroup({
     super.key,
@@ -41,70 +39,34 @@ class ReaderChoiceGroup extends StatelessWidget {
     required this.selected,
     required this.onSelected,
     required this.id,
-    this.wrapLabels = false,
   });
-
-  /// Source message of the group heading.
   final String label;
-
-  /// Choice identifiers mapped to their source message labels.
   final Map<String, String> choices;
   final String selected;
   final ValueChanged<String>? onSelected;
-
-  /// Stable key prefix: each chip is keyed `reader-choice-$id-$choice`.
   final String id;
-  final bool wrapLabels;
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Semantics(
-        header: true,
-        child: LText(label, style: Theme.of(context).textTheme.labelLarge),
-      ),
-      const SizedBox(height: InkSpace.sm),
-      if (wrapLabels)
-        RadioGroup<String>(
-          groupValue: selected,
-          onChanged: (value) {
-            if (value != null && value != selected) onSelected?.call(value);
-          },
-          child: Column(
-            children: [
-              for (final choice in choices.entries)
-                RadioListTile<String>(
-                  key: Key('reader-choice-$id-${choice.key}'),
-                  value: choice.key,
-                  selected: choice.key == selected,
-                  enabled: onSelected != null,
-                  contentPadding: EdgeInsets.zero,
-                  title: LText(choice.value, softWrap: true),
-                ),
-            ],
-          ),
-        )
-      else
-        Wrap(
-          spacing: InkSpace.sm,
-          runSpacing: InkSpace.sm,
-          children: [
-            for (final choice in choices.entries)
-              ChoiceChip(
-                key: Key('reader-choice-$id-${choice.key}'),
-                showCheckmark: false,
-                label: LText(choice.value),
-                selected: choice.key == selected,
-                onSelected: onSelected == null
-                    ? null
-                    : (_) {
-                        if (choice.key != selected) onSelected!(choice.key);
-                      },
-              ),
-          ],
+  Widget build(BuildContext context) => DropdownButtonFormField<String>(
+    key: ValueKey(('reader-choice-$id', selected)),
+    initialValue: choices.containsKey(selected) ? selected : null,
+    decoration: InputDecoration(labelText: context.tr(label)),
+    icon: const Icon(InkIcons.caretDown, size: 20),
+    isExpanded: true,
+    itemHeight: null,
+    items: [
+      for (final choice in choices.entries)
+        DropdownMenuItem(
+          key: Key('reader-choice-$id-${choice.key}'),
+          value: choice.key,
+          child: LText(choice.value, softWrap: true),
         ),
     ],
+    onChanged: onSelected == null
+        ? null
+        : (value) {
+            if (value != null && value != selected) onSelected!(value);
+          },
   );
 }
 

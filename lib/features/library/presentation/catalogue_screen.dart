@@ -5,7 +5,6 @@ import '../../../app/widgets/ink_filter_bar.dart';
 import 'reading_filter_chips.dart';
 import '../../connection/application/session_controller.dart';
 import 'catalogue_toolbar.dart';
-import 'catalogue_tools_sliver.dart';
 import '../domain/catalogue_filters.dart';
 import 'catalogue_filters_sheet.dart';
 import '../../../app/l10n/app_strings.dart';
@@ -69,10 +68,6 @@ class CatalogueScreen extends ConsumerStatefulWidget {
 class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
   final _search = TextEditingController();
   final _scroll = ScrollController();
-  final _toolsObscured = ValueNotifier(false);
-
-  void _toolsVisibilityChanged(bool obscured) =>
-      _toolsObscured.value = obscured;
   Timer? _debounce;
   late CatalogueSort _sort;
   late CatalogueKind _kind;
@@ -162,7 +157,6 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
     _debounce?.cancel();
     _search.dispose();
     _scroll.dispose();
-    _toolsObscured.dispose();
     super.dispose();
   }
 
@@ -176,7 +170,12 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
     if (_scroll.hasClients) _scroll.jumpTo(0);
   }
 
-  void _quickFilters(MetadataFilters filters, {bool? showUnavailable}) {
+  void _quickFilters(
+    MetadataFilters filters, {
+    bool? showUnavailable,
+    CatalogueSort? sort,
+    bool? listView,
+  }) {
     final current = ref.read(catalogueFeedStateProvider(_query)).asData?.value;
     setState(() {
       _sortingPage = current?.page ?? _sortingPage;
@@ -188,6 +187,8 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
       }
       _metadataFilters = filters;
       _showUnavailable = showUnavailable ?? _showUnavailable;
+      _sort = sort ?? _sort;
+      _listView = listView ?? _listView;
     });
   }
 
@@ -310,6 +311,9 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
               ) ??
               Future.value(0),
         );
+    var sort = _sort;
+    var listView = _listView;
+    var openSavedSearches = false;
     final result = await showInkPopup<CatalogueFilterResult>(
       context: context,
       child: CatalogueFiltersSheet(
@@ -318,11 +322,57 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
         showReadingFilters: widget.embedded,
         options: options,
         count: count,
+        catalogueControls: widget.embedded
+            ? StatefulBuilder(
+                builder: (panelContext, update) => Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    InkSortButton<CatalogueSort>(
+                      key: const Key('catalogue-sort'),
+                      value: sort,
+                      options: catalogueSortOptions(),
+                      onSelected: (value) => update(() => sort = value),
+                    ),
+                    IconButton(
+                      key: const Key('catalogue-view'),
+                      tooltip: panelContext.tr(
+                        listView ? 'Show grid' : 'Show list',
+                      ),
+                      onPressed: () => update(() => listView = !listView),
+                      icon: Icon(
+                        listView ? InkIcons.squaresFour : InkIcons.list,
+                      ),
+                    ),
+                    TextButton.icon(
+                      key: const Key('catalogue-saved-searches'),
+                      onPressed: () {
+                        openSavedSearches = true;
+                        Navigator.pop(panelContext);
+                      },
+                      icon: const Icon(InkIcons.bookmarks),
+                      label: const LText('Saved searches'),
+                    ),
+                  ],
+                ),
+              )
+            : null,
       ),
     );
-    if (!mounted || result == null) return;
+    if (!mounted) return;
+    if (openSavedSearches) {
+      await _savedSearches();
+      return;
+    }
+    if (result == null) return;
     if (widget.embedded) {
-      _quickFilters(result.filters, showUnavailable: result.showUnavailable);
+      _quickFilters(
+        result.filters,
+        showUnavailable: result.showUnavailable,
+        sort: sort,
+        listView: listView,
+      );
     } else {
       _change(() {
         _showUnavailable = result.showUnavailable;
@@ -399,105 +449,78 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
       onChanged: _searchChanged,
       onClear: _clearSearch,
     );
-    final tools = ColoredBox(
-      key: const Key('catalogue-tools'),
-      color: widget.embedded
-          ? Colors.transparent
-          : Theme.of(context).scaffoldBackgroundColor,
-      child: InkFilterBar(
-        controlPrefix: 'catalogue',
-        padding: widget.embedded
-            ? const EdgeInsets.symmetric(horizontal: InkSpace.md)
-            : const EdgeInsets.fromLTRB(16, 4, 8, 4),
-        startChipsWhenCompact: widget.embedded,
-        compactMenu: widget.embedded
-            ? _toolsMenu(selectedLibrary, libraries)
-            : null,
-        compactChips: widget.embedded
-            ? ReadingFilterMenu(
-                filters: _metadataFilters,
-                onChanged: _quickFilters,
-              )
-            : null,
-        leading: librarySelection
-            ? _libraryButton(selectedLibrary, libraries)
-            : Text(
-                AppStrings.of(context).quantity(page?.total ?? 0, 'item'),
-                style: Theme.of(context).textTheme.bodySmall,
+    final tools = widget.embedded
+        ? null
+        : ColoredBox(
+            key: const Key('catalogue-tools'),
+            color: Theme.of(context).scaffoldBackgroundColor,
+            child: InkFilterBar(
+              controlPrefix: 'catalogue',
+              padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
+              leading: librarySelection
+                  ? _libraryButton(selectedLibrary, libraries)
+                  : Text(
+                      AppStrings.of(context).quantity(page?.total ?? 0, 'item'),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+              chips:
+                  _kind == CatalogueKind.book || _kind == CatalogueKind.series
+                  ? readingFilterChips(
+                      filters: _metadataFilters,
+                      onChanged: _quickFilters,
+                    )
+                  : const [],
+              sort: InkSortButton<CatalogueSort>(
+                key: const Key('catalogue-sort'),
+                value: _sort,
+                options: catalogueSortOptions(
+                  sequence: _groupId != null || _seriesId != null,
+                  groupOrder: _groupId != null,
+                ),
+                onSelected: _sortChanged,
               ),
-        chips: _kind == CatalogueKind.book || _kind == CatalogueKind.series
-            ? readingFilterChips(
-                filters: _metadataFilters,
-                onChanged: _quickFilters,
-              )
-            : const [],
-        sort: InkSortButton<CatalogueSort>(
-          key: const Key('catalogue-sort'),
-          value: _sort,
-          options: catalogueSortOptions(
-            sequence: _groupId != null || _seriesId != null,
-            groupOrder: _groupId != null,
-          ),
-          onSelected: _sortChanged,
-        ),
-        filterCount: _metadataFilters.values.length,
-        onFilters: _filters,
-        actions: [
-          IconButton(
-            key: const Key('catalogue-saved-searches'),
-            tooltip: context.tr('Saved searches'),
-            onPressed: _savedSearches,
-            icon: const Icon(InkIcons.bookmarks, size: 20),
-          ),
-          if (_kind != CatalogueKind.book)
-            IconButton(
-              key: const Key('catalogue-view'),
-              tooltip: context.tr(_listView ? 'Show grid' : 'Show list'),
-              onPressed: () => setState(() => _listView = !_listView),
-              icon: Icon(
-                _listView ? InkIcons.squaresFour : InkIcons.list,
-                size: 20,
-              ),
+              filterCount: _metadataFilters.values.length,
+              onFilters: _filters,
+              actions: [
+                IconButton(
+                  key: const Key('catalogue-saved-searches'),
+                  tooltip: context.tr('Saved searches'),
+                  onPressed: _savedSearches,
+                  icon: const Icon(InkIcons.bookmarks, size: 20),
+                ),
+                if (_kind != CatalogueKind.book)
+                  IconButton(
+                    key: const Key('catalogue-view'),
+                    tooltip: context.tr(_listView ? 'Show grid' : 'Show list'),
+                    onPressed: () => setState(() => _listView = !_listView),
+                    icon: Icon(
+                      _listView ? InkIcons.squaresFour : InkIcons.list,
+                      size: 20,
+                    ),
+                  ),
+              ],
             ),
-        ],
-      ),
-    );
-    final toolbar = widget.embedded
-        ? CatalogueToolsSliver(
-            headerExtent: InkScreenHeader.extent - InkSpace.sm,
-            onObscuredChanged: _toolsVisibilityChanged,
-            child: tools,
-          )
-        : PinnedHeaderSliver(child: tools);
+          );
     final scaffold = Scaffold(
       floatingActionButton: widget.embedded
-          ? ValueListenableBuilder<bool>(
-              valueListenable: _toolsObscured,
-              builder: (context, obscured, _) => obscured
-                  ? Column(
-                      key: const Key('catalogue-floating-actions'),
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (librarySelection) ...[
-                          _libraryButton(
-                            selectedLibrary,
-                            libraries,
-                            floating: true,
-                          ),
-                          const SizedBox(height: 12),
-                        ],
-                        Badge(
-                          isLabelVisible: !_metadataFilters.isEmpty,
-                          child: InkHeaderBubble(
-                            key: const Key('catalogue-floating-filters'),
-                            tooltip: context.tr('Filters'),
-                            onPressed: _filters,
-                            icon: InkIcons.slidersHorizontal,
-                          ),
-                        ),
-                      ],
-                    )
-                  : const SizedBox.shrink(),
+          ? Column(
+              key: const Key('catalogue-floating-actions'),
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (librarySelection) ...[
+                  _libraryButton(selectedLibrary, libraries, floating: true),
+                  const SizedBox(height: 12),
+                ],
+                Badge(
+                  isLabelVisible: !_metadataFilters.isEmpty,
+                  child: _HomeAction(
+                    key: const Key('catalogue-floating-filters'),
+                    tooltip: context.tr('Filters'),
+                    onPressed: _filters,
+                    icon: InkIcons.slidersHorizontal,
+                  ),
+                ),
+              ],
             )
           : null,
       appBar: widget.embedded
@@ -550,7 +573,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
                       ],
                     ),
                   ),
-                  toolbar,
+                  if (tools != null) PinnedHeaderSliver(child: tools),
                   if (items.isNotEmpty)
                     if (_listView ||
                         volumesOnly ||
@@ -681,7 +704,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
         library?.title ??
         context.tr(_libraryId == null ? 'All libraries' : 'Selected library');
     if (floating) {
-      return InkHeaderBubble(
+      return _HomeAction(
         key: const Key('catalogue-floating-library'),
         tooltip: context.tr('Choose a library'),
         onPressed: () async {
@@ -816,76 +839,29 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
       ),
     );
   }
+}
 
-  Widget _toolsMenu(
-    CatalogueItem? library,
-    AsyncValue<LocalCataloguePage> libraries,
-  ) => InkToolsMenu(
-    active: _libraryId != null || _metadataFilters.values.isNotEmpty,
-    children: [
-      SubmenuButton(
-        key: const Key('catalogue-library-menu'),
-        leadingIcon: const Icon(InkIcons.books),
-        menuChildren: [
-          MenuItemButton(
-            key: const Key('library-choice-all'),
-            leadingIcon: _libraryId == null ? const Icon(InkIcons.check) : null,
-            onPressed: () => _selectLibrary((null,)),
-            child: const LText('All libraries'),
-          ),
-          for (final item in libraries.asData?.value.items ?? <CatalogueItem>[])
-            MenuItemButton(
-              key: ValueKey('library-choice-${item.id}'),
-              leadingIcon: _libraryId == item.id
-                  ? const Icon(InkIcons.check)
-                  : null,
-              onPressed: () => _selectLibrary((item.id,)),
-              child: Text(item.title),
-            ),
-          if (libraries.isLoading)
-            const MenuItemButton(child: LinearProgressIndicator()),
-          if (libraries.hasError)
-            const MenuItemButton(child: LText('Saved libraries unavailable.')),
-        ],
-        child: Text(library?.title ?? context.tr('All libraries')),
-      ),
-      SubmenuButton(
-        key: const Key('catalogue-sort-menu'),
-        leadingIcon: const Icon(InkIcons.sortAscending),
-        menuChildren: [
-          for (final option in catalogueSortOptions(
-            sequence: _groupId != null || _seriesId != null,
-            groupOrder: _groupId != null,
-          ))
-            MenuItemButton(
-              key: ValueKey('catalogue-sort-${option.value.name}'),
-              leadingIcon: option.value == _sort
-                  ? const Icon(InkIcons.check)
-                  : null,
-              onPressed: () => _sortChanged(option.value),
-              child: LText(option.label),
-            ),
-        ],
-        child: const LText('Sort catalogue'),
-      ),
-      MenuItemButton(
-        key: const Key('catalogue-menu-saved-searches'),
-        leadingIcon: const Icon(InkIcons.bookmarks),
-        onPressed: _savedSearches,
-        child: const LText('Saved searches'),
-      ),
-      MenuItemButton(
-        key: const Key('catalogue-menu-filters'),
-        leadingIcon: const Icon(InkIcons.slidersHorizontal),
-        onPressed: _filters,
-        child: const LText('Filters'),
-      ),
-      MenuItemButton(
-        key: const Key('catalogue-menu-view'),
-        leadingIcon: Icon(_listView ? InkIcons.squaresFour : InkIcons.list),
-        onPressed: () => setState(() => _listView = !_listView),
-        child: LText(_listView ? 'Show grid' : 'Show list'),
-      ),
-    ],
+/// Permanent Home controls: generous touch targets, flat accent surfaces and
+/// no scroll listener or per-frame rebuild owner.
+class _HomeAction extends StatelessWidget {
+  const _HomeAction({
+    super.key,
+    required this.tooltip,
+    required this.onPressed,
+    required this.icon,
+  });
+  final String tooltip;
+  final VoidCallback onPressed;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) => IconButton.filled(
+    tooltip: tooltip,
+    onPressed: onPressed,
+    style: IconButton.styleFrom(
+      fixedSize: const Size.square(60),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    ),
+    icon: Icon(icon, size: 28),
   );
 }

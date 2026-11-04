@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/widgets/ink_filter_bar.dart';
-import 'package:inkora/features/library/presentation/catalogue_grid.dart';
-import 'package:inkora/features/library/presentation/catalogue_card.dart';
 import 'package:inkora/features/library/domain/catalogue.dart';
 
 import '../../support/catalogue_fakes.dart';
@@ -17,7 +15,7 @@ void main() {
     (const Size(1280, 800), 1.0),
   ]) {
     testWidgets(
-      'Home tools scroll away and reveal bottom actions at $size/$scale',
+      'Home popup tools apply sort/view/library with permanent actions at $size/$scale',
       (tester) async {
         tester.view.physicalSize = size;
         tester.view.devicePixelRatio = 1;
@@ -48,89 +46,39 @@ void main() {
         );
         addTearDown(() => harness.close(tester));
         await harness.mount(tester, textScale: scale);
-        final bar = find.byType(InkFilterBar);
-        final tools = find.byKey(
-          const Key('catalogue-tools'),
-          skipOffstage: false,
+        expect(find.byType(InkFilterBar), findsNothing);
+        expect(find.byKey(const Key('catalogue-tools')), findsNothing);
+        final library = find.byKey(const Key('catalogue-floating-library'));
+        final filters = find.byKey(const Key('catalogue-floating-filters'));
+        expect(tester.getSize(library).width, 60);
+        await tester.tap(library);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('library-choice-library-b')));
+        await tester.pumpAndSettle();
+        expect(find.text('Series 000'), findsNothing);
+        expect(find.text('Series 001'), findsOneWidget);
+        await tester.tap(filters);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('catalogue-sort')));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byWidgetPredicate(
+            (w) =>
+                w is CheckedPopupMenuItem<CatalogueSort> &&
+                w.value == CatalogueSort.titleDescending,
+          ),
         );
-        final menu = find.byKey(const Key('catalogue-tools-menu'));
-        final effective = (tester.getSize(bar).width - 24) / scale;
-        final chips = find.byKey(
-          Key(effective < 600 ? 'reading-filter-menu' : 'catalogue-chips'),
-        );
-        if (scale <= 1.5) {
-          final grid = find.byKey(const Key('catalogue-grid'));
-          final padding = tester.widget<CatalogueGrid>(grid).topPadding;
-          expect(
-            padding,
-            size.width >= 840 && size.width > size.height ? 4 : 16,
-          );
-          final first = find.descendant(
-            of: grid,
-            matching: find.byWidgetPredicate(
-              (widget) =>
-                  widget is InkCoverTile && widget.item.id == 'series-0',
-            ),
-          );
-          expect(
-            tester.getTopLeft(first).dy - tester.getBottomLeft(tools).dy,
-            closeTo(padding, 1),
-          );
-        }
-
-        if (effective < 600) {
-          expect(menu.hitTestable(), findsOneWidget);
-          expect(tester.getCenter(chips).dy, tester.getCenter(menu).dy);
-          expect(tester.getSize(tools).height, tester.getSize(chips).height);
-          await tester.tap(menu);
-          await tester.pumpAndSettle();
-          await tester.tap(find.byKey(const Key('catalogue-library-menu')));
-          await tester.pumpAndSettle();
-          await tester.binding.handlePopRoute();
-          await tester.pumpAndSettle();
-          expect(find.byKey(const Key('library-choice-all')), findsNothing);
-          expect(find.byKey(const Key('home-header')), findsOneWidget);
-          await tester.tap(menu);
-          await tester.pumpAndSettle();
-          await tester.tap(find.byKey(const Key('catalogue-library-menu')));
-          await tester.pumpAndSettle();
-          await tester.tap(find.byKey(const Key('library-choice-library-b')));
-          await tester.pumpAndSettle();
-          expect(find.text('Series 000'), findsNothing);
-          expect(find.text('Series 001'), findsOneWidget);
-          await tester.tap(menu);
-          await tester.pumpAndSettle();
-          await tester.tap(find.byKey(const Key('catalogue-sort-menu')));
-          await tester.pumpAndSettle();
-          await tester.tap(
-            find.byKey(const Key('catalogue-sort-titleDescending')),
-          );
-          await tester.pumpAndSettle();
-          expect(find.text('Series 179'), findsOneWidget);
-          await tester.tap(menu);
-          await tester.pumpAndSettle();
-          await tester.tap(find.byKey(const Key('catalogue-menu-view')));
-          await tester.pumpAndSettle();
-          expect(find.byKey(const Key('catalogue-list')), findsOneWidget);
-        } else if (effective >= InkFilterBar.wideWidth) {
-          final selector = find.byKey(const Key('library-selector'));
-          expect(
-            tester.getBottomLeft(selector).dy - tester.getBottomLeft(chips).dy,
-            0,
-          );
-          expect(
-            tester.getCenter(find.byKey(const Key('catalogue-sort'))).dy,
-            tester.getCenter(selector).dy,
-          );
-        }
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('catalogue-view')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('filters-apply')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('catalogue-list')), findsOneWidget);
+        expect(find.text('Series 179'), findsOneWidget);
         await tester.drag(find.byType(CustomScrollView), const Offset(0, -800));
         await tester.pumpAndSettle();
         final header = find.byKey(const Key('home-header'));
         expect(header.hitTestable(), findsOneWidget);
-        expect(
-          tester.getBottomLeft(tools).dy,
-          lessThanOrEqualTo(tester.getBottomLeft(header).dy),
-        );
         final floating = find.byKey(const Key('catalogue-floating-actions'));
         expect(floating, findsOneWidget);
         expect(

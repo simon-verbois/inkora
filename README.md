@@ -33,8 +33,8 @@ behind this branch; see [the changelog](CHANGELOG.md).
 - **Make it yours.** Choose from twelve light and dark palettes, including Mint
   and Lavender. Set reading direction, page layout, gestures and EPUB typography.
   Use one scaling/filter choice for all image formats, with sharpening on the
-  same page. Configure reading defaults per visible library and reset individual
-  settings pages when needed. Set Home covers per row separately
+  same page. Configure reading defaults per visible library with clear sections
+  and dropdown choices. Set Home covers per row separately
   for portrait and landscape windows.
 - **Find your next read.** Search your catalogue and browse series, collections
   and reading lists. Filter by format, reading status or downloaded availability.
@@ -47,9 +47,9 @@ behind this branch; see [the changelog](CHANGELOG.md).
   series information beside its volumes on tablets, with completed covers muted
   and selection actions floating over the page. Catalogue links ask before
   opening an external site.
-- **Keep browsing comfortably.** Compact controls attach to Home’s header as you
-  scroll. Quick filters preserve your position, and adaptive side margins keep
-  the cover grid spacious on both phones and tablets.
+- **Keep browsing comfortably.** Library and filter buttons stay within reach at
+  the bottom right, in portrait and landscape. Filters preserve your position,
+  and a subtle divider separates Continue reading from your library grid.
 - **Bring settings along.** Export settings and bookmarks to a file, preview an
   import, or scan an existing settings QR code. Credentials,
   books and reading progress are excluded. Account-specific files require the same

@@ -36,8 +36,8 @@ void main() {
       );
       harness.container.read(routerProvider).go('/');
       await tester.pumpAndSettle();
-      final selector = find.byKey(const Key('library-selector'));
-      expect(tester.getSize(selector).width, 48);
+      final selector = find.byKey(const Key('catalogue-floating-library'));
+      expect(tester.getSize(selector).width, 60);
       expect(
         find.descendant(of: selector, matching: find.byType(Text)),
         findsNothing,
@@ -235,8 +235,8 @@ void main() {
       final router = harness.container.read(routerProvider);
       router.go('/');
       await tester.pumpAndSettle();
-      final selector = find.byKey(const Key('catalogue-tools-menu'));
-      expect(tester.getSize(selector).width, 48);
+      final selector = find.byKey(const Key('catalogue-floating-filters'));
+      expect(tester.getSize(selector).width, 60);
       await tester.tap(find.byKey(const Key('home-menu')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Downloads'));

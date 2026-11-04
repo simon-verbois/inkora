@@ -1,3 +1,5 @@
+import '../../support/reader_preferences.dart';
+
 import 'package:inkora/reader/presentation/ebook_font_picker.dart';
 
 import 'dart:io';
@@ -67,7 +69,6 @@ Future<void> openSheet(
                   modal: true,
                   showTitle: !bookOnly,
                   showScope: !bookOnly,
-                  showReset: !bookOnly,
                 );
                 if (bookOnly) {
                   showInkSheet<void>(context: context, child: editor);
@@ -131,7 +132,7 @@ void main() {
   });
 
   testWidgets(
-    'choice chips replace dropdowns and keep complete labels at 200 % text',
+    'dropdowns replace choice chips and keep complete labels at 200 % text',
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
@@ -150,22 +151,13 @@ void main() {
         pages: [PageDimensions(768, 1152)],
       );
       await openSheet(tester, store, manifest);
-      expect(find.byType(DropdownButtonFormField<String>), findsNothing);
-      final automatic = find.byKey(const Key('reader-choice-layout-automatic'));
-      await tester.ensureVisible(automatic);
-      await tester.pumpAndSettle();
-      expect(tester.widget<ChoiceChip>(automatic).selected, isTrue);
-      expect(
-        find.text('Two pages in landscape windows and on tablets.'),
-        findsOneWidget,
+      expect(find.byType(DropdownButtonFormField<String>), findsWidgets);
+      await chooseReaderPreference(tester, 'reader-choice-direction-vertical');
+      final saved = await tester.runAsync(
+        () => store.overrides(SettingsScope.book, 'comics'),
       );
-      for (final label in [
-        'Left to right',
-        'Right to left',
-        'Vertical pages',
-      ]) {
-        expect(find.text(label), findsOneWidget);
-      }
+      expect(saved!.direction, ReadingDirection.vertical);
+      expect(find.byType(ChoiceChip), findsNothing);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },
@@ -179,7 +171,7 @@ void main() {
     ]) {
       for (final scale in [1.0, 2.0]) {
         testWidgets(
-          '$kind tabs show applicable controls and reachable actions at $size/$scale',
+          '$kind sections show applicable controls and reachable actions at $size/$scale',
           (tester) async {
             tester.view.physicalSize = size;
             tester.view.devicePixelRatio = 1;
@@ -219,23 +211,7 @@ void main() {
               pages: [PageDimensions(768, 1152)],
             );
             await openSheet(tester, store, manifest);
-            final tabs = find.byType(Tab);
-            expect(
-              tabs,
-              kind == 'pdf'
-                  ? findsNothing
-                  : findsNWidgets(
-                      kind == 'epub'
-                          ? 4
-                          : kind == 'webtoon'
-                          ? 3
-                          : 2,
-                    ),
-            );
-            expect(
-              find.text('Appearance'),
-              kind == 'epub' ? findsOneWidget : findsNothing,
-            );
+            expect(find.byType(TabBar), findsNothing);
             expect(
               find.text('Rendering'),
               document ? findsNothing : findsOneWidget,
@@ -258,24 +234,22 @@ void main() {
                 findsOneWidget,
               );
               expect(
-                find.byKey(const Key('reader-choice-fit-page')),
+                find.byKey(
+                  const Key('reader-choice-fit-page'),
+                  skipOffstage: false,
+                ),
                 findsOneWidget,
               );
-              await tester.ensureVisible(find.text('Continuous scrolling'));
-              await tester.pumpAndSettle();
-              expect(
-                find.text('Continuous scrolling').hitTestable(),
-                findsOneWidget,
+              await chooseReaderPreference(
+                tester,
+                'reader-choice-ebook-reading-mode-scroll',
               );
             }
 
             if (kind == 'epub') {
-              await tester.ensureVisible(find.text('Appearance'));
-              await tester.tap(find.text('Appearance'));
-              await tester.pumpAndSettle();
               expect(find.byType(EbookFontPicker), findsOneWidget);
               expect(find.text('Background'), findsOneWidget);
-              expect(find.text('Publisher styles'), findsOneWidget);
+              expect(find.text('Publisher styles'), findsWidgets);
             }
             if (const bool.fromEnvironment('CAPTURE_READER_SETTINGS')) {
               if ((kind == 'epub' || kind == 'manga') &&
@@ -297,10 +271,7 @@ void main() {
               }
             }
             expect(find.text('Save'), findsNothing);
-            final reset = find.byKey(const Key('reader-settings-menu'));
-            await tester.ensureVisible(reset);
-            await tester.pumpAndSettle();
-            expect(reset.hitTestable(), findsOneWidget);
+            expect(find.byKey(const Key('reader-settings-menu')), findsNothing);
             final scope = find.byKey(const Key('reader-settings-scope'));
             await tester.ensureVisible(scope);
             await tester.pumpAndSettle();
@@ -334,11 +305,11 @@ void main() {
         pages: [PageDimensions(768, 1152)],
       );
       await openSheet(tester, store, manifest);
-      expect(find.text('Appearance'), findsNothing);
+      expect(find.byType(EbookFontPicker), findsNothing);
       expect(find.text('Rendering'), findsOneWidget);
       expect(find.text('Direction'), findsOneWidget);
       expect(find.text('Font'), findsNothing);
-      expect(find.text('Page layout'), findsOneWidget);
+      expect(find.text('Page layout'), findsWidgets);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -362,23 +333,13 @@ void main() {
         pages: [PageDimensions(1, 1)],
       );
       await openSheet(tester, store, manifest);
-      expect(
-        // The native system inset belongs to SafeArea, outside the capped form.
-        tester.getSize(find.byType(DefaultTabController)).height,
-        lessThanOrEqualTo(560),
-      );
-      expect(
-        find.byKey(const Key('reader-choice-ebook-text-columns-auto')),
-        findsNothing,
-      );
+      expect(find.byType(TabBar), findsNothing);
       await tester.ensureVisible(find.text('Navigation'));
-      await tester.tap(find.text('Navigation'));
-      await tester.pumpAndSettle();
+
       await tester.ensureVisible(find.text('Tap to turn pages'));
       await tester.tap(find.text('Tap to turn pages'));
       await settle(tester);
-      await tester.tap(find.text('Appearance'));
-      await tester.pumpAndSettle();
+
       tester
           .widget<Slider>(find.byKey(const ValueKey('ebook-lineHeight')))
           .onChangeEnd!(1.8);
@@ -390,27 +351,21 @@ void main() {
         ))!.ebook!['lineHeight'],
         1.8,
       );
-      await tester.ensureVisible(find.text('Page layout'));
-      await tester.tap(find.text('Page layout'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Appearance'));
-      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Page layout').last);
+
       await chooseBackground(tester, 'black');
       await settle(tester);
-      await tester.ensureVisible(find.text('Page layout'));
-      await tester.tap(find.text('Page layout'));
-      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Page layout').last);
+
       await tester.ensureVisible(find.text('Center page divider'));
       await tester.tap(find.text('Center page divider'));
       await settle(tester);
       await tester.ensureVisible(find.text('Navigation'));
-      await tester.tap(find.text('Navigation'));
-      await tester.pumpAndSettle();
+
       await tester.ensureVisible(find.text('Page turn animation'));
       await tester.tap(find.text('Page turn animation'));
       await settle(tester);
-      await tester.tap(find.text('Appearance'));
-      await tester.pumpAndSettle();
+
       expect(
         tester
             .widget<Slider>(find.byKey(const ValueKey('ebook-lineHeight')))

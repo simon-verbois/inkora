@@ -1,3 +1,5 @@
+import '../../support/reader_preferences.dart';
+
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -62,16 +64,13 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text('Preferences'));
         await tester.pumpAndSettle();
-        final mode = find.byKey(const Key('reader-choice-mode-webtoon'));
-        await tester.ensureVisible(mode);
-        await tester.pumpAndSettle();
-        await tester.tap(mode);
+        await chooseReaderPreference(tester, 'reader-choice-mode-webtoon');
         await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 50)),
         );
         await tester.pumpAndSettle();
         expect(find.text('Direction'), findsNothing);
-        expect(find.text('Page layout'), findsNothing);
+        expect(find.text('Page layout'), findsOneWidget);
         expect(find.text('Comfortable width'), findsOneWidget);
         final apply = find.byKey(const Key('apply-library-defaults'));
         await tester.ensureVisible(apply);

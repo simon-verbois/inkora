@@ -91,7 +91,9 @@ void main() {
         expect(
           tester.getTopLeft(find.byType(ResumeCarousel)).dy,
           lessThan(
-            tester.getTopLeft(find.byKey(const Key('catalogue-tools'))).dy,
+            tester
+                .getTopLeft(find.byKey(const Key('home-section-separator')))
+                .dy,
           ),
         );
         final router = harness.container.read(routerProvider);

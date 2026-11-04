@@ -401,7 +401,7 @@ void main() {
   }
 
   testWidgets(
-    'Home header keeps search reachable while tools scroll underneath',
+    'Home header keeps search reachable with permanent Home shortcuts',
     (tester) async {
       final harness = await _mount(
         tester,
@@ -413,7 +413,7 @@ void main() {
       );
       final header = find.byKey(const Key('home-header'));
       final tools = find.byKey(
-        const Key('catalogue-tools'),
+        const Key('catalogue-floating-actions'),
         skipOffstage: false,
       );
       final search = find.byKey(const Key('open-search'));
@@ -442,10 +442,8 @@ void main() {
         expect(header.hitTestable(), findsOneWidget);
         expect(history.hitTestable(), findsOneWidget);
         expect(tester.getRect(header), headerRect);
-        expect(
-          tester.getTopLeft(tools).dy,
-          lessThanOrEqualTo(headerRect.bottom),
-        );
+        expect(tools, findsOneWidget);
+        expect(find.byKey(const Key('catalogue-tools')), findsNothing);
       }
       await tester.tap(search);
       await tester.pumpAndSettle();

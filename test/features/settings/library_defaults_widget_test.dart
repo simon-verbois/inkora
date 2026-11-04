@@ -1,3 +1,5 @@
+import '../../support/reader_preferences.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/router.dart';
@@ -14,7 +16,7 @@ void main() {
     (const Size(320, 640), 2.0),
   ]) {
     testWidgets(
-      'library defaults select, persist, apply and reset at $size/$scale',
+      'library defaults select, persist, apply without reset at $size/$scale',
       (tester) async {
         tester.view.physicalSize = size;
         tester.view.devicePixelRatio = 1;
@@ -68,31 +70,20 @@ void main() {
         expect(find.text('Inherit'), findsNothing);
         expect(find.text('Preference inheritance'), findsNothing);
         expect(find.text('Comics'), findsOneWidget);
-        await tester.tap(find.byKey(const Key('reader-choice-mode-manga')));
+        await chooseReaderPreference(tester, 'reader-choice-mode-manga');
         await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 50)),
         );
         await tester.pumpAndSettle();
-        final contentFit = find.byKey(const Key('reader-choice-fit-content'));
-        await tester.ensureVisible(contentFit);
-        await tester.pumpAndSettle();
-        await tester.tap(contentFit);
+        await chooseReaderPreference(tester, 'reader-choice-fit-content');
         await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 50)),
         );
         await tester.pumpAndSettle();
-        final offset = find.byKey(
-          const Key('reader-choice-spreadPairing-unshifted'),
+        await chooseReaderPreference(
+          tester,
+          'reader-choice-spreadPairing-unshifted',
         );
-        await tester.ensureVisible(offset);
-        await tester.pumpAndSettle();
-        expect(tester.widget<RadioListTile<String>>(offset).selected, false);
-        await tester.tap(offset);
-        await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 50)),
-        );
-        await tester.pumpAndSettle();
-        expect(tester.widget<RadioListTile<String>>(offset).selected, true);
         final offsetRow = (await tester.runAsync(
           () => harness.database
               .select(harness.database.readingPreferences)
@@ -114,10 +105,7 @@ void main() {
           ))!.spreadPairing,
           SpreadPairing.unshifted,
         );
-        final mode = find.byKey(const Key('reader-choice-mode-webtoon'));
-        await tester.ensureVisible(mode);
-        await tester.pumpAndSettle();
-        await tester.tap(mode);
+        await chooseReaderPreference(tester, 'reader-choice-mode-webtoon');
         // Applied live: no Save; Back returns to the library list.
         await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 50)),
@@ -173,30 +161,10 @@ void main() {
         await tester.tap(find.text('Manga shelf'));
         await tester.pumpAndSettle();
         expect(find.text('Webtoon'), findsOneWidget);
-        await tester.ensureVisible(
-          find.byKey(const Key('reader-settings-menu')),
-        );
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('reader-settings-menu')));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('reader-settings-reset')));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Reset to default').last);
-        await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 50)),
-        );
-        await tester.pumpAndSettle();
-        expect(
-          tester
-              .widget<ChoiceChip>(
-                find.byKey(const Key('reader-choice-mode-comics')),
-              )
-              .selected,
-          isTrue,
-        );
+        expect(find.byKey(const Key('reader-settings-menu')), findsNothing);
         expect(
           (await tester.runAsync(() => store.settings(manifest).first))!.mode,
-          ReadingMode.comics,
+          ReadingMode.webtoon,
         );
         expect(tester.takeException(), isNull);
         await harness.close(tester);

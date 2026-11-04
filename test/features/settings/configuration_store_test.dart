@@ -8,25 +8,10 @@ import 'package:inkora/features/settings/domain/ui_preferences.dart';
 import 'package:inkora/reader/domain/gesture_zones.dart';
 
 void main() {
-  test(
-    'preferred hand defaults right, validates old input and round trips',
-    () {
-      expect(const UiPreferences().leftHanded, isFalse);
-      for (final value in [null, false, 'left', 1]) {
-        expect(
-          UiPreferences.fromJson({'leftHanded': value}).leftHanded,
-          isFalse,
-        );
-      }
-      final left = const UiPreferences().copyWith(leftHanded: true);
-      expect(UiPreferences.fromJson(left.toJson()).leftHanded, isTrue);
-      expect(
-        UiPreferences.fromJson(left.copyWith(leftHanded: false).toJson())
-            .leftHanded,
-        isFalse,
-      );
-    },
-  );
+  test('retired preferred-hand input is ignored on import', () {
+    final value = UiPreferences.fromJson({'leftHanded': true});
+    expect(value.toJson().containsKey('leftHanded'), isFalse);
+  });
 
   test(
     'version two setup resumes configuration after inserting the welcome page',

@@ -1,3 +1,5 @@
+import '../../support/reader_preferences.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/l10n/app_strings.dart';
@@ -278,18 +280,10 @@ void main() {
         );
         const capture = Key('gestures-capture');
         await harness.mount(tester, textScale: scale, captureKey: capture);
-        final presets = find.byWidgetPredicate(
-          (widget) =>
-              widget is ListTile &&
-              widget.key is ValueKey<String> &&
-              (widget.key! as ValueKey<String>).value.startsWith(
-                'gesture-preset-',
-              ),
+        expect(
+          find.byType(DropdownButtonFormField<GesturePreset>),
+          findsOneWidget,
         );
-        expect(tester.widgetList<ListTile>(presets).map((w) => w.key), [
-          for (final preset in GesturePreset.values)
-            ValueKey('gesture-preset-${preset.name}'),
-        ]);
         expect(find.byKey(const Key('gesture-preview')), findsNothing);
         final original = harness.container
             .read(uiPreferencesProvider)
@@ -301,13 +295,7 @@ void main() {
           (_, _) => emissions++,
         );
         addTearDown(subscription.close);
-        final custom = find.byKey(const ValueKey('gesture-preset-custom'));
-        Future<void> open() async {
-          await tester.ensureVisible(custom);
-          await tester.pumpAndSettle();
-          await tester.tap(custom);
-          await tester.pumpAndSettle();
-        }
+        Future<void> open() => chooseGesturePreset(tester, 'custom');
 
         await open();
         final slider = find.byKey(const ValueKey('gesture-edge-Left edge'));
@@ -323,6 +311,10 @@ void main() {
         );
         expect(tester.widget<Positioned>(preview).left, changed);
         expect(emissions, 0);
+        await tester.ensureVisible(
+          find.byKey(const Key('gesture-custom-cancel')),
+        );
+        await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('gesture-custom-cancel')));
         await tester.pumpAndSettle();
         expect(
@@ -345,6 +337,10 @@ void main() {
             'gestures-custom-fr',
           );
         }
+        await tester.ensureVisible(
+          find.byKey(const Key('gesture-custom-save')),
+        );
+        await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('gesture-custom-save')));
         await tester.pumpAndSettle();
         final saved = harness.container

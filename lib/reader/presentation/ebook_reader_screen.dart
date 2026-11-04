@@ -843,7 +843,6 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
         modal: true,
         showTitle: false,
         showScope: false,
-        showReset: false,
       ),
     );
   }

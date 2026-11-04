@@ -897,9 +897,6 @@ const Map<String, Map<String, String>> messages = {
     "Save a search to reuse its filters later.":
         "Save a search to reuse its filters later.",
     "Remove saved search": "Remove saved search",
-    "Preferred hand": "Preferred hand",
-    "Right-handed": "Right-handed",
-    "Left-handed": "Left-handed",
     "Setup is complete. Enjoy your reading!":
         "Setup is complete. Enjoy your reading!",
     "Welcome to Inkora": "Welcome to Inkora",
@@ -1807,9 +1804,6 @@ const Map<String, Map<String, String>> messages = {
     "Save a search to reuse its filters later.":
         "Enregistrez une recherche pour réutiliser ses filtres ultérieurement.",
     "Remove saved search": "Supprimer la recherche enregistrée",
-    "Preferred hand": "Main dominante",
-    "Right-handed": "Droitier",
-    "Left-handed": "Gaucher",
     "Setup is complete. Enjoy your reading!":
         "La configuration est terminée. Bonne lecture !",
     "Welcome to Inkora": "Bienvenue sur Inkora",
@@ -2700,9 +2694,6 @@ const Map<String, Map<String, String>> messages = {
     "Save a search to reuse its filters later.":
         "Speichern Sie eine Suche, um ihre Filter später wiederzuverwenden.",
     "Remove saved search": "Gespeicherte Suche entfernen",
-    "Preferred hand": "Bevorzugte Hand",
-    "Right-handed": "Rechtshändig",
-    "Left-handed": "Linkshändig",
     "Setup is complete. Enjoy your reading!":
         "Die Einrichtung ist abgeschlossen. Viel Spaß beim Lesen!",
     "Welcome to Inkora": "Willkommen bei Inkora",
@@ -3608,9 +3599,6 @@ const Map<String, Map<String, String>> messages = {
     "Save a search to reuse its filters later.":
         "Guarde una búsqueda para reutilizar sus filtros más tarde.",
     "Remove saved search": "Eliminar búsqueda guardada",
-    "Preferred hand": "Mano preferida",
-    "Right-handed": "Diestro",
-    "Left-handed": "Zurdo",
     "Setup is complete. Enjoy your reading!":
         "La configuración ha terminado. ¡Disfruta de la lectura!",
     "Welcome to Inkora": "Bienvenido a Inkora",
@@ -4515,9 +4503,6 @@ const Map<String, Map<String, String>> messages = {
     "Save a search to reuse its filters later.":
         "Salva una ricerca per riutilizzarne i filtri in seguito.",
     "Remove saved search": "Rimuovi la ricerca salvata",
-    "Preferred hand": "Mano preferita",
-    "Right-handed": "Destro",
-    "Left-handed": "Mancino",
     "Setup is complete. Enjoy your reading!":
         "La configurazione è terminata. Buona lettura!",
     "Welcome to Inkora": "Benvenuto in Inkora",
@@ -5417,9 +5402,6 @@ const Map<String, Map<String, String>> messages = {
     "Save a search to reuse its filters later.":
         "Zapisz wyszukiwanie, aby później ponownie użyć filtrów.",
     "Remove saved search": "Usuń zapisane wyszukiwanie",
-    "Preferred hand": "Preferowana ręka",
-    "Right-handed": "Praworęczny",
-    "Left-handed": "Leworęczny",
     "Setup is complete. Enjoy your reading!":
         "Konfiguracja została zakończona. Miłej lektury!",
     "Welcome to Inkora": "Witamy w aplikacji Inkora",
@@ -6329,9 +6311,6 @@ const Map<String, Map<String, String>> messages = {
     "Save a search to reuse its filters later.":
         "Sla een zoekopdracht op om de filters later opnieuw te gebruiken.",
     "Remove saved search": "Verwijder opgeslagen zoekopdracht",
-    "Preferred hand": "Voorkeurshand",
-    "Right-handed": "Rechtshandig",
-    "Left-handed": "Linkshandig",
     "Setup is complete. Enjoy your reading!":
         "De configuratie is voltooid. Veel leesplezier!",
     "Welcome to Inkora": "Welkom bij Inkora",
@@ -7234,9 +7213,6 @@ const Map<String, Map<String, String>> messages = {
     "Save a search to reuse its filters later.":
         "Guarde uma pesquisa para reutilizar os filtros mais tarde.",
     "Remove saved search": "Remover pesquisa guardada",
-    "Preferred hand": "Mão preferida",
-    "Right-handed": "Destro",
-    "Left-handed": "Canhoto",
     "Setup is complete. Enjoy your reading!":
         "A configuração está concluída. Boas leituras!",
     "Welcome to Inkora": "Bem-vindo ao Inkora",
@@ -8138,9 +8114,6 @@ const Map<String, Map<String, String>> messages = {
     "Save a search to reuse its filters later.":
         "Salvați o căutare pentru a reutiliza filtrele acesteia mai târziu.",
     "Remove saved search": "Eliminați căutarea salvată",
-    "Preferred hand": "Mâna preferată",
-    "Right-handed": "Dreptaci",
-    "Left-handed": "Stângaci",
     "Setup is complete. Enjoy your reading!":
         "Configurarea este finalizată. Lectură plăcută!",
     "Welcome to Inkora": "Bine ați venit la Inkora",
@@ -9057,9 +9030,6 @@ const Map<String, Map<String, String>> messages = {
         "Δεν είναι δυνατή η αποθήκευση αναζητήσεων. Προσπαθήστε ξανά.",
     "Save a search to reuse its filters later.": "Αποθηκεύστε μια αναζήτηση για να χρησιμοποιήσετε ξανά τα φίλτρα της αργότερα.",
     "Remove saved search": "Κατάργηση αποθηκευμένης αναζήτησης",
-    "Preferred hand": "Προτιμώμενο χέρι",
-    "Right-handed": "Δεξιόχειρας",
-    "Left-handed": "Αριστερόχειρας",
     "Setup is complete. Enjoy your reading!":
         "Η ρύθμιση έχει ολοκληρωθεί. Καλή ανάγνωση!",
     "Welcome to Inkora": "Καλώς ήρθατε στο Inkora",
@@ -9955,9 +9925,6 @@ const Map<String, Map<String, String>> messages = {
     "Save a search to reuse its filters later.":
         "Mentse el a keresést a szűrők későbbi újrafelhasználásához.",
     "Remove saved search": "Mentett keresés eltávolítása",
-    "Preferred hand": "Előnyben részesített kéz",
-    "Right-handed": "Jobbkezes",
-    "Left-handed": "Balkezes",
     "Setup is complete. Enjoy your reading!":
         "A beállítás befejeződött. Jó olvasást!",
     "Welcome to Inkora": "Üdvözöljük az Inkora alkalmazásban",
@@ -10846,9 +10813,6 @@ const Map<String, Map<String, String>> messages = {
     "Save a search to reuse its filters later.":
         "Uložte vyhledávání, abyste mohli jeho filtry později znovu použít.",
     "Remove saved search": "Odebrat uložené vyhledávání",
-    "Preferred hand": "Preferovaná ruka",
-    "Right-handed": "Pravák",
-    "Left-handed": "Levák",
     "Setup is complete. Enjoy your reading!":
         "Nastavení je dokončeno. Příjemné čtení!",
     "Welcome to Inkora": "Vítejte v aplikaci Inkora",

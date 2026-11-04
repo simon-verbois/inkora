@@ -103,14 +103,20 @@ void main() {
         await tester.ensureVisible(find.text('Sign in'));
         await tester.tap(find.text('Sign in'));
         await tester.pumpAndSettle();
-        expect(find.byKey(const Key('catalogue-tools')), findsOneWidget);
+        expect(
+          find.byKey(const Key('catalogue-floating-actions')),
+          findsOneWidget,
+        );
         expect(
           container.read(sessionProvider).session?.user.email,
           'reader@example.test',
         );
         container.read(routerProvider).go('/connections');
         await tester.pumpAndSettle();
-        expect(find.byKey(const Key('catalogue-tools')), findsOneWidget);
+        expect(
+          find.byKey(const Key('catalogue-floating-actions')),
+          findsOneWidget,
+        );
         container.read(routerProvider).go('/settings/account');
         await tester.pumpAndSettle();
         expect(find.text('reader@example.test'), findsOneWidget);
@@ -170,7 +176,7 @@ void main() {
     );
     restore.complete(savedSession);
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('catalogue-tools')), findsOneWidget);
+    expect(find.byKey(const Key('catalogue-floating-actions')), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(milliseconds: 20));
     await tester.runAsync(database.close);

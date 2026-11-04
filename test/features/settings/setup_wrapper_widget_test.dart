@@ -1,3 +1,5 @@
+import '../../support/reader_preferences.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/l10n/app_strings.dart';
@@ -9,7 +11,6 @@ import 'package:inkora/reader/data/reader_store.dart';
 import 'package:inkora/reader/domain/reading_settings.dart';
 import 'package:inkora/reader/presentation/reader_settings_sheet.dart';
 import 'package:inkora/offline/presentation/download_settings_panel.dart';
-import 'package:inkora/features/settings/presentation/settings_reset_button.dart';
 import 'package:inkora/features/settings/presentation/setup_introduction.dart';
 
 import '../../support/ui_harness.dart';
@@ -103,12 +104,7 @@ void main() {
         expect(find.byType(TabBar), findsNothing);
         expect(find.byKey(const Key('reader-settings-scope')), findsNothing);
         expect(find.byKey(const Key('reader-settings-menu')), findsNothing);
-        expect(
-          tester
-              .widget<ReaderSettingsSheet>(find.byType(ReaderSettingsSheet))
-              .showReset,
-          isFalse,
-        );
+
         await chooseSetupMode(tester, 'webtoon');
         await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 50)),
@@ -152,12 +148,7 @@ void main() {
         expect(find.byType(TabBar), findsNothing);
         expect(find.byKey(const Key('reader-settings-scope')), findsNothing);
         expect(find.byKey(const Key('reader-settings-menu')), findsNothing);
-        expect(
-          tester
-              .widget<ReaderSettingsSheet>(find.byType(ReaderSettingsSheet))
-              .showReset,
-          isFalse,
-        );
+
         expect(
           find.text(strings.text('Upscaling and sharpening')),
           findsOneWidget,
@@ -168,12 +159,10 @@ void main() {
         );
         expect(find.byType(TabBar), findsNothing);
         expect(find.text(strings.text('Save')), findsNothing);
-        final sampling = find.byKey(
-          const Key('reader-choice-quality-all-sampling-nearest'),
+        await chooseReaderPreference(
+          tester,
+          'reader-choice-quality-all-sampling-nearest',
         );
-        await tester.ensureVisible(sampling);
-        await tester.pumpAndSettle();
-        await tester.tap(sampling);
         await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 50)),
         );
@@ -242,14 +231,14 @@ void main() {
     for (var step = 1; step < 7; step++) {
       expect(find.text('Language'), findsNothing);
       expect(find.byType(SetupIntroduction), findsNothing);
-      expect(find.byType(SettingsResetButton), findsNothing);
+      expect(find.text('Reset to default'), findsNothing);
       expect(find.byKey(const Key('hide-tags')), findsNothing);
       await tester.tap(next);
       await tester.pumpAndSettle();
     }
     expect(find.text('Start reading').hitTestable(), findsOneWidget);
     expect(find.byType(SetupIntroduction), findsNothing);
-    expect(find.byType(SettingsResetButton), findsNothing);
+    expect(find.text('Reset to default'), findsNothing);
     expect(find.text('Finish setup'), findsNothing);
     expect(
       (await tester.runAsync(

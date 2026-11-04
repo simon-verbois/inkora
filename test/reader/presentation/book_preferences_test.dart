@@ -7,10 +7,9 @@ import 'package:inkora/reader/data/reader_store.dart';
 import 'package:inkora/reader/domain/ebook_style.dart';
 import 'package:inkora/reader/domain/reader_manifest.dart';
 import 'package:inkora/reader/domain/reading_settings.dart';
-import 'package:inkora/reader/presentation/reader_settings_sheet.dart';
 
 import '../../support/onboarding_visuals.dart';
-import 'reader_settings_tabs_test.dart' show openSheet, settle;
+import 'reader_settings_sections_test.dart' show openSheet, settle;
 
 void main() {
   for (final size in [const Size(390, 844), const Size(1024, 768)]) {
@@ -69,15 +68,12 @@ void main() {
             bookOnly: true,
           );
           expect(find.text(strings.text('Reading preferences')), findsNothing);
-          expect(
-            tester.getTopLeft(find.byType(TabBar)).dy,
-            closeTo(tester.getTopLeft(find.byType(ReaderSettingsSheet)).dy, 1),
-          );
+          expect(find.byType(TabBar), findsNothing);
           expect(find.byKey(const Key('reader-settings-scope')), findsNothing);
           expect(find.byKey(const Key('reader-settings-menu')), findsNothing);
           final templates = find.text(strings.text('Templates'));
           await tester.ensureVisible(templates);
-          await tester.tap(templates);
+
           await tester.pumpAndSettle();
           for (final style in EbookStyle.values) {
             final card = find.byKey(ValueKey('ebook-style-${style.name}'));
@@ -118,13 +114,12 @@ void main() {
           }
           final appearance = find.text(strings.text('Appearance'));
           await tester.ensureVisible(appearance);
-          await tester.tap(appearance);
           await tester.pumpAndSettle();
           if (size.width == 390 && scale == 1) {
             await captureOnboarding(
               tester,
               find.byKey(const Key('preferences-capture')),
-              'reader-book-preferences-fr',
+              'reader-book-preferences-sectioned-fr',
             );
           }
           await tester.binding.handlePopRoute();
@@ -137,13 +132,10 @@ void main() {
             bookOnly: true,
           );
           expect(find.text(strings.text('Reading preferences')), findsNothing);
-          expect(
-            tester.getTopLeft(find.byType(TabBar)).dy,
-            closeTo(tester.getTopLeft(find.byType(ReaderSettingsSheet)).dy, 1),
-          );
+          expect(find.byType(TabBar), findsNothing);
           expect(find.byKey(const Key('reader-settings-scope')), findsNothing);
           expect(find.byKey(const Key('reader-settings-menu')), findsNothing);
-          expect(find.text('Atkinson Hyperlegible'), findsOneWidget);
+          expect(find.text('Atkinson Hyperlegible'), findsWidgets);
           expect(tester.takeException(), isNull);
           await tester.pumpWidget(const SizedBox.shrink());
         },

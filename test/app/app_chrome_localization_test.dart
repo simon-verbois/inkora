@@ -30,16 +30,13 @@ void main() {
         );
         for (final key in ['home-portrait-columns', 'home-landscape-columns']) {
           final control = find.byKey(Key(key));
-          await Scrollable.ensureVisible(
-            tester.element(control),
-            alignment: .2,
-          );
-          await tester.pumpAndSettle();
-          expect(control.hitTestable(), findsOneWidget);
           final choices = find.descendant(
             of: control,
-            matching: find.byType(SegmentedButton<int>),
+            matching: find.byType(DropdownButtonFormField<int>),
           );
+          await tester.ensureVisible(choices);
+          await tester.pumpAndSettle();
+          expect(choices.hitTestable(), findsOneWidget);
           expect(tester.getSize(choices).width, lessThanOrEqualTo(320));
         }
         expect(tester.takeException(), isNull);

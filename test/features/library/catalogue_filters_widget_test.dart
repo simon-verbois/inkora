@@ -14,7 +14,7 @@ void main() {
     (const Size(1280, 800), 1.0),
   ]) {
     testWidgets(
-      'chip filters, search, debounced count and reset at $size / $scale',
+      'chip filters, search, debounced count and deselection at $size / $scale',
       (tester) async {
         tester.view.physicalSize = size;
         tester.view.devicePixelRatio = 1;
@@ -58,6 +58,7 @@ void main() {
                             CatalogueFacet.mediaType: [
                               'application/epub+zip',
                               'application/zip',
+                              'application/x-rar-compressed; version=4',
                             ],
                             CatalogueFacet.status: ['ONGOING', 'ENDED'],
                             CatalogueFacet.genres: genres,
@@ -84,6 +85,11 @@ void main() {
         // Server MIME types read as short formats.
         expect(find.text('EPUB'), findsOneWidget);
         expect(find.text('CBZ'), findsOneWidget);
+        expect(find.text('CBR'), findsOneWidget);
+        expect(
+          find.text('application/x-rar-compressed; version=4'),
+          findsNothing,
+        );
         // Opening counts once, immediately.
         expect(counted, hasLength(1));
         expect(find.text('Show results (30)'), findsOneWidget);
@@ -141,10 +147,15 @@ void main() {
         expect(result.single.filters.downloadedOnly, isTrue);
         expect(result.single.showUnavailable, isFalse);
 
-        // Reset (header) clears metadata choices only.
+        // Deselecting the current value clears the facet without reset chrome.
         await tester.tap(find.text('Open'));
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('filters-reset')));
+        expect(find.byKey(const Key('filters-reset')), findsNothing);
+        final publisher = find.byKey(
+          const Key('filter-publisher-Fixture Publisher'),
+        );
+        await tester.ensureVisible(publisher);
+        await tester.tap(publisher);
         await tester.pump(CatalogueFiltersSheet.countDelay);
         await tester.pumpAndSettle();
         expect(find.text('Show results (40)'), findsOneWidget);

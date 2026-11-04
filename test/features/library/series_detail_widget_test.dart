@@ -12,6 +12,7 @@ import 'package:inkora/features/library/domain/resume_entry.dart';
 import 'package:inkora/features/library/presentation/catalogue_screen.dart';
 import 'package:inkora/features/library/presentation/book_cover.dart';
 import 'package:inkora/features/library/presentation/series_header.dart';
+import 'package:inkora/features/library/presentation/series_detail_screen.dart';
 import 'package:inkora/features/library/presentation/book_detail_screen.dart';
 
 import '../../support/catalogue_fakes.dart';
@@ -1046,16 +1047,74 @@ void main() {
     },
   );
 
-  testWidgets('genre chip opens the catalogue filtered by that genre', (
-    tester,
-  ) async {
-    final harness = await openSeries(tester);
-    await tapVisible(tester, find.byKey(const ValueKey('genre-Mystery')));
-    final screen = tester.widget<CatalogueScreen>(find.byType(CatalogueScreen));
-    expect(screen.kind, CatalogueKind.series);
-    expect(screen.initialFilters.values[CatalogueFacet.genres], 'Mystery');
-    await harness.close(tester);
-  });
+  for (final size in [
+    const Size(390, 844),
+    const Size(844, 390),
+    const Size(1280, 800),
+  ]) {
+    for (final fromReader in [false, true]) {
+      testWidgets(
+        'genre opens a visible filtered catalogue at $size (reader parent $fromReader)',
+        (tester) async {
+          final harness = await openSeries(tester, size: size);
+          final router = harness.container.read(routerProvider);
+          if (fromReader) {
+            router.pushNamed<void>(
+              'reader-parent',
+              pathParameters: {'id': 'series-a'},
+              queryParameters: {'book': 'v3'},
+            );
+            await tester.pumpAndSettle();
+          }
+          final parent = tester.state(find.byType(SeriesDetailScreen));
+          final remote = harness.repository.remote as FakeCatalogueRemote;
+          final requests = remote.calls;
+          await tapVisible(tester, find.byKey(const ValueKey('genre-Mystery')));
+          final screen = tester.widget<CatalogueScreen>(
+            find.byType(CatalogueScreen),
+          );
+          expect(screen.kind, CatalogueKind.series);
+          expect(
+            screen.initialFilters.values[CatalogueFacet.genres],
+            'Mystery',
+          );
+          expect(find.byType(CatalogueScreen).hitTestable(), findsOneWidget);
+          await tester.ensureVisible(find.text('Moonlit District'));
+          await tester.pumpAndSettle();
+          expect(find.text('Moonlit District').hitTestable(), findsOneWidget);
+          final browse = tester.state<ScrollableState>(
+            find
+                .descendant(
+                  of: find.byType(CatalogueScreen),
+                  matching: find.byType(Scrollable),
+                )
+                .first,
+          );
+          await tester.drag(
+            find.byType(CustomScrollView),
+            const Offset(0, -100),
+          );
+          await tester.pumpAndSettle();
+          expect(browse.position.hasPixels, isTrue);
+          expect(remote.calls, requests);
+          await tester.ensureVisible(find.text('Moonlit District'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Moonlit District'));
+          await tester.pumpAndSettle();
+          expect(find.byType(SeriesDetailScreen).hitTestable(), findsOneWidget);
+          await tester.binding.handlePopRoute();
+          await tester.pumpAndSettle();
+          expect(find.byType(CatalogueScreen).hitTestable(), findsOneWidget);
+          await tester.binding.handlePopRoute();
+          await tester.pumpAndSettle();
+          expect(tester.state(find.byType(SeriesDetailScreen)), same(parent));
+          expect(find.byType(CatalogueScreen), findsNothing);
+          expect(tester.takeException(), isNull);
+          await harness.close(tester);
+        },
+      );
+    }
+  }
 
   for (final size in [const Size(1280, 800), const Size(1366, 1024)]) {
     testWidgets(

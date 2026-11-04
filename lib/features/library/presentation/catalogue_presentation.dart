@@ -26,9 +26,26 @@ IconData catalogueIcon(CatalogueKind kind) => switch (kind) {
 /// Catalogue page counts and resume presentation flags are not format gates.
 void openCatalogueItem(BuildContext context, CatalogueItem item) {
   if (!item.canOpen) return;
+  final route = GoRouterState.of(context);
+  if (route.name == 'reader-parent-catalogue' ||
+      route.name == 'reader-parent-catalogue-detail') {
+    if (item.kind == CatalogueKind.book && !item.isEbook) {
+      openBookReader(context, item);
+      return;
+    }
+    context.pushNamed(
+      'reader-parent-catalogue-detail',
+      pathParameters: {
+        'id': route.pathParameters['id']!,
+        'kind': item.kind.name,
+        'itemId': item.id,
+      },
+      queryParameters: route.uri.queryParameters,
+    );
+    return;
+  }
   if (item.kind == CatalogueKind.book) {
     if (item.isEbook) {
-      final route = GoRouterState.of(context);
       if (route.name == 'reader-parent') {
         // Stay on the root reader stack rather than re-entering the covered
         // Home shell, which would duplicate its page key.
@@ -61,18 +78,25 @@ void openCatalogueItem(BuildContext context, CatalogueItem item) {
 void openBookReader(BuildContext context, CatalogueItem item) {
   if (!item.canOpen) return;
   final route = GoRouterState.of(context);
-  if (route.name == 'reader-parent' || route.name == 'reader-parent-book') {
+  if (route.name?.startsWith('reader-parent') == true) {
     final router = GoRouter.of(context);
     final currentBook = route.uri.queryParameters['book'];
     if (!router.canPop()) {
       router.goNamed('reader', pathParameters: {'id': item.id});
       return;
     }
-    if (route.name == 'reader-parent-book') router.pop();
-    router.pop();
-    if (currentBook != item.id) {
-      // Readium owns one publication; replace the prior reader rather than
-      // retaining two native publications on the navigation stack.
+    var retainedReader = false;
+    Navigator.of(context, rootNavigator: true).popUntil((entry) {
+      retainedReader =
+          entry.settings.name == 'reader' ||
+          entry.settings.name == 'series-reader';
+      return retainedReader || entry.isFirst;
+    });
+    if (!retainedReader) {
+      router.pushNamed('reader', pathParameters: {'id': item.id});
+    } else if (currentBook != item.id) {
+      // Readium owns one publication: unwind every parent/browse/detail page
+      // before replacing the retained reader, including repeated genre browsing.
       router.pushReplacementNamed('reader', pathParameters: {'id': item.id});
     }
     return;

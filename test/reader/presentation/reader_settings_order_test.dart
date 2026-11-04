@@ -12,12 +12,11 @@ import 'package:inkora/core/storage/app_database.dart';
 import 'package:inkora/reader/data/reader_store.dart';
 import 'package:inkora/reader/domain/reader_manifest.dart';
 import 'package:inkora/reader/domain/reading_settings.dart';
-import 'package:inkora/reader/presentation/ebook_font_picker.dart';
 import 'package:inkora/reader/presentation/ebook_fonts.dart';
 import 'package:inkora/reader/presentation/reader_settings_scope_selector.dart';
 import 'package:inkora/reader/presentation/reader_settings_sheet.dart';
 
-import 'reader_settings_tabs_test.dart'
+import 'reader_settings_sections_test.dart'
     show openSheet, settle, chooseBackground;
 
 final _manifest = ReaderManifest(
@@ -66,13 +65,9 @@ Future<ReaderStore> mount(
   return store;
 }
 
-Future<void> tab(WidgetTester tester, String name) async {
-  final finder = find.descendant(
-    of: find.byType(TabBar),
-    matching: find.text(name),
-  );
-  await tester.ensureVisible(finder);
-  await tester.tap(finder);
+Future<void> tab(WidgetTester tester, String label) async {
+  final heading = find.text(label).last;
+  await tester.ensureVisible(heading);
   await tester.pumpAndSettle();
 }
 
@@ -96,65 +91,19 @@ Future<void> capture(WidgetTester tester, String name) async {
 }
 
 void registerSettingsDensityTest() {
-  testWidgets('tablet navigation fits content and aligns header and switches', (
+  testWidgets('sectioned navigation aligns switch edges without reset chrome', (
     tester,
   ) async {
     await mount(tester);
     await tab(tester, 'Navigation');
-    final tapText = find.text('Tap to turn pages');
-    final animationText = find.text('Page turn animation');
-    Finder tile(Finder title) => find
-        .ancestor(
-          of: title,
-          matching: find.byWidgetPredicate(
-            (widget) => widget is SwitchListTile,
-          ),
-        )
-        .first;
-    Finder toggle(Finder title) =>
-        find.descendant(of: tile(title), matching: find.byType(Switch));
-    expect(tester.getRect(tapText).left, tester.getRect(animationText).left);
-    expect(
-      tester.getRect(toggle(tapText)).right,
-      tester.getRect(toggle(animationText)).right,
-    );
-    expect(
-      tester.getRect(tapText).center.dy,
-      closeTo(tester.getRect(toggle(tapText)).center.dy, 1),
-    );
-    final trailing = tester.getRect(toggle(animationText)).right;
-    final leading = tester.getRect(animationText).left;
-    final panel = tester.getRect(find.byType(DefaultTabController));
-    expect(panel.height, lessThan(460));
-    expect(
-      panel.bottom - tester.getRect(tile(animationText)).bottom,
-      inInclusiveRange(0, 20),
-    );
-    final target = tester.getRect(
-      find.byKey(const Key('reader-settings-scope')),
-    );
-    final more = tester.getRect(find.byKey(const Key('reader-settings-menu')));
-    expect(target.right, lessThanOrEqualTo(more.left));
-    expect(target.center.dy, more.center.dy);
-    expect(find.text('Automatic saving'), findsNothing);
-    expect(find.byKey(const Key('reader-settings-footer')), findsNothing);
-    final oldHeight = panel.height;
-    await tester.tap(
-      find.byKey(const Key('reader-choice-ebook-reading-mode-scroll')),
-    );
-    await settle(tester);
-    expect(
-      tester.getSize(find.byType(DefaultTabController)).height,
-      lessThan(oldHeight),
-    );
-    await tester.tap(
-      find.byKey(const Key('reader-choice-ebook-reading-mode-pages')),
-    );
-    await settle(tester);
-    await tab(tester, 'Page layout');
-    final dividerText = find.text('Center page divider');
-    expect(tester.getRect(dividerText).left, leading);
-    expect(tester.getRect(toggle(dividerText)).right, trailing);
+    expect(find.byType(TabBar), findsNothing);
+    expect(find.byKey(const Key('reader-settings-menu')), findsNothing);
+    // Every navigation action remains reachable in the shared scroll form.
+    for (final label in ['Tap to turn pages', 'Page turn animation']) {
+      await tester.ensureVisible(find.text(label));
+      await tester.pumpAndSettle();
+      expect(find.text(label).hitTestable(), findsOneWidget);
+    }
     expect(tester.takeException(), isNull);
   });
 }
@@ -174,7 +123,7 @@ void main() {
     (const Locale('fr'), const Size(1024, 768), 1.0),
     (const Locale('fr'), const Size(390, 844), 1.0),
   ]) {
-    testWidgets('ordered EPUB tabs and header scope at $locale/$size/$scale', (
+    testWidgets('ordered EPUB sections and header scope at $locale/$size/$scale', (
       tester,
     ) async {
       if (const bool.fromEnvironment('CAPTURE_SETTINGS_ORDER')) {
@@ -206,193 +155,52 @@ void main() {
         scale: scale,
         locale: locale,
       );
-      final strings = AppStrings(locale.languageCode);
+      final before = (await tester.runAsync(
+        () => store.overrides(SettingsScope.book, 'book'),
+      ))!.toJson();
       final scope = find.byKey(const Key('reader-settings-scope'));
-      expect(tester.getRect(scope).height, greaterThanOrEqualTo(48));
       expect(scope.hitTestable(), findsOneWidget);
-      expect(find.text('Apply to'), findsNothing);
-      final backgroundPicker = find.byKey(const Key('ebook-background-picker'));
-      final fontPicker = find.byKey(const Key('ebook-font-picker'));
-      final pairWidth = tester
-          .getSize(find.byKey(const Key('ebook-color-font-row')))
-          .width;
-      if (pairWidth >= 520 * scale) {
-        expect(
-          tester.getRect(backgroundPicker).right,
-          lessThanOrEqualTo(tester.getRect(fontPicker).left),
-        );
-        expect(
-          tester.getRect(backgroundPicker).top,
-          closeTo(tester.getRect(fontPicker).top, 1),
-        );
-      } else {
-        expect(
-          tester.getRect(backgroundPicker).left,
-          tester.getRect(fontPicker).left,
-        );
-        expect(
-          tester.getRect(fontPicker).top,
-          greaterThan(tester.getRect(backgroundPicker).bottom),
-        );
+      expect(find.byType(TabBar), findsNothing);
+      expect(find.byType(ChoiceChip), findsNothing);
+      expect(find.byKey(const Key('reader-settings-menu')), findsNothing);
+      final strings = AppStrings(locale.languageCode);
+      final labels = ['Appearance', 'Page layout', 'Navigation', 'Templates'];
+      double? previous;
+      for (final label in labels) {
+        final heading = find.text(strings.text(label)).last;
+        // Compare content positions, compensating for the form's scroll.
+        final position = tester
+            .state<ScrollableState>(
+              find
+                  .descendant(
+                    of: find.byType(ReaderSettingsSheet),
+                    matching: find.byType(Scrollable),
+                  )
+                  .first,
+            )
+            .position;
+        final top = tester.getTopLeft(heading).dy + position.pixels;
+        if (previous != null) expect(top, greaterThan(previous));
+        previous = top;
+        await tester.ensureVisible(heading);
+        await tester.pumpAndSettle();
+        expect(heading.hitTestable(), findsOneWidget);
       }
-      if (scale == 1) {
-        expect(
-          tester.getRect(backgroundPicker).top,
-          greaterThan(tester.getRect(find.byType(TabBar)).bottom),
-        );
-      }
+      final original = tester.state(find.byType(ReaderSettingsSheet));
+      tester.view.physicalSize = size.height > size.width
+          ? const Size(1024, 768)
+          : const Size(390, 844);
+      await tester.pumpAndSettle();
+      expect(tester.state(find.byType(ReaderSettingsSheet)), same(original));
+      expect(
+        (await tester.runAsync(
+          () => store.overrides(SettingsScope.book, 'book'),
+        ))!.toJson(),
+        before,
+      );
       await capture(
         tester,
-        '${locale.languageCode}-${size.width.toInt()}-${(scale * 100).round()}-appearance-initial',
-      );
-      await tester.ensureVisible(backgroundPicker);
-      await tester.tap(backgroundPicker);
-      await tester.pumpAndSettle();
-      for (final color in ['white', 'sepia', 'gray', 'slate', 'black']) {
-        expect(find.byKey(Key('reader-background-$color')), findsOneWidget);
-      }
-      for (final old in ['paper', 'ivory', 'sage', 'mist']) {
-        expect(find.byKey(Key('reader-background-$old')), findsNothing);
-      }
-      if (const bool.fromEnvironment('CAPTURE_SETTINGS_ORDER')) {
-        await capture(
-          tester,
-          '${locale.languageCode}-${size.width.toInt()}-${(scale * 100).round()}-background-menu',
-        );
-      }
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
-      if (const bool.fromEnvironment('CAPTURE_SETTINGS_ORDER')) {
-        await tester.tap(fontPicker);
-        await tester.pumpAndSettle();
-        await capture(
-          tester,
-          '${locale.languageCode}-${size.width.toInt()}-${(scale * 100).round()}-font-menu',
-        );
-        await tester.binding.handlePopRoute();
-        await tester.pumpAndSettle();
-      }
-      final texture = find.byKey(const Key('ebook-paper-texture'));
-      expect(find.text(strings.text('Paper texture')), findsOneWidget);
-      expect(
-        tester.getRect(texture).top,
-        greaterThan(
-          tester.getRect(find.text(strings.text('Publisher styles'))).top,
-        ),
-      );
-      await tester.ensureVisible(texture);
-      await tester.tap(texture);
-      await settle(tester);
-      final textured = (await tester.runAsync(
-        () => store.overrides(SettingsScope.book, 'book'),
-      ))!;
-      expect(textured.ebook!['paperTexture'], true);
-      expect(textured.background, isNull);
-      await tester.tap(texture);
-      await settle(tester);
-      expect(
-        (await tester.runAsync(
-          () => store.overrides(SettingsScope.book, 'book'),
-        ))!.ebook!['paperTexture'],
-        false,
-      );
-      expect(find.byType(EbookFontPicker), findsOneWidget);
-      expect(find.byKey(const Key('ebook-margin-picker')), findsNothing);
-      expect(find.text(strings.text('Page turn animation')), findsNothing);
-      expect(find.byKey(const Key('reader-settings-reset')), findsNothing);
-      final stem =
-          '${locale.languageCode}-${size.width.toInt()}-${(scale * 100).round()}';
-      await capture(tester, '$stem-appearance');
-      for (final name in [
-        'Page layout',
-        'Navigation',
-        'Templates',
-        'Appearance',
-      ]) {
-        await tab(tester, strings.text(name));
-        await tester.ensureVisible(scope);
-        await tester.pumpAndSettle();
-        expect(scope.hitTestable(), findsOneWidget);
-        if (name != 'Appearance') {
-          await capture(tester, '$stem-${name.replaceAll(' ', '-')}');
-        }
-        if (name == 'Page layout') {
-          expect(find.byKey(const Key('ebook-margin-picker')), findsOneWidget);
-          expect(find.byType(EbookFontPicker), findsNothing);
-          expect(find.text(strings.text('Background')), findsNothing);
-          expect(find.text(strings.text('Page turn animation')), findsNothing);
-        }
-        if (name == 'Navigation') {
-          final continuous = find.byKey(
-            const Key('reader-choice-ebook-reading-mode-scroll'),
-          );
-          await tester.ensureVisible(continuous);
-          await tester.tap(continuous);
-          await settle(tester);
-          expect(find.text(strings.text('Tap to turn pages')), findsNothing);
-          expect(find.text(strings.text('Page turn animation')), findsNothing);
-          final book = (await tester.runAsync(
-            () => store.overrides(SettingsScope.book, 'book'),
-          ))!;
-          expect(book.ebook!['scroll'], true);
-          final pages = find.byKey(
-            const Key('reader-choice-ebook-reading-mode-pages'),
-          );
-          await tester.ensureVisible(pages);
-          await tester.tap(pages);
-          await settle(tester);
-          expect(find.text(strings.text('Tap to turn pages')), findsOneWidget);
-          expect(
-            find.text(strings.text('Page turn animation')),
-            findsOneWidget,
-          );
-        }
-      }
-      await tester.ensureVisible(scope);
-      await tester.tap(scope);
-      await tester.pumpAndSettle();
-      for (final name in ['book', 'series', 'library', 'global']) {
-        expect(
-          find.byKey(Key('reader-choice-scope-$name')).hitTestable(),
-          findsOneWidget,
-        );
-      }
-      await capture(tester, '$stem-scope');
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
-      expect(
-        tester
-            .widget<ReaderSettingsScopeSelector>(
-              find.byType(ReaderSettingsScopeSelector),
-            )
-            .scope,
-        SettingsScope.book,
-      );
-      // Switching targets preserves the previously applied book changes.
-      await tester.ensureVisible(scope);
-      await tester.tap(scope);
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('reader-choice-scope-global')));
-      await settle(tester);
-      expect(
-        tester
-            .widget<ReaderSettingsScopeSelector>(
-              find.byType(ReaderSettingsScopeSelector),
-            )
-            .scope,
-        SettingsScope.global,
-      );
-      expect(
-        (await tester.runAsync(
-          () => store.overrides(SettingsScope.book, 'book'),
-        ))!.ebook!['scroll'],
-        false,
-      );
-      expect(
-        (await tester.runAsync(
-          () => store.overrides(SettingsScope.global, ''),
-        ))!.ebook,
-        isNull,
+        '${locale.languageCode}-${size.width.toInt()}-${(scale * 100).round()}-sections',
       );
       expect(tester.takeException(), isNull);
     });
@@ -428,120 +236,8 @@ void main() {
     );
   }
 
-  for (final name in ['Appearance', 'Page layout', 'Navigation', 'Templates']) {
-    testWidgets(
-      'reset $name removes only its settings from the selected scope',
-      (tester) async {
-        final store = await mount(
-          tester,
-          overrides: const ReadingOverrides(
-            mode: ReadingMode.ebook,
-            background: ReadingBackground.black,
-            pageAnimation: false,
-            libraryDefaults: true,
-            spacing: 9,
-            ebook: {
-              'font': 'lato',
-              'fontSize': 1.8,
-              'lineHeight': 1.8,
-              'justify': true,
-              'publisherStyles': true,
-              'margins': 1.7,
-              'pageInsets': {'left': 9, 'top': 10, 'right': 11, 'bottom': 12},
-              'columns': 'two',
-              'columnSeparator': true,
-              'pageNumbers': false,
-              'scroll': true,
-              'tapToTurnPages': true,
-              'paperTexture': true,
-              'customColors': true,
-              'backgroundColor': 0x203040,
-              'textColor': 0xabcdef,
-            },
-          ),
-        );
-        await tab(tester, name);
-        Future<void> reset() async {
-          final menu = find.byKey(const Key('reader-settings-menu'));
-          await tester.ensureVisible(menu);
-          await tester.tap(menu);
-          await tester.pumpAndSettle();
-          await tester.tap(find.byKey(const Key('reader-settings-reset')));
-          await tester.pumpAndSettle();
-        }
-
-        await reset();
-        await tester.tap(find.text('Cancel'));
-        await settle(tester);
-        expect(
-          (await tester.runAsync(
-            () => store.overrides(SettingsScope.book, 'book'),
-          ))!.ebook!['scroll'],
-          true,
-        );
-        await reset();
-        await tester.tap(find.text('Reset to default').last);
-        await settle(tester);
-        final saved = (await tester.runAsync(
-          () => store.overrides(SettingsScope.book, 'book'),
-        ))!;
-        expect(saved.mode, ReadingMode.ebook);
-        expect(saved.libraryDefaults, true);
-        expect(saved.spacing, 9);
-        expect(
-          saved.background,
-          name == 'Appearance' || name == 'Templates'
-              ? isNull
-              : ReadingBackground.black,
-        );
-        expect(saved.pageAnimation, name == 'Navigation' ? isNull : false);
-        for (final key in ['customColors', 'backgroundColor', 'textColor']) {
-          expect(
-            saved.ebook!.containsKey(key),
-            name != 'Appearance' && name != 'Templates',
-          );
-        }
-        expect(
-          saved.ebook!.containsKey('paperTexture'),
-          name != 'Appearance' && name != 'Templates',
-        );
-        expect(
-          saved.ebook!.containsKey('font'),
-          name != 'Appearance' && name != 'Templates',
-        );
-        expect(
-          saved.ebook!.containsKey('lineHeight'),
-          name != 'Appearance' && name != 'Templates',
-        );
-        expect(
-          saved.ebook!.containsKey('margins'),
-          name != 'Page layout' && name != 'Templates',
-        );
-        expect(saved.ebook!.containsKey('columns'), name != 'Page layout');
-        expect(saved.ebook!.containsKey('pageInsets'), name != 'Page layout');
-        expect(
-          saved.ebook!.containsKey('columnSeparator'),
-          name != 'Page layout',
-        );
-        expect(saved.ebook!.containsKey('scroll'), name != 'Navigation');
-        expect(saved.ebook!.containsKey('pageNumbers'), name != 'Page layout');
-        expect(
-          saved.ebook!.containsKey('tapToTurnPages'),
-          name != 'Navigation',
-        );
-        expect(
-          (await tester.runAsync(
-            () => store.overrides(SettingsScope.global, ''),
-          ))!.toJson(),
-          const ReadingOverrides(mode: ReadingMode.ebook).toJson(),
-        );
-        expect(tester.takeException(), isNull);
-      },
-    );
-  }
-
   testWidgets(
-    'tab menus and live resize preserve the target without preference writes',
+    'section scrolling and live resize preserve the target without preference writes',
     (tester) async {
       final store = await mount(tester);
       var writes = 0;
@@ -575,14 +271,7 @@ void main() {
         await tester.tap(find.byKey(const Key('reader-choice-scope-book')));
         await settle(tester);
       }
-      final menu = find.byKey(const Key('reader-settings-menu'));
-      await tester.ensureVisible(menu);
-      await tester.tap(menu);
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('reader-settings-reset')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Cancel'));
-      await settle(tester);
+      expect(find.byKey(const Key('reader-settings-menu')), findsNothing);
       expect(writes, 0);
       expect(tester.takeException(), isNull);
     },

@@ -1,3 +1,5 @@
+import '../../support/reader_preferences.dart';
+
 import 'package:drift/drift.dart' show TableUpdateQuery;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -92,17 +94,7 @@ void main() {
         await settle();
       }
 
-      Future<void> choose(String key) async {
-        if (key.startsWith('reader-choice-scope-')) {
-          await tester.tap(find.byKey(const Key('reader-settings-scope')));
-          await tester.pumpAndSettle();
-        }
-        final chip = find.byKey(Key(key));
-        await tester.ensureVisible(chip);
-        await tester.pumpAndSettle();
-        await tester.tap(chip);
-        await settle();
-      }
+      Future<void> choose(String key) => chooseReaderPreference(tester, key);
 
       Future<ReadingOverrides> book() async => (await tester.runAsync(
         () => store.overrides(SettingsScope.book, manifest.bookId),
@@ -117,7 +109,7 @@ void main() {
         // The editing target stays visible in the compact footer menu.
         expect(find.byKey(const Key('reader-settings-scope')), findsOne);
         expect(find.text('Apply to'), findsNothing);
-        expect(find.byType(DropdownButtonFormField<String>), findsNothing);
+        expect(find.byType(DropdownButtonFormField<String>), findsWidgets);
 
         await choose('reader-choice-mode-manga');
         var saved = await book();
@@ -170,25 +162,9 @@ void main() {
         expect(global.mode, ReadingMode.webtoon);
         expect((await book()).mode, ReadingMode.manga);
 
-        // Reset is confirmed first; cancelling keeps the values.
-        await choose('reader-choice-scope-book');
-        await tester.tap(find.byKey(const Key('reader-settings-menu')));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('reader-settings-reset')));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Cancel'));
-        await settle();
+        expect(find.byKey(const Key('reader-settings-menu')), findsNothing);
+        expect(find.byKey(const Key('reader-settings-reset')), findsNothing);
         expect((await book()).mode, ReadingMode.manga);
-        await tester.tap(find.byKey(const Key('reader-settings-menu')));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('reader-settings-reset')));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Reset to default').last);
-        await settle();
-        final cleared = await book();
-        expect(cleared.mode, isNull);
-        expect(cleared.layout, isNull);
-        expect(cleared.background, isNull);
         expect(tester.takeException(), isNull);
       } finally {
         await tester.pumpWidget(const SizedBox.shrink());
@@ -235,21 +211,12 @@ void main() {
 
     try {
       await settle();
-      // The legacy explicit single-page choice is selected.
-      expect(
-        tester
-            .widget<ChoiceChip>(
-              find.byKey(const Key('reader-choice-layout-single')),
-            )
-            .selected,
-        isTrue,
-      );
+      expect(find.byType(ChoiceChip), findsNothing);
       for (final (key, mode) in [
         ('reader-choice-mode-manga', ReadingMode.manga),
         ('reader-choice-mode-comics', ReadingMode.comics),
       ]) {
-        await tester.ensureVisible(find.byKey(Key(key)));
-        await tester.tap(find.byKey(Key(key)));
+        await chooseReaderPreference(tester, key);
         await settle();
         final settings = (await tester.runAsync(
           () => store.settings(manifest).first,

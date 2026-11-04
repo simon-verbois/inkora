@@ -1,3 +1,4 @@
+import '../../../app/widgets/ink_slider.dart';
 import '../../../app/widgets/ink_screen_header.dart';
 import 'settings_transfer_panel.dart';
 import 'about_content.dart';
@@ -18,7 +19,6 @@ import '../../../app/widgets/inkora_widgets.dart';
 import '../../../app/theme/inkora_theme.dart';
 import '../../../reader/data/reader_store.dart';
 import '../../../reader/presentation/reader_settings_sheet.dart';
-import '../../../reader/presentation/reader_settings_layout.dart';
 import '../../../offline/presentation/download_settings_panel.dart';
 import '../../connection/application/session_controller.dart';
 import '../application/ui_preferences_provider.dart';
@@ -27,8 +27,6 @@ import 'appearance_picker.dart';
 import 'library_defaults_screen.dart';
 import 'image_enhancement_control.dart';
 import 'settings_adaptive_layout.dart';
-import 'settings_reset_button.dart';
-import '../../../core/images/image_enhancement.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({
@@ -153,22 +151,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : ReaderSettingsSheet(
                     key: widget.editorKey ?? ValueKey(account),
-                    showReset: !widget.embedded,
-                    sectioned: widget.embedded,
+
                     store: ReaderStore(snapshot.requireData, account),
                     qualityOnly: section == 'quality',
                     upscalingControls: section == 'quality'
                         ? const ImageEnhancementControl()
-                        : null,
-                    onResetRendering: section == 'quality'
-                        ? () async {
-                            await (await ref.read(uiPreferencesStoreProvider))
-                                .update(
-                                  (current) => current.copyWith(
-                                    imageEnhancement: ImageEnhancement.balanced,
-                                  ),
-                                );
-                          }
                         : null,
                     onSaved: widget.onSaved,
                   ),
@@ -198,31 +185,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: LText(
                   'Saved appearance unavailable. Default settings are active.',
                 ),
-              ),
-            if (!widget.embedded &&
-                (section == 'appearance' || section == 'accessibility'))
-              SettingsResetButton(
-                enabled: !_saving && data.hasValue,
-                onReset: () async {
-                  const defaults = UiPreferences();
-                  await (await ref.read(uiPreferencesStoreProvider)).update(
-                    (current) => section == 'appearance'
-                        ? current.copyWith(
-                            appearance: defaults.appearance,
-                            systemLightTheme: defaults.systemLightTheme,
-                            systemDarkTheme: defaults.systemDarkTheme,
-                            homePortraitColumns: defaults.homePortraitColumns,
-                            homeLandscapeColumns: defaults.homeLandscapeColumns,
-                            hideTags: defaults.hideTags,
-                            floatingNavigation: defaults.floatingNavigation,
-                          )
-                        : current.copyWith(
-                            textScale: defaults.textScale,
-                            reduceMotion: defaults.reduceMotion,
-                            leftHanded: defaults.leftHanded,
-                          ),
-                  );
-                },
               ),
             if (section == 'appearance') ...[
               const SizedBox(height: 12),
@@ -308,18 +270,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ],
             if (section == 'gestures')
-              GestureSettings(
-                showTitle: widget.embedded && !wide,
-                showReset: !widget.embedded,
-              ),
+              GestureSettings(showTitle: widget.embedded && !wide),
             if (section == 'language')
-              LanguageSettings(
-                showTitle: widget.embedded && !wide,
-                showReset: !widget.embedded,
-              ),
+              LanguageSettings(showTitle: widget.embedded && !wide),
             if (section == 'transfer') const SettingsTransferPanel(),
-            if (section == 'downloads')
-              DownloadSettingsPanel(showReset: !widget.embedded),
+            if (section == 'downloads') const DownloadSettingsPanel(),
             if (section == 'accessibility')
               InkPanel(
                 framed: false,
@@ -327,23 +282,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    ReaderChoiceGroup(
-                      id: 'preferred-hand',
-                      label: 'Preferred hand',
-                      wrapLabels: true,
-                      choices: const {
-                        'right': 'Right-handed',
-                        'left': 'Left-handed',
-                      },
-                      selected: preferences.leftHanded ? 'left' : 'right',
-                      onSelected: _saving || !data.hasValue
-                          ? null
-                          : (value) => _save(
-                              (current) =>
-                                  current.copyWith(leftHanded: value == 'left'),
-                            ),
-                    ),
-                    const SizedBox(height: 24),
                     InkSlider(
                       sliderKey: const Key('interface-text-scale'),
                       label: context.tr('Interface text size'),
@@ -410,22 +348,20 @@ class _HomeCoverCount extends StatelessWidget {
     children: [
       LText(label),
       const SizedBox(height: 8),
-      Semantics(
-        label: context.tr(label),
-        child: SegmentedButton<int>(
-          showSelectedIcon: false,
-          segments: [
-            for (final value in choices)
-              ButtonSegment(
-                value: value,
-                label: LText('{0}', arguments: [value]),
-              ),
-          ],
-          selected: {selected},
-          onSelectionChanged: onChanged == null
-              ? null
-              : (values) => onChanged!(values.single),
-        ),
+      DropdownButtonFormField<int>(
+        key: ValueKey(('home-cover-count', label, selected)),
+        initialValue: selected,
+        isExpanded: true,
+        decoration: InputDecoration(labelText: context.tr(label)),
+        items: [
+          for (final value in choices)
+            DropdownMenuItem(value: value, child: Text('$value')),
+        ],
+        onChanged: onChanged == null
+            ? null
+            : (value) {
+                if (value != null && value != selected) onChanged!(value);
+              },
       ),
     ],
   );

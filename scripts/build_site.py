@@ -23,6 +23,9 @@ SCREENSHOTS = (
     'phone-home', 'phone-library', 'phone-appearance', 'tablet-home',
     'phone-batch-download', 'phone-transfer', 'phone-series', 'tablet-series',
     'phone-quality', 'phone-ebook', 'tablet-library', 'tablet-quality', 'tablet-selection',
+    'phone-filters', 'phone-library-picker', 'phone-settings', 'phone-metadata',
+    'phone-gestures', 'phone-servers', 'phone-setup-library', 'phone-series-about',
+    'tablet-filters', 'tablet-metadata', 'tablet-settings',
 )
 ASSETS = ('styles.css', 'site.js', 'favicon.svg', 'buy-me-a-coffee.png', 'font-license.txt',
           'fonts/LibreBaskerville.ttf') + tuple(f'screenshots/{name}.png' for name in SCREENSHOTS)

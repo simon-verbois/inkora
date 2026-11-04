@@ -35,7 +35,9 @@ behind this branch; see [the changelog](CHANGELOG.md).
   Use one scaling/filter choice for all image formats, with sharpening on the
   same page. Configure reading defaults per visible library with clear sections
   and dropdown choices. Set Home covers per row separately
-  for portrait and landscape windows.
+  for portrait and landscape windows. Choose which metadata appears on series
+  and author pages, including individual credit roles; tags and language are
+  hidden by default.
 - **Find your next read.** Search your catalogue and browse series, collections
   and reading lists. Filter by format, reading status or downloaded availability.
   Combine author and genre filters, then save named searches with their library,
@@ -72,11 +74,22 @@ are rendered by Flutter; they are not device photographs.
 | --- | --- | --- |
 | ![Individual ebook detail page](docs/screenshots/phone-ebook.png) | ![Shared image scaling, filters and sharpening](docs/screenshots/phone-quality.png) | ![Series download confirmation](docs/screenshots/phone-batch-download.png) |
 
+| Filters | Settings | Visible metadata |
+| --- | --- | --- |
+| ![Catalogue filters with sorting and saved searches](docs/screenshots/phone-filters.png) | ![Settings categories and search](docs/screenshots/phone-settings.png) | ![Metadata visibility with tags and language hidden](docs/screenshots/phone-metadata.png) |
+
+| Custom gestures | Library reading setup | Servers and account |
+| --- | --- | --- |
+| ![Resizable gesture drawer with reading-area preview](docs/screenshots/phone-gestures.png) | ![Sectioned reading setup with the library name in the topbar](docs/screenshots/phone-setup-library.png) | ![Saved server with full-width identity and separate actions](docs/screenshots/phone-servers.png) |
+
 ![Inkora library home on a tablet](docs/screenshots/tablet-home.png)
 
 ![Series information, volumes and floating selection actions on a tablet](docs/screenshots/tablet-selection.png)
 
 ![Rendering and sharpening settings on a tablet](docs/screenshots/tablet-quality.png)
+
+The [website gallery](https://simon-verbois.github.io/inkora/#gallery) includes
+all 24 current phone and tablet captures.
 
 ## Get started
 

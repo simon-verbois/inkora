@@ -9,6 +9,17 @@ import 'package:inkora/features/settings/domain/ui_preferences.dart';
 import 'package:inkora/core/images/image_enhancement.dart';
 
 void main() {
+  test('catalogue layout JSON preserves explicit list preference and rejects malformed values', () {
+    for (final value in [null, 'true', 1, false]) {
+      expect(
+        UiPreferences.fromJson({'catalogueListView': value}).catalogueListView,
+        isFalse,
+      );
+    }
+    final saved = const UiPreferences().copyWith(catalogueListView: true);
+    expect(UiPreferences.fromJson(saved.toJson()).catalogueListView, isTrue);
+    expect(saved.copyWith(homePortraitColumns: 4).catalogueListView, isTrue);
+  });
   test(
     'system theme defaults validate families and retain legacy fixed themes',
     () {
@@ -181,6 +192,7 @@ void main() {
         appearance: AppAppearance.amoled,
         homePortraitColumns: 4,
         homeLandscapeColumns: 7,
+        catalogueListView: true,
         textScale: 1.3,
         reduceMotion: true,
         floatingNavigation: false,
@@ -194,6 +206,7 @@ void main() {
       expect(restored.appearance, AppAppearance.amoled);
       expect(restored.homePortraitColumns, 4);
       expect(restored.homeLandscapeColumns, 7);
+      expect(restored.catalogueListView, isTrue);
       expect(restored.textScale, 1.3);
       expect(restored.reduceMotion, isTrue);
       expect(restored.floatingNavigation, isFalse);

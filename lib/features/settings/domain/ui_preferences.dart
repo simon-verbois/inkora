@@ -33,6 +33,7 @@ final class UiPreferences {
     this.systemDarkTheme = AppAppearance.dark,
     this.homePortraitColumns = 3,
     this.homeLandscapeColumns = 6,
+    this.catalogueListView = false,
     this.textScale = 1,
     this.reduceMotion = false,
     this.hideTags = true,
@@ -51,6 +52,7 @@ final class UiPreferences {
   AppAppearance get darkTheme =>
       systemDarkTheme.isDark ? systemDarkTheme : AppAppearance.dark;
   final int homePortraitColumns, homeLandscapeColumns;
+  final bool catalogueListView;
 
   int homeColumnsFor(double width, double height) =>
       width > height ? homeLandscapeColumns : homePortraitColumns;
@@ -69,6 +71,7 @@ final class UiPreferences {
     AppAppearance? systemDarkTheme,
     int? homePortraitColumns,
     int? homeLandscapeColumns,
+    bool? catalogueListView,
     double? textScale,
     bool? reduceMotion,
     bool? hideTags,
@@ -85,6 +88,7 @@ final class UiPreferences {
     systemDarkTheme: systemDarkTheme ?? this.systemDarkTheme,
     homePortraitColumns: homePortraitColumns ?? this.homePortraitColumns,
     homeLandscapeColumns: homeLandscapeColumns ?? this.homeLandscapeColumns,
+    catalogueListView: catalogueListView ?? this.catalogueListView,
     textScale: textScale ?? this.textScale,
     reduceMotion: reduceMotion ?? this.reduceMotion,
     hideTags: hideTags ?? this.hideTags,
@@ -102,6 +106,7 @@ final class UiPreferences {
     'systemDarkTheme': darkTheme.name,
     'homePortraitColumns': homePortraitColumns,
     'homeLandscapeColumns': homeLandscapeColumns,
+    'catalogueListView': catalogueListView,
     'textScale': textScale,
     'reduceMotion': reduceMotion,
     'hideTags': hideTags,
@@ -180,6 +185,7 @@ final class UiPreferences {
               scale <= maxTextScale
           ? scale.toDouble()
           : 1,
+      catalogueListView: json['catalogueListView'] == true,
       reduceMotion: json['reduceMotion'] == true,
       hideTags: json['hideTags'] != false,
       floatingNavigation: json['floatingNavigation'] != false,

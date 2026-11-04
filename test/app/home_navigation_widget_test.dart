@@ -200,6 +200,7 @@ void main() {
         await tester.pumpAndSettle();
         final downloads = find.byType(DownloadsScreen);
         final rect = tester.getRect(downloads);
+        final state = tester.state(downloads);
         if (cancelFirst) {
           expect(await backEvent(tester, 'startBackGesture'), isTrue);
           await backEvent(tester, 'updateBackGestureProgress');
@@ -211,7 +212,7 @@ void main() {
         expect(await backEvent(tester, 'startBackGesture'), isTrue);
         await backEvent(tester, 'updateBackGestureProgress');
         await tester.pump();
-        expect(tester.getRect(downloads), rect);
+        expect(tester.state(downloads), same(state));
         await backEvent(tester, 'commitBackGesture');
         await tester.pumpAndSettle();
         expect(router.routeInformationProvider.value.uri.path, '/');

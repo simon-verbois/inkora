@@ -66,9 +66,9 @@ void main() {
           expect(await backEvent(tester, 'startBackGesture'), isTrue);
           await backEvent(tester, 'updateBackGestureProgress');
           await tester.pump();
-          expect(tester.getRect(find.byType(SettingsWorkspace)), bounds);
           await backEvent(tester, 'cancelBackGesture');
           await tester.pumpAndSettle();
+          expect(tester.getRect(find.byType(SettingsWorkspace)), bounds);
           expect(
             router.routerDelegate.currentConfiguration.last.matchedLocation,
             '/settings/language',

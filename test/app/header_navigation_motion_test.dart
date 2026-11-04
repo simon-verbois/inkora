@@ -37,65 +37,48 @@ Future<UiHarness> mount(
   return harness;
 }
 
-double fade(WidgetTester tester, Finder page) => tester
-    .widget<FadeTransition>(
-      find.ancestor(of: page, matching: find.byType(FadeTransition)).first,
-    )
-    .opacity
-    .value;
-
 void main() {
   for (final size in [const Size(390, 844), const Size(1280, 800)]) {
-    testWidgets('header pages share motion and retain Home geometry at $size', (
-      tester,
-    ) async {
-      final harness = await mount(tester, size);
-      final router = harness.container.read(routerProvider);
-      final home = find.byType(CatalogueScreen, skipOffstage: false);
-      final homeState = tester.state(home);
-      final homeRect = tester.getRect(home);
-      Rect? opening;
-      Rect? closing;
-      double? openingOpacity;
-      double? closingOpacity;
-      for (final destination in destinations) {
-        await tester.tap(find.byKey(ValueKey(destination.key)));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 60));
-        final page = find.byType(destination.type);
-        final rect = tester.getRect(page);
-        expect(tester.getRect(home), homeRect);
-        expect(tester.state(home), same(homeState));
-        expect(rect.size, homeRect.size);
-        expect(rect.top, homeRect.top);
-        expect(rect.left, greaterThan(0));
-        expect(rect.left, lessThan(size.width * .04));
-        expect(fade(tester, page), inExclusiveRange(0, 1));
-        if (opening != null) {
-          expect(rect, opening);
-          expect(fade(tester, page), openingOpacity);
+    testWidgets(
+      'header pages use platform transitions and retain Home at $size',
+      (tester) async {
+        final harness = await mount(tester, size);
+        final router = harness.container.read(routerProvider);
+        final home = find.byType(CatalogueScreen, skipOffstage: false);
+        final homeState = tester.state(home);
+        final homeRect = tester.getRect(home);
+        for (final destination in destinations) {
+          await tester.tap(find.byKey(ValueKey(destination.key)));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 60));
+          final page = find.byType(destination.type);
+          final context = tester.element(page);
+          final theme = Theme.of(context);
+          final builder = theme.pageTransitionsTheme.builders[theme.platform]!;
+          final standard =
+              const PageTransitionsTheme().builders[theme.platform]!;
+          expect(builder.runtimeType, standard.runtimeType);
+          final route = ModalRoute.of(context)! as PageRoute;
+          expect(route.transitionDuration, standard.transitionDuration);
+          expect(
+            route.reverseTransitionDuration,
+            standard.reverseTransitionDuration,
+          );
+          expect(tester.state(home), same(homeState));
+          await tester.pumpAndSettle();
+          expect(tester.getRect(page), homeRect);
+          router.pop();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 60));
+          expect(tester.state(home), same(homeState));
+          await tester.pumpAndSettle();
+          expect(tester.getRect(home), homeRect);
+          expect(router.routeInformationProvider.value.uri.path, '/');
         }
-        opening = rect;
-        openingOpacity = fade(tester, page);
-        await tester.pumpAndSettle();
-        expect(tester.getRect(page), homeRect);
-        router.pop();
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 60));
-        expect(tester.getRect(home), homeRect);
-        expect(tester.getRect(page).top, homeRect.top);
-        if (closing != null) {
-          expect(tester.getRect(page), closing);
-          expect(fade(tester, page), closingOpacity);
-        }
-        closing = tester.getRect(page);
-        closingOpacity = fade(tester, page);
-        await tester.pumpAndSettle();
-        expect(router.routeInformationProvider.value.uri.path, '/');
-      }
-      expect(tester.takeException(), isNull);
-      await harness.close(tester);
-    });
+        expect(tester.takeException(), isNull);
+        await harness.close(tester);
+      },
+    );
 
     for (final systemMotion in [false, true]) {
       testWidgets('header motion is disabled at $size (system $systemMotion)', (
@@ -126,7 +109,7 @@ void main() {
   }
 
   testWidgets(
-    'predictive Back keeps the workspace and category still until commit',
+    'platform predictive Back cancels or pops only the visible destination',
     (tester) async {
       final harness = await mount(tester, const Size(1280, 800));
       final router = harness.container.read(routerProvider);
@@ -138,8 +121,6 @@ void main() {
         expect(await backEvent(tester, 'startBackGesture'), isTrue);
         await backEvent(tester, 'updateBackGestureProgress');
         await tester.pump();
-        expect(tester.getRect(page), rect);
-        expect(tester.getRect(page).size, rect.size);
         await backEvent(tester, 'cancelBackGesture');
         await tester.pumpAndSettle();
         expect(tester.getRect(page), rect);
@@ -153,8 +134,6 @@ void main() {
 
       router.go('/settings/language');
       await tester.pumpAndSettle();
-      final workspace = find.byType(SettingsWorkspace);
-      final rect = tester.getRect(workspace);
       final category = find.byWidgetPredicate(
         (widget) => widget is SettingsScreen && widget.section == 'language',
       );
@@ -162,8 +141,6 @@ void main() {
       expect(await backEvent(tester, 'startBackGesture'), isTrue);
       await backEvent(tester, 'updateBackGestureProgress');
       await tester.pump();
-      expect(tester.getRect(workspace), rect);
-      expect(tester.getRect(category), categoryRect);
       await backEvent(tester, 'cancelBackGesture');
       await tester.pumpAndSettle();
       expect(tester.getRect(category), categoryRect);
@@ -220,7 +197,6 @@ void main() {
           await backEvent(tester, 'updateBackGestureProgress', edge: edge);
           await tester.pump();
           expect(tester.getRect(workspace), original);
-          expect(tester.getRect(reader).left, 0);
           await backEvent(
             tester,
             cancel ? 'cancelBackGesture' : 'commitBackGesture',

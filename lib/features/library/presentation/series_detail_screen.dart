@@ -500,7 +500,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
     } else {
       controller.animateTo(
         target,
-        duration: InkoraMotion.forward,
+        duration: InkoraMotion.scroll,
         curve: Curves.easeOutCubic,
       );
     }

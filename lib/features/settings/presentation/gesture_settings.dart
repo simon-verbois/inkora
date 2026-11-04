@@ -1,5 +1,5 @@
+import '../../../app/widgets/ink_settings_section.dart';
 import '../../../app/widgets/inkora_widgets.dart';
-import '../../../app/theme/inkora_theme.dart';
 import 'preference_labels.dart';
 import '../../../app/l10n/app_strings.dart';
 
@@ -40,7 +40,7 @@ class _GestureSettingsState extends ConsumerState<GestureSettings> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (widget.showTitle)
-          LText('Gestures', style: Theme.of(context).textTheme.screenTitle),
+          const InkSettingsHeading(title: 'Gestures', first: true),
         const SizedBox(height: 12),
         const LText(
           'Reserve screen edges for system back. Swipes and zoom start only inside the reading area.',

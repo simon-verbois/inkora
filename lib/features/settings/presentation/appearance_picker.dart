@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/widgets/ink_settings_section.dart';
+
 import '../../../app/l10n/app_strings.dart';
 import '../../../app/icons/inkora_icons.dart';
 import '../../../app/theme/appearance_palette.dart';
@@ -85,7 +87,7 @@ class _PaletteGroup extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      LText(title, style: Theme.of(context).textTheme.titleSmall),
+      LText(title, style: InkSettingsHeading.titleStyleOf(context)),
       const SizedBox(height: 12),
       LayoutBuilder(
         builder: (context, bounds) {

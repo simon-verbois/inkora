@@ -14,10 +14,10 @@ RepoType: git
 Repo: https://github.com/simon-verbois/inkora.git
 
 Builds:
-  - versionName: 2026.45.2
-    versionCode: 2026450002
+  - versionName: 2026.45.3
+    versionCode: 2026450003
     disable: Awaiting official F-Droid CI and maintainer review
-    commit: 2026.45.2
+    commit: 2026.45.3
     sudo:
       - apt-get update
       - apt-get install -y build-essential git ninja-build pkg-config unzip rustup openjdk-21-jdk-headless
@@ -52,5 +52,5 @@ Builds:
 AutoUpdateMode: None
 UpdateCheckMode: Tags ^20[0-9]{2}\.[0-9]{1,2}\.[0-9]{1,4}$
 UpdateCheckData: fdroid/version.properties|versionCode=(\d+)|.|versionName=(.+)
-CurrentVersion: 2026.45.2
-CurrentVersionCode: 2026450002
+CurrentVersion: 2026.45.3
+CurrentVersionCode: 2026450003

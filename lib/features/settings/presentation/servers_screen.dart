@@ -1,3 +1,4 @@
+import '../../../app/widgets/ink_settings_section.dart';
 import '../../../app/widgets/ink_screen_header.dart';
 import 'settings_adaptive_layout.dart';
 import '../../../app/l10n/app_strings.dart';
@@ -74,13 +75,9 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
         child: InkContent(
           maxWidth: InkoraLayout.maxSettingsWidth,
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             children: [
-              LText(
-                'Saved servers',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: InkSpace.md),
+              const InkSettingsHeading(title: 'Saved servers', first: true),
               ...saved.when(
                 loading: () => [const LinearProgressIndicator()],
                 error: (_, _) => [
@@ -91,73 +88,117 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                 ],
                 data: (sessions) => [
                   for (final session in sessions)
-                    ListTile(
-                      key: ValueKey(session.accountId),
-                      leading: Icon(
-                        session.accountId == state.session?.accountId
-                            ? InkIcons.checkCircle
-                            : InkIcons.books,
-                      ),
-                      title: Text(session.endpoint.uri.host),
-                      subtitle: Text(session.user.email),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: InkRadius.medium,
-                      ),
-                      selectedTileColor: Theme.of(context)
-                          .colorScheme
-                          .primaryContainer
-                          .withValues(alpha: .25),
-                      selected: session.accountId == state.session?.accountId,
-                      onTap: _busy ? null : () => _select(session),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            key: ValueKey('edit-server-${session.accountId}'),
-                            tooltip: context.tr('Edit connection'),
-                            icon: const Icon(InkIcons.gearSix),
-                            onPressed: _busy
-                                ? null
-                                : () => showInkPopup<void>(
-                                    context: context,
-                                    child: SizedBox(
-                                      height:
-                                          MediaQuery.sizeOf(context).height *
-                                          .72,
-                                      child: ConnectionScreen(
-                                        addServer: true,
-                                        editing: session,
-                                        modal: true,
-                                      ),
-                                    ),
-                                  ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Material(
+                        color: Theme.of(context).colorScheme.surfaceContainer,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: InkRadius.medium,
+                          side: BorderSide(
+                            color: session.accountId == state.session?.accountId
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.outlineVariant,
                           ),
-                          IconButton(
-                            key: ValueKey(
-                              'server-libraries-${session.accountId}',
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            ListTile(
+                              key: ValueKey(session.accountId),
+                              leading: Icon(
+                                session.accountId == state.session?.accountId
+                                    ? InkIcons.checkCircle
+                                    : InkIcons.books,
+                              ),
+                              title: Text(session.endpoint.uri.host),
+                              subtitle: Text(session.user.email),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: InkRadius.medium,
+                              ),
+                              selectedColor: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface,
+                              subtitleTextStyle: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                              selectedTileColor: Theme.of(context)
+                                  .colorScheme
+                                  .primaryContainer
+                                  .withValues(alpha: .25),
+                              selected:
+                                  session.accountId == state.session?.accountId,
+                              onTap: _busy ? null : () => _select(session),
                             ),
-                            tooltip: context.tr('Libraries to display'),
-                            icon: const Icon(InkIcons.books),
-                            onPressed: _busy
-                                ? null
-                                : () => showInkPopup<void>(
-                                    context: context,
-                                    title: 'Libraries to display',
-                                    scrollable: true,
-                                    child: LibraryVisibilityPanel(
-                                      accountId: session.accountId,
-                                      expanded: true,
+                            Padding(
+                              key: ValueKey(
+                                'server-actions-${session.accountId}',
+                              ),
+                              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                              child: Wrap(
+                                alignment: WrapAlignment.end,
+                                spacing: 8,
+                                children: [
+                                  IconButton(
+                                    key: ValueKey(
+                                      'edit-server-${session.accountId}',
                                     ),
+                                    tooltip: context.tr('Edit connection'),
+                                    icon: const Icon(InkIcons.gearSix),
+                                    onPressed: _busy
+                                        ? null
+                                        : () => showInkPopup<void>(
+                                            context: context,
+                                            child: SizedBox(
+                                              height:
+                                                  MediaQuery.sizeOf(context)
+                                                      .height *
+                                                  .72,
+                                              child: ConnectionScreen(
+                                                addServer: true,
+                                                editing: session,
+                                                modal: true,
+                                              ),
+                                            ),
+                                          ),
                                   ),
-                          ),
-                          IconButton(
-                            tooltip: context.tr('Remove server {0}', [
-                              session.endpoint.uri.host,
-                            ]),
-                            icon: const Icon(InkIcons.trash),
-                            onPressed: _busy ? null : () => _remove(session),
-                          ),
-                        ],
+                                  IconButton(
+                                    key: ValueKey(
+                                      'server-libraries-${session.accountId}',
+                                    ),
+                                    tooltip: context.tr('Libraries to display'),
+                                    icon: const Icon(InkIcons.books),
+                                    onPressed: _busy
+                                        ? null
+                                        : () => showInkPopup<void>(
+                                            context: context,
+                                            title: 'Libraries to display',
+                                            scrollable: true,
+                                            child: LibraryVisibilityPanel(
+                                              accountId: session.accountId,
+                                              expanded: true,
+                                            ),
+                                          ),
+                                  ),
+                                  IconButton(
+                                    tooltip: context.tr('Remove server {0}', [
+                                      session.endpoint.uri.host,
+                                    ]),
+                                    icon: const Icon(InkIcons.trash),
+                                    onPressed: _busy
+                                        ? null
+                                        : () => _remove(session),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                 ],

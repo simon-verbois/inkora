@@ -5,6 +5,7 @@ import 'package:inkora/app/router.dart';
 import 'package:inkora/features/library/domain/catalogue.dart';
 import 'package:inkora/features/library/domain/catalogue_filters.dart';
 import 'package:inkora/features/library/presentation/reading_filter_chips.dart';
+import 'package:inkora/app/widgets/ink_filter_bar.dart';
 import 'package:inkora/features/settings/domain/ui_preferences.dart';
 
 import '../../support/catalogue_fakes.dart';
@@ -46,46 +47,74 @@ void main() {
       expect(floating.hitTestable(), findsOneWidget);
       await tester.tap(floating);
       await tester.pumpAndSettle();
-      final selector = find.byKey(const Key('reading-filter-menu'));
-      expect(selector.hitTestable(), findsOneWidget);
-      await tester.tap(selector);
+      expect(find.byKey(const Key('reading-filter-menu')), findsNothing);
+      await tester.drag(
+        find.byKey(const Key('ink-sheet-handle')),
+        const Offset(0, -844),
+      );
       await tester.pumpAndSettle();
-      for (final status in ReadingStatus.values) {
-        final choice = find.byKey(ValueKey('reading-menu-${status.name}'));
+      for (final status in [
+        ...ReadingStatus.values.map((v) => v.name),
+        'downloaded',
+      ]) {
+        final choice = find.byKey(ValueKey('reading-filter-$status'));
         await tester.ensureVisible(choice);
         await tester.pumpAndSettle();
         expect(choice.hitTestable(), findsOneWidget);
+        expect(tester.getSize(choice).height, greaterThanOrEqualTo(48));
+        expect(tester.getRect(choice).right, lessThanOrEqualTo(width - 16));
       }
-      await tester.binding.handlePopRoute();
+      await tester.ensureVisible(
+        find.byKey(const Key('reading-filter-unread')),
+      );
       await tester.pumpAndSettle();
-      await tester.tap(selector);
+      await tester.tap(find.byKey(const Key('reading-filter-unread')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('reading-menu-unread')));
+      await tester.ensureVisible(
+        find.byKey(const Key('reading-filter-downloaded')),
+      );
       await tester.pumpAndSettle();
-      await tester.tap(selector);
+      await tester.tap(find.byKey(const Key('reading-filter-downloaded')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(CheckboxMenuButton));
-      await tester.pumpAndSettle();
-      if (find.byKey(const Key('reading-menu-any')).evaluate().isNotEmpty) {
-        await tester.binding.handlePopRoute();
-        await tester.pumpAndSettle();
-      }
       tester.view.physicalSize = const Size(1280, 800);
       tester.platformDispatcher.textScaleFactorTestValue = 1;
       await tester.pumpAndSettle();
-      final draft = tester
-          .widget<ReadingFilterMenu>(find.byType(ReadingFilterMenu))
-          .filters;
-      expect(draft.readingStatus, ReadingStatus.unread);
-      expect(draft.downloadedOnly, isTrue);
+      expect(
+        tester
+            .widget<InkFilterChip>(
+              find.byKey(const Key('reading-filter-unread')),
+            )
+            .selected,
+        isTrue,
+      );
+      expect(
+        tester
+            .widget<InkFilterChip>(
+              find.byKey(const Key('reading-filter-downloaded')),
+            )
+            .selected,
+        isTrue,
+      );
       await tester.tap(find.byKey(const Key('filters-apply')));
       await tester.pumpAndSettle();
       await tester.tap(floating);
       await tester.pumpAndSettle();
-      final saved = tester
-          .widget<ReadingFilterMenu>(find.byType(ReadingFilterMenu))
-          .filters;
-      expect(saved, draft);
+      expect(
+        tester
+            .widget<InkFilterChip>(
+              find.byKey(const Key('reading-filter-unread')),
+            )
+            .selected,
+        isTrue,
+      );
+      expect(
+        tester
+            .widget<InkFilterChip>(
+              find.byKey(const Key('reading-filter-downloaded')),
+            )
+            .selected,
+        isTrue,
+      );
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       expect(
@@ -114,25 +143,28 @@ void main() {
             body: StatefulBuilder(
               builder: (context, setState) => SizedBox(
                 width: 260,
-                child: ReadingFilterMenu(
-                  filters: filters,
-                  onChanged: (next) => setState(() => filters = next),
+                child: Wrap(
+                  children: readingFilterChips(
+                    filters: filters,
+                    separated: false,
+                    onChanged: (next) => setState(() => filters = next),
+                  ),
                 ),
               ),
             ),
           ),
         ),
       );
-      await tester.tap(find.byKey(const Key('reading-filter-menu')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('reading-menu-inProgress')));
+      await tester.tap(find.byKey(const Key('reading-filter-inProgress')));
       await tester.pumpAndSettle();
       expect(filters.values, {CatalogueFacet.genres: 'Adventure'});
       expect(filters.readingStatus, ReadingStatus.inProgress);
       expect(filters.downloadedOnly, isTrue);
-      await tester.tap(find.byKey(const Key('reading-filter-menu')));
+      await tester.ensureVisible(
+        find.byKey(const Key('reading-filter-downloaded')),
+      );
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(CheckboxMenuButton));
+      await tester.tap(find.byKey(const Key('reading-filter-downloaded')));
       await tester.pumpAndSettle();
       expect(filters.values, {CatalogueFacet.genres: 'Adventure'});
       expect(filters.readingStatus, ReadingStatus.inProgress);

@@ -99,8 +99,8 @@ void main() {
         await tester.enterText(find.byType(TextField), 'gestures');
         await tester.pumpAndSettle();
         expect(find.text('Reading › Gestures'), findsOneWidget);
-        // Trailing current value where it is cheap: the gesture preset.
-        expect(find.text('Balanced'), findsOneWidget);
+        // Current values belong inside their editor.
+        expect(find.text('Balanced'), findsNothing);
         expect(
           find.byKey(const ValueKey('settings-group-account')),
           findsNothing,

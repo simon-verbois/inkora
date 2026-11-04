@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/l10n/app_strings.dart';
 import 'package:inkora/app/router.dart';
+import 'package:inkora/app/widgets/ink_surface.dart';
+import 'package:inkora/app/widgets/inkora_widgets.dart';
 import 'package:inkora/features/library/domain/catalogue.dart';
 import 'package:inkora/features/library/presentation/catalogue_grid.dart';
 import 'package:inkora/features/library/presentation/catalogue_filters_sheet.dart';
@@ -12,16 +14,18 @@ import '../../support/ui_harness.dart';
 import '../../support/onboarding_visuals.dart';
 
 void main() {
-  for (final (size, scale, locale) in [
+  for (final (size, scale, locale, appearance) in [
     for (final locale in AppStrings.supportedLocales)
-      (const Size(390, 844), 2.0, locale.languageCode),
-    (const Size(390, 844), 1.0, 'fr'),
-    (const Size(844, 390), 1.0, 'fr'),
-    (const Size(800, 1280), 1.0, 'fr'),
-    (const Size(1280, 800), 1.0, 'fr'),
+      (const Size(390, 844), 2.0, locale.languageCode, AppAppearance.dark),
+    (const Size(390, 844), 1.0, 'fr', AppAppearance.dark),
+    (const Size(844, 390), 1.0, 'fr', AppAppearance.dark),
+    (const Size(800, 1280), 1.0, 'fr', AppAppearance.dark),
+    (const Size(1280, 800), 1.0, 'fr', AppAppearance.dark),
+    (const Size(390, 844), 1.0, 'fr', AppAppearance.light),
+    (const Size(1280, 800), 1.0, 'fr', AppAppearance.forest),
   ]) {
     testWidgets(
-      'Home shortcuts remain visible without rebuilding the catalogue at $size/$scale/$locale',
+      'Home shortcuts remain visible without rebuilding the catalogue at $size/$scale/$locale/${appearance.name}',
       (tester) async {
         tester.view.physicalSize = size;
         tester.view.devicePixelRatio = 1;
@@ -35,10 +39,7 @@ void main() {
         final harness = await UiHarness.create(
           tester,
           resumeEntries: const [],
-          preferences: UiPreferences(
-            locale: locale,
-            appearance: AppAppearance.dark,
-          ),
+          preferences: UiPreferences(locale: locale, appearance: appearance),
           catalogue: [
             entry(
               'library-a',
@@ -80,6 +81,32 @@ void main() {
         await tester.pumpAndSettle();
         final library = find.byKey(const Key('catalogue-floating-library'));
         final filters = find.byKey(const Key('catalogue-floating-filters'));
+        Material surface(Finder owner) {
+          final panel = find
+              .descendant(of: owner, matching: find.byType(InkSurface))
+              .first;
+          return tester.widget<Material>(
+            find.descendant(of: panel, matching: find.byType(Material)).first,
+          );
+        }
+
+        final header = surface(find.byKey(const Key('home-header')));
+        final logo = tester.widget<Text>(
+          find.descendant(
+            of: find.byType(InkoraWordmark),
+            matching: find.byType(Text),
+          ),
+        );
+        for (final action in [library, filters]) {
+          final panel = surface(action);
+          expect(panel.color, header.color);
+          expect(panel.shape, header.shape);
+          final border = panel.shape! as RoundedRectangleBorder;
+          expect(border.side.width, greaterThan(0));
+          expect(border.side.style, BorderStyle.solid);
+          final icon = find.descendant(of: action, matching: find.byType(Icon));
+          expect(IconTheme.of(tester.element(icon)).color, logo.style!.color);
+        }
         expect(library.hitTestable(), findsOneWidget);
         expect(filters.hitTestable(), findsOneWidget);
         expect(tester.getSize(library).shortestSide, greaterThanOrEqualTo(60));
@@ -107,7 +134,7 @@ void main() {
           await captureOnboarding(
             tester,
             find.byKey(capture),
-            'home-permanent-${size.width.toInt()}-fr',
+            'home-topbar-actions-${size.width.toInt()}x${size.height.toInt()}-${appearance.name}-fr',
           );
         }
         await tester.tap(filters);
@@ -117,13 +144,13 @@ void main() {
           await captureOnboarding(
             tester,
             find.byKey(capture),
-            'home-permanent-filter-popup-fr',
+            'home-direct-filter-${appearance.name}-fr',
           );
         }
         expect(
           find.descendant(
             of: find.byType(CatalogueFiltersSheet),
-            matching: find.byKey(const Key('reading-filter-menu')),
+            matching: find.byKey(const Key('reading-filter-choices')),
           ),
           findsOneWidget,
         );
@@ -157,7 +184,7 @@ void main() {
           await captureOnboarding(
             tester,
             find.byKey(capture),
-            'home-permanent-library-popup-fr',
+            'home-topbar-library-${appearance.name}-fr',
           );
         }
         expect(

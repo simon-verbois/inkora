@@ -33,10 +33,20 @@ void main() {
           200,
           scrollable: find
               .descendant(
-                of: find.byType(ListView).last,
+                of:
+                    find
+                        .byKey(const Key('settings-index-scroll'))
+                        .evaluate()
+                        .isNotEmpty
+                    ? find.byKey(const Key('settings-index-scroll'))
+                    : find.byType(ListView).last,
                 matching: find.byType(Scrollable),
               )
               .first,
+        );
+        await Scrollable.ensureVisible(
+          tester.element(find.text('Reading profiles')),
+          alignment: .5,
         );
         await tester.pumpAndSettle();
         await tester.tap(find.text('Reading profiles'));

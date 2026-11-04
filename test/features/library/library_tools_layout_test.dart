@@ -15,7 +15,7 @@ void main() {
     (const Size(1280, 800), 1.0),
   ]) {
     testWidgets(
-      'Home popup tools apply sort/view/library with permanent actions at $size/$scale',
+      'Home popup tools apply sort/library with permanent actions at $size/$scale',
       (tester) async {
         tester.view.physicalSize = size;
         tester.view.devicePixelRatio = 1;
@@ -69,11 +69,10 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('catalogue-view')));
-        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('catalogue-view')), findsNothing);
         await tester.tap(find.byKey(const Key('filters-apply')));
         await tester.pumpAndSettle();
-        expect(find.byKey(const Key('catalogue-list')), findsOneWidget);
+
         expect(find.text('Series 179'), findsOneWidget);
         await tester.drag(find.byType(CustomScrollView), const Offset(0, -800));
         await tester.pumpAndSettle();

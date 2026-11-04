@@ -1,6 +1,7 @@
 import '../../../app/theme/inkora_theme.dart';
 import '../../../app/theme/inkora_motion.dart';
 import '../../../app/widgets/ink_screen_header.dart';
+import '../../../app/widgets/ink_surface.dart';
 import '../../../app/widgets/ink_filter_bar.dart';
 import 'reading_filter_chips.dart';
 import '../../connection/application/session_controller.dart';
@@ -82,7 +83,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
   double? _filterMinimumExtent;
   double? _tailHeight;
   Widget? _tailSliver;
-  bool _showUnavailable = false, _listView = false;
+  bool _showUnavailable = false;
   MetadataFilters _metadataFilters = const MetadataFilters();
 
   CatalogueQuery get _query => CatalogueQuery(
@@ -174,7 +175,6 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
     MetadataFilters filters, {
     bool? showUnavailable,
     CatalogueSort? sort,
-    bool? listView,
   }) {
     final current = ref.read(catalogueFeedStateProvider(_query)).asData?.value;
     setState(() {
@@ -188,7 +188,6 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
       _metadataFilters = filters;
       _showUnavailable = showUnavailable ?? _showUnavailable;
       _sort = sort ?? _sort;
-      _listView = listView ?? _listView;
     });
   }
 
@@ -312,7 +311,6 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
               Future.value(0),
         );
     var sort = _sort;
-    var listView = _listView;
     var openSavedSearches = false;
     final result = await showInkPopup<CatalogueFilterResult>(
       context: context,
@@ -334,16 +332,6 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
                       value: sort,
                       options: catalogueSortOptions(),
                       onSelected: (value) => update(() => sort = value),
-                    ),
-                    IconButton(
-                      key: const Key('catalogue-view'),
-                      tooltip: panelContext.tr(
-                        listView ? 'Show grid' : 'Show list',
-                      ),
-                      onPressed: () => update(() => listView = !listView),
-                      icon: Icon(
-                        listView ? InkIcons.squaresFour : InkIcons.list,
-                      ),
                     ),
                     TextButton.icon(
                       key: const Key('catalogue-saved-searches'),
@@ -371,7 +359,6 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
         result.filters,
         showUnavailable: result.showUnavailable,
         sort: sort,
-        listView: listView,
       );
     } else {
       _change(() {
@@ -430,6 +417,11 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
         : null;
     final volumesOnly =
         _kind == CatalogueKind.book && !items.any((item) => item.isEbook);
+    final listView = ref.watch(
+      uiPreferencesProvider.select(
+        (value) => value.asData?.value.catalogueListView ?? false,
+      ),
+    );
     final scale = MediaQuery.textScalerOf(context).scale(1);
     final cataloguePadding = EdgeInsets.fromLTRB(
       16,
@@ -488,16 +480,6 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
                   onPressed: _savedSearches,
                   icon: const Icon(InkIcons.bookmarks, size: 20),
                 ),
-                if (_kind != CatalogueKind.book)
-                  IconButton(
-                    key: const Key('catalogue-view'),
-                    tooltip: context.tr(_listView ? 'Show grid' : 'Show list'),
-                    onPressed: () => setState(() => _listView = !_listView),
-                    icon: Icon(
-                      _listView ? InkIcons.squaresFour : InkIcons.list,
-                      size: 20,
-                    ),
-                  ),
               ],
             ),
           );
@@ -551,9 +533,10 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
               onRefresh: () => refreshCatalogue(ref),
               child: CustomScrollView(
                 controller: _scroll,
-                // Keep the fixed header and floating actions rigid during
-                // overscroll; pull-to-refresh retains its existing owner.
-                scrollBehavior: widget.embedded
+                // Stretch only the scroll viewport; header/actions live outside
+                // it. Reduced motion keeps refresh without the stretch effect.
+                scrollBehavior:
+                    widget.embedded && MediaQuery.disableAnimationsOf(context)
                     ? ScrollConfiguration.of(context)
                           .copyWith(overscroll: false)
                     : null,
@@ -575,7 +558,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
                   ),
                   if (tools != null) PinnedHeaderSliver(child: tools),
                   if (items.isNotEmpty)
-                    if (_listView ||
+                    if (listView ||
                         volumesOnly ||
                         _kind == CatalogueKind.library ||
                         scale > 1.5)
@@ -609,7 +592,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
                             InkCoverTile(item: items[index]),
                       )
                   else if (data.isLoading || state?.loading == true)
-                    if (_listView ||
+                    if (listView ||
                         volumesOnly ||
                         _kind == CatalogueKind.library ||
                         scale > 1.5)
@@ -841,7 +824,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
   }
 }
 
-/// Permanent Home controls: generous touch targets, flat accent surfaces and
+/// Permanent Home controls: generous targets and the shared header surface,
 /// no scroll listener or per-frame rebuild owner.
 class _HomeAction extends StatelessWidget {
   const _HomeAction({
@@ -855,13 +838,17 @@ class _HomeAction extends StatelessWidget {
   final IconData icon;
 
   @override
-  Widget build(BuildContext context) => IconButton.filled(
-    tooltip: tooltip,
-    onPressed: onPressed,
-    style: IconButton.styleFrom(
-      fixedSize: const Size.square(60),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+  Widget build(BuildContext context) => InkOverlaySurface(
+    child: IconButton(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      style: IconButton.styleFrom(
+        fixedSize: const Size.square(60),
+        backgroundColor: Colors.transparent,
+        foregroundColor: InkoraTheme.brandColorOf(context),
+        shape: const RoundedRectangleBorder(borderRadius: InkRadius.large),
+      ),
+      icon: Icon(icon, size: 28),
     ),
-    icon: Icon(icon, size: 28),
   );
 }

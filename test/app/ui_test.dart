@@ -250,6 +250,11 @@ void main() {
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pumpAndSettle();
+      await Scrollable.ensureVisible(
+        tester.element(find.text('Appearance')),
+        alignment: .5,
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Appearance'));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('follow-system-theme')));
@@ -442,13 +447,16 @@ void registerCatalogueRetentionTest() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('catalogue-floating-filters')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('catalogue-view')));
-    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('catalogue-view')), findsNothing);
+
     expect(find.text('List view'), findsNothing);
-    await tester.tap(find.text('Show unavailable items'));
+    await tester.ensureVisible(find.byKey(const Key('filters-unavailable')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('filters-unavailable')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('filters-apply')));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('catalogue-list')), findsOneWidget);
+    expect(find.byKey(const Key('catalogue-grid')), findsOneWidget);
     expect(tester.takeException(), isNull);
     await harness.close(tester);
   });

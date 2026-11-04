@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
-/// Header destinations fade horizontally, deeper pages slide, sheets rise.
+/// Shared control, scroll and sheet timings; page routes use platform defaults.
 abstract final class InkoraMotion {
   static const tab = Duration(milliseconds: 160);
-  static const forward = Duration(milliseconds: 240);
-  static const reverse = Duration(milliseconds: 200);
+  static const scroll = Duration(milliseconds: 240);
   static const sheet = Duration(milliseconds: 240);
   static const sheetReverse = Duration(milliseconds: 180);
 

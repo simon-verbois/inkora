@@ -63,7 +63,6 @@ void main() {
           'reading-filter-downloaded',
           'catalogue-sort',
           'catalogue-filters',
-          'catalogue-view',
           'library-selector',
         ]) {
           expect(

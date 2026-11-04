@@ -124,6 +124,7 @@ class _LibraryDefaultsScreenState extends ConsumerState<LibraryDefaultsScreen> {
                   key: widget.editorKey ?? ValueKey((account, libraryId)),
 
                   showScope: !widget.embedded,
+                  showLibraryApply: !widget.embedded,
 
                   store: _store!,
                   libraryId: libraryId,
@@ -133,8 +134,7 @@ class _LibraryDefaultsScreenState extends ConsumerState<LibraryDefaultsScreen> {
                   children: [
                     Offstage(
                       offstage:
-                          !widget.embedded &&
-                          !SettingsPaneScope.wideOf(context),
+                          widget.embedded || !SettingsPaneScope.wideOf(context),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Text(

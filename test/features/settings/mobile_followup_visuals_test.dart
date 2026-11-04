@@ -77,7 +77,7 @@ void main() {
         await captureOnboarding(
           tester,
           find.byKey(boundary),
-          'followup-home-$dimensions',
+          'settings-polish-home-$dimensions',
         );
         if (size.height < 500) {
           await Scrollable.ensureVisible(
@@ -88,7 +88,7 @@ void main() {
           await captureOnboarding(
             tester,
             find.byKey(boundary),
-            'followup-home-divider-$dimensions',
+            'settings-polish-home-divider-$dimensions',
           );
         }
         final router = harness.container.read(routerProvider);
@@ -100,7 +100,7 @@ void main() {
         await captureOnboarding(
           tester,
           find.byKey(boundary),
-          'followup-quality-$dimensions',
+          'settings-polish-quality-$dimensions',
         );
         router.pop();
         await tester.pumpAndSettle();
@@ -112,7 +112,7 @@ void main() {
         await captureOnboarding(
           tester,
           find.byKey(boundary),
-          'followup-gestures-$dimensions',
+          'settings-polish-gestures-$dimensions',
         );
         final handle = find.byKey(const Key('ink-sheet-handle'));
         await tester.drag(handle, Offset(0, -size.height));

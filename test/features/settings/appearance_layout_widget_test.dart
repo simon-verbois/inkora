@@ -5,6 +5,7 @@ import 'package:inkora/app/router.dart';
 import 'package:inkora/features/settings/data/ui_preferences_store.dart';
 import 'package:inkora/features/settings/domain/ui_preferences.dart';
 import 'package:inkora/features/settings/presentation/appearance_picker.dart';
+import 'package:inkora/features/settings/presentation/settings_screen.dart';
 import 'package:inkora/features/settings/presentation/servers_screen.dart';
 
 import '../../support/ui_harness.dart';
@@ -49,6 +50,18 @@ void main() {
             expect(tester.takeException(), isNull);
           }
           expect(colors, hasLength(12));
+          await tester.scrollUntilVisible(
+            find.byKey(const Key('catalogue-layout')),
+            300,
+            scrollable: find
+                .descendant(
+                  of: find.byType(SettingsScreen),
+                  matching: find.byType(Scrollable),
+                )
+                .last,
+          );
+          await tester.ensureVisible(find.byKey(const Key('catalogue-layout')));
+          await tester.pumpAndSettle();
           final selectors = tester
               .widgetList<DropdownButton<int>>(find.byType(DropdownButton<int>))
               .toList();

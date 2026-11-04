@@ -79,6 +79,7 @@ void main() {
           of: setting,
           matching: find.byType(Switch),
         );
+        await tester.scrollUntilVisible(setting, 300);
         await tester.ensureVisible(toggle);
         await tester.pumpAndSettle();
         expect(tester.widget<SwitchListTile>(setting).value, isTrue);

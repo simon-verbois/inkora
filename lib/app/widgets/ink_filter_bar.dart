@@ -220,12 +220,14 @@ class InkFilterChip extends StatelessWidget {
     required this.selected,
     required this.onSelected,
     this.toggle = false,
+    this.showLabel = false,
     this.translate = true,
     this.icon,
   });
   final String label;
   final IconData? icon;
   final bool selected, toggle;
+  final bool showLabel;
 
   /// False for server-owned values (genres, authors) that are never translated.
   final bool translate;
@@ -233,7 +235,7 @@ class InkFilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = translate ? LText(label) : Text(label);
-    if (icon != null) {
+    if (icon != null && !showLabel) {
       final name = translate ? context.tr(label) : label;
       return Semantics(
         label: selected ? null : name,
@@ -267,11 +269,13 @@ class InkFilterChip extends StatelessWidget {
     }
     return toggle
         ? FilterChip(
+            avatar: icon == null ? null : Icon(icon, size: 20),
             label: text,
             selected: selected,
             onSelected: (_) => onSelected(),
           )
         : ChoiceChip(
+            avatar: icon == null ? null : Icon(icon, size: 20),
             label: text,
             selected: selected,
             showCheckmark: false,

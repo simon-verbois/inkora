@@ -41,7 +41,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     GoRouterState state,
     Widget child, {
     bool primary = false,
-    bool reveal = false,
     bool canPop = true,
     bool allowSnapshotting = true,
   }) =>
@@ -51,7 +50,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       : InkoraPage(
           key: state.pageKey,
           name: state.name,
-          reveal: reveal,
           canPop: canPop,
           allowSnapshotting: allowSnapshotting,
           child: child,
@@ -157,9 +155,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               id: state.pathParameters['id']!,
             ),
           ),
-          // Keep native reader surfaces live; this header shortcut uses a short
-          // reveal rather than snapshotting/sliding the whole reader viewport.
-          reveal: true,
+          // Native reader surfaces stay live through the platform transition.
           allowSnapshotting: false,
         ),
       ),
@@ -215,7 +211,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'history',
                 pageBuilder: (_, state) =>
-                    page(state, const ReadingHistoryScreen(), reveal: true),
+                    page(state, const ReadingHistoryScreen()),
               ),
               GoRoute(
                 name: 'catalogue',
@@ -314,8 +310,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 name: 'downloads',
                 path: 'downloads',
-                pageBuilder: (_, state) =>
-                    page(state, const DownloadsScreen(), reveal: true),
+                pageBuilder: (_, state) => page(state, const DownloadsScreen()),
                 routes: [
                   GoRoute(path: 'queue', redirect: (_, _) => '/downloads'),
                   GoRoute(
@@ -338,7 +333,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                     active: true,
                     child: child,
                   ),
-                  reveal: true,
                 ),
                 routes: [
                   // Categories are siblings of the index/default page. The

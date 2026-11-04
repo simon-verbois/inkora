@@ -6,6 +6,7 @@ import '../../../app/l10n/app_strings.dart';
 import '../../../reader/presentation/reader_settings_sheet.dart';
 import '../../connection/application/session_controller.dart';
 import '../../library/application/catalogue_providers.dart';
+import '../../library/domain/catalogue.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -104,7 +105,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         ),
       );
       if (mounted && widget.editing) setState(() => _editingStep = step);
-      if (mounted && finish) context.go(widget.editing ? '/settings' : '/');
+      if (mounted && finish) context.go('/');
     } catch (_) {
       if (mounted) {
         setState(() => _error = 'Unable to save setup. Please retry.');
@@ -135,6 +136,14 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       0,
       _sections.length - 1,
     );
+    final library = _libraryId == null
+        ? null
+        : ref
+              .watch(
+                catalogueItemProvider((CatalogueKind.library, _libraryId!)),
+              )
+              .asData
+              ?.value;
     final stepTitle = _sections[step].$2;
     final introduction = _sections[step].$1 == 'introduction';
     final completion = _sections[step].$1 == 'completion';
@@ -164,7 +173,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                       Expanded(
                         child: OutlinedButton(
                           key: const Key('setup-back'),
-                          onPressed: _saving || step == 0
+                          onPressed: _saving || (step == 0 && !widget.editing)
                               ? null
                               : () => _back(step),
                           child: const LText(
@@ -199,23 +208,31 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
           child: Scaffold(
             appBar: InkScreenHeader(
               automaticallyImplyLeading: false,
+              leading: _libraryId == null
+                  ? null
+                  : IgnorePointer(
+                      ignoring: _saving,
+                      child: BackButton(
+                        key: const Key('setup-library-back'),
+                        onPressed: _leaveLibrary,
+                      ),
+                    ),
               title: _libraryId != null
                   ? Align(
                       alignment: AlignmentDirectional.centerStart,
-                      child: TextButton.icon(
-                        key: const Key('setup-library-back'),
-                        onPressed: _saving ? null : _leaveLibrary,
-                        icon: const Icon(InkIcons.caretLeft),
-                        label: const LText('Back'),
+                      child: Tooltip(
+                        message:
+                            library?.title ?? context.tr('Library defaults'),
+                        child: Text(
+                          library?.title ?? context.tr('Library defaults'),
+                          key: const Key('setup-library-title'),
+                          textAlign: TextAlign.start,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     )
                   : LText(wide ? stepTitle : 'Make Inkora yours'),
-              actions: [
-                if (widget.editing)
-                  CloseButton(
-                    onPressed: _saving ? null : () => context.go('/settings'),
-                  ),
-              ],
             ),
             body: SafeArea(
               child: Row(

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/l10n/app_strings.dart';
 import 'package:inkora/app/router.dart';
+import 'package:inkora/app/widgets/ink_screen_header.dart';
 import 'package:inkora/features/connection/application/session_controller.dart';
 import 'package:inkora/features/settings/data/ui_preferences_store.dart';
 import 'package:inkora/features/settings/domain/ui_preferences.dart';
@@ -61,7 +62,45 @@ void main() {
         void checkWrapper({bool library = false}) {
           expect(router.routeInformationProvider.value.uri.path, '/setup');
           if (library) {
-            expect(find.byKey(const Key('setup-library-back')), findsOneWidget);
+            final localBack = find.byKey(const Key('setup-library-back'));
+            expect(localBack, findsOneWidget);
+            expect(tester.widget(localBack), isA<BackButton>());
+            expect(find.byType(CloseButton), findsNothing);
+            expect(
+              find.byKey(const Key('apply-library-defaults')),
+              findsNothing,
+            );
+            expect(
+              find.text(
+                strings.text(
+                  'Apply these preferences to every series and book in this library, replacing their custom reading preferences.',
+                ),
+              ),
+              findsNothing,
+            );
+            final title = find.byKey(const Key('setup-library-title'));
+            expect(
+              find.descendant(
+                of: find.byType(InkScreenHeader),
+                matching: title,
+              ),
+              findsOneWidget,
+            );
+            expect(
+              tester.getTopLeft(title).dx,
+              closeTo(tester.getTopRight(localBack).dx + 16, 1),
+            );
+            expect(
+              tester.getCenter(title).dy,
+              closeTo(tester.getCenter(localBack).dy, 1),
+            );
+            expect(
+              find.descendant(
+                of: find.byType(InkScreenHeader),
+                matching: find.text(strings.text('Back')),
+              ),
+              findsNothing,
+            );
             expect(back, findsNothing);
             expect(next, findsNothing);
             return;
@@ -104,6 +143,17 @@ void main() {
         expect(find.byType(TabBar), findsNothing);
         expect(find.byKey(const Key('reader-settings-scope')), findsNothing);
         expect(find.byKey(const Key('reader-settings-menu')), findsNothing);
+        final layoutHelp = find.text(
+          strings.text('Two pages in landscape windows and on tablets.'),
+        );
+        final pairing = find.byKey(
+          const ValueKey(('reader-choice-spreadPairing', 'automatic')),
+        );
+        expect(layoutHelp, findsOneWidget);
+        expect(
+          tester.getTopLeft(pairing).dy - tester.getBottomLeft(layoutHelp).dy,
+          greaterThanOrEqualTo(20),
+        );
 
         await chooseSetupMode(tester, 'webtoon');
         await tester.runAsync(
@@ -227,7 +277,7 @@ void main() {
     await tester.tap(next);
     await tester.pumpAndSettle();
     expect(find.text('Language'), findsNothing);
-    expect(find.text('Appearance'), findsOneWidget);
+    expect(find.text('Application theme'), findsOneWidget);
     for (var step = 1; step < 7; step++) {
       expect(find.text('Language'), findsNothing);
       expect(find.byType(SetupIntroduction), findsNothing);

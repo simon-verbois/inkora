@@ -46,14 +46,11 @@ void main() {
         expect(before, greaterThan(0));
         await tester.tap(find.byKey(const Key('catalogue-floating-filters')));
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('reading-filter-menu')).last);
+        final choice = find.byKey(ValueKey('reading-filter-$status'));
+        await tester.ensureVisible(choice);
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(ValueKey('reading-menu-$status')).first);
+        await tester.tap(choice);
         await tester.pumpAndSettle();
-        if (find.byKey(const Key('reading-menu-any')).evaluate().isNotEmpty) {
-          await tester.binding.handlePopRoute();
-          await tester.pumpAndSettle();
-        }
         await tester.tap(find.byKey(const Key('filters-apply')));
         await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 80)),

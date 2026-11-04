@@ -6,15 +6,24 @@ import '../theme/inkora_theme.dart';
 
 /// Marks a modal whose available height is already owned by its snap container.
 class InkSheetViewport extends InheritedWidget {
-  const InkSheetViewport({super.key, required super.child});
+  const InkSheetViewport({
+    super.key,
+    required super.child,
+    this.scrollController,
+  });
+  final ScrollController? scrollController;
   static bool isResizableOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<InkSheetViewport>() != null;
+  static ScrollController? scrollControllerOf(BuildContext context) => context
+      .dependOnInheritedWidgetOfExactType<InkSheetViewport>()
+      ?.scrollController;
   @override
-  bool updateShouldNotify(InkSheetViewport oldWidget) => false;
+  bool updateShouldNotify(InkSheetViewport oldWidget) =>
+      scrollController != oldWidget.scrollController;
 }
 
-/// Full-width modal with handle-only resizing. Body scroll/slider gestures keep
-/// their existing owners. Only this frame and its handle follow drag ticks;
+/// Full-width modal with handle resizing and optional expansion-first body
+/// scrolling. Only this frame and its handle follow drag ticks;
 /// the supplied content remains mounted through snapping and window resizing.
 class InkSnapSheet extends StatefulWidget {
   const InkSnapSheet({
@@ -46,6 +55,39 @@ class _InkSnapSheetState extends State<InkSnapSheet>
   double _height = 1;
   bool _closing = false;
   bool _dragging = false;
+  bool _bodyResizing = false;
+  late final _bodyScroll = _SheetScrollController(
+    resize: _resizeFromBody,
+    settle: _settleFromBody,
+  );
+
+  double _resizeFromBody(double delta) {
+    if (!mounted || _closing || delta >= 0 || _extent.value >= 1) return delta;
+    _bodyResizing = true;
+    _extent.stop();
+    final consumed = (-delta).clamp(0.0, (1 - _extent.value) * _height);
+    _extent.value += consumed / _height;
+    return delta + consumed;
+  }
+
+  bool _settleFromBody(double velocity) {
+    if (!_bodyResizing || !mounted) return false;
+    _bodyResizing = false;
+    if (_extent.value >= .999) {
+      _settled = 1;
+      return false;
+    }
+    final projected = (_extent.value + velocity / _height * .18).clamp(
+      _minimum,
+      1.0,
+    );
+    final target = _stops.reduce(
+      (a, b) => (a - projected).abs() <= (b - projected).abs() ? a : b,
+    );
+    _snap(target, velocity: velocity / _height);
+    return true;
+  }
+
   double get _minimum =>
       (240 * MediaQuery.textScalerOf(context).scale(1) / _height).clamp(
         .25,
@@ -124,6 +166,7 @@ class _InkSnapSheetState extends State<InkSnapSheet>
 
   @override
   void dispose() {
+    _bodyScroll.dispose();
     _extent.dispose();
     super.dispose();
   }
@@ -140,6 +183,7 @@ class _InkSnapSheetState extends State<InkSnapSheet>
         child: AnimatedBuilder(
           animation: _extent,
           child: InkSheetViewport(
+            scrollController: _bodyScroll,
             child: SafeArea(
               top: false,
               child: Align(
@@ -228,4 +272,44 @@ class _InkSnapSheetState extends State<InkSnapSheet>
       );
     },
   );
+}
+
+/// Opt-in scroll ownership: upward drag distance expands the sheet first.
+/// Existing custom scrollers and horizontal sliders retain their own owners.
+class _SheetScrollController extends ScrollController {
+  _SheetScrollController({required this.resize, required this.settle});
+  final double Function(double) resize;
+  final bool Function(double) settle;
+
+  @override
+  ScrollPosition createScrollPosition(
+    ScrollPhysics physics,
+    ScrollContext context,
+    ScrollPosition? oldPosition,
+  ) => _SheetScrollPosition(
+    physics: physics,
+    context: context,
+    oldPosition: oldPosition,
+    resize: resize,
+    settle: settle,
+  );
+}
+
+class _SheetScrollPosition extends ScrollPositionWithSingleContext {
+  _SheetScrollPosition({
+    required super.physics,
+    required super.context,
+    super.oldPosition,
+    required this.resize,
+    required this.settle,
+  });
+  final double Function(double) resize;
+  final bool Function(double) settle;
+
+  @override
+  void applyUserOffset(double delta) => super.applyUserOffset(resize(delta));
+
+  @override
+  void goBallistic(double velocity) =>
+      super.goBallistic(settle(velocity) ? 0 : velocity);
 }

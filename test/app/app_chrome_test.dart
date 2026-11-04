@@ -138,6 +138,11 @@ void main() {
               matching: find.byType(DropdownButtonFormField<int>),
             ),
           );
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('home-portrait-columns')),
+        300,
+      );
+      await tester.pumpAndSettle();
       selector('home-portrait-columns').onChanged!(4);
       await tester.pumpAndSettle();
       var saved = (await tester.runAsync(() => store.watch().first))!;
@@ -181,7 +186,21 @@ void main() {
       final router = harness.container.read(routerProvider);
       router.go('/setup?edit=true');
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(CloseButton));
+      expect(find.byType(CloseButton), findsNothing);
+      final back = find.byKey(const Key('setup-back'));
+      await tester.scrollUntilVisible(
+        back,
+        200,
+        scrollable: find
+            .descendant(
+              of: find.byKey(const Key('setup-introduction-scroll')),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.ensureVisible(back);
+      await tester.pumpAndSettle();
+      await tester.tap(back);
       await tester.pumpAndSettle();
       expect(router.routeInformationProvider.value.uri.path, '/settings');
       final saved = await tester.runAsync(

@@ -109,9 +109,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('catalogue-floating-filters')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('reading-filter-menu')));
+    await tester.ensureVisible(find.byKey(const Key('reading-filter-unread')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('reading-menu-unread')));
+    await tester.tap(find.byKey(const Key('reading-filter-unread')));
     await tester.pumpAndSettle();
     await binding.takeScreenshot('quick-filters-active');
     await tester.tap(find.byKey(const Key('filters-apply')));

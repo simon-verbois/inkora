@@ -119,7 +119,7 @@ void main() {
           'en',
         );
         expect(find.text('Language'), findsNothing);
-        expect(find.text('Appearance'), findsWidgets);
+        expect(find.text('Application theme'), findsWidgets);
         expect(tester.takeException(), isNull);
       },
     );
@@ -239,7 +239,7 @@ void main() {
           await captureOnboarding(
             tester,
             find.byKey(capture),
-            'setup-library-ebook-fr',
+            'settings-polish-setup-library-ebook-fr',
           );
         }
         expect(tester.takeException(), isNull);

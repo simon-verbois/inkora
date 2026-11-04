@@ -24,6 +24,9 @@ void main() {
         harness.container.read(routerProvider).go('/settings/appearance');
         await tester.pumpAndSettle();
         expect(find.byKey(const Key('panel-opacity')), findsNothing);
+        final libraryOptions = find.byKey(const Key('catalogue-layout'));
+        await tester.scrollUntilVisible(libraryOptions, 300);
+        await tester.pumpAndSettle();
         expect(
           find.text(AppStrings(language).text('Home covers per row')),
           findsOneWidget,

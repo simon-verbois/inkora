@@ -1,6 +1,5 @@
 import '../../features/settings/domain/ui_preferences.dart';
 import 'appearance_palette.dart';
-import 'horizontal_page_transitions.dart';
 
 import 'package:flutter/material.dart';
 
@@ -141,6 +140,13 @@ class InkoraColors extends ThemeExtension<InkoraColors> {
 
 abstract final class InkoraTheme {
   static const lightBrand = Color(0xFFD56A00);
+  static Color brandColorOf(BuildContext context) {
+    final theme = Theme.of(context);
+    return theme.brightness == Brightness.light
+        ? lightBrand
+        : theme.colorScheme.primary;
+  }
+
   static const action = Color(0xFFFF9A2F);
   static const onAction = Color(0xFF21180E);
   static ThemeData light() => forAppearance(AppAppearance.light);
@@ -201,13 +207,6 @@ abstract final class InkoraTheme {
       ],
     );
     return base.copyWith(
-      // Android keeps full-size pages during horizontal and edge navigation.
-      pageTransitionsTheme: PageTransitionsTheme(
-        builders: {
-          ...const PageTransitionsTheme().builders,
-          TargetPlatform.android: const HorizontalPageTransitionsBuilder(),
-        },
-      ),
       textTheme: base.textTheme.apply(bodyColor: text, displayColor: text),
       actionIconTheme: ActionIconThemeData(
         backButtonIconBuilder: (_) => const Icon(InkIcons.caretLeft),

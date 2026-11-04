@@ -53,9 +53,11 @@ void main() {
       final route = ModalRoute.of(tester.element(parent))!;
       expect(route.settings.name, 'reader-parent');
       expect(route.allowSnapshotting, isFalse);
+      final theme = Theme.of(tester.element(parent));
+      final standard = const PageTransitionsTheme().builders[theme.platform]!;
       expect(
-        tester.getTopLeft(parent).dx.abs(),
-        lessThanOrEqualTo(tester.view.physicalSize.width * .04),
+        (route as PageRoute).transitionDuration,
+        standard.transitionDuration,
       );
       await tester.pumpAndSettle();
       expect(remote.calls, requests);

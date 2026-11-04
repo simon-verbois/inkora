@@ -1,3 +1,4 @@
+import '../../app/widgets/ink_settings_section.dart';
 import 'reader_settings_scope_selector.dart';
 import '../../app/icons/inkora_icons.dart';
 import 'ebook_style_picker.dart';
@@ -32,6 +33,7 @@ class ReaderSettingsSheet extends StatefulWidget {
     this.onSaved,
     this.showTitle = true,
     this.showScope = true,
+    this.showLibraryApply = true,
     this.qualityOnly = false,
     this.upscalingControls,
     this.modal = false,
@@ -43,6 +45,7 @@ class ReaderSettingsSheet extends StatefulWidget {
   final VoidCallback? onSaved;
   final bool showTitle;
   final bool showScope;
+  final bool showLibraryApply;
 
   final bool qualityOnly;
   final Widget? upscalingControls;
@@ -656,12 +659,17 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
             'automatic': 'Automatic',
           }),
           if (_effective.layout == ReadingLayout.automatic) ...[
-            const SizedBox(height: 4),
-            LText(
-              'Two pages in landscape windows and on tablets.',
-              style: Theme.of(context).textTheme.bodySmall,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              child: LText(
+                'Two pages in landscape windows and on tablets.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
             ),
           ],
+          const SizedBox(height: 24),
           _select('Pages', 'spreadPairing', {
             SpreadPairing.automatic.name: 'Automatic',
             SpreadPairing.unshifted.name: 'Pair pages from the first page',
@@ -704,20 +712,8 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
     );
   }
 
-  Widget _sectionHeading(String title) => Padding(
-    padding: const EdgeInsets.only(top: 24, bottom: 16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Divider(height: 1),
-        const SizedBox(height: 20),
-        Semantics(
-          header: true,
-          child: LText(title, style: Theme.of(context).textTheme.titleLarge),
-        ),
-      ],
-    ),
-  );
+  Widget _sectionHeading(String title, {bool first = false}) =>
+      InkSettingsHeading(title: title, first: first);
 
   Widget _sectionedContent() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -755,7 +751,10 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
                   },
           ),
         if (_supportsTypography) ...[
-          _sectionHeading('Appearance'),
+          _sectionHeading(
+            'Appearance',
+            first: widget.manifest?.isDocument == true,
+          ),
           _appearanceControls(),
           _sectionHeading('Page layout'),
           _ebookControls(EbookControlsSection.layout),
@@ -770,12 +769,9 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
           _layoutControls(),
       ],
       if (widget.qualityOnly || widget.manifest?.isDocument == false) ...[
-        _sectionHeading('Rendering'),
+        _sectionHeading('Rendering', first: widget.qualityOnly),
         _imageQuality(),
-        if (widget.upscalingControls != null) ...[
-          const SizedBox(height: 24),
-          widget.upscalingControls!,
-        ],
+        if (widget.upscalingControls != null) ...[widget.upscalingControls!],
         if (widget.qualityOnly || _effective.mode == ReadingMode.webtoon) ...[
           _sectionHeading('Preloading'),
           _webtoonQuality(context),
@@ -829,7 +825,8 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
                       absorbing: _loading,
                       child: _sectionedContent(),
                     ),
-                    if (_scope == SettingsScope.library) ...[
+                    if (_scope == SettingsScope.library &&
+                        widget.showLibraryApply) ...[
                       const SizedBox(height: 24),
                       const LText(
                         'Apply these preferences to every series and book in this library, replacing their custom reading preferences.',

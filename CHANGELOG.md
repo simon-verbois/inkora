@@ -10,6 +10,19 @@ remain in progress.
 
 ## [Unreleased]
 
+## [2026.45.3] - 2026-11-04
+
+### Changed
+
+- Home's permanent library/filter buttons now share the topbar background, outline and corners, with icons matching the Inkora wordmark color.
+- Restore top and bottom overscroll stretching on Home while keeping the topbar/actions fixed, preserving refresh and respecting reduced motion.
+- Unify preference categories with gold bold headings, consistent spacing and no leading divider; separate automatic-layout help from the next dropdown.
+- Use the standard Back arrow and title placement for library setup, remove Close and bulk-apply controls there, and always open Home after setup completion.
+- Let filter body swipes expand the drawer before scrolling; show all reading/download choices with responsive labels. Move catalogue grid/list selection to Appearance settings.
+- Reveal Settings search when scrolling back up beneath the fixed topbar; remove index value summaries and give server identity/actions separate rows.
+- Add a localized Links category to series details.
+- Restore platform-default page transitions and remove forced horizontal/reveal animations, preserving reduced motion and visible-route Back ownership.
+
 ## [2026.45.2] - 2026-11-04
 
 ### Changed

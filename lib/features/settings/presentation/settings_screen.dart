@@ -1,9 +1,9 @@
+import '../../../app/widgets/ink_settings_section.dart';
 import '../../../app/widgets/ink_slider.dart';
 import '../../../app/widgets/ink_screen_header.dart';
 import 'settings_transfer_panel.dart';
 import 'about_content.dart';
 import 'servers_screen.dart';
-import 'preference_labels.dart';
 import '../../../app/l10n/app_strings.dart';
 import 'language_settings.dart';
 import 'settings_sections.dart';
@@ -65,51 +65,53 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final wide = SettingsPaneScope.wideOf(context);
     final section = widget.section ?? (wide ? 'servers' : null);
     if (section == 'servers') return const ServersScreen();
-    final data = ref.watch(uiPreferencesProvider);
-    final preferences = data.asData?.value ?? const UiPreferences();
     if (section == null) {
-      final host = ref.watch(
-        sessionProvider.select((state) => state.session?.endpoint.uri.host),
-      );
-      String? value(SettingsSection entry) => switch (entry.id) {
-        'servers' => host,
-        'appearance' => context.tr(appearanceLabel(preferences.appearance)),
-        'language' =>
-          languageNames[preferences.locale] ?? context.tr('System language'),
-        'gestures' => context.tr(
-          gesturePresetLabel(preferences.gestures.preset),
-        ),
-        _ => null,
-      };
       return Scaffold(
+        extendBodyBehindAppBar: true,
         appBar: const InkScreenHeader(title: LText('Settings')),
         body: InkContent(
           maxWidth: InkoraLayout.maxSettingsWidth,
-          child: ListView(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              16,
-              16,
-              16 + MediaQuery.paddingOf(context).bottom,
-            ),
-            children: [
-              SettingsSearchField(
-                onChanged: (text) {
-                  final query = text.toLowerCase().trim();
-                  if (query != _query) setState(() => _query = query);
-                },
+          child: CustomScrollView(
+            key: const Key('settings-index-scroll'),
+            slivers: [
+              SliverFloatingHeader(
+                animationStyle: MediaQuery.disableAnimationsOf(context)
+                    ? AnimationStyle.noAnimation
+                    : null,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    16,
+                    InkScreenHeader.extent + 16,
+                    16,
+                    4,
+                  ),
+                  child: SettingsSearchField(
+                    onChanged: (text) {
+                      final query = text.toLowerCase().trim();
+                      if (query != _query) setState(() => _query = query);
+                    },
+                  ),
+                ),
               ),
-              const SizedBox(height: 4),
-              ...settingsMenu(
-                context,
-                query: _query,
-                entry: (entry, path) => InkSettingsRow(
-                  key: ValueKey('settings-entry-${entry.id}'),
-                  icon: entry.icon,
-                  title: context.tr(entry.title),
-                  subtitle: path ?? entry.description,
-                  value: value(entry),
-                  onTap: () => context.push('/settings/${entry.id}'),
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  0,
+                  16,
+                  16 + MediaQuery.paddingOf(context).bottom,
+                ),
+                sliver: SliverList.list(
+                  children: settingsMenu(
+                    context,
+                    query: _query,
+                    entry: (entry, path) => InkSettingsRow(
+                      key: ValueKey('settings-entry-${entry.id}'),
+                      icon: entry.icon,
+                      title: context.tr(entry.title),
+                      subtitle: path ?? entry.description,
+                      onTap: () => context.push('/settings/${entry.id}'),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -117,6 +119,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       );
     }
+    final data = ref.watch(uiPreferencesProvider);
+    final preferences = data.asData?.value ?? const UiPreferences();
     if (section == 'reading') {
       return const LibraryDefaultsScreen();
     }
@@ -173,10 +177,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             : InkoraLayout.maxSettingsWidth,
         child: ListView(
           padding: EdgeInsets.fromLTRB(
-            16,
-            16,
-            16,
-            16 + MediaQuery.paddingOf(context).bottom,
+            20,
+            20,
+            20,
+            20 + MediaQuery.paddingOf(context).bottom,
           ),
           children: [
             if (data.hasError)
@@ -187,18 +191,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
             if (section == 'appearance') ...[
-              const SizedBox(height: 12),
-              InkPanel(
-                framed: false,
-                // The page header already names the page; setup steps keep
-                // their own heading.
-                title: widget.embedded && !wide ? 'Appearance' : null,
-                icon: InkIcons.palette,
+              InkSettingsSection(
+                first: true,
+                title: 'Application theme',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const LText('Application theme'),
-                    const SizedBox(height: 12),
                     AppearancePicker(
                       preferences: preferences,
                       onSelect: _saving || !data.hasValue
@@ -219,11 +217,50 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   current.copyWith(systemDarkTheme: value),
                             ),
                     ),
-                    const SizedBox(height: 24),
-                    const Divider(),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
+                    const LText(
+                      'Reader backgrounds are configured separately in Reading.',
+                    ),
+                  ],
+                ),
+              ),
+              InkSettingsSection(
+                title: 'Libraries',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    DropdownButtonFormField<bool>(
+                      key: const Key('catalogue-layout'),
+                      initialValue: preferences.catalogueListView,
+                      decoration: InputDecoration(
+                        labelText: context.tr('Layout'),
+                      ),
+                      isExpanded: true,
+                      itemHeight: null,
+                      items: const [
+                        DropdownMenuItem(
+                          value: false,
+                          child: LText('Show grid'),
+                        ),
+                        DropdownMenuItem(
+                          value: true,
+                          child: LText('Show list'),
+                        ),
+                      ],
+                      onChanged: _saving || !data.hasValue
+                          ? null
+                          : (value) {
+                              if (value != null &&
+                                  value != preferences.catalogueListView) {
+                                _save(
+                                  (p) => p.copyWith(catalogueListView: value),
+                                );
+                              }
+                            },
+                    ),
+                    const SizedBox(height: 16),
                     const LText('Home covers per row'),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     _HomeCoverCount(
                       key: const Key('home-portrait-columns'),
                       label: 'Portrait',
@@ -262,9 +299,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 (current) => current.copyWith(hideTags: value),
                               ),
                       ),
-                    const LText(
-                      'Reader backgrounds are configured separately in Reading.',
-                    ),
                   ],
                 ),
               ),
@@ -276,8 +310,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             if (section == 'transfer') const SettingsTransferPanel(),
             if (section == 'downloads') const DownloadSettingsPanel(),
             if (section == 'accessibility')
-              InkPanel(
-                framed: false,
+              InkSettingsSection(
+                first: true,
                 title: "Reading comfort",
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -299,7 +333,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     const LText(
                       'Applied in addition to your device text size.',
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const LText('Reduce motion'),
@@ -314,7 +348,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   current.copyWith(reduceMotion: value),
                             ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     const LText(
                       'Navigation uses labels and icons. Reading controls appear on a single tap.',
                     ),
@@ -343,26 +377,20 @@ class _HomeCoverCount extends StatelessWidget {
   final ValueChanged<int>? onChanged;
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      LText(label),
-      const SizedBox(height: 8),
-      DropdownButtonFormField<int>(
-        key: ValueKey(('home-cover-count', label, selected)),
-        initialValue: selected,
-        isExpanded: true,
-        decoration: InputDecoration(labelText: context.tr(label)),
-        items: [
-          for (final value in choices)
-            DropdownMenuItem(value: value, child: Text('$value')),
-        ],
-        onChanged: onChanged == null
-            ? null
-            : (value) {
-                if (value != null && value != selected) onChanged!(value);
-              },
-      ),
+  Widget build(BuildContext context) => DropdownButtonFormField<int>(
+    key: ValueKey(('home-cover-count', label, selected)),
+    initialValue: selected,
+    isExpanded: true,
+    itemHeight: null,
+    decoration: InputDecoration(labelText: context.tr(label)),
+    items: [
+      for (final value in choices)
+        DropdownMenuItem(value: value, child: Text('$value')),
     ],
+    onChanged: onChanged == null
+        ? null
+        : (value) {
+            if (value != null && value != selected) onChanged!(value);
+          },
   );
 }

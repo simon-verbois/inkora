@@ -19,9 +19,7 @@ class InkoraWordmark extends StatelessWidget {
       fontWeight: FontWeight.w700,
       fontSize: size,
       letterSpacing: -.8,
-      color: Theme.of(context).brightness == Brightness.light
-          ? InkoraTheme.lightBrand
-          : Theme.of(context).colorScheme.primary,
+      color: InkoraTheme.brandColorOf(context),
     ),
   );
 }
@@ -174,7 +172,6 @@ class InkSettingsRow extends StatelessWidget {
     this.subtitle,
     required this.onTap,
     this.trailing,
-    this.value,
   });
   final IconData icon;
   final String title;
@@ -182,9 +179,6 @@ class InkSettingsRow extends StatelessWidget {
   final VoidCallback? onTap;
   final Widget? trailing;
 
-  /// Current value shown before the chevron (already localized), for
-  /// example the theme name or gesture preset.
-  final String? value;
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 8),
@@ -194,35 +188,14 @@ class InkSettingsRow extends StatelessWidget {
       title: Text(title, style: Theme.of(context).textTheme.sectionTitle),
       subtitle: subtitle == null ? null : LText(subtitle!),
       onTap: onTap,
-      trailing:
-          trailing ??
-          (value == null
-              ? const Icon(InkIcons.caretRight)
-              : ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 160),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          value!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.meta,
-                        ),
-                      ),
-                      const SizedBox(width: InkSpace.xs),
-                      const Icon(InkIcons.caretRight),
-                    ],
-                  ),
-                )),
+      trailing: trailing ?? const Icon(InkIcons.caretRight),
     ),
   );
 }
 
 /// Full-width, resizable presentation shared by reader and catalogue panels.
-/// Only the handle resizes/snaps; body scrolling and content actions retain
-/// their existing owners. Outside taps and Back dismiss the same root route.
+/// The handle resizes/snaps; bodies may opt into expansion-first scrolling
+/// through InkSheetViewport while custom scrollers retain their owners. Outside taps and Back dismiss the same root route.
 Future<T?> showInkSheet<T>({
   required BuildContext context,
   required Widget child,

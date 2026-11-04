@@ -1,3 +1,4 @@
+import '../../app/widgets/ink_settings_section.dart';
 import '../../app/widgets/ink_slider.dart';
 import '../../app/l10n/app_strings.dart';
 import '../../app/icons/inkora_icons.dart';
@@ -64,10 +65,9 @@ class _DownloadSettingsPanelState extends ConsumerState<DownloadSettingsPanel> {
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  InkPanel(
-                    framed: false,
+                  InkSettingsSection(
+                    first: true,
                     title: "Storage and network",
-                    icon: InkIcons.hardDrives,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [

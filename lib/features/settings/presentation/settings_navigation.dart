@@ -1,3 +1,5 @@
+import '../../../app/widgets/ink_settings_section.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../app/icons/inkora_icons.dart';
@@ -80,8 +82,7 @@ class SettingsGroupLabel extends StatelessWidget {
       child: LText(
         group.label,
         key: ValueKey('settings-group-${group.name}'),
-        style: Theme.of(context).textTheme.labelLarge
-            ?.copyWith(color: Theme.of(context).colorScheme.primary),
+        style: InkSettingsHeading.titleStyleOf(context),
       ),
     ),
   );

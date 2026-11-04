@@ -7,6 +7,7 @@ import '../../../app/l10n/app_strings.dart';
 import '../../../app/theme/inkora_theme.dart';
 import '../../../app/widgets/ink_filter_bar.dart';
 import '../../../app/widgets/inkora_widgets.dart';
+import '../../../app/widgets/ink_snap_sheet.dart';
 import '../domain/catalogue_filters.dart';
 import 'reading_filter_chips.dart';
 import 'catalogue_detail_widgets.dart' show humanizeMetadata;
@@ -170,8 +171,12 @@ class _CatalogueFiltersSheetState extends State<CatalogueFiltersSheet> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const InkSheetHeader(title: 'Filters'),
-        Flexible(
+        Expanded(
           child: SingleChildScrollView(
+            controller: InkSheetViewport.scrollControllerOf(context),
+            physics: InkSheetViewport.isResizableOf(context)
+                ? const AlwaysScrollableScrollPhysics()
+                : null,
             padding: const EdgeInsets.symmetric(horizontal: InkSpace.lg),
             child: FutureBuilder<CatalogueFacets>(
               future: widget.options,
@@ -185,12 +190,19 @@ class _CatalogueFiltersSheetState extends State<CatalogueFiltersSheet> {
                   if (widget.showReadingFilters)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16),
-                      child: ReadingFilterMenu(
-                        filters: _draft,
-                        onChanged: (value) => _update(() {
-                          _readingStatus = value.readingStatus;
-                          _downloadedOnly = value.downloadedOnly;
-                        }),
+                      child: Wrap(
+                        key: const Key('reading-filter-choices'),
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: readingFilterChips(
+                          filters: _draft,
+                          separated: false,
+                          showLabels: true,
+                          onChanged: (value) => _update(() {
+                            _readingStatus = value.readingStatus;
+                            _downloadedOnly = value.downloadedOnly;
+                          }),
+                        ),
                       ),
                     ),
                   if (snapshot.hasError)

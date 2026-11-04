@@ -467,6 +467,10 @@ class SeriesAbout extends ConsumerWidget {
         ],
         section('Publication details'),
         SeriesFacts(metadata: metadata),
+        if (metadata.links.isNotEmpty) ...[
+          section('Links'),
+          CatalogueLinks(links: metadata.links),
+        ],
       ],
     );
   }
@@ -669,7 +673,6 @@ class SeriesFacts extends StatelessWidget {
                         ),
                 ),
               ),
-            CatalogueLinks(links: metadata.links),
           ],
         );
       },

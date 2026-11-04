@@ -38,6 +38,7 @@ Future<void> seedSeries(
   bool ebooks = false,
   int summaryRepeats = 14,
   String generation = 'series-page',
+  List<CatalogueLink> links = const [],
 }) => tester.runAsync(() async {
   await harness.repository.store.stage(generation, [
     const CatalogueItem(
@@ -56,6 +57,7 @@ Future<void> seedSeries(
         'Lanterns, alleys and quiet detectives under a pale moon.',
       ).join(' '),
       metadata: CatalogueMetadata(
+        links: links,
         status: status,
         publisher: 'Fixture Press',
         genres: const ['Mystery', 'Drama'],
@@ -202,6 +204,38 @@ Future<void> chooseFilter(WidgetTester tester, String name) async {
 Finder row(String id) => find.byKey(ValueKey('volume-$id'));
 
 void main() {
+  testWidgets('series external links have their own localized heading', (
+    tester,
+  ) async {
+    final harness = await UiHarness.create(tester);
+    addTearDown(() => harness.close(tester));
+    await seedSeries(
+      harness,
+      tester,
+      summaryRepeats: 0,
+      links: const [CatalogueLink('AniList', 'https://anilist.co/manga/1')],
+    );
+    await harness.mount(tester);
+    harness.container.read(routerProvider).go('/catalogue/series/series-a');
+    await tester.pumpAndSettle();
+    final heading = find.text('Links');
+    await tester.scrollUntilVisible(heading, 200, scrollable: mainScroll());
+    await tester.pumpAndSettle();
+    expect(
+      tester.getTopLeft(heading).dy,
+      greaterThan(tester.getBottomLeft(find.text('Publisher')).dy),
+    );
+    expect(
+      tester.getBottomLeft(heading).dy,
+      lessThanOrEqualTo(tester.getTopLeft(find.text('AniList')).dy),
+    );
+    expect(
+      tester.widget<Text>(heading).style,
+      tester.widget<Text>(find.text('Publication details')).style,
+    );
+    expect(tester.takeException(), isNull);
+    await harness.close(tester);
+  });
   testWidgets(
     'phone series header keeps its artwork band transparent while scrolling',
     (tester) async {

@@ -277,8 +277,8 @@ void main() {
       await capture('tablet-series');
       await tester.tap(find.byKey(const Key('volume-select')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('volume-check-demo-volume-3')));
-      await tester.tap(find.byKey(const Key('volume-check-demo-volume-4')));
+      await tester.tap(find.byKey(const Key('volume-tile-demo-volume-3')));
+      await tester.tap(find.byKey(const Key('volume-tile-demo-volume-4')));
       await tester.pumpAndSettle();
       await capture('tablet-selection');
       router.go('/settings/quality');

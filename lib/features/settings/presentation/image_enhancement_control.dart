@@ -1,3 +1,5 @@
+import '../../../app/widgets/ink_settings_section.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -38,8 +40,7 @@ class _ImageEnhancementControlState
             state.asData?.value.imageEnhancement ?? ImageEnhancement.balanced,
       ),
     );
-    return InkPanel(
-      framed: false,
+    return InkSettingsSection(
       title: 'Upscaling and sharpening',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

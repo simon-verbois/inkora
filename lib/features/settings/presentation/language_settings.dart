@@ -1,5 +1,5 @@
+import '../../../app/widgets/ink_settings_section.dart';
 import '../../../app/widgets/inkora_widgets.dart';
-import '../../../app/theme/inkora_theme.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,8 +20,7 @@ class LanguageSettings extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (showTitle)
-          LText('Language', style: Theme.of(context).textTheme.screenTitle),
+        if (showTitle) const InkSettingsHeading(title: 'Language', first: true),
         const LText(
           'Use your device language, or choose an application language. Book titles and server metadata stay unchanged.',
         ),

@@ -76,7 +76,12 @@ void main() {
         of: find.byType(SettingsScreen),
         matching: find.byType(InkPanel),
       );
-      expect(panels, findsWidgets);
+      expect(
+        panels,
+        section == 'appearance' || section == 'accessibility'
+            ? findsNothing
+            : findsWidgets,
+      );
       expect(
         find.descendant(of: panels, matching: find.byType(InkSurface)),
         findsNothing,

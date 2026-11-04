@@ -145,11 +145,13 @@ void main() {
     await tester.pumpAndSettle();
 
     if (!tablet) {
-      final selector = find.byKey(const Key('reading-filter-menu'));
-      expect(selector.hitTestable(), findsOneWidget);
-      await tester.tap(selector);
+      await tester.tap(find.byKey(const Key('catalogue-floating-filters')));
+      await tester.pumpAndSettle();
       await capture('06-quick-filters-open');
-      await tester.tap(find.byKey(const Key('reading-menu-unread')));
+      final unread = find.byKey(const Key('reading-filter-unread'));
+      await tester.ensureVisible(unread);
+      await tester.pumpAndSettle();
+      await tester.tap(unread);
       await capture('07-quick-filter-unread');
     }
 

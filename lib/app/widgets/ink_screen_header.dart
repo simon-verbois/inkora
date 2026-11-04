@@ -18,6 +18,7 @@ class InkScreenHeader extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     required this.title,
     this.actions,
+    this.leading,
     this.automaticallyImplyLeading = true,
     this.outlined = true,
   });
@@ -26,6 +27,7 @@ class InkScreenHeader extends StatelessWidget implements PreferredSizeWidget {
   final Widget title;
   final bool outlined;
   final List<Widget>? actions;
+  final Widget? leading;
 
   /// False hides the implied route Back (setup, wide settings panes).
   final bool automaticallyImplyLeading;
@@ -54,10 +56,11 @@ class InkScreenHeader extends StatelessWidget implements PreferredSizeWidget {
           // A settings root is first in its local Navigator, but still has
           // Home beneath its enclosing workspace route.
           leading:
-              automaticallyImplyLeading &&
-                  GoRouter.maybeOf(context)?.canPop() == true
-              ? BackButton(onPressed: () => context.pop())
-              : null,
+              leading ??
+              (automaticallyImplyLeading &&
+                      GoRouter.maybeOf(context)?.canPop() == true
+                  ? BackButton(onPressed: () => context.pop())
+                  : null),
           backgroundColor: Colors.transparent,
         ),
       ),

@@ -212,7 +212,7 @@ Future<T?> showInkSheet<T>({
   useSafeArea: true,
   backgroundColor: Colors.transparent,
   showDragHandle: false,
-  enableDrag: false,
+  enableDrag: true,
   isDismissible: true,
   constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width),
   builder: (_) {

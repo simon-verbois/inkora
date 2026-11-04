@@ -10,6 +10,24 @@ remain in progress.
 
 ## [Unreleased]
 
+## [2026.45.4] - 2026-11-04
+
+### Added
+
+- Add a dedicated Visible metadata section in Appearance, with individual controls for genres, credits, publisher, dates, identifiers, links and other publication facts. Tags and language are hidden by default; saved choices survive export/import without changing catalogue search data.
+
+### Changed
+
+- Refresh the twelve-language website and README with 24 current phone/tablet captures, a complete expandable gallery and updated Home, settings and metadata descriptions.
+- Use fading separators throughout the interface, matching Home and EPUB spreads.
+- Restore downward drawer dismissal from titles, lists and empty areas; scrollable content returns to its start before collapsing, and upward drags expand before scrolling.
+
+### Fixed
+
+- Keep Series/Author navigation from changing Android system bars during page transitions; skip redundant changes, stop hidden reader prefetch/decode warming and reject duplicate openings while retaining the same reader, position and zoom.
+- Mask content above the Settings topbar, confine the fade behind its surface and bring floating search closer to the bar.
+- Omit empty publication sections when all their metadata is hidden.
+
 ## [2026.45.3] - 2026-11-04
 
 ### Changed

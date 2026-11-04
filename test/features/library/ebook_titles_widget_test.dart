@@ -173,7 +173,7 @@ void main() {
           expect(find.byType(BookDetailScreen), findsOneWidget);
           expect(find.byType(ReaderScreen), findsNothing);
           expect(find.text('Novel c'), findsOneWidget);
-          expect(find.text('PDF'), findsNothing);
+          expect(find.text('PDF'), findsOneWidget);
           expect(find.text('EPUB'), findsNothing);
           expect(
             tester.widget<SeriesBackdrop>(find.byType(SeriesBackdrop)).item.id,

@@ -1,3 +1,5 @@
+import '../../app/widgets/ink_divider.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -565,12 +567,7 @@ class DownloadGroupRow extends ConsumerWidget {
       selected?.call();
     }
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: theme.dividerColor.withValues(alpha: .25)),
-        ),
-      ),
+    return InkBottomDivider(
       child: Row(
         children: [
           Expanded(

@@ -65,11 +65,15 @@ class EbookReaderScreen extends ConsumerStatefulWidget {
     required this.repository,
     required this.settings,
     this.gestureZones = const GestureZones(),
+    this.onSeries,
+    this.active = true,
   });
   final OpenReader reader;
   final ReaderRepository repository;
   final ReadingSettings settings;
   final GestureZones gestureZones;
+  final VoidCallback? onSeries;
+  final bool active;
   @override
   ConsumerState<EbookReaderScreen> createState() => _EbookReaderScreenState();
 }
@@ -139,9 +143,11 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
 
   // Controls overlay the publication. Changing system insets here would reflow
   // EPUB text and shift PDF geometry on every control toggle.
-  void _chromeChanged() => unawaited(
-    ReaderSystemUi.setImmersive(!widget.gestureZones.showSystemBars),
-  );
+  void _chromeChanged() {
+    if (!widget.active) return;
+    unawaited(ReaderSystemUi.setImmersive(!widget.gestureZones.showSystemBars));
+  }
+
   Future<void> _open() async {
     try {
       var file = await widget.repository.assets.documentFile(_manifest);
@@ -396,7 +402,8 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   void _refreshPageNumbers() {
     final positions = _positionMap;
     if (!mounted || !_epub || positions == null || !_presentationReady) return;
-    if (_backgrounded ||
+    if (!widget.active ||
+        _backgrounded ||
         !widget.settings.ebook.pageNumbers ||
         widget.settings.ebook.scroll ||
         ModalRoute.of(context)?.isCurrent != true) {
@@ -450,6 +457,13 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   @override
   void didUpdateWidget(EbookReaderScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.active != widget.active) {
+      if (widget.active) {
+        _refreshPageNumbers();
+      } else {
+        _pageNumbers.hide();
+      }
+    }
     if (oldWidget.gestureZones.showSystemBars !=
         widget.gestureZones.showSystemBars) {
       _chromeChanged();
@@ -469,6 +483,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
   void _locationChanged(Locator locator) {
     if (!mounted ||
         _backgrounded ||
+        !widget.active ||
         ModalRoute.of(context)?.isCurrent != true) {
       return;
     }
@@ -967,7 +982,7 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
                     actions: [
                       ReaderSeriesButton(
                         manifest: _manifest,
-                        immersiveOnReturn: !widget.gestureZones.showSystemBars,
+                        onPressed: widget.onSeries,
                       ),
                       ReaderDetailsButton(manifest: _manifest),
                     ],

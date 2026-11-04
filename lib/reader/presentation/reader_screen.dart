@@ -61,6 +61,60 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
   bool _refreshing = false;
   bool _changingChapter = false;
   bool _controlsVisible = false;
+  bool _parentOpen = false;
+  bool _parentPopped = false;
+  bool _parentBarsShown = false;
+  bool _parentWasImmersive = false;
+  ModalRoute<dynamic>? _route;
+  Animation<double>? _coverAnimation;
+
+  bool get _immersive =>
+      !widget.gestureZones.showSystemBars &&
+      (!_controlsVisible ||
+          ref
+                  .read(openReaderProvider(widget.bookId))
+                  .asData
+                  ?.value
+                  .manifest
+                  .isDocument ==
+              true);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (!identical(route, _route)) {
+      _coverAnimation?.removeStatusListener(_parentTransitionChanged);
+      _route = route;
+      _coverAnimation = route?.secondaryAnimation;
+      _coverAnimation?.addStatusListener(_parentTransitionChanged);
+    }
+  }
+
+  void _parentTransitionChanged(AnimationStatus _) => _settleParent();
+
+  // Keep WindowInsets stable while Material animates the live reader surface.
+  // A push result completes at pop intent, before the reverse animation ends.
+  void _settleParent() {
+    if (!mounted || !_parentOpen) return;
+    if (!_parentPopped) {
+      if (!_parentBarsShown &&
+          _route?.isCurrent == false &&
+          _coverAnimation?.isAnimating != true) {
+        _parentBarsShown = true;
+        if (_parentWasImmersive) unawaited(ReaderSystemUi.setImmersive(false));
+      }
+    } else if (_route?.isCurrent == true &&
+        _coverAnimation?.isDismissed != false) {
+      final restoreBars = _parentWasImmersive || _immersive;
+      setState(() {
+        _parentOpen = false;
+        _parentPopped = false;
+        _parentBarsShown = false;
+      });
+      if (restoreBars) unawaited(ReaderSystemUi.setImmersive(_immersive));
+    }
+  }
 
   @override
   void initState() {
@@ -102,40 +156,31 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
 
   void _toggleControls() {
     setState(() => _controlsVisible = !_controlsVisible);
-    unawaited(
-      ReaderSystemUi.setImmersive(
-        !_controlsVisible && !widget.gestureZones.showSystemBars,
-      ),
-    );
+    unawaited(ReaderSystemUi.setImmersive(_immersive));
   }
 
   @override
   void didUpdateWidget(ReaderScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.gestureZones.showSystemBars !=
-        widget.gestureZones.showSystemBars) {
-      unawaited(
-        ReaderSystemUi.setImmersive(
-          !_controlsVisible && !widget.gestureZones.showSystemBars,
-        ),
-      );
+    if (!_parentOpen &&
+        oldWidget.gestureZones.showSystemBars !=
+            widget.gestureZones.showSystemBars) {
+      unawaited(ReaderSystemUi.setImmersive(_immersive));
     }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed &&
+        !_parentOpen &&
         ModalRoute.of(context)?.isCurrent == true) {
-      unawaited(
-        ReaderSystemUi.setImmersive(
-          !_controlsVisible && !widget.gestureZones.showSystemBars,
-        ),
-      );
+      unawaited(ReaderSystemUi.setImmersive(_immersive));
     }
   }
 
   @override
   void dispose() {
+    _coverAnimation?.removeStatusListener(_parentTransitionChanged);
     _navigation.dispose();
     _page.dispose();
     WidgetsBinding.instance.removeObserver(this);
@@ -303,12 +348,19 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
   }
 
   Future<void> _parent(OpenReader reader) async {
+    if (_parentOpen || _route?.isCurrent != true) return;
+    _parentWasImmersive = _immersive;
+    setState(() => _parentOpen = true);
     reader.prefetch?.suspend(true);
     try {
-      await openReaderSeries(context, reader.manifest);
+      final dismissed = openReaderSeries(context, reader.manifest);
+      // Zero-duration routes need no status change; never await a native call.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _settleParent());
+      await dismissed;
     } finally {
-      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
-        reader.prefetch?.suspend(false);
+      if (mounted) {
+        _parentPopped = true;
+        _settleParent();
       }
     }
   }
@@ -344,6 +396,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
       return EbookReaderScreen(
         key: ObjectKey(opened),
         reader: opened,
+        onSeries: () => _parent(opened),
+        active: !_parentOpen,
         gestureZones: zones,
         repository: repository,
         settings:
@@ -415,6 +469,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
               : _positionRevision,
         )),
         navigation: _navigation,
+        active: !_parentOpen,
         onEnd: () => _end(reader, continueReading: true),
         onLocatorChanged: (locator) {
           _currentLocator = locator;

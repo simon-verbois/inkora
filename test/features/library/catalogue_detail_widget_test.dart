@@ -228,8 +228,16 @@ void main() {
             findsOneWidget,
           );
           expect(find.text('85 books'), findsOneWidget);
-          expect(find.text('Webtoon'), findsNothing);
-          expect(find.text('16+'), findsNothing);
+          // Extra metadata belongs to publication facts, not hero chips.
+          for (final text in ['Webtoon', '16+']) {
+            expect(
+              find.descendant(
+                of: find.byType(SeriesHero),
+                matching: find.text(text),
+              ),
+              findsNothing,
+            );
+          }
           {
             final cover = find.descendant(
               of: find.byType(SeriesHero),

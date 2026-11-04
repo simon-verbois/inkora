@@ -1,3 +1,5 @@
+import '../../../app/widgets/ink_divider.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -10,7 +12,8 @@ import '../../../app/widgets/inkora_widgets.dart';
 import '../../../app/widgets/ink_snap_sheet.dart';
 import '../domain/catalogue_filters.dart';
 import 'reading_filter_chips.dart';
-import 'catalogue_detail_widgets.dart' show humanizeMetadata;
+import 'catalogue_detail_widgets.dart'
+    show humanizeMetadata, catalogueFormatLabel;
 
 typedef CatalogueFilterResult = ({
   bool showUnavailable,
@@ -47,21 +50,7 @@ String facetValueLabel(
   CatalogueFacet facet,
   String value,
 ) => switch (facet) {
-  CatalogueFacet.mediaType => switch (value
-      .split(';')
-      .first
-      .trim()
-      .toLowerCase()) {
-    'application/epub+zip' => 'EPUB',
-    'application/pdf' => 'PDF',
-    'application/zip' ||
-    'application/x-cbz' ||
-    'application/vnd.comicbook+zip' => 'CBZ',
-    'application/x-rar-compressed' ||
-    'application/x-cbr' ||
-    'application/vnd.comicbook-rar' => 'CBR',
-    _ => value,
-  },
+  CatalogueFacet.mediaType => catalogueFormatLabel(value),
   CatalogueFacet.status => context.tr(humanizeMetadata(value)),
   _ => value,
 };
@@ -185,7 +174,7 @@ class _CatalogueFiltersSheetState extends State<CatalogueFiltersSheet> {
                 children: [
                   if (widget.catalogueControls != null) ...[
                     widget.catalogueControls!,
-                    const Divider(height: 24),
+                    const InkDivider(height: 24),
                   ],
                   if (widget.showReadingFilters)
                     Padding(

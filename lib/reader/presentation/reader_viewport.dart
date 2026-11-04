@@ -32,6 +32,7 @@ class ReaderViewport extends StatefulWidget {
     required this.settings,
     required this.saveLocator,
     this.controlsVisible = true,
+    this.active = true,
     this.onToggleControls,
     this.onLocatorChanged,
     this.onToggleSpreadOffset,
@@ -46,6 +47,9 @@ class ReaderViewport extends StatefulWidget {
   final ReadingSettings settings;
   final Future<void> Function(ReaderLocator) saveLocator;
   final bool controlsVisible;
+
+  /// Pause speculative work while a parent page is opening, visible or closing.
+  final bool active;
   final VoidCallback? onToggleControls;
   final ValueChanged<ReaderLocator>? onLocatorChanged;
 
@@ -67,6 +71,18 @@ class _ReaderViewportState extends State<ReaderViewport>
   bool _saveFailed = false;
   PagedLayout? _pagedLayout;
   final _pagedKey = GlobalKey<_PagedViewportState>();
+  bool _resumed = true;
+  bool get _active => widget.active && _resumed;
+
+  void _syncActivity() {
+    widget.reader.prefetch?.suspend(!_active);
+    if (_active) {
+      if (_policy == null && widget.reader.prefetch != null) _watchPolicy();
+    } else {
+      unawaited(_policy?.cancel());
+      _policy = null;
+    }
+  }
 
   @override
   void initState() {
@@ -77,7 +93,7 @@ class _ReaderViewportState extends State<ReaderViewport>
     WidgetsBinding.instance.addObserver(this);
     if (widget.reader.prefetch != null) {
       widget.reader.prefetch!.policy.paused = true;
-      _watchPolicy();
+      _syncActivity();
     }
     ReaderDecodedCache.retainRevision(
       widget.reader.manifest.accountId,
@@ -93,7 +109,7 @@ class _ReaderViewportState extends State<ReaderViewport>
   }
 
   void _networkPolicy(ReaderNetworkSnapshot snapshot) {
-    if (mounted) {
+    if (mounted && _active) {
       final policy = widget.reader.prefetch?.policy;
       final changed =
           policy != null &&
@@ -109,18 +125,12 @@ class _ReaderViewportState extends State<ReaderViewport>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    widget.reader.prefetch?.suspend(state != AppLifecycleState.resumed);
-    if (state == AppLifecycleState.resumed &&
-        widget.settings.fit == ReadingFit.content) {
+    final before = _active;
+    _resumed = state == AppLifecycleState.resumed;
+    _syncActivity();
+    if (before != _active ||
+        (_active && widget.settings.fit == ReadingFit.content)) {
       setState(() {});
-    }
-    if (widget.reader.prefetch == null) return;
-    if (state == AppLifecycleState.resumed) {
-      if (_policy == null) _watchPolicy();
-    } else {
-      // No policy work while the reader is not visible.
-      unawaited(_policy?.cancel());
-      _policy = null;
     }
   }
 
@@ -165,6 +175,7 @@ class _ReaderViewportState extends State<ReaderViewport>
   @override
   void didUpdateWidget(ReaderViewport oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.active != widget.active) _syncActivity();
     if (oldWidget.navigation != widget.navigation) {
       oldWidget.navigation?.removeListener(_navigate);
       widget.navigation?.addListener(_navigate);
@@ -274,6 +285,7 @@ class _ReaderViewportState extends State<ReaderViewport>
                       builder: (context, constraints) {
                         return settings.mode == ReadingMode.webtoon
                             ? _WebtoonViewport(
+                                active: _active,
                                 key: ValueKey(
                                   'webtoon-${widget.reader.manifest.revision}',
                                 ),
@@ -283,6 +295,7 @@ class _ReaderViewportState extends State<ReaderViewport>
                                 onPosition: _position,
                               )
                             : _PagedViewport(
+                                active: _active,
                                 key: _pagedKey,
                                 reader: widget.reader,
                                 settings: settings,
@@ -405,6 +418,7 @@ const pagedDecodeAhead = 3;
 
 class _PagedViewport extends StatefulWidget {
   const _PagedViewport({
+    required this.active,
     required this.reader,
     required this.settings,
     required this.locator,
@@ -414,6 +428,7 @@ class _PagedViewport extends StatefulWidget {
     required this.onEnd,
     super.key,
   });
+  final bool active;
   final OpenReader reader;
   final ReadingSettings settings;
   final ReaderLocator locator;
@@ -457,7 +472,7 @@ class _PagedViewportState extends State<_PagedViewport> {
 
   void _prefetch(double width, double height, double pixelRatio) {
     final session = widget.reader.prefetch;
-    if (session == null) return;
+    if (session == null || !widget.active) return;
     session.suspend(false);
     final group = widget.layout.pagesFor(widget.locator.pageIndex);
     session.update(group.first, visiblePages: group.length);
@@ -493,7 +508,10 @@ class _PagedViewportState extends State<_PagedViewport> {
     _warmTimer = Timer.periodic(const Duration(milliseconds: 50), (
       timer,
     ) async {
-      if (!mounted || generation != _warmGeneration || timer.tick > 200) {
+      if (!mounted ||
+          !widget.active ||
+          generation != _warmGeneration ||
+          timer.tick > 200) {
         timer.cancel();
         return;
       }
@@ -571,6 +589,7 @@ class _PagedViewportState extends State<_PagedViewport> {
   @override
   void didUpdateWidget(_PagedViewport oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.active != widget.active) _stopWarming();
     final page = widget.layout.groupFor(widget.locator.pageIndex);
     if (_controller.hasClients && _controller.page?.round() != page) {
       _zoomed = false;
@@ -629,10 +648,16 @@ class _PagedViewportState extends State<_PagedViewport> {
     return false;
   }
 
+  void _stopWarming() {
+    _warmTimer?.cancel();
+    _warmTimer = null;
+    _warmGeneration++;
+    _lastWarm = null;
+  }
+
   @override
   void dispose() {
-    _warmTimer?.cancel();
-    _warmGeneration++;
+    _stopWarming();
     _controller.dispose();
     super.dispose();
   }
@@ -934,12 +959,14 @@ class _ZoomSpreadState extends State<_ZoomSpread> {
 
 class _WebtoonViewport extends StatefulWidget {
   const _WebtoonViewport({
+    required this.active,
     required this.reader,
     required this.settings,
     required this.locator,
     required this.onPosition,
     super.key,
   });
+  final bool active;
   final OpenReader reader;
   final ReadingSettings settings;
   final ReaderLocator locator;
@@ -959,7 +986,9 @@ class _WebtoonViewportState extends State<_WebtoonViewport> {
   ReaderLocator? _lastReported;
   ({int page, int visible, double offset, WebtoonLayout layout})? _planned;
   void _scroll() {
-    if (_restoring || !mounted || !_controller!.hasClients) return;
+    if (_restoring || !mounted || !widget.active || !_controller!.hasClients) {
+      return;
+    }
     final offset = _controller!.offset;
     ReaderTrace.sink?.call('scroll', null, {
       'offset': offset,

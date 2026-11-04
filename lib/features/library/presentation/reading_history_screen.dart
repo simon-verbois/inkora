@@ -1,3 +1,5 @@
+import '../../../app/widgets/ink_divider.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -253,12 +255,7 @@ class HistoryRow extends ConsumerWidget {
       progress.label,
       historyTimeLabel(context, entry.at, period),
     ]);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: theme.dividerColor.withValues(alpha: .25)),
-        ),
-      ),
+    return InkBottomDivider(
       child: Semantics(
         container: true,
         button: true,

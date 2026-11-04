@@ -773,5 +773,7 @@
   "Save a search to reuse its filters later.": "Enregistrez une recherche pour réutiliser ses filtres ultérieurement.",
   "Remove saved search": "Supprimer la recherche enregistrée",
   "Setup is complete. Enjoy your reading!": "La configuration est terminée. Bonne lecture !",
-  "Welcome to Inkora": "Bienvenue sur Inkora"
+  "Welcome to Inkora": "Bienvenue sur Inkora",
+  "Visible metadata": "Métadonnées affichées",
+  "Cover artist": "Illustrateur de couverture"
 }

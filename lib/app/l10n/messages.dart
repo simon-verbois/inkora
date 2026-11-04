@@ -900,6 +900,8 @@ const Map<String, Map<String, String>> messages = {
     "Setup is complete. Enjoy your reading!":
         "Setup is complete. Enjoy your reading!",
     "Welcome to Inkora": "Welcome to Inkora",
+    "Visible metadata": "Visible metadata",
+    "Cover artist": "Cover artist",
   },
   "fr": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Un conflit nécessite votre choix. Ouvrez le livre concerné et sélectionnez « Progression de lecture ».",
@@ -1807,6 +1809,8 @@ const Map<String, Map<String, String>> messages = {
     "Setup is complete. Enjoy your reading!":
         "La configuration est terminée. Bonne lecture !",
     "Welcome to Inkora": "Bienvenue sur Inkora",
+    "Visible metadata": "Métadonnées affichées",
+    "Cover artist": "Illustrateur de couverture",
   },
   "de": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Bei einem Konflikt müssen Sie eine Entscheidung treffen. Öffnen Sie das betroffene Buch und wählen Sie „Lesefortschritt“ aus.",
@@ -2697,6 +2701,8 @@ const Map<String, Map<String, String>> messages = {
     "Setup is complete. Enjoy your reading!":
         "Die Einrichtung ist abgeschlossen. Viel Spaß beim Lesen!",
     "Welcome to Inkora": "Willkommen bei Inkora",
+    "Visible metadata": "Sichtbare Metadaten",
+    "Cover artist": "Coverillustrator",
   },
   "es": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Un conflicto requiere que usted elija. Abra el libro afectado y seleccione «Progreso de lectura».",
@@ -3602,6 +3608,8 @@ const Map<String, Map<String, String>> messages = {
     "Setup is complete. Enjoy your reading!":
         "La configuración ha terminado. ¡Disfruta de la lectura!",
     "Welcome to Inkora": "Bienvenido a Inkora",
+    "Visible metadata": "Metadatos visibles",
+    "Cover artist": "Ilustrador de portada",
   },
   "it": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Per risolvere un conflitto è necessaria una sua scelta. Apra il libro interessato e selezioni «Progresso di lettura».",
@@ -4506,6 +4514,8 @@ const Map<String, Map<String, String>> messages = {
     "Setup is complete. Enjoy your reading!":
         "La configurazione è terminata. Buona lettura!",
     "Welcome to Inkora": "Benvenuto in Inkora",
+    "Visible metadata": "Metadati visibili",
+    "Cover artist": "Illustratore della copertina",
   },
   "pl": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "W przypadku konfliktu należy dokonać wyboru. Proszę otworzyć daną książkę i wybrać opcję „Postęp czytania”.",
@@ -5405,6 +5415,8 @@ const Map<String, Map<String, String>> messages = {
     "Setup is complete. Enjoy your reading!":
         "Konfiguracja została zakończona. Miłej lektury!",
     "Welcome to Inkora": "Witamy w aplikacji Inkora",
+    "Visible metadata": "Widoczne metadane",
+    "Cover artist": "Ilustrator okładki",
   },
   "nl": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Bij een conflict dient u een keuze te maken. Open het betreffende boek en selecteer ‘Leesvoortgang’.",
@@ -6314,6 +6326,8 @@ const Map<String, Map<String, String>> messages = {
     "Setup is complete. Enjoy your reading!":
         "De configuratie is voltooid. Veel leesplezier!",
     "Welcome to Inkora": "Welkom bij Inkora",
+    "Visible metadata": "Zichtbare metagegevens",
+    "Cover artist": "Omslagillustrator",
   },
   "pt": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Um conflito requer a sua escolha. Abra o livro afetado e selecione «Progresso de leitura».",
@@ -7216,6 +7230,8 @@ const Map<String, Map<String, String>> messages = {
     "Setup is complete. Enjoy your reading!":
         "A configuração está concluída. Boas leituras!",
     "Welcome to Inkora": "Bem-vindo ao Inkora",
+    "Visible metadata": "Metadados visíveis",
+    "Cover artist": "Ilustrador da capa",
   },
   "ro": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Un conflict necesită alegerea dvs. Deschideți cartea afectată și selectați „Progresul lecturii”.",
@@ -8117,6 +8133,8 @@ const Map<String, Map<String, String>> messages = {
     "Setup is complete. Enjoy your reading!":
         "Configurarea este finalizată. Lectură plăcută!",
     "Welcome to Inkora": "Bine ați venit la Inkora",
+    "Visible metadata": "Metadate vizibile",
+    "Cover artist": "Ilustrator de copertă",
   },
   "el": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Μια διένεξη απαιτεί την επιλογή σας. Ανοίξτε το σχετικό βιβλίο και επιλέξτε «Πρόοδος ανάγνωσης».",
@@ -9033,6 +9051,8 @@ const Map<String, Map<String, String>> messages = {
     "Setup is complete. Enjoy your reading!":
         "Η ρύθμιση έχει ολοκληρωθεί. Καλή ανάγνωση!",
     "Welcome to Inkora": "Καλώς ήρθατε στο Inkora",
+    "Visible metadata": "Ορατά μεταδεδομένα",
+    "Cover artist": "Καλλιτέχνης εξωφύλλου",
   },
   "hu": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Egy ütközés esetén döntést kell hoznia. Nyissa meg az érintett könyvet, és válassza az Olvasási előrehaladás menüpontot.",
@@ -9928,6 +9948,8 @@ const Map<String, Map<String, String>> messages = {
     "Setup is complete. Enjoy your reading!":
         "A beállítás befejeződött. Jó olvasást!",
     "Welcome to Inkora": "Üdvözöljük az Inkora alkalmazásban",
+    "Visible metadata": "Látható metaadatok",
+    "Cover artist": "Borítórajzoló",
   },
   "cs": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Konflikt vyžaduje vaše rozhodnutí. Otevřete příslušnou knihu a vyberte „Průběh čtení“.",
@@ -10816,5 +10838,7 @@ const Map<String, Map<String, String>> messages = {
     "Setup is complete. Enjoy your reading!":
         "Nastavení je dokončeno. Příjemné čtení!",
     "Welcome to Inkora": "Vítejte v aplikaci Inkora",
+    "Visible metadata": "Viditelná metadata",
+    "Cover artist": "Ilustrátor obálky",
   },
 };

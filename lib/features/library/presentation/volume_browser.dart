@@ -1,3 +1,5 @@
+import '../../../app/widgets/ink_divider.dart';
+
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -687,15 +689,10 @@ class VolumeRow extends ConsumerWidget with _VolumeState {
         ? _menuActions(context, ref, seriesId, volume, progress, index, actions)
         : const <_MenuAction>[];
     Offset? pressed;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: focused
-            ? theme.colorScheme.primary.withValues(alpha: .08)
-            : null,
-        border: Border(
-          bottom: BorderSide(color: theme.dividerColor.withValues(alpha: .25)),
-        ),
-      ),
+    return InkBottomDivider(
+      backgroundColor: focused
+          ? theme.colorScheme.primary.withValues(alpha: .08)
+          : null,
       child: Row(
         children: [
           Expanded(

@@ -1,17 +1,17 @@
-import '../../../app/l10n/app_strings.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../settings/application/ui_preferences_provider.dart';
-
 import '../../../app/icons/inkora_icons.dart';
+import '../../../app/l10n/app_strings.dart';
 import '../../../app/theme/inkora_theme.dart';
 import '../../../app/widgets/inkora_widgets.dart';
+import '../../settings/application/ui_preferences_provider.dart';
+import '../../settings/domain/metadata_visibility.dart';
 import '../domain/catalogue.dart';
 import '../domain/catalogue_metadata.dart';
-import 'catalogue_presentation.dart';
 import 'catalogue_link_button.dart';
+import 'catalogue_presentation.dart';
+import 'visible_metadata.dart';
 
 /// Lighter hero of library, collection and reading-list pages: kind icon,
 /// title, member count and synopsis, matching the series hero layout.
@@ -164,11 +164,14 @@ class CatalogueMetadataSection extends ConsumerWidget {
     super.key,
     required this.metadata,
     this.complete = false,
+    this.heading,
   });
   final CatalogueMetadata metadata;
   final bool complete;
+  final String? heading;
 
-  bool _hasDetails(bool hideTags) =>
+  bool _hasDetails(CatalogueMetadata metadata) =>
+      metadata.status.isNotEmpty ||
       metadata.authors.isNotEmpty ||
       metadata.publisher.isNotEmpty ||
       metadata.language.isNotEmpty ||
@@ -176,16 +179,22 @@ class CatalogueMetadataSection extends ConsumerWidget {
       metadata.releaseDate.isNotEmpty ||
       metadata.isbn.isNotEmpty ||
       metadata.genres.isNotEmpty ||
-      (!hideTags && metadata.tags.isNotEmpty);
+      metadata.tags.isNotEmpty ||
+      metadata.mediaType.isNotEmpty ||
+      metadata.readingDirection.isNotEmpty ||
+      metadata.ageRating != null;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final hideTags = ref.watch(
+    final visibility = ref.watch(
       uiPreferencesProvider.select(
-        (value) => value.asData?.value.hideTags ?? true,
+        (value) =>
+            value.asData?.value.metadataVisibility ??
+            const MetadataVisibility().withVisible(MetadataField.tags, false),
       ),
     );
-    if (!_hasDetails(hideTags)) return const SizedBox.shrink();
+    final metadata = visibleMetadata(this.metadata, visibility);
+    if (!_hasDetails(metadata)) return const SizedBox.shrink();
     final roles = <String, List<String>>{};
     for (final author in metadata.authors) {
       roles.putIfAbsent(author.role, () => []).add(author.name);
@@ -193,6 +202,11 @@ class CatalogueMetadataSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (heading != null) ...[
+          const SizedBox(height: InkSpace.lg),
+          LText(heading!, style: Theme.of(context).textTheme.sectionTitle),
+          const SizedBox(height: InkSpace.sm),
+        ],
         if (metadata.genres.isNotEmpty)
           _MetadataRow(
             label: context.tr("Genres"),
@@ -200,7 +214,7 @@ class CatalogueMetadataSection extends ConsumerWidget {
                 ? metadata.genres
                 : metadata.genres.take(6).toList(),
           ),
-        if (!hideTags && metadata.tags.isNotEmpty)
+        if (metadata.tags.isNotEmpty)
           _MetadataRow(
             label: context.tr("Tags"),
             values: complete ? metadata.tags : metadata.tags.take(6).toList(),
@@ -228,6 +242,26 @@ class CatalogueMetadataSection extends ConsumerWidget {
             ),
           if (metadata.isbn.isNotEmpty)
             _MetadataRow(label: context.tr("ISBN"), values: [metadata.isbn]),
+          if (metadata.mediaType.isNotEmpty)
+            _MetadataRow(
+              label: context.tr('Format'),
+              values: [catalogueFormatLabel(metadata.mediaType)],
+            ),
+          if (metadata.readingDirection.isNotEmpty)
+            _MetadataRow(
+              label: context.tr('Direction'),
+              values: [context.tr(humanizeMetadata(metadata.readingDirection))],
+            ),
+          if (metadata.ageRating != null)
+            _MetadataRow(
+              label: context.tr('Age rating'),
+              values: ['${metadata.ageRating}'],
+            ),
+          if (metadata.status.isNotEmpty)
+            _MetadataRow(
+              label: context.tr('Publication status'),
+              values: [context.tr(humanizeMetadata(metadata.status))],
+            ),
           if (metadata.links.isNotEmpty) ...[
             const SizedBox(height: 8),
             LText('Links', style: Theme.of(context).textTheme.titleSmall),
@@ -284,8 +318,7 @@ class CatalogueMetadataSection extends ConsumerWidget {
             ),
             icon: const Icon(InkIcons.info, size: 18),
             label: LText(
-              !hideTags &&
-                      (metadata.genres.length > 6 || metadata.tags.length > 6)
+              (metadata.genres.length > 6 || metadata.tags.length > 6)
                   ? 'All tags and publication details'
                   : 'Publication details',
             ),
@@ -342,3 +375,16 @@ String humanizeMetadata(String value) {
       ? words
       : '${words[0].toUpperCase()}${words.substring(1)}';
 }
+
+String catalogueFormatLabel(String value) =>
+    switch (value.split(';').first.trim().toLowerCase()) {
+      'application/epub+zip' => 'EPUB',
+      'application/pdf' => 'PDF',
+      'application/zip' ||
+      'application/x-cbz' ||
+      'application/vnd.comicbook+zip' => 'CBZ',
+      'application/x-rar-compressed' ||
+      'application/x-cbr' ||
+      'application/vnd.comicbook-rar' => 'CBR',
+      _ => value,
+    };

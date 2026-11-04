@@ -7,20 +7,22 @@ import 'package:go_router/go_router.dart';
 import '../../../app/icons/inkora_icons.dart';
 import '../../../app/l10n/app_strings.dart';
 import '../../../app/theme/inkora_theme.dart';
+import '../../settings/application/ui_preferences_provider.dart';
+import '../../settings/domain/metadata_visibility.dart';
 import '../application/catalogue_providers.dart';
 import '../application/cover_providers.dart';
 import '../domain/catalogue.dart';
 import '../domain/catalogue_metadata.dart';
 import '../domain/resume_entry.dart';
 import '../domain/volume_progress.dart';
-import '../../settings/application/ui_preferences_provider.dart';
 import 'book_cover.dart';
 import 'catalogue_detail_widgets.dart';
 import 'catalogue_link_button.dart';
 import 'catalogue_presentation.dart';
 import 'progress_format.dart';
+import 'visible_metadata.dart';
 
-/// Source key of a Komga series status. The status chip is always shown.
+/// Source key of a Komga series status, when its metadata is visible.
 String seriesStatusLabel(String status) => switch (status.toUpperCase()) {
   'ENDED' => 'Ended',
   'ONGOING' => 'Ongoing',
@@ -138,8 +140,8 @@ class SeriesBackdrop extends ConsumerWidget {
   }
 }
 
-/// Cover, title, credits and exactly two chips: book count and status.
-class SeriesHero extends StatelessWidget {
+/// Cover/title plus the enabled credits, book count and publication status.
+class SeriesHero extends ConsumerWidget {
   const SeriesHero({
     super.key,
     required this.item,
@@ -157,9 +159,16 @@ class SeriesHero extends StatelessWidget {
   final bool showBackdrop;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final metadata = item.metadata;
+    final visibility = ref.watch(
+      uiPreferencesProvider.select(
+        (value) =>
+            value.asData?.value.metadataVisibility ??
+            const MetadataVisibility().withVisible(MetadataField.tags, false),
+      ),
+    );
+    final metadata = visibleMetadata(item.metadata, visibility);
     final authors = metadata.authors.map((author) => author.name).toSet();
     final colors = InkoraColors.of(context);
     final information = Column(
@@ -193,16 +202,18 @@ class SeriesHero extends StatelessWidget {
           spacing: InkSpace.xs + 2,
           runSpacing: InkSpace.xs + 2,
           children: [
-            _HeroChip(
-              key: const Key('series-count'),
-              label: AppStrings.of(context).quantity(volumeCount, 'book'),
-            ),
-            _HeroChip(
-              key: const Key('series-status'),
-              label: context.tr(seriesStatusLabel(metadata.status)),
-              color: colors.success,
-              dot: true,
-            ),
+            if (visibility.shows(MetadataField.books))
+              _HeroChip(
+                key: const Key('series-count'),
+                label: AppStrings.of(context).quantity(volumeCount, 'book'),
+              ),
+            if (visibility.shows(MetadataField.status))
+              _HeroChip(
+                key: const Key('series-status'),
+                label: context.tr(seriesStatusLabel(metadata.status)),
+                color: colors.success,
+                dot: true,
+              ),
           ],
         ),
       ],
@@ -398,12 +409,14 @@ class SeriesAbout extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final hideTags = ref.watch(
+    final visibility = ref.watch(
       uiPreferencesProvider.select(
-        (value) => value.asData?.value.hideTags ?? true,
+        (value) =>
+            value.asData?.value.metadataVisibility ??
+            const MetadataVisibility().withVisible(MetadataField.tags, false),
       ),
     );
-    final metadata = item.metadata;
+    final metadata = visibleMetadata(item.metadata, visibility);
     final theme = Theme.of(context);
     Widget section(String label) => Padding(
       padding: const EdgeInsets.only(top: InkSpace.xl, bottom: InkSpace.sm),
@@ -415,7 +428,7 @@ class SeriesAbout extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (item.summary.isNotEmpty)
+        if (visibility.shows(MetadataField.synopsis) && item.summary.isNotEmpty)
           SeriesSynopsis(key: ValueKey(item.id), summary: item.summary),
         if (metadata.genres.isNotEmpty) ...[
           section('Genres'),
@@ -457,7 +470,7 @@ class SeriesAbout extends ConsumerWidget {
             ],
           ),
         ],
-        if (!hideTags && metadata.tags.isNotEmpty) ...[
+        if (metadata.tags.isNotEmpty) ...[
           section('Tags'),
           Wrap(
             spacing: InkSpace.xs + 2,
@@ -465,8 +478,10 @@ class SeriesAbout extends ConsumerWidget {
             children: [for (final tag in metadata.tags) _HeroChip(label: tag)],
           ),
         ],
-        section('Publication details'),
-        SeriesFacts(metadata: metadata),
+        if (SeriesFacts.hasFacts(metadata)) ...[
+          section('Publication details'),
+          SeriesFacts(metadata: metadata),
+        ],
         if (metadata.links.isNotEmpty) ...[
           section('Links'),
           CatalogueLinks(links: metadata.links),
@@ -609,6 +624,15 @@ class _SeriesSynopsisState extends State<SeriesSynopsis> {
 class SeriesFacts extends StatelessWidget {
   const SeriesFacts({super.key, required this.metadata});
   final CatalogueMetadata metadata;
+  static bool hasFacts(CatalogueMetadata metadata) =>
+      metadata.authors.isNotEmpty ||
+      metadata.publisher.isNotEmpty ||
+      metadata.language.isNotEmpty ||
+      metadata.releaseDate.isNotEmpty ||
+      metadata.isbn.isNotEmpty ||
+      metadata.mediaType.isNotEmpty ||
+      metadata.readingDirection.isNotEmpty ||
+      metadata.ageRating != null;
 
   @override
   Widget build(BuildContext context) {
@@ -629,6 +653,12 @@ class SeriesFacts extends StatelessWidget {
         ('Release date', metadata.releaseDate, false),
       if (metadata.language.isNotEmpty) ('Language', metadata.language, false),
       if (metadata.isbn.isNotEmpty) ('ISBN', metadata.isbn, false),
+      if (metadata.mediaType.isNotEmpty)
+        ('Format', catalogueFormatLabel(metadata.mediaType), false),
+      if (metadata.readingDirection.isNotEmpty)
+        ('Direction', humanizeMetadata(metadata.readingDirection), true),
+      if (metadata.ageRating != null)
+        ('Age rating', '${metadata.ageRating}', false),
     ];
     final theme = Theme.of(context);
     final labelStyle = theme.textTheme.bodySmall?.copyWith(

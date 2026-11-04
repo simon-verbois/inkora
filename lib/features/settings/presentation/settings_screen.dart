@@ -1,3 +1,4 @@
+import '../domain/metadata_visibility.dart';
 import '../../../app/widgets/ink_settings_section.dart';
 import '../../../app/widgets/ink_slider.dart';
 import '../../../app/widgets/ink_screen_header.dart';
@@ -68,7 +69,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (section == null) {
       return Scaffold(
         extendBodyBehindAppBar: true,
-        appBar: const InkScreenHeader(title: LText('Settings')),
+        appBar: const InkScreenHeader(
+          title: LText('Settings'),
+          fadeBehind: true,
+        ),
         body: InkContent(
           maxWidth: InkoraLayout.maxSettingsWidth,
           child: CustomScrollView(
@@ -81,7 +85,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(
                     16,
-                    InkScreenHeader.extent + 16,
+                    InkScreenHeader.extent + InkSpace.xs,
                     16,
                     4,
                   ),
@@ -286,23 +290,50 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   current.copyWith(homeLandscapeColumns: value),
                             ),
                     ),
-                    const SizedBox(height: 16),
-                    if (!widget.embedded)
-                      SwitchListTile.adaptive(
-                        key: const Key('hide-tags'),
-                        contentPadding: EdgeInsets.zero,
-                        title: const LText('Hide tags'),
-                        value: preferences.hideTags,
-                        onChanged: _saving || !data.hasValue
-                            ? null
-                            : (value) => _save(
-                                (current) => current.copyWith(hideTags: value),
-                              ),
-                      ),
                   ],
                 ),
               ),
             ],
+            if (section == 'appearance' && !widget.embedded)
+              InkSettingsSection(
+                title: 'Visible metadata',
+                child: Column(
+                  children: [
+                    for (final field in MetadataField.values)
+                      Padding(
+                        padding: EdgeInsetsDirectional.only(
+                          start: field.isCredit ? 16 : 0,
+                        ),
+                        child: SwitchListTile.adaptive(
+                          key: Key(
+                            field == MetadataField.tags
+                                ? 'hide-tags'
+                                : 'metadata-${field.name}',
+                          ),
+                          contentPadding: EdgeInsets.zero,
+                          title: LText(field.label),
+                          value: preferences.metadataVisibility.shows(field),
+                          onChanged:
+                              _saving ||
+                                  !data.hasValue ||
+                                  (field.isCredit &&
+                                      !preferences.metadataVisibility.shows(
+                                        MetadataField.authors,
+                                      ))
+                              ? null
+                              : (visible) => _save(
+                                  (current) => field == MetadataField.tags
+                                      ? current.copyWith(hideTags: !visible)
+                                      : current.copyWith(
+                                          metadata: current.metadata
+                                              .withVisible(field, visible),
+                                        ),
+                                ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             if (section == 'gestures')
               GestureSettings(showTitle: widget.embedded && !wide),
             if (section == 'language')

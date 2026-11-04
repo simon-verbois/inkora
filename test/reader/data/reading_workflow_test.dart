@@ -14,6 +14,7 @@ import 'package:inkora/features/library/domain/catalogue_filters.dart';
 import 'package:inkora/features/settings/data/settings_transfer.dart';
 import 'package:inkora/features/settings/data/ui_preferences_store.dart';
 import 'package:inkora/features/settings/domain/ui_preferences.dart';
+import 'package:inkora/features/settings/domain/metadata_visibility.dart';
 import 'package:inkora/reader/data/reader_store.dart';
 import 'package:inkora/reader/data/raster_bookmarks.dart';
 import 'package:inkora/reader/data/ebook_bookmarks.dart';
@@ -98,6 +99,8 @@ void main() {
         appearance: AppAppearance.ocean,
         homePortraitColumns: 2,
         homeLandscapeColumns: 5,
+        hideTags: false,
+        metadata: MetadataVisibility(hiddenMask: 17),
         setupCompleted: true,
         setupStep: 4,
       ),
@@ -130,6 +133,7 @@ void main() {
     final value = await transfer.inspect(bytes);
     expect((value['ui'] as Map)['homePortraitColumns'], 2);
     expect((value['ui'] as Map)['homeLandscapeColumns'], 5);
+    expect((value['ui'] as Map)['hiddenMetadata'], ['language', 'writers']);
     expect((value['ui'] as Map).containsKey('panelOpacity'), isFalse);
     expect(value['bookmarks'], hasLength(2));
     expect(utf8.decode(bytes), isNot(contains('Private')));
@@ -143,6 +147,10 @@ void main() {
     expect((await ui.watch().first).appearance, AppAppearance.ocean);
     expect((await ui.watch().first).homePortraitColumns, 2);
     expect((await ui.watch().first).homeLandscapeColumns, 5);
+    final metadata = (await ui.watch().first).metadataVisibility;
+    expect(metadata.shows(MetadataField.writers), isFalse);
+    expect(metadata.shows(MetadataField.language), isFalse);
+    expect(metadata.shows(MetadataField.tags), isTrue);
     expect((await ui.watch().first).setupCompleted, isFalse);
     await transfer.apply(value);
     expect(await RasterBookmarks(db, 'a', 'book').read(), hasLength(1));

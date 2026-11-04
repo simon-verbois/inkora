@@ -1,3 +1,5 @@
+import '../../../app/widgets/ink_divider.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -217,7 +219,7 @@ class _SettingsWorkspaceState extends State<SettingsWorkspace> {
               ),
             ),
             if (wide)
-              VerticalDivider(
+              InkVerticalDivider(
                 key: const Key('settings-sidebar-divider'),
                 width: 16,
                 thickness: 1,

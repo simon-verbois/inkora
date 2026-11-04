@@ -21,11 +21,15 @@ class InkScreenHeader extends StatelessWidget implements PreferredSizeWidget {
     this.leading,
     this.automaticallyImplyLeading = true,
     this.outlined = true,
+    this.fadeBehind = false,
   });
 
   /// Use `LText` for application copy and `Text` for server-owned names.
   final Widget title;
   final bool outlined;
+
+  /// Mask scrolled content above the bar, fading only behind its fill.
+  final bool fadeBehind;
   final List<Widget>? actions;
   final Widget? leading;
 
@@ -39,9 +43,8 @@ class InkScreenHeader extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(extent);
 
   @override
-  Widget build(BuildContext context) => SafeArea(
-    bottom: false,
-    child: Padding(
+  Widget build(BuildContext context) {
+    final bar = Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: InkSpace.md,
         vertical: InkSpace.sm,
@@ -53,8 +56,6 @@ class InkScreenHeader extends StatelessWidget implements PreferredSizeWidget {
           title: title,
           actions: actions,
           automaticallyImplyLeading: automaticallyImplyLeading,
-          // A settings root is first in its local Navigator, but still has
-          // Home beneath its enclosing workspace route.
           leading:
               leading ??
               (automaticallyImplyLeading &&
@@ -64,8 +65,50 @@ class InkScreenHeader extends StatelessWidget implements PreferredSizeWidget {
           backgroundColor: Colors.transparent,
         ),
       ),
-    ),
-  );
+    );
+    final canvas = Theme.of(context).scaffoldBackgroundColor;
+    final safeBar = SafeArea(bottom: false, child: bar);
+    return !fadeBehind
+        ? safeBar
+        : Stack(
+            children: [
+              Positioned.fill(
+                bottom: InkSpace.sm,
+                child: IgnorePointer(
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        height: MediaQuery.paddingOf(context).top + InkSpace.sm,
+                        child: ColoredBox(
+                          color: canvas,
+                          child: const SizedBox.expand(),
+                        ),
+                      ),
+                      Expanded(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              stops: const [0, .5, 1],
+                              colors: [
+                                canvas,
+                                canvas.withValues(alpha: .94),
+                                canvas.withValues(alpha: 0),
+                              ],
+                            ),
+                          ),
+                          child: const SizedBox.expand(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              safeBar,
+            ],
+          );
+  }
 }
 
 /// Chooses which scroll view drives a header state.
@@ -180,28 +223,8 @@ class InkHomeHeader extends StatelessWidget {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Positioned.fill(
-                        bottom: InkSpace.sm,
-                        child: IgnorePointer(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                stops: const [0, .5, 1],
-                                colors: [
-                                  Theme.of(context).scaffoldBackgroundColor,
-                                  Theme.of(context).scaffoldBackgroundColor
-                                      .withValues(alpha: .94),
-                                  Theme.of(context).scaffoldBackgroundColor
-                                      .withValues(alpha: 0),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
                       InkScreenHeader(
+                        fadeBehind: true,
                         automaticallyImplyLeading: false,
                         title: const FittedBox(
                           fit: BoxFit.scaleDown,

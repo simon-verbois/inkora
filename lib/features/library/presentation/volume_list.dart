@@ -1,3 +1,5 @@
+import '../../../app/widgets/ink_divider.dart';
+
 import 'package:flutter/material.dart';
 
 /// Lazy name-only rows. Wide windows show up to three volumes per row.
@@ -52,7 +54,7 @@ class _VolumeListState extends State<VolumeList> {
         : 1;
     return SliverList.separated(
       itemCount: (itemCount / columns).ceil(),
-      separatorBuilder: (_, _) => const Divider(),
+      separatorBuilder: (_, _) => const InkDivider(),
       itemBuilder: (context, row) => columns == 1
           ? itemBuilder(context, row)
           : Row(
@@ -64,7 +66,7 @@ class _VolumeListState extends State<VolumeList> {
                       width: 24,
                       height: 56,
                       child: row * columns + column < itemCount
-                          ? VerticalDivider(
+                          ? InkVerticalDivider(
                               thickness: 1,
                               indent: 8,
                               endIndent: 8,

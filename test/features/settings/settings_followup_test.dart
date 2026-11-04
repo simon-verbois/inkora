@@ -7,6 +7,7 @@ import 'package:inkora/features/connection/domain/session.dart';
 import 'package:inkora/app/router.dart';
 import 'package:inkora/app/l10n/app_strings.dart';
 import 'package:inkora/app/widgets/ink_screen_header.dart';
+import 'package:inkora/app/widgets/ink_divider.dart';
 import 'package:inkora/app/widgets/ink_settings_section.dart';
 import 'package:inkora/app/widgets/inkora_widgets.dart';
 import 'package:inkora/features/library/presentation/catalogue_grid.dart';
@@ -53,6 +54,8 @@ void main() {
       final stableRow = tester.widget(row);
       final header = find.byType(InkScreenHeader);
       final headerBounds = tester.getRect(header);
+      expect(tester.widget<InkScreenHeader>(header).fadeBehind, isTrue);
+      expect(tester.getTopLeft(search).dy, closeTo(headerBounds.bottom + 4, 1));
       final rowWidget = tester.widget<InkSettingsRow>(row);
       expect(rowWidget.trailing, isNull);
       final scrollable = find
@@ -81,15 +84,12 @@ void main() {
       expect(position.pixels, greaterThan(0));
       expect(position.pixels, lessThan(bottom));
       expect(search.hitTestable(), findsOneWidget);
-      expect(
-        tester.getTopLeft(search).dy,
-        greaterThanOrEqualTo(headerBounds.bottom),
-      );
+      expect(tester.getTopLeft(search).dy, closeTo(headerBounds.bottom + 4, 1));
       expect(tester.getRect(header), headerBounds);
       await captureOnboarding(
         tester,
         find.byKey(capture),
-        'settings-polish-search-${size.width.toInt()}-${scale.toInt()}',
+        'surface-followup-search-${size.width.toInt()}-${scale.toInt()}',
       );
       await tester.enterText(search, AppStrings('fr').text('Language'));
       await tester.pumpAndSettle();
@@ -278,7 +278,7 @@ void main() {
           );
           expect(label.style, InkSettingsHeading.titleStyleOf(element));
           expect(
-            find.descendant(of: heading, matching: find.byType(Divider)),
+            find.descendant(of: heading, matching: find.byType(InkDivider)),
             widget.first ? findsNothing : findsOneWidget,
           );
         }

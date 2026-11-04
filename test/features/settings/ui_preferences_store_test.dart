@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/core/storage/app_database.dart';
 import 'package:inkora/features/settings/data/ui_preferences_store.dart';
 import 'package:inkora/features/settings/domain/ui_preferences.dart';
+import 'package:inkora/features/settings/domain/metadata_visibility.dart';
 import 'package:inkora/core/images/image_enhancement.dart';
 
 void main() {
@@ -193,6 +194,7 @@ void main() {
         homePortraitColumns: 4,
         homeLandscapeColumns: 7,
         catalogueListView: true,
+        metadata: MetadataVisibility(hiddenMask: 17),
         textScale: 1.3,
         reduceMotion: true,
         floatingNavigation: false,
@@ -207,6 +209,11 @@ void main() {
       expect(restored.homePortraitColumns, 4);
       expect(restored.homeLandscapeColumns, 7);
       expect(restored.catalogueListView, isTrue);
+      expect(restored.metadataVisibility.shows(MetadataField.writers), isFalse);
+      expect(
+        restored.metadataVisibility.shows(MetadataField.language),
+        isFalse,
+      );
       expect(restored.textScale, 1.3);
       expect(restored.reduceMotion, isTrue);
       expect(restored.floatingNavigation, isFalse);

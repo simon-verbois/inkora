@@ -58,7 +58,7 @@ void registerReaderSheetGestureTests() {
         var scrolls = 0;
         var sliderValue = .5;
         var sliderChanges = 0;
-        showInkSheet<void>(
+        void openPreferences() => showInkSheet<void>(
           context: context,
           title: 'Reading preferences',
           heightFactor: .65,
@@ -85,6 +85,7 @@ void registerReaderSheetGestureTests() {
             ),
           ),
         );
+        openPreferences();
         await tester.pumpAndSettle();
         final panel = find.byKey(const Key('ink-sheet-surface'));
         final original = tester.getRect(panel);
@@ -100,20 +101,26 @@ void registerReaderSheetGestureTests() {
           1200,
         );
         await tester.pumpAndSettle();
-        expect(tester.getRect(panel), original);
+        expect(panel, findsNothing);
+        openPreferences();
+        await tester.pumpAndSettle();
         await tester.fling(
           find.text('Reading preferences'),
           Offset(0, size.height * .6),
           1500,
         );
         await tester.pumpAndSettle();
-        expect(tester.getRect(panel), original);
+        expect(panel, findsNothing);
+        openPreferences();
+        await tester.pumpAndSettle();
         await tester.fling(find.byType(ListView), const Offset(0, -220), 1200);
         await tester.pumpAndSettle();
         expect(scrolls, greaterThan(0));
         await tester.fling(find.byType(ListView), const Offset(0, 800), 1500);
         await tester.pumpAndSettle();
-        expect(tester.getRect(panel), original);
+        expect(panel, findsNothing);
+        openPreferences();
+        await tester.pumpAndSettle();
 
         final handle = readerSheetHandle(tester);
         expect(tester.getSize(handle).width, greaterThanOrEqualTo(48));

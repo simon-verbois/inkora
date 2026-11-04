@@ -7,6 +7,8 @@ import '../../../app/theme/inkora_theme.dart';
 import '../../../app/widgets/ink_screen_header.dart';
 import '../../../app/widgets/inkora_widgets.dart';
 import '../../../offline/presentation/download_book_action.dart';
+import '../../settings/application/ui_preferences_provider.dart';
+import '../../settings/domain/metadata_visibility.dart';
 import '../application/catalogue_providers.dart';
 import '../domain/catalogue.dart';
 import '../domain/catalogue_filters.dart';
@@ -14,6 +16,7 @@ import 'book_cover.dart';
 import 'catalogue_detail_widgets.dart';
 import 'catalogue_presentation.dart';
 import 'series_header.dart';
+import 'visible_metadata.dart';
 
 /// Individual book facts use the same hero, Back and metadata vocabulary as
 /// series details. Reading is an explicit action and retains this page below it.
@@ -72,19 +75,25 @@ class BookDetailScreen extends ConsumerWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  if (item.summary.isNotEmpty)
+                                  if ((ref.watch(
+                                        uiPreferencesProvider.select(
+                                          (value) =>
+                                              value
+                                                  .asData
+                                                  ?.value
+                                                  .metadataVisibility
+                                                  .shows(
+                                                    MetadataField.synopsis,
+                                                  ) ??
+                                              true,
+                                        ),
+                                      )) &&
+                                      item.summary.isNotEmpty)
                                     SeriesSynopsis(summary: item.summary),
-                                  const SizedBox(height: InkSpace.lg),
-                                  LText(
-                                    'Publication details',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .sectionTitle,
-                                  ),
-                                  const SizedBox(height: InkSpace.sm),
                                   CatalogueMetadataSection(
                                     metadata: item.metadata,
                                     complete: true,
+                                    heading: 'Publication details',
                                   ),
                                 ],
                               ),
@@ -169,7 +178,17 @@ class BookDetailHero extends ConsumerWidget {
       ),
     );
     final theme = Theme.of(context);
-    final authors = item.metadata.authors.map((author) => author.name).toSet();
+    final visibility = ref.watch(
+      uiPreferencesProvider.select(
+        (value) =>
+            value.asData?.value.metadataVisibility ??
+            const MetadataVisibility().withVisible(MetadataField.tags, false),
+      ),
+    );
+    final authors = visibleMetadata(
+      item.metadata,
+      visibility,
+    ).authors.map((author) => author.name).toSet();
     final information = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,3 +1,5 @@
+import '../../app/widgets/ink_divider.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -159,7 +161,7 @@ class _DownloadQueueCardState extends ConsumerState<DownloadQueueCard> {
             ),
             if (_expanded)
               for (final id in others) ...[
-                const Divider(height: InkSpace.lg),
+                const InkDivider(height: InkSpace.lg),
                 _TransferRow(
                   key: ValueKey('transfer-$id'),
                   id: id,

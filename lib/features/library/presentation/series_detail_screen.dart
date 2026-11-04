@@ -1,3 +1,5 @@
+import '../../../app/widgets/ink_divider.dart';
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -781,7 +783,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
             ],
           ),
         ),
-        const VerticalDivider(key: Key('series-pane-divider'), width: 1),
+        const InkVerticalDivider(key: Key('series-pane-divider'), width: 1),
         Expanded(
           // The left pane drives the floating header (title and bar state);
           // the volume pane's scroll notifications stop here.
@@ -875,27 +877,30 @@ class _TabStrip extends StatelessWidget {
       alignment: AlignmentDirectional.bottomStart,
       // Fixed tabs keep both labels on screen at any text size; long labels
       // wrap to a second line instead of scrolling out of view.
-      child: TabBar(
-        key: const Key('series-tabs'),
-        controller: controller,
-        padding: const EdgeInsets.symmetric(horizontal: InkSpace.sm),
-        onTap: onTap,
-        tabs: [
-          for (final (key, label) in [
-            ('series-tab-about', context.tr('About')),
-            ('series-tab-volumes', context.tr('Volumes ({0})', [volumes])),
-          ])
-            Tab(
-              key: Key(key),
-              height: height,
-              child: Text(
-                label,
-                maxLines: 2,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
+      child: InkBottomDivider(
+        child: TabBar(
+          dividerColor: Colors.transparent,
+          key: const Key('series-tabs'),
+          controller: controller,
+          padding: const EdgeInsets.symmetric(horizontal: InkSpace.sm),
+          onTap: onTap,
+          tabs: [
+            for (final (key, label) in [
+              ('series-tab-about', context.tr('About')),
+              ('series-tab-volumes', context.tr('Volumes ({0})', [volumes])),
+            ])
+              Tab(
+                key: Key(key),
+                height: height,
+                child: Text(
+                  label,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     ),
   );

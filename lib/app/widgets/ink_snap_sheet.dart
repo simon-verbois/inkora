@@ -22,8 +22,8 @@ class InkSheetViewport extends InheritedWidget {
       scrollController != oldWidget.scrollController;
 }
 
-/// Full-width modal with handle resizing and optional expansion-first body
-/// scrolling. Only this frame and its handle follow drag ticks;
+/// Full-width modal with handle resizing and expansion-first body scrolling.
+/// Only this frame and its handle follow drag ticks;
 /// the supplied content remains mounted through snapping and window resizing.
 class InkSnapSheet extends StatefulWidget {
   const InkSnapSheet({
@@ -56,36 +56,67 @@ class _InkSnapSheetState extends State<InkSnapSheet>
   bool _closing = false;
   bool _dragging = false;
   bool _bodyResizing = false;
+  double _bodyDragValue = .6;
   late final _bodyScroll = _SheetScrollController(
     resize: _resizeFromBody,
     settle: _settleFromBody,
   );
 
   double _resizeFromBody(double delta) {
-    if (!mounted || _closing || delta >= 0 || _extent.value >= 1) return delta;
-    _bodyResizing = true;
-    _extent.stop();
-    final consumed = (-delta).clamp(0.0, (1 - _extent.value) * _height);
-    _extent.value += consumed / _height;
-    return delta + consumed;
+    if (!mounted ||
+        _closing ||
+        delta == 0 ||
+        (delta < 0 && _extent.value >= 1)) {
+      return delta;
+    }
+    if (!_bodyResizing) {
+      _bodyDragValue = _extent.value;
+      _bodyResizing = true;
+      _extent.stop();
+    }
+    final consumed = delta < 0
+        ? (-delta).clamp(0.0, (1 - _bodyDragValue) * _height)
+        : delta;
+    _bodyDragValue += delta < 0 ? consumed / _height : -consumed / _height;
+    _extent.value = _bodyDragValue.clamp(_minimum, 1);
+    return delta < 0 ? delta + consumed : 0;
   }
 
   bool _settleFromBody(double velocity) {
     if (!_bodyResizing || !mounted) return false;
     _bodyResizing = false;
-    if (_extent.value >= .999) {
+    if (velocity < -700) {
+      _snap(0);
+      return true;
+    }
+    if (_extent.value >= .999 && velocity >= 0) {
       _settled = 1;
       return false;
     }
-    final projected = (_extent.value + velocity / _height * .18).clamp(
-      _minimum,
+    final projected = (_bodyDragValue + velocity / _height * .18).clamp(
+      0.0,
       1.0,
     );
-    final target = _stops.reduce(
-      (a, b) => (a - projected).abs() <= (b - projected).abs() ? a : b,
-    );
+    final target = [
+      0.0,
+      ..._stops,
+    ].reduce((a, b) => (a - projected).abs() <= (b - projected).abs() ? a : b);
     _snap(target, velocity: velocity / _height);
     return true;
+  }
+
+  bool _customScroll(ScrollNotification notification) {
+    if (notification.depth != 0 || notification.metrics.axis != Axis.vertical) {
+      return false;
+    }
+    if (notification is OverscrollNotification &&
+        notification.dragDetails != null &&
+        notification.overscroll < 0) {
+      _resizeFromBody(-notification.overscroll);
+    } else if (notification is ScrollEndNotification && _bodyResizing) {
+      _settleFromBody(-(notification.dragDetails?.primaryVelocity ?? 0));
+    }
+    return false;
   }
 
   double get _minimum =>
@@ -184,13 +215,19 @@ class _InkSnapSheetState extends State<InkSnapSheet>
           animation: _extent,
           child: InkSheetViewport(
             scrollController: _bodyScroll,
-            child: SafeArea(
-              top: false,
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 760),
-                  child: widget.child,
+            child: PrimaryScrollController(
+              controller: _bodyScroll,
+              child: NotificationListener<ScrollNotification>(
+                onNotification: _customScroll,
+                child: SafeArea(
+                  top: false,
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 760),
+                      child: widget.child,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -274,8 +311,9 @@ class _InkSnapSheetState extends State<InkSnapSheet>
   );
 }
 
-/// Opt-in scroll ownership: upward drag distance expands the sheet first.
-/// Existing custom scrollers and horizontal sliders retain their own owners.
+/// Primary scroll ownership: upward drags expand before scrolling, while downward
+/// drags return to the start before collapsing. Custom scrollers and horizontal
+/// sliders retain their own owners.
 class _SheetScrollController extends ScrollController {
   _SheetScrollController({required this.resize, required this.settle});
   final double Function(double) resize;
@@ -287,7 +325,7 @@ class _SheetScrollController extends ScrollController {
     ScrollContext context,
     ScrollPosition? oldPosition,
   ) => _SheetScrollPosition(
-    physics: physics,
+    physics: AlwaysScrollableScrollPhysics(parent: physics),
     context: context,
     oldPosition: oldPosition,
     resize: resize,
@@ -307,7 +345,15 @@ class _SheetScrollPosition extends ScrollPositionWithSingleContext {
   final bool Function(double) settle;
 
   @override
-  void applyUserOffset(double delta) => super.applyUserOffset(resize(delta));
+  void applyUserOffset(double delta) {
+    if (delta > 0 && pixels > minScrollExtent) {
+      final scroll = delta.clamp(0.0, pixels - minScrollExtent);
+      super.applyUserOffset(scroll);
+      delta -= scroll;
+    }
+    final remainder = resize(delta);
+    if (remainder != 0) super.applyUserOffset(remainder);
+  }
 
   @override
   void goBallistic(double velocity) =>

@@ -1,3 +1,4 @@
+import '../../../app/widgets/ink_divider.dart';
 import '../../../app/icons/inkora_icons.dart';
 import '../../settings/application/ui_preferences_provider.dart';
 import '../../settings/domain/ui_preferences.dart';
@@ -190,8 +191,6 @@ class _ResumeSection extends ConsumerWidget {
             ),
           ),
         );
-        final divider = Theme.of(context).colorScheme.onSurface
-            .withValues(alpha: .22);
         return Column(
           children: [
             Padding(
@@ -212,21 +211,7 @@ class _ResumeSection extends ConsumerWidget {
             Padding(
               key: const Key('home-section-separator'),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: SizedBox(
-                height: 1,
-                width: double.infinity,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        divider.withValues(alpha: 0),
-                        divider,
-                        divider.withValues(alpha: 0),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+              child: const InkDivider(height: 1),
             ),
           ],
         );

@@ -1,3 +1,4 @@
+import 'metadata_visibility.dart';
 import '../../../reader/domain/gesture_zones.dart';
 import '../../../core/images/image_enhancement.dart';
 
@@ -37,6 +38,7 @@ final class UiPreferences {
     this.textScale = 1,
     this.reduceMotion = false,
     this.hideTags = true,
+    this.metadata = const MetadataVisibility(),
     this.floatingNavigation = true,
     this.locale,
     this.setupCompleted = false,
@@ -59,6 +61,9 @@ final class UiPreferences {
   final double textScale;
   final bool reduceMotion, setupCompleted;
   final bool hideTags;
+  final MetadataVisibility metadata;
+  MetadataVisibility get metadataVisibility =>
+      metadata.withVisible(MetadataField.tags, !hideTags);
   final bool floatingNavigation;
   final String? locale;
   final int setupStep;
@@ -75,6 +80,7 @@ final class UiPreferences {
     double? textScale,
     bool? reduceMotion,
     bool? hideTags,
+    MetadataVisibility? metadata,
     bool? floatingNavigation,
     String? locale,
     bool systemLocale = false,
@@ -92,6 +98,7 @@ final class UiPreferences {
     textScale: textScale ?? this.textScale,
     reduceMotion: reduceMotion ?? this.reduceMotion,
     hideTags: hideTags ?? this.hideTags,
+    metadata: metadata ?? this.metadata,
     floatingNavigation: floatingNavigation ?? this.floatingNavigation,
     locale: systemLocale ? null : locale ?? this.locale,
     setupCompleted: setupCompleted ?? this.setupCompleted,
@@ -110,6 +117,7 @@ final class UiPreferences {
     'textScale': textScale,
     'reduceMotion': reduceMotion,
     'hideTags': hideTags,
+    'hiddenMetadata': metadata.toJson(),
     'floatingNavigation': floatingNavigation,
     'locale': locale,
     'setupCompleted': setupCompleted,
@@ -188,6 +196,7 @@ final class UiPreferences {
       catalogueListView: json['catalogueListView'] == true,
       reduceMotion: json['reduceMotion'] == true,
       hideTags: json['hideTags'] != false,
+      metadata: MetadataVisibility.fromJson(json['hiddenMetadata']),
       floatingNavigation: json['floatingNavigation'] != false,
       imageEnhancement: ImageEnhancement.parse(json['imageEnhancement']),
       locale: json['locale'] is String ? json['locale'] as String : null,

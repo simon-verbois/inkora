@@ -13,6 +13,7 @@ import 'package:inkora/features/library/domain/catalogue_filters.dart';
 import 'package:inkora/features/library/domain/catalogue_metadata.dart';
 import 'package:inkora/features/library/domain/resume_entry.dart';
 import 'package:inkora/features/settings/domain/ui_preferences.dart';
+import 'package:inkora/features/settings/data/ui_preferences_store.dart';
 import 'package:inkora/reader/data/page_network_gate.dart';
 import 'package:inkora/reader/domain/page_source.dart';
 
@@ -21,6 +22,8 @@ import '../support/connection_fakes.dart';
 import '../support/reader_widget_support.dart';
 import '../support/ui_harness.dart';
 import '../support/catalogue_artwork.dart';
+import '../support/reader_preferences.dart';
+import '../support/onboarding_visuals.dart' show chooseSetupMode;
 
 Future<void> _loadFonts() async {
   for (final (family, asset) in [
@@ -108,10 +111,18 @@ void main() {
             libraryId: index.isEven ? 'library-a' : 'library-b',
             itemCount: 4 + index,
             modified: 1792015200000 + index,
-            summary: 'A city that only wakes after midnight. When a young cartographer discovers a street missing from every map, a quiet commission becomes a journey through forgotten stories and impossible places.',
+            summary: 'A city that only wakes after midnight. When a young cartographer discovers a street missing from every map, a quiet commission becomes a journey through forgotten stories and impossible places. Each new route leads to another neighbourhood, another keeper of a forgotten story, and a choice between the map she was given and the city she can see. As dawn approaches, she must decide which paths to preserve and which ones to leave behind. A story of friendship, wandering and finding a place to call home.',
             metadata: CatalogueMetadata(
               publisher: 'Northlight Press',
-              authors: const [CatalogueAuthor('Alex Rowan', 'writer')],
+              authors: const [
+                CatalogueAuthor('Alex Rowan', 'writer'),
+                CatalogueAuthor('Jamie Vale', 'penciller'),
+              ],
+              language: 'en',
+              tags: const ['Demonstration'],
+              links: const [
+                CatalogueLink('Northlight Press', 'https://example.test/books'),
+              ],
               status: index.isEven ? 'ONGOING' : 'ENDED',
               genres: [index.isEven ? 'Adventure' : 'Fantasy'],
             ),
@@ -227,6 +238,16 @@ void main() {
       expect(find.text('Continue reading'), findsOneWidget);
       await capture('phone-home');
       final router = harness.container.read(routerProvider);
+      await tester.tap(find.byKey(const Key('catalogue-floating-library')));
+      await tester.pumpAndSettle();
+      await capture('phone-library-picker');
+      router.pop();
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('catalogue-floating-filters')));
+      await tester.pumpAndSettle();
+      await capture('phone-filters');
+      router.pop();
+      await tester.pumpAndSettle();
       await tester.drag(
         find.byType(CustomScrollView).first,
         const Offset(0, -560),
@@ -236,6 +257,36 @@ void main() {
       router.go('/settings/appearance');
       await tester.pumpAndSettle();
       await capture('phone-appearance');
+      final metadataHeading = find.text('Visible metadata');
+      await tester.scrollUntilVisible(metadataHeading, 300);
+      await tester.ensureVisible(metadataHeading);
+      final phoneMetadataScroll = Scrollable.of(tester.element(metadataHeading))
+          .position;
+      phoneMetadataScroll.jumpTo(
+        (phoneMetadataScroll.pixels - 24).clamp(
+          0,
+          phoneMetadataScroll.maxScrollExtent,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await capture('phone-metadata');
+      router.go('/settings');
+      await tester.pumpAndSettle();
+      await capture('phone-settings');
+      router.go('/settings/servers');
+      await tester.pumpAndSettle();
+      await capture('phone-servers');
+      router.go('/settings/gestures');
+      await tester.pumpAndSettle();
+      await chooseGesturePreset(tester, 'custom');
+      await tester.drag(
+        find.byKey(const Key('ink-sheet-handle')),
+        const Offset(0, -844),
+      );
+      await tester.pumpAndSettle();
+      await capture('phone-gestures');
+      router.pop();
+      await tester.pumpAndSettle();
       router.go('/settings/transfer');
       await tester.pumpAndSettle();
       await capture('phone-transfer');
@@ -254,6 +305,33 @@ void main() {
       await capture('phone-batch-download');
       await tester.tap(find.byKey(const Key('ink-confirm-cancel')));
       await tester.pumpAndSettle();
+      await tester.drag(
+        find.byType(CustomScrollView).first,
+        const Offset(0, -400),
+      );
+      await tester.pumpAndSettle();
+      await capture('phone-series-about');
+      final preferences = UiPreferencesStore(harness.database);
+      await tester.runAsync(
+        () => preferences.update(
+          (p) => p.copyWith(setupCompleted: false, setupStep: 3),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Manga'));
+      await tester.pumpAndSettle();
+      await chooseSetupMode(tester, 'manga');
+      FocusManager.instance.primaryFocus?.unfocus();
+      Scrollable.of(
+        tester.element(find.byKey(const Key('reader-mode-selector'))),
+      ).position.jumpTo(0);
+      await tester.pumpAndSettle();
+      await capture('phone-setup-library');
+      await tester.runAsync(
+        () => preferences.update(
+          (p) => p.copyWith(setupCompleted: true, setupStep: 0),
+        ),
+      );
       router.go('/');
       await tester.pumpAndSettle();
       tester.view.physicalSize = const Size(1280, 900);
@@ -272,6 +350,29 @@ void main() {
       expect(find.text('Download selected ({0})'), findsNothing);
       expect(find.byTooltip('Close'), findsNothing);
       await capture('tablet-home');
+      await tester.tap(find.byKey(const Key('catalogue-floating-filters')));
+      await tester.pumpAndSettle();
+      await capture('tablet-filters');
+      router.pop();
+      await tester.pumpAndSettle();
+      router.go('/settings');
+      await tester.pumpAndSettle();
+      await capture('tablet-settings');
+      router.go('/settings/appearance');
+      await tester.pumpAndSettle();
+      // The category is one mounted group; ensureVisible uses its own pane.
+      await tester.ensureVisible(metadataHeading);
+      final tabletMetadataScroll = Scrollable.of(
+        tester.element(metadataHeading),
+      ).position;
+      tabletMetadataScroll.jumpTo(
+        (tabletMetadataScroll.pixels - 24).clamp(
+          0,
+          tabletMetadataScroll.maxScrollExtent,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await capture('tablet-metadata');
       router.go('/catalogue/series/series-0');
       await tester.pumpAndSettle();
       await capture('tablet-series');

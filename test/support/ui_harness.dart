@@ -17,6 +17,8 @@ import 'package:inkora/features/settings/data/ui_preferences_store.dart';
 import 'package:inkora/features/settings/domain/ui_preferences.dart';
 import 'package:inkora/offline/application/offline_coordinator.dart';
 import 'package:inkora/reader/application/reader_providers.dart';
+import 'package:inkora/reader/data/reader_repository.dart';
+import 'package:inkora/reader/domain/reading_settings.dart';
 
 import 'catalogue_fakes.dart';
 import 'connection_fakes.dart';
@@ -35,6 +37,8 @@ final class UiHarness {
     CoverRepository? covers,
     List<CatalogueItem>? catalogue,
     bool refreshCatalogue = true,
+    OpenReader? openedReader,
+    ReadingSettings readerSettings = const ReadingSettings(),
     AppDatabase? databaseOverride,
     OfflineCoordinator Function(AppDatabase)? offlineFactory,
   }) async {
@@ -118,6 +122,12 @@ final class UiHarness {
         coverRepositoryProvider.overrideWith((ref) async => covers),
         offlineCoordinatorProvider.overrideWith((ref) async => offline),
         readerRepositoryProvider.overrideWith((ref) async => null),
+        if (openedReader != null) ...[
+          openReaderProvider(openedReader.manifest.bookId)
+              .overrideWith((ref) async => openedReader),
+          readingSettingsProvider(openedReader.manifest.bookId)
+              .overrideWith((ref) => Stream.value(readerSettings)),
+        ],
         if (offline == null)
           downloadsProvider.overrideWith((ref) => Stream.value([])),
         progressIntentsProvider.overrideWith((ref) => Stream.value([])),

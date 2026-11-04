@@ -1,3 +1,5 @@
+import 'ink_divider.dart';
+
 import 'package:flutter/material.dart';
 
 import '../l10n/app_strings.dart';
@@ -22,7 +24,10 @@ class InkSettingsHeading extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (!first) ...[const Divider(height: 1), const SizedBox(height: 16)],
+        if (!first) ...[
+          const InkDivider(height: 1),
+          const SizedBox(height: 16),
+        ],
         Semantics(
           header: true,
           child: LText(title, style: titleStyleOf(context)),

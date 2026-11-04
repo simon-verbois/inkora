@@ -1,3 +1,5 @@
+import 'ink_divider.dart';
+
 import 'package:flutter/material.dart';
 
 import '../icons/inkora_icons.dart';
@@ -290,7 +292,7 @@ class InkChipDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SizedBox(
     height: 24,
-    child: VerticalDivider(
+    child: InkVerticalDivider(
       width: InkSpace.sm,
       thickness: 1,
       color: InkoraColors.of(context).border,

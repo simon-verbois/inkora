@@ -223,8 +223,6 @@ void main() {
         final light = find.byKey(const Key('light-theme-group'));
         final dark = find.byKey(const Key('dark-theme-group'));
         final coverCounts = find.byKey(const Key('home-portrait-columns'));
-        await tester.ensureVisible(coverCounts);
-        await tester.pumpAndSettle();
         // The rail fits its longest localized word (the square test font
         // widens it), so pair the groups whenever the pane keeps 720px.
         final pane = tester.getTopRight(dark).dx - tester.getTopLeft(light).dx;
@@ -239,14 +237,18 @@ void main() {
             greaterThan(tester.getBottomLeft(light).dy),
           );
         }
+        await tester.ensureVisible(coverCounts);
+        await tester.pumpAndSettle();
+        expect(coverCounts.hitTestable(), findsOneWidget);
         expect(find.byKey(const Key('navigation-rail')), findsNothing);
         expect(tester.takeException(), isNull);
         tester.platformDispatcher.textScaleFactorTestValue = 2;
         await tester.pumpAndSettle();
         size(tester, const Size(320, 640));
         await tester.pumpAndSettle();
-        await tester.ensureVisible(
+        await tester.scrollUntilVisible(
           find.byKey(const ValueKey('theme-midnight')),
+          -250,
         );
         await tester.pumpAndSettle();
         expect(

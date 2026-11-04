@@ -82,7 +82,7 @@ void main() {
         await tester.scrollUntilVisible(setting, 300);
         await tester.ensureVisible(toggle);
         await tester.pumpAndSettle();
-        expect(tester.widget<SwitchListTile>(setting).value, isTrue);
+        expect(tester.widget<SwitchListTile>(setting).value, isFalse);
         await tester.tap(toggle);
         await tester.pumpAndSettle();
         final restored = (await tester.runAsync(

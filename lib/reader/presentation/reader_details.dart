@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,26 +9,21 @@ import '../../features/library/application/catalogue_providers.dart';
 import '../../features/library/domain/catalogue.dart';
 import '../../features/library/presentation/book_cover.dart';
 import '../../features/library/presentation/catalogue_detail_widgets.dart';
+import '../../features/settings/application/ui_preferences_provider.dart';
+import '../../features/settings/domain/metadata_visibility.dart';
 import '../domain/reader_manifest.dart';
-import 'reader_system_ui.dart';
 
 /// Open parent facts above the retained reader; Back restores its live position.
 Future<void> openReaderSeries(
   BuildContext context,
-  ReaderManifest manifest, {
-  bool immersiveOnReturn = false,
-}) async {
+  ReaderManifest manifest,
+) async {
   if (manifest.seriesId?.isNotEmpty != true) return;
-  final dismissed = context.pushNamed<void>(
+  await context.pushNamed<void>(
     'reader-parent',
     pathParameters: {'id': manifest.seriesId!},
     queryParameters: {'book': manifest.bookId},
   );
-  unawaited(ReaderSystemUi.setImmersive(false));
-  await dismissed;
-  if (context.mounted && ModalRoute.of(context)?.isCurrent == true) {
-    unawaited(ReaderSystemUi.setImmersive(immersiveOnReturn));
-  }
 }
 
 /// The information button always shows the current book without leaving it.
@@ -41,27 +34,15 @@ Future<void> openReaderDetails(BuildContext context, ReaderManifest manifest) =>
     );
 
 class ReaderSeriesButton extends StatelessWidget {
-  const ReaderSeriesButton({
-    super.key,
-    required this.manifest,
-    this.onPressed,
-    this.immersiveOnReturn,
-  });
+  const ReaderSeriesButton({super.key, required this.manifest, this.onPressed});
   final ReaderManifest manifest;
   final VoidCallback? onPressed;
-  final bool? immersiveOnReturn;
   @override
   Widget build(BuildContext context) => manifest.seriesId?.isNotEmpty != true
       ? const SizedBox.shrink()
       : TextButton(
           key: const Key('reader-series'),
-          onPressed:
-              onPressed ??
-              () => openReaderSeries(
-                context,
-                manifest,
-                immersiveOnReturn: immersiveOnReturn ?? manifest.isDocument,
-              ),
+          onPressed: onPressed ?? () => openReaderSeries(context, manifest),
           child: LText(manifest.isDocument ? 'Author' : 'Series'),
         );
 }
@@ -123,7 +104,16 @@ class ReaderBookDetails extends ConsumerWidget {
             ],
           ),
           if (state.isLoading) const LinearProgressIndicator(),
-          if (item?.summary.isNotEmpty == true) ...[
+          if (ref.watch(
+                uiPreferencesProvider.select(
+                  (value) =>
+                      value.asData?.value.metadataVisibility.shows(
+                        MetadataField.synopsis,
+                      ) ??
+                      true,
+                ),
+              ) &&
+              item?.summary.isNotEmpty == true) ...[
             const SizedBox(height: 20),
             CatalogueSummary(summary: item!.summary),
           ],

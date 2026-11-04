@@ -8,39 +8,128 @@ import 'package:inkora/features/settings/domain/ui_preferences.dart';
 import 'package:inkora/reader/domain/gesture_zones.dart';
 
 void main() {
-  test('version two setup retains Downloads, Accessibility and final review after Quality insertion', () {
-    for (var old = 0; old <= 7; old++) {
-      final value = UiPreferences.fromJson({
-        'setupVersion': 2,
+  test(
+    'preferred hand defaults right, validates old input and round trips',
+    () {
+      expect(const UiPreferences().leftHanded, isFalse);
+      for (final value in [null, false, 'left', 1]) {
+        expect(
+          UiPreferences.fromJson({'leftHanded': value}).leftHanded,
+          isFalse,
+        );
+      }
+      final left = const UiPreferences().copyWith(leftHanded: true);
+      expect(UiPreferences.fromJson(left.toJson()).leftHanded, isTrue);
+      expect(
+        UiPreferences.fromJson(left.copyWith(leftHanded: false).toJson())
+            .leftHanded,
+        isFalse,
+      );
+    },
+  );
+
+  test(
+    'version two setup resumes configuration after inserting the welcome page',
+    () {
+      for (var old = 0; old <= 7; old++) {
+        final value = UiPreferences.fromJson({
+          'setupVersion': 2,
+          'setupStep': old,
+        });
+        expect(value.setupStep, const [1, 1, 1, 2, 3, 5, 6, 7][old]);
+        expect(
+          UiPreferences.fromJson(value.toJson()).setupStep,
+          value.setupStep,
+        );
+      }
+    },
+  );
+  test('legacy setup resumes at the corresponding section in version six', () {
+    const mapping = [1, 1, 2, 2, 3, 5, 6, 6, 7];
+    for (var old = 0; old < mapping.length; old++) {
+      final restored = UiPreferences.fromJson({
         'setupStep': old,
+        'locale': 'fr',
+        'setupCompleted': true,
       });
-      expect(value.setupStep, old >= 5 ? old + 1 : old);
-      expect(UiPreferences.fromJson(value.toJson()).setupStep, value.setupStep);
+      expect(restored.setupStep, mapping[old]);
+      expect(restored.locale, 'fr');
+      expect(restored.setupCompleted, true);
+      expect(UiPreferences.fromJson(restored.toJson()).setupStep, mapping[old]);
+    }
+    expect(
+      UiPreferences.fromJson({'setupVersion': 2, 'setupStep': 99}).setupStep,
+      7,
+    );
+    expect(UiPreferences.fromJson({'setupStep': -1}).setupStep, 1);
+  });
+  test(
+    'version three setup retains configuration and maps review to completion',
+    () {
+      const mapping = [1, 1, 1, 2, 3, 4, 5, 6, 7];
+      for (var old = 0; old < mapping.length; old++) {
+        for (final completed in [false, true]) {
+          final restored = UiPreferences.fromJson({
+            'setupVersion': 3,
+            'setupStep': old,
+            'setupCompleted': completed,
+            'locale': 'fr',
+          });
+          expect(restored.setupStep, mapping[old]);
+          expect(restored.setupCompleted, completed);
+          expect(restored.locale, 'fr');
+          expect(
+            UiPreferences.fromJson(restored.toJson()).setupStep,
+            mapping[old],
+          );
+        }
+      }
+    },
+  );
+  test('version four inserts welcome without resetting configuration', () {
+    for (var step = 0; step < 8; step++) {
+      final restored = UiPreferences.fromJson({
+        'setupVersion': 4,
+        'setupStep': step,
+        'locale': 'de',
+        'setupCompleted': true,
+      });
+      expect(restored.setupStep, step.clamp(1, 7));
+      expect(restored.locale, 'de');
+      expect(restored.setupCompleted, isTrue);
+      expect(
+        UiPreferences.fromJson(restored.toJson()).setupStep,
+        step.clamp(1, 7),
+      );
     }
   });
   test(
-    'legacy setup resumes at the corresponding section in version three',
+    'version five drops Language without losing setup position or locale',
     () {
-      const mapping = [0, 2, 3, 3, 4, 6, 7, 7, 8];
-      for (var old = 0; old < mapping.length; old++) {
-        final restored = UiPreferences.fromJson({
-          'setupStep': old,
-          'locale': 'fr',
-          'setupCompleted': true,
-        });
-        expect(restored.setupStep, mapping[old]);
-        expect(restored.locale, 'fr');
-        expect(restored.setupCompleted, true);
-        expect(
-          UiPreferences.fromJson(restored.toJson()).setupStep,
-          mapping[old],
-        );
+      const mapping = [0, 1, 1, 2, 3, 4, 5, 6, 7];
+      for (var step = 0; step < mapping.length; step++) {
+        for (final completed in [false, true]) {
+          final restored = UiPreferences.fromJson({
+            'setupVersion': 5,
+            'setupStep': step,
+            'locale': 'fr',
+            'setupCompleted': completed,
+          });
+          expect(restored.setupStep, mapping[step]);
+          expect(restored.locale, 'fr');
+          expect(restored.setupCompleted, completed);
+          expect(restored.toJson()['setupVersion'], 6);
+          expect(
+            UiPreferences.fromJson(restored.toJson()).setupStep,
+            mapping[step],
+          );
+        }
       }
-      expect(
-        UiPreferences.fromJson({'setupVersion': 2, 'setupStep': 99}).setupStep,
-        8,
-      );
-      expect(UiPreferences.fromJson({'setupStep': -1}).setupStep, 0);
+      for (var step = 0; step < 8; step++) {
+        final current = UiPreferences(setupStep: step, locale: 'de');
+        expect(UiPreferences.fromJson(current.toJson()).setupStep, step);
+        expect(UiPreferences.fromJson(current.toJson()).locale, 'de');
+      }
     },
   );
   test('settings round trip and identical saves emit once', () async {

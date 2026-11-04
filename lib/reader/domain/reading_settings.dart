@@ -212,7 +212,11 @@ final class ReadingSettings {
                : ReadingDirection.leftToRight),
        fit =
            fit ??
-           (mode == ReadingMode.webtoon ? ReadingFit.comfort : ReadingFit.page),
+           (mode == ReadingMode.webtoon
+               ? ReadingFit.comfort
+               : mode == ReadingMode.manga
+               ? ReadingFit.content
+               : ReadingFit.page),
        spreadPairing =
            spreadPairing ??
            (spreadOffset == null

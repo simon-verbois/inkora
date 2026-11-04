@@ -182,7 +182,7 @@ void main() {
           expect(
             tester
                 .widget<InkFloatingHeader>(find.byType(InkFloatingHeader))
-                .transparentAtRest,
+                .transparentBand,
             isTrue,
           );
           if (size.width >= 1000 && scale == 1) {

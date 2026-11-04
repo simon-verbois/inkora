@@ -14,6 +14,7 @@ import 'package:inkora/reader/domain/reading_settings.dart';
 import 'package:inkora/reader/presentation/reader_settings_sheet.dart';
 
 import '../../support/ui_harness.dart';
+import '../../support/onboarding_visuals.dart' show chooseSetupMode;
 
 void main() {
   void size(WidgetTester tester, Size value) {
@@ -147,7 +148,7 @@ void main() {
       resetView(tester);
       final harness = await UiHarness.create(
         tester,
-        preferences: const UiPreferences(locale: 'en', setupStep: 4),
+        preferences: const UiPreferences(locale: 'en', setupStep: 3),
       );
       addTearDown(() => harness.close(tester));
       await tester.runAsync(
@@ -162,9 +163,8 @@ void main() {
       final editor = tester.state<ReaderSettingsSheetState>(
         find.byType(ReaderSettingsSheet),
       );
-      final mode = find.byKey(const Key('reader-choice-mode-webtoon'));
-      await tester.ensureVisible(mode);
-      await tester.tap(mode);
+      final mode = find.byKey(const Key('reader-mode-selector'));
+      await chooseSetupMode(tester, 'webtoon');
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 50)),
       );
@@ -177,18 +177,18 @@ void main() {
         size(tester, viewport);
         await tester.pumpAndSettle();
         expect(tester.state(find.byType(ReaderSettingsSheet)), same(editor));
-        expect(tester.widget<ChoiceChip>(mode).selected, isTrue);
         expect(
-          find.byKey(const Key('setup-back')).hitTestable(),
-          findsOneWidget,
+          tester.state<FormFieldState<ReadingMode>>(mode).value,
+          ReadingMode.webtoon,
         );
+        expect(find.byKey(const Key('setup-back')), findsNothing);
         expect(
-          find.byKey(const Key('setup-next')).hitTestable(),
+          find.byKey(const Key('setup-library-back')).hitTestable(),
           findsOneWidget,
         );
         expect(tester.takeException(), isNull);
       }
-      await tester.tap(find.byKey(const Key('setup-next')));
+      await tester.tap(find.byKey(const Key('setup-library-back')));
       await tester.pumpAndSettle();
       expect(find.byType(ReaderSettingsSheet), findsNothing);
       final account = harness.container
@@ -260,7 +260,7 @@ void main() {
         await tester.pumpAndSettle();
         await tester.runAsync(
           () => UiPreferencesStore(harness.database)
-              .update((p) => p.copyWith(setupStep: 2, setupCompleted: false)),
+              .update((p) => p.copyWith(setupStep: 1, setupCompleted: false)),
         );
         await tester.pumpAndSettle();
         expect(find.byKey(const Key('setup-sidebar')), findsOneWidget);

@@ -37,7 +37,7 @@ void main() {
               .path,
           '/',
         );
-        expect(find.byKey(const Key('catalogue-pinned-tools')), findsOneWidget);
+        expect(find.byKey(const Key('catalogue-tools')), findsOneWidget);
         expect(find.byKey(const Key('catalogue-grid')), findsOneWidget);
         expect(find.byKey(const Key('home-discovery')), findsNothing);
         expect(

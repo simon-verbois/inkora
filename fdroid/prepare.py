@@ -34,6 +34,49 @@ LOCAL_BLOCK = '''  // Inkora F-Droid: source-built archives only.
   );
   final archiveBytes = await archive.readAsBytes();
 '''
+READIUM_EXCLUSIONS = '''
+
+// Inkora F-Droid: PDFs use pdfrx; omit Readium's unused native PDF engine.
+android {
+    packaging {
+        jniLibs {
+            excludes += setOf("**/libpdfium.cr.so", "**/libpdfiumandroid.so")
+        }
+    }
+}
+'''
+
+
+def prepare_readium(project: Path, pub_cache: Path, config: dict) -> None:
+    """Keep the EPUB parser while omitting Inkora's unused second PDF engine."""
+    readium = config['readium']
+    lock = (project / 'pubspec.lock').read_text()
+    package = re.search(r'(?ms)^  flutter_readium:\n(.*?)(?=^  \S|\Z)', lock)
+    if not package or f'    version: "{readium["dartVersion"]}"' not in package[1]:
+        raise ValueError('Readium package version differs from the reviewed configuration')
+    reader = (pub_cache / 'hosted/pub.dev' / f'flutter_readium-{readium["dartVersion"]}'
+              / 'android/src/main/kotlin/dk/nota/flutterreadium/ReadiumReader.kt')
+    gradle = project / 'android/app/build.gradle.kts'
+    for target, root in [(reader, pub_cache), (gradle, project)]:
+        if any(path.is_symlink() for path in (target, *target.parents)
+               if path.is_relative_to(root)):
+            raise ValueError('Refusing linked Readium preparation inputs')
+    data = reader.read_bytes()
+    if hashlib.sha256(data).hexdigest() != readium['readerSha256']:
+        raise ValueError('Readium source differs from the reviewed version; use a fresh cache')
+    original = data.decode()
+    factory = 'pdfFactory = PdfiumDocumentFactory(context),'
+    imported = 'import org.readium.adapter.pdfium.document.PdfiumDocumentFactory\n'
+    if original.count(factory) != 1 or original.count(imported) != 1:
+        raise ValueError('Unexpected Readium PDF factory; review the pinned source')
+    build = gradle.read_text()
+    if 'Inkora F-Droid:' in build:
+        raise ValueError('Readium packaging is already prepared; use a fresh checkout')
+    # Readium 3.3.0 explicitly accepts a nullable PDF factory. Inkora returns to
+    # pdfrx before opening PDF publications in Readium; EPUB behavior is retained.
+    patched = original.replace(imported, '').replace(factory, 'pdfFactory = null,')
+    reader.write_text(patched)
+    gradle.write_text(build.rstrip() + READIUM_EXCLUSIONS)
 
 
 def patch_hook(source: str, archive_directory: Path) -> str:
@@ -204,7 +247,8 @@ def main() -> None:
         archive = response.read(8 * 1024 * 1024 + 1)
     install_sqlite(project, config, archive)
     prepare(project, args.pub_cache.resolve(), args.pdfium.resolve(), config)
-    print('Prepared pinned PDFium and SQLite source builds.')
+    prepare_readium(project, args.pub_cache.resolve(), config)
+    print('Prepared source-built PDFium/SQLite and EPUB-only Readium packaging.')
 
 
 if __name__ == '__main__':

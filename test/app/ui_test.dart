@@ -38,10 +38,7 @@ void main() {
           );
           addTearDown(() => harness.close(tester));
           await harness.mount(tester);
-          expect(
-            find.byKey(const Key('catalogue-pinned-tools')),
-            findsOneWidget,
-          );
+          expect(find.byKey(const Key('catalogue-tools')), findsOneWidget);
           expect(find.byTooltip('Refresh catalogue'), findsNothing);
           expect(find.byTooltip('Search catalogue'), findsNothing);
           expect(find.byIcon(Icons.shield_outlined), findsNothing);
@@ -165,7 +162,13 @@ void main() {
       router.routeInformationProvider.value.uri.path,
       '/catalogue/series/series-a',
     );
-    expect(find.text('Modal publication'), findsOneWidget);
+    expect(find.text('Modal publication'), findsNothing);
+    // Outside dismissal must close only the sheet, leaving its page below it.
+    showInkSheet<void>(
+      context: context,
+      child: const SizedBox(height: 200, child: Text('Modal publication')),
+    );
+    await tester.pumpAndSettle();
     // The covered series navigator is poppable. Back must target only the root
     // sheet, including cancellation, rather than popping that inactive stack.
     final accepted = await backEvent(tester, 'startBackGesture');

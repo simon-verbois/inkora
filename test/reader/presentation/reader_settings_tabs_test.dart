@@ -10,6 +10,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/l10n/app_strings.dart';
 import 'package:inkora/app/theme/inkora_theme.dart';
+import 'package:inkora/app/widgets/inkora_widgets.dart';
 import 'package:inkora/core/storage/app_database.dart';
 import 'package:inkora/reader/data/reader_store.dart';
 import 'package:inkora/reader/domain/reader_manifest.dart';
@@ -42,11 +43,13 @@ Future<void> openSheet(
   ReaderStore store,
   ReaderManifest manifest, {
   Locale? locale,
+  bool bookOnly = false,
 }) async {
   await tester.pumpWidget(
     RepaintBoundary(
       key: const Key('preferences-capture'),
       child: MaterialApp(
+        debugShowCheckedModeBanner: false,
         locale: locale,
         supportedLocales: AppStrings.supportedLocales,
         localizationsDelegates: const [
@@ -57,15 +60,25 @@ Future<void> openSheet(
         home: Builder(
           builder: (context) => Scaffold(
             body: TextButton(
-              onPressed: () => showModalBottomSheet<void>(
-                context: context,
-                isScrollControlled: true,
-                builder: (_) => ReaderSettingsSheet(
+              onPressed: () {
+                final editor = ReaderSettingsSheet(
                   store: store,
                   manifest: manifest,
                   modal: true,
-                ),
-              ),
+                  showTitle: !bookOnly,
+                  showScope: !bookOnly,
+                  showReset: !bookOnly,
+                );
+                if (bookOnly) {
+                  showInkSheet<void>(context: context, child: editor);
+                } else {
+                  showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (_) => editor,
+                  );
+                }
+              },
               child: const Text('Open preferences'),
             ),
           ),

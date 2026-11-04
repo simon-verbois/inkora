@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/router.dart';
 import 'package:inkora/features/library/presentation/catalogue_detail_screen.dart';
 import 'package:inkora/features/settings/data/ui_preferences_store.dart';
+import 'package:inkora/features/settings/application/ui_preferences_provider.dart';
 import 'package:inkora/features/settings/domain/ui_preferences.dart';
 import 'package:inkora/reader/presentation/reader_screen.dart';
 import 'package:inkora/reader/presentation/reader_gesture_guard.dart';
@@ -68,9 +69,25 @@ void main({bool includeLifecycle = true}) {
         '/setup',
       );
       expect(find.text('Make Inkora yours'), findsOneWidget);
-      for (var step = 0; step < 8; step++) {
+      for (var step = 0; step < 7; step++) {
+        if (step == 0) {
+          await tester.scrollUntilVisible(
+            find.byKey(const Key('setup-next')),
+            200,
+            scrollable: find.descendant(
+              of: find.byKey(const Key('setup-introduction-scroll')),
+              matching: find.byType(Scrollable),
+            ),
+          );
+        }
+        await tester.ensureVisible(find.byKey(const Key('setup-next')));
+        await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('setup-next')));
         await tester.pumpAndSettle();
+        expect(
+          harness.container.read(uiPreferencesProvider).requireValue.setupStep,
+          step + 1,
+        );
       }
       await tester.tap(find.byKey(const Key('setup-next')));
       await tester.pumpAndSettle();
@@ -87,7 +104,7 @@ void main({bool includeLifecycle = true}) {
         () => UiPreferencesStore(harness.database).watch().first,
       );
       expect(saved!.setupCompleted, true);
-      expect(saved.setupStep, 8);
+      expect(saved.setupStep, 7);
       await harness.close(tester);
     },
   );
@@ -119,7 +136,7 @@ void main({bool includeLifecycle = true}) {
       expect(drags, greaterThan(0));
     },
   );
-  testWidgets('gesture drafts commit on release without rebuilding the app', (
+  testWidgets('gesture popup saves a draft without rebuilding the app', (
     tester,
   ) async {
     final harness = await UiHarness.create(tester);
@@ -128,6 +145,8 @@ void main({bool includeLifecycle = true}) {
     harness.container.read(routerProvider).go('/settings/gestures');
     await tester.pumpAndSettle();
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    await tester.tap(find.byKey(const ValueKey('gesture-preset-custom')));
+    await tester.pumpAndSettle();
     final slider = tester.widget<Slider>(find.byType(Slider).first);
     slider.onChanged!(32);
     slider.onChanged!(40);
@@ -138,7 +157,7 @@ void main({bool includeLifecycle = true}) {
       (await tester.runAsync(() => store.watch().first))!.gestures.left,
       16,
     );
-    tester.widget<Slider>(find.byType(Slider).first).onChangeEnd!(48);
+    await tester.tap(find.byKey(const Key('gesture-custom-save')));
     await tester.pumpAndSettle();
     expect(
       (await tester.runAsync(() => store.watch().first))!.gestures.left,

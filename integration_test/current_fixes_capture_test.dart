@@ -7,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:inkora/app/router.dart';
-import 'package:inkora/app/widgets/ink_home_attachment.dart';
 import 'package:inkora/app/widgets/inkora_widgets.dart';
 import 'package:inkora/features/library/data/cover_repository.dart';
 import 'package:inkora/features/library/domain/catalogue.dart';
@@ -118,7 +117,7 @@ void main() {
         .position;
     position.jumpTo(position.maxScrollExtent);
     await settleReaderImages(tester);
-    final groups = find.byType(InkHomeToolGroup);
+    final groups = find.byKey(const Key('catalogue-floating-actions'));
     final bounds = [
       for (final element in groups.evaluate())
         tester.getRect(find.byWidget(element.widget)),

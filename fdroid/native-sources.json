@@ -14,6 +14,10 @@
     "version": "0.3.1",
     "hookSha256": "3461424e94103c571bc61e882e26a84797933a846b832760a88e82fd7b750283"
   },
+  "readium": {
+    "dartVersion": "0.6.2",
+    "readerSha256": "f620a97f817e15fc4219d75c66098be3d6d0daa86f826dbaf24b28059aa2a283"
+  },
   "builderFiles": {
     "steps/01-install.sh": "e5e93d94437fb1f1a1d8e268a93a9b74a2a68b2097a75aa99d335a4e36bb661a",
     "steps/02-checkout.sh": "35db5c9fc6ba4c1f3056a6197e2131abdb6684cd0937fa8fae2a7c3cbbf403e2",

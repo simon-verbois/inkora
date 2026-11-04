@@ -23,6 +23,7 @@ void main() {
           hideTags: false,
           textScale: 1.2,
           reduceMotion: true,
+          leftHanded: true,
           locale: 'en',
           gestures: GestureZones.forPreset(GesturePreset.fullPage),
         );
@@ -62,6 +63,7 @@ void main() {
         if (section == 'accessibility') {
           expect(saved.textScale, 1);
           expect(saved.reduceMotion, false);
+          expect(saved.leftHanded, false);
           expect(saved.appearance, original.appearance);
           expect(saved.gestures, original.gestures);
         }

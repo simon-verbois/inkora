@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../theme/inkora_theme.dart';
 import 'ink_surface.dart';
 import '../theme/inkora_motion.dart';
+import 'ink_snap_sheet.dart';
 
 class InkoraWordmark extends StatelessWidget {
   const InkoraWordmark({super.key, this.size = 29});
@@ -219,13 +220,9 @@ class InkSettingsRow extends StatelessWidget {
   );
 }
 
-/// The single bottom-sheet presentation: a floating panel with an optional
-/// [title] row (plus a secondary [action]), a body that scrolls when
-/// [scrollable] is set and an optional fixed [footer] action bar. The height
-/// follows the content, or [heightFactor] of the screen when given (needed by
-/// bodies that use Expanded lists). Only the native handle accepts dismissal
-/// drags; body gestures and barrier taps stay inside the sheet. Back and explicit
-/// content actions retain their existing route ownership.
+/// Full-width, resizable presentation shared by reader and catalogue panels.
+/// Only the handle resizes/snaps; body scrolling and content actions retain
+/// their existing owners. Outside taps and Back dismiss the same root route.
 Future<T?> showInkSheet<T>({
   required BuildContext context,
   required Widget child,
@@ -243,88 +240,27 @@ Future<T?> showInkSheet<T>({
   backgroundColor: Colors.transparent,
   showDragHandle: false,
   enableDrag: false,
-  isDismissible: false,
-  constraints: const BoxConstraints(maxWidth: 784),
-  builder: (_) => Builder(
-    builder: (context) {
-      // Reuse the route's controller and drag callbacks, including its linear
-      // finger tracking and settling curve. The inner native sheet puts its
-      // handle INSIDE our inset surface, without enabling drags on the body.
-      final routeSheet = context.findAncestorWidgetOfExactType<BottomSheet>()!;
-      final maxHeight = MediaQuery.sizeOf(context).height * .85;
-      Widget body = scrollable ? SingleChildScrollView(child: child) : child;
-      if (title != null || footer != null) {
-        body = Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (title != null) InkSheetHeader(title: title, action: action),
-            Flexible(child: body),
-            if (footer != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  InkSpace.lg,
-                  InkSpace.sm,
-                  InkSpace.lg,
-                  InkSpace.lg,
-                ),
-                child: footer,
-              ),
-          ],
-        );
-      }
-      final framedBody = Listener(
-        onPointerCancel: (_) {
-          final controller = routeSheet.animationController;
-          if (controller != null &&
-              controller.value < 1 &&
-              controller.status != AnimationStatus.reverse &&
-              ModalRoute.of(context)?.isCurrent == true) {
-            routeSheet.onDragEnd?.call(DragEndDetails(), isClosing: false);
-            controller.forward();
-          }
-        },
-        child: BottomSheet(
-          animationController: routeSheet.animationController,
-          onClosing: routeSheet.onClosing,
-          onDragStart: routeSheet.onDragStart,
-          onDragEnd: routeSheet.onDragEnd,
-          enableDrag: false,
-          showDragHandle: true,
-          dragHandleSize: const Size(36, 4),
-          dragHandleColor: Theme.of(context).colorScheme.onSurfaceVariant
-              .withValues(alpha: .5),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          builder: (_) => body,
-        ),
+  isDismissible: true,
+  constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width),
+  builder: (_) {
+    Widget body = scrollable ? SingleChildScrollView(child: child) : child;
+    if (title != null || footer != null) {
+      body = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (title != null) InkSheetHeader(title: title, action: action),
+          Flexible(child: body),
+          if (footer != null)
+            Padding(padding: const EdgeInsets.all(InkSpace.lg), child: footer),
+        ],
       );
-      return Padding(
-        padding: EdgeInsets.fromLTRB(
-          InkSpace.md,
-          InkSpace.sm,
-          InkSpace.md,
-          InkSpace.md + MediaQuery.viewInsetsOf(context).bottom,
-        ),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: maxHeight),
-          child: InkOverlaySurface(
-            child: heightFactor == null
-                ? framedBody
-                : SizedBox(
-                    height: (MediaQuery.sizeOf(context).height * heightFactor)
-                        .clamp(0, maxHeight),
-                    child: framedBody,
-                  ),
-          ),
-        ),
-      );
-    },
-  ),
+    }
+    return InkSnapSheet(initialFraction: heightFactor ?? .6, child: body);
+  },
 );
 
-/// Centered choices outside the reader. Keeps the same shared panel content,
-/// bounded height and root Navigator ownership as reader sheets.
+/// Catalogue and settings panels share the same full-width snap presentation.
 Future<T?> showInkPopup<T>({
   required BuildContext context,
   required Widget child,
@@ -333,37 +269,14 @@ Future<T?> showInkPopup<T>({
   Widget? footer,
   bool scrollable = false,
   double? heightFactor,
-}) => showDialog<T>(
+}) => showInkSheet<T>(
   context: context,
-  builder: (context) => Dialog(
-    clipBehavior: Clip.antiAlias,
-    child: ConstrainedBox(
-      constraints: BoxConstraints(
-        maxWidth: 720,
-        maxHeight: MediaQuery.sizeOf(context).height * .85,
-      ),
-      child: SizedBox(
-        height: heightFactor == null
-            ? null
-            : MediaQuery.sizeOf(context).height * heightFactor,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (title != null) InkSheetHeader(title: title, action: action),
-            Flexible(
-              child: scrollable ? SingleChildScrollView(child: child) : child,
-            ),
-            if (footer != null)
-              Padding(
-                padding: const EdgeInsets.all(InkSpace.lg),
-                child: footer,
-              ),
-          ],
-        ),
-      ),
-    ),
-  ),
+  child: child,
+  title: title,
+  action: action,
+  footer: footer,
+  scrollable: scrollable,
+  heightFactor: heightFactor,
 );
 
 /// Title row shared by sheets: localized [title] and an optional trailing

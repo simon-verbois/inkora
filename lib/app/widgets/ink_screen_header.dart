@@ -5,7 +5,6 @@ import '../icons/inkora_icons.dart';
 import '../theme/inkora_motion.dart';
 import '../theme/inkora_theme.dart';
 import 'ink_surface.dart';
-import 'ink_home_attachment.dart';
 import 'inkora_widgets.dart';
 
 /// The single header of a screen: an inset outlined bar with the native route
@@ -133,7 +132,7 @@ class _ScrollThresholdState<T> extends State<_ScrollThreshold<T>> {
 }
 
 /// Home brand header. With [pinned], it overlays a fixed band for actions;
-/// the catalogue reserves its initial space with a transparent pinned sliver.
+/// the catalogue reserves initial space that scrolls away with its tools.
 /// Scrolling artwork can therefore pass behind the translucent header.
 /// Otherwise it overlays the top of [child] and hides once the
 /// scroll offset passes half its height, returning above that threshold. The
@@ -164,64 +163,55 @@ class InkHomeHeader extends StatelessWidget {
     left: false,
     right: false,
     child: pinned && enabled
-        ? InkHomeAttachmentFrame(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                child,
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: SizedBox(
-                    key: const Key('home-header'),
-                    height: InkScreenHeader.extent,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Positioned(
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          // The attached surfaces begin at the header fill's
-                          // lower edge. Stop the backdrop there so it cannot
-                          // darken their roots into a horizontal seam.
-                          bottom: InkSpace.sm,
-                          child: IgnorePointer(
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  stops: const [0, .5, 1],
-                                  colors: [
-                                    Theme.of(context).scaffoldBackgroundColor,
-                                    Theme.of(context).scaffoldBackgroundColor
-                                        .withValues(alpha: .94),
-                                    Theme.of(context).scaffoldBackgroundColor
-                                        .withValues(alpha: 0),
-                                  ],
-                                ),
+        ? Stack(
+            fit: StackFit.expand,
+            children: [
+              child,
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: SizedBox(
+                  key: const Key('home-header'),
+                  height: InkScreenHeader.extent,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Positioned.fill(
+                        bottom: InkSpace.sm,
+                        child: IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                stops: const [0, .5, 1],
+                                colors: [
+                                  Theme.of(context).scaffoldBackgroundColor,
+                                  Theme.of(context).scaffoldBackgroundColor
+                                      .withValues(alpha: .94),
+                                  Theme.of(context).scaffoldBackgroundColor
+                                      .withValues(alpha: 0),
+                                ],
                               ),
                             ),
                           ),
                         ),
-                        InkScreenHeader(
-                          outlined: false,
-                          automaticallyImplyLeading: false,
-                          title: const FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: AlignmentDirectional.centerStart,
-                            child: InkoraWordmark(),
-                          ),
-                          actions: actions,
+                      ),
+                      InkScreenHeader(
+                        automaticallyImplyLeading: false,
+                        title: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: AlignmentDirectional.centerStart,
+                          child: InkoraWordmark(),
                         ),
-                      ],
-                    ),
+                        actions: actions,
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           )
         : _ScrollThreshold<bool>(
             initial: false,
@@ -319,8 +309,8 @@ enum InkFloatingHeaderState {
 /// at the band while scrolling: it can never pass under a bubble, and
 /// `ensureVisible`/accessibility focus never reveal content behind them. At
 /// rest the band uses the plain page background, or reveals artwork when
-/// [transparentAtRest] is enabled; once the primary (depth-0, vertical) scroll view in [body] scrolls,
-/// the band becomes an opaque bar, and past [titleThreshold]
+/// [transparentBand] is enabled. Otherwise the band becomes an opaque bar
+/// when the primary scroll view scrolls. Past [titleThreshold]
 /// it also shows [title]. These states change only on threshold crossings.
 ///
 /// Without [overlay], [body] needs no top safe-area padding (the band consumes
@@ -335,7 +325,7 @@ class InkFloatingHeader extends StatelessWidget {
     this.actions = const [],
     this.titleThreshold = defaultTitleThreshold,
     this.overlay = false,
-    this.transparentAtRest = false,
+    this.transparentBand = false,
     this.onBack,
     this.notificationPredicate = primaryVerticalScroll,
   });
@@ -352,8 +342,8 @@ class InkFloatingHeader extends StatelessWidget {
   final bool overlay;
 
   /// Reveal page artwork behind the band without moving the clipped content
-  /// viewport. Scrolling still gives the band an opaque background.
-  final bool transparentAtRest;
+  /// viewport, including while scrolling.
+  final bool transparentBand;
 
   /// Defaults to popping the route, or Home when nothing can pop.
   final VoidCallback? onBack;
@@ -417,7 +407,7 @@ class InkFloatingHeader extends StatelessWidget {
         return DecoratedBox(
           key: ValueKey('floating-header-${state.name}'),
           decoration: BoxDecoration(
-            color: transparentAtRest && state == InkFloatingHeaderState.rest
+            color: transparentBand
                 ? Colors.transparent
                 : Theme.of(context).scaffoldBackgroundColor,
           ),

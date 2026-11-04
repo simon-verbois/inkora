@@ -8,6 +8,7 @@ import 'ebook_presentation.dart';
 import 'reader_settings_layout.dart';
 import '../../app/l10n/app_strings.dart';
 import '../../app/widgets/inkora_widgets.dart';
+import '../../app/widgets/ink_snap_sheet.dart';
 
 import 'dart:async';
 import 'dart:convert';
@@ -39,7 +40,10 @@ class ReaderSettingsSheet extends StatefulWidget {
     this.manifest,
     this.libraryId,
     this.onSaved,
+    this.showTitle = true,
     this.showReset = true,
+    this.showScope = true,
+    this.sectioned = false,
     this.qualityOnly = false,
     this.upscalingControls,
     this.onResetRendering,
@@ -50,7 +54,12 @@ class ReaderSettingsSheet extends StatefulWidget {
   /// Called by [ReaderSettingsSheetState.savePreferences] and after the
   /// library-wide replacement; the editor pops its route when absent.
   final VoidCallback? onSaved;
+  final bool showTitle;
   final bool showReset;
+  final bool showScope;
+
+  /// A single ordered form for guided setup, without scope chrome or tabs.
+  final bool sectioned;
   final bool qualityOnly;
   final Widget? upscalingControls;
   final Future<void> Function()? onResetRendering;
@@ -700,10 +709,10 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
         _change('ebook', {...?_overrides.ebook, key: value}),
   );
 
-  Widget _appearanceControls() => Column(
+  Widget _appearanceControls({bool showMode = true}) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      if (widget.manifest == null) ...[
+      if (showMode && widget.manifest == null) ...[
         _select('Mode', 'mode', {
           'manga': 'Manga',
           'comics': 'Comics',
@@ -767,7 +776,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
     ],
   );
 
-  Widget _layoutControls() {
+  Widget _layoutControls({bool showMode = true, bool sectioned = false}) {
     // A global ebook default must not expose typography for a raster volume.
     final mode = _effective.mode == ReadingMode.ebook && _rasterControls
         ? ReadingMode.comics
@@ -776,7 +785,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (widget.manifest?.isDocument != true) ...[
+        if (showMode && widget.manifest?.isDocument != true) ...[
           _select('Mode', 'mode', {
             'manga': 'Manga',
             'comics': 'Comics',
@@ -786,6 +795,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
           }),
           const SizedBox(height: 20),
         ],
+        if (sectioned) _sectionHeading('Page layout'),
         if (mode != ReadingMode.ebook && mode != ReadingMode.webtoon) ...[
           _select('Direction', 'direction', {
             'leftToRight': 'Left to right',
@@ -834,6 +844,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
           }),
           const SizedBox(height: 20),
         ],
+        if (sectioned) _sectionHeading('Appearance'),
         _backgroundControls(ebook: mode == ReadingMode.ebook),
         const SizedBox(height: 20),
         if (mode != ReadingMode.ebook)
@@ -860,11 +871,80 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
         if (mode != ReadingMode.webtoon &&
             (mode != ReadingMode.ebook || !_effective.ebook.scroll) &&
             (widget.manifest?.documentType != 'application/epub+zip' ||
-                EbookPresentation.supported))
+                EbookPresentation.supported)) ...[
+          if (sectioned) _sectionHeading('Navigation'),
           _animationControl(),
+        ],
       ],
     );
   }
+
+  Widget _sectionHeading(String title) => Padding(
+    padding: const EdgeInsets.only(top: 24, bottom: 16),
+    child: Semantics(
+      header: true,
+      child: LText(title, style: Theme.of(context).textTheme.titleLarge),
+    ),
+  );
+
+  Widget _sectionedContent() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      if (!widget.qualityOnly) ...[
+        DropdownButtonFormField<ReadingMode>(
+          key: const Key('reader-mode-selector'),
+          initialValue: _effective.mode,
+          decoration: InputDecoration(labelText: context.tr('Mode')),
+          icon: const Icon(InkIcons.caretDown, size: 20),
+          isExpanded: true,
+          itemHeight: null,
+          items: [
+            for (final entry in const {
+              ReadingMode.manga: 'Manga',
+              ReadingMode.comics: 'Comics',
+              ReadingMode.webtoon: 'Webtoon',
+              ReadingMode.ebook: 'Ebooks',
+            }.entries)
+              DropdownMenuItem(
+                key: ValueKey('reader-mode-option-${entry.key.name}'),
+                value: entry.key,
+                child: LText(entry.value),
+              ),
+          ],
+          onChanged: _loading
+              ? null
+              : (mode) {
+                  if (mode != null && mode != _effective.mode) {
+                    _change('mode', mode.name);
+                  }
+                },
+        ),
+        if (_supportsTypography) ...[
+          _sectionHeading('Templates'),
+          EbookStylePicker(
+            settings: _effective,
+            onSelected: (style) => _apply(style.apply(_overrides)),
+          ),
+          _sectionHeading('Appearance'),
+          _appearanceControls(showMode: false),
+          _sectionHeading('Page layout'),
+          _ebookControls(EbookControlsSection.layout),
+          _sectionHeading('Navigation'),
+          _navigationControls(),
+        ] else
+          _layoutControls(showMode: false, sectioned: true),
+      ] else ...[
+        _sectionHeading('Rendering'),
+        _imageQuality(),
+        if (widget.upscalingControls != null) ...[
+          const SizedBox(height: 24),
+          widget.upscalingControls!,
+        ],
+        _sectionHeading('Preloading'),
+        _webtoonQuality(context),
+      ],
+    ],
+  );
 
   Widget _tabContent() => switch (_activeTab) {
     _PreferenceTab.appearance => _appearanceControls(),
@@ -900,13 +980,14 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
             : MediaQuery.sizeOf(context).height;
         final scale = MediaQuery.textScalerOf(context).scale(1);
         final tabs = _tabs;
-        final preferredHeight = widget.modal
+        final resizable = InkSheetViewport.isResizableOf(context);
+        final preferredHeight = widget.modal && !resizable
             ? math.min(
                 available,
                 math.min(MediaQuery.sizeOf(context).height * .86, 560 * scale),
               )
             : available;
-        final height = widget.modal && tabs.length == 1
+        final height = widget.modal && !resizable && tabs.length == 1
             ? math.min(preferredHeight, 420 * scale)
             : preferredHeight;
         // Large type can make the header taller than a phone sheet. Let the
@@ -930,10 +1011,12 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
               )
             : null;
         final scope = widget.manifest != null && widget.libraryId == null;
+        final hasActions =
+            reset != null || (widget.showScope && !widget.qualityOnly);
         final actions = Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!widget.qualityOnly)
+            if (widget.showScope && !widget.qualityOnly)
               Flexible(
                 child: ReaderSettingsScopeSelector(
                   scope: _scope,
@@ -952,12 +1035,13 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (widget.modal)
+            if (widget.modal && widget.showTitle)
               LayoutBuilder(
                 builder: (context, bounds) {
                   final title = widget.qualityOnly
                       ? 'Image quality'
                       : 'Reading preferences';
+                  if (!hasActions) return InkSheetHeader(title: title);
                   if (bounds.maxWidth / scale < 420) {
                     return Column(
                       mainAxisSize: MainAxisSize.min,
@@ -977,7 +1061,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
                   return InkSheetHeader(title: title, action: actions);
                 },
               )
-            else
+            else if (hasActions)
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 4, 8, 0),
                 child: Align(
@@ -1026,7 +1110,10 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
             )),
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AbsorbPointer(absorbing: _loading, child: _tabContent()),
+              AbsorbPointer(
+                absorbing: _loading,
+                child: widget.sectioned ? _sectionedContent() : _tabContent(),
+              ),
               if (_scope == SettingsScope.library) ...[
                 const SizedBox(height: 24),
                 const LText(
@@ -1046,6 +1133,18 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
             ],
           ),
         );
+        if (widget.sectioned) {
+          return Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 760),
+              child: SingleChildScrollView(
+                key: PageStorageKey(('setup-reading-settings', _scope)),
+                child: body,
+              ),
+            ),
+          );
+        }
         return Align(
           heightFactor: 1,
           widthFactor: 1,

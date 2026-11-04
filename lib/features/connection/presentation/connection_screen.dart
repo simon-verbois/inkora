@@ -177,31 +177,48 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                         },
                       ),
                       const SizedBox(height: 20),
-                      SegmentedButton<AuthenticationMethod>(
-                        segments: const [
-                          ButtonSegment(
-                            value: AuthenticationMethod.apiKey,
-                            label: LText('API key'),
-                          ),
-                          ButtonSegment(
-                            value: AuthenticationMethod.basic,
-                            label: LText('Username / email'),
-                          ),
-                        ],
-                        selected: {_method},
-                        onSelectionChanged: busy
-                            ? null
-                            : (selection) {
-                                TextInput.finishAutofillContext(
-                                  shouldSave: false,
-                                );
-                                FocusScope.of(context).unfocus();
-                                setState(() {
-                                  _method = selection.single;
-                                  _secret.clear();
-                                  _showSecret = false;
-                                });
-                              },
+                      // Bound labels before intrinsic sizing, including large text.
+                      LayoutBuilder(
+                        builder: (context, bounds) =>
+                            SegmentedButton<AuthenticationMethod>(
+                              direction: Axis.vertical,
+                              segments: [
+                                ButtonSegment(
+                                  value: AuthenticationMethod.apiKey,
+                                  label: SizedBox(
+                                    width: bounds.maxWidth - 72,
+                                    child: const LText(
+                                      'API key',
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                                ButtonSegment(
+                                  value: AuthenticationMethod.basic,
+                                  label: SizedBox(
+                                    width: bounds.maxWidth - 72,
+                                    child: const LText(
+                                      'Username / email',
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              selected: {_method},
+                              onSelectionChanged: busy
+                                  ? null
+                                  : (selection) {
+                                      TextInput.finishAutofillContext(
+                                        shouldSave: false,
+                                      );
+                                      FocusScope.of(context).unfocus();
+                                      setState(() {
+                                        _method = selection.single;
+                                        _secret.clear();
+                                        _showSecret = false;
+                                      });
+                                    },
+                            ),
                       ),
                       if (_method == AuthenticationMethod.basic) ...[
                         const SizedBox(height: 16),

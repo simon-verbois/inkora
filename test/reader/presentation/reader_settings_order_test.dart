@@ -172,6 +172,7 @@ void main() {
     for (final locale in AppStrings.supportedLocales)
       (locale, const Size(320, 640), 2.0),
     (const Locale('fr'), const Size(1024, 768), 1.0),
+    (const Locale('fr'), const Size(390, 844), 1.0),
   ]) {
     testWidgets('ordered EPUB tabs and header scope at $locale/$size/$scale', (
       tester,
@@ -212,17 +213,37 @@ void main() {
       expect(find.text('Apply to'), findsNothing);
       final backgroundPicker = find.byKey(const Key('ebook-background-picker'));
       final fontPicker = find.byKey(const Key('ebook-font-picker'));
-      expect(
-        tester.getRect(backgroundPicker).left,
-        lessThan(tester.getRect(fontPicker).left),
-      );
-      expect(
-        tester.getRect(backgroundPicker).top,
-        closeTo(tester.getRect(fontPicker).top, 1),
-      );
-      expect(
-        tester.getRect(backgroundPicker).right,
-        lessThanOrEqualTo(tester.getRect(fontPicker).left),
+      final pairWidth = tester
+          .getSize(find.byKey(const Key('ebook-color-font-row')))
+          .width;
+      if (pairWidth >= 520 * scale) {
+        expect(
+          tester.getRect(backgroundPicker).right,
+          lessThanOrEqualTo(tester.getRect(fontPicker).left),
+        );
+        expect(
+          tester.getRect(backgroundPicker).top,
+          closeTo(tester.getRect(fontPicker).top, 1),
+        );
+      } else {
+        expect(
+          tester.getRect(backgroundPicker).left,
+          tester.getRect(fontPicker).left,
+        );
+        expect(
+          tester.getRect(fontPicker).top,
+          greaterThan(tester.getRect(backgroundPicker).bottom),
+        );
+      }
+      if (scale == 1) {
+        expect(
+          tester.getRect(backgroundPicker).top,
+          greaterThan(tester.getRect(find.byType(TabBar)).bottom),
+        );
+      }
+      await capture(
+        tester,
+        '${locale.languageCode}-${size.width.toInt()}-${(scale * 100).round()}-appearance-initial',
       );
       await tester.ensureVisible(backgroundPicker);
       await tester.tap(backgroundPicker);

@@ -18,6 +18,9 @@ void registerInkoraLicenses() {
     yield LicenseEntryWithLineBreaks([
       'Libre Baskerville',
     ], await rootBundle.loadString('assets/fonts/OFL.txt'));
+    yield LicenseEntryWithLineBreaks([
+      'Website identification icons',
+    ], await rootBundle.loadString('assets/licenses/websites.txt'));
     for (final (name, asset) in const [
       ('Atkinson Hyperlegible', 'AtkinsonHyperlegible'),
       ('Crimson Text', 'CrimsonText'),

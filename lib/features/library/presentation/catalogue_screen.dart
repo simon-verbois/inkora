@@ -5,6 +5,7 @@ import '../../../app/widgets/ink_filter_bar.dart';
 import 'reading_filter_chips.dart';
 import '../../connection/application/session_controller.dart';
 import 'catalogue_toolbar.dart';
+import 'catalogue_tools_sliver.dart';
 import '../domain/catalogue_filters.dart';
 import 'catalogue_filters_sheet.dart';
 import '../../../app/l10n/app_strings.dart';
@@ -26,6 +27,9 @@ import 'catalogue_grid.dart';
 import 'catalogue_widgets.dart';
 import 'volume_list_tile.dart';
 import 'volume_list.dart';
+import '../data/saved_search_store.dart';
+import '../domain/saved_catalogue_search.dart';
+import 'saved_searches_sheet.dart';
 
 class CatalogueScreen extends ConsumerStatefulWidget {
   const CatalogueScreen({
@@ -65,14 +69,21 @@ class CatalogueScreen extends ConsumerStatefulWidget {
 class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
   final _search = TextEditingController();
   final _scroll = ScrollController();
+  final _toolsObscured = ValueNotifier(false);
+
+  void _toolsVisibilityChanged(bool obscured) =>
+      _toolsObscured.value = obscured;
   Timer? _debounce;
   late CatalogueSort _sort;
   late CatalogueKind _kind;
   String? _libraryId;
+  String? _seriesId, _groupId;
+  CatalogueKind? _groupKind;
   String _searchQuery = '';
   int _initialWindowSize = 60;
   LocalCataloguePage? _sortingPage;
   String? _sortingAccount;
+  String? _queryAccount;
   double? _filterMinimumExtent;
   double? _tailHeight;
   Widget? _tailSliver;
@@ -85,9 +96,9 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
     libraryId: _kind == CatalogueKind.book || _kind == CatalogueKind.series
         ? _libraryId
         : null,
-    seriesId: widget.seriesId,
-    groupKind: widget.groupKind,
-    groupId: widget.groupId,
+    seriesId: _seriesId,
+    groupKind: _groupKind,
+    groupId: _groupId,
     search: _searchQuery,
     sort: _sort,
     showUnavailable: _showUnavailable,
@@ -109,6 +120,9 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
     _sortingPage = null;
     _kind = widget.embedded ? CatalogueKind.series : widget.kind;
     _libraryId = widget.libraryId;
+    _seriesId = widget.seriesId;
+    _groupId = widget.groupId;
+    _groupKind = widget.groupKind;
     _sort =
         widget.initialSort ??
         (widget.ordered || widget.seriesId != null
@@ -116,6 +130,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
             : CatalogueSort.title);
     _searchQuery = '';
     _search.clear();
+    _showUnavailable = false;
   }
 
   @override
@@ -147,6 +162,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
     _debounce?.cancel();
     _search.dispose();
     _scroll.dispose();
+    _toolsObscured.dispose();
     super.dispose();
   }
 
@@ -160,7 +176,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
     if (_scroll.hasClients) _scroll.jumpTo(0);
   }
 
-  void _quickFilters(MetadataFilters filters) {
+  void _quickFilters(MetadataFilters filters, {bool? showUnavailable}) {
     final current = ref.read(catalogueFeedStateProvider(_query)).asData?.value;
     setState(() {
       _sortingPage = current?.page ?? _sortingPage;
@@ -171,6 +187,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
             _scroll.offset + _scroll.position.viewportDimension;
       }
       _metadataFilters = filters;
+      _showUnavailable = showUnavailable ?? _showUnavailable;
     });
   }
 
@@ -228,6 +245,44 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
     if (_searchQuery.isNotEmpty) _change(() => _searchQuery = '');
   }
 
+  Future<void> _savedSearches() async {
+    _debounce?.cancel();
+    // Include the last typed characters even before the search debounce fires.
+    if (_searchQuery != _search.text.trim()) {
+      _change(() => _searchQuery = _search.text.trim());
+    }
+    final account = ref.read(sessionProvider).session?.accountId;
+    if (account == null) return;
+    final database = await ref.read(databaseProvider);
+    bool current() =>
+        mounted &&
+        ref.read(sessionProvider).phase == SessionPhase.ready &&
+        ref.read(sessionProvider).session?.accountId == account;
+    if (!mounted || !current()) return;
+    final saved = await showInkPopup<SavedCatalogueSearch>(
+      context: context,
+      child: SavedSearchesSheet(
+        store: SavedSearchStore(database, account),
+        query: _query,
+        isCurrent: current,
+      ),
+    );
+    if (saved == null || !current()) return;
+    _change(() {
+      final query = saved.query;
+      _kind = query.kind;
+      _libraryId = query.libraryId;
+      _seriesId = query.seriesId;
+      _groupId = query.groupId;
+      _groupKind = query.groupKind;
+      _sort = query.sort;
+      _showUnavailable = query.showUnavailable;
+      _metadataFilters = query.filters;
+      _searchQuery = query.search;
+      _search.text = query.search;
+    });
+  }
+
   Future<void> _filters() async {
     final query = _query;
     final repository = ref.read(catalogueRepositoryProvider.future);
@@ -260,15 +315,20 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
       child: CatalogueFiltersSheet(
         showUnavailable: _showUnavailable,
         filters: _metadataFilters,
+        showReadingFilters: widget.embedded,
         options: options,
         count: count,
       ),
     );
     if (!mounted || result == null) return;
-    _change(() {
-      _showUnavailable = result.showUnavailable;
-      _metadataFilters = result.filters;
-    });
+    if (widget.embedded) {
+      _quickFilters(result.filters, showUnavailable: result.showUnavailable);
+    } else {
+      _change(() {
+        _showUnavailable = result.showUnavailable;
+        _metadataFilters = result.filters;
+      });
+    }
   }
 
   @override
@@ -276,6 +336,11 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
     final account = ref.watch(
       sessionProvider.select((state) => state.session?.accountId),
     );
+    if (_queryAccount != null && _queryAccount != account) {
+      _debounce?.cancel();
+      _reset();
+    }
+    _queryAccount = account;
     if (_sortingAccount != account) _sortingPage = null;
     final query = _query;
     final data = ref.watch(catalogueFeedStateProvider(query));
@@ -324,7 +389,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
       16,
       16,
     );
-    final librarySelection = widget.seriesId == null && widget.groupId == null;
+    final librarySelection = _seriesId == null && _groupId == null;
     final search = InkHeaderSearch(
       key: const Key('catalogue-search'),
       controller: _search,
@@ -334,84 +399,107 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
       onChanged: _searchChanged,
       onClear: _clearSearch,
     );
-    Widget tools(bool attached) => PinnedHeaderSliver(
-      child: ColoredBox(
-        key: const Key('catalogue-pinned-tools'),
-        color: widget.embedded
-            ? Colors.transparent
-            : Theme.of(context).scaffoldBackgroundColor,
-        child: InkFilterBar(
-          controlPrefix: 'catalogue',
-          padding: widget.embedded
-              ? const EdgeInsets.symmetric(horizontal: InkSpace.md)
-              : const EdgeInsets.fromLTRB(16, 4, 8, 4),
-          attachedGroups: widget.embedded,
-          groupsAttached: attached,
-          startChipsWhenCompact: widget.embedded,
-          compactMenu: widget.embedded
-              ? _toolsMenu(selectedLibrary, libraries)
-              : null,
-          compactChips: widget.embedded
-              ? ReadingFilterMenu(
-                  filters: _metadataFilters,
-                  onChanged: _quickFilters,
-                )
-              : null,
-          leading: librarySelection
-              ? _libraryButton(selectedLibrary, libraries)
-              : Text(
-                  AppStrings.of(context).quantity(page?.total ?? 0, 'item'),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-          chips: _kind == CatalogueKind.book || _kind == CatalogueKind.series
-              ? readingFilterChips(
-                  filters: _metadataFilters,
-                  onChanged: _quickFilters,
-                )
-              : const [],
-          sort: InkSortButton<CatalogueSort>(
-            key: const Key('catalogue-sort'),
-            value: _sort,
-            options: catalogueSortOptions(
-              sequence: widget.groupId != null || widget.seriesId != null,
-              groupOrder: widget.groupId != null,
-            ),
-            onSelected: _sortChanged,
-          ),
-          filterCount: _metadataFilters.values.length,
-          onFilters: _filters,
-          actions: [
-            if (_kind != CatalogueKind.book)
-              IconButton(
-                key: const Key('catalogue-view'),
-                tooltip: context.tr(_listView ? 'Show grid' : 'Show list'),
-                onPressed: () => setState(() => _listView = !_listView),
-                icon: Icon(
-                  _listView ? InkIcons.squaresFour : InkIcons.list,
-                  size: 20,
-                ),
+    final tools = ColoredBox(
+      key: const Key('catalogue-tools'),
+      color: widget.embedded
+          ? Colors.transparent
+          : Theme.of(context).scaffoldBackgroundColor,
+      child: InkFilterBar(
+        controlPrefix: 'catalogue',
+        padding: widget.embedded
+            ? const EdgeInsets.symmetric(horizontal: InkSpace.md)
+            : const EdgeInsets.fromLTRB(16, 4, 8, 4),
+        startChipsWhenCompact: widget.embedded,
+        compactMenu: widget.embedded
+            ? _toolsMenu(selectedLibrary, libraries)
+            : null,
+        compactChips: widget.embedded
+            ? ReadingFilterMenu(
+                filters: _metadataFilters,
+                onChanged: _quickFilters,
+              )
+            : null,
+        leading: librarySelection
+            ? _libraryButton(selectedLibrary, libraries)
+            : Text(
+                AppStrings.of(context).quantity(page?.total ?? 0, 'item'),
+                style: Theme.of(context).textTheme.bodySmall,
               ),
-          ],
+        chips: _kind == CatalogueKind.book || _kind == CatalogueKind.series
+            ? readingFilterChips(
+                filters: _metadataFilters,
+                onChanged: _quickFilters,
+              )
+            : const [],
+        sort: InkSortButton<CatalogueSort>(
+          key: const Key('catalogue-sort'),
+          value: _sort,
+          options: catalogueSortOptions(
+            sequence: _groupId != null || _seriesId != null,
+            groupOrder: _groupId != null,
+          ),
+          onSelected: _sortChanged,
         ),
+        filterCount: _metadataFilters.values.length,
+        onFilters: _filters,
+        actions: [
+          IconButton(
+            key: const Key('catalogue-saved-searches'),
+            tooltip: context.tr('Saved searches'),
+            onPressed: _savedSearches,
+            icon: const Icon(InkIcons.bookmarks, size: 20),
+          ),
+          if (_kind != CatalogueKind.book)
+            IconButton(
+              key: const Key('catalogue-view'),
+              tooltip: context.tr(_listView ? 'Show grid' : 'Show list'),
+              onPressed: () => setState(() => _listView = !_listView),
+              icon: Icon(
+                _listView ? InkIcons.squaresFour : InkIcons.list,
+                size: 20,
+              ),
+            ),
+        ],
       ),
     );
-    // Cache both paint states outside the per-scroll sliver layout callback.
-    final detachedTools = tools(false);
-    final attachedTools = tools(true);
     final toolbar = widget.embedded
-        ? SliverLayoutBuilder(
-            builder: (context, constraints) {
-              final atHeader =
-                  constraints.scrollOffset > 0 ||
-                  constraints.remainingPaintExtent >=
-                      constraints.viewportMainAxisExtent -
-                          (InkScreenHeader.extent - 8) -
-                          .5;
-              return atHeader ? attachedTools : detachedTools;
-            },
+        ? CatalogueToolsSliver(
+            headerExtent: InkScreenHeader.extent - InkSpace.sm,
+            onObscuredChanged: _toolsVisibilityChanged,
+            child: tools,
           )
-        : detachedTools;
+        : PinnedHeaderSliver(child: tools);
     final scaffold = Scaffold(
+      floatingActionButton: widget.embedded
+          ? ValueListenableBuilder<bool>(
+              valueListenable: _toolsObscured,
+              builder: (context, obscured, _) => obscured
+                  ? Column(
+                      key: const Key('catalogue-floating-actions'),
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (librarySelection) ...[
+                          _libraryButton(
+                            selectedLibrary,
+                            libraries,
+                            floating: true,
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        Badge(
+                          isLabelVisible: !_metadataFilters.isEmpty,
+                          child: InkHeaderBubble(
+                            key: const Key('catalogue-floating-filters'),
+                            tooltip: context.tr('Filters'),
+                            onPressed: _filters,
+                            icon: InkIcons.slidersHorizontal,
+                          ),
+                        ),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+            )
+          : null,
       appBar: widget.embedded
           ? null
           : InkScreenHeader(
@@ -440,9 +528,8 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
               onRefresh: () => refreshCatalogue(ref),
               child: CustomScrollView(
                 controller: _scroll,
-                // Stretch transforms the pinned tool fills but not the shared
-                // header outline above this viewport. Keep Home chrome rigid;
-                // scroll physics and pull-to-refresh retain their own owners.
+                // Keep the fixed header and floating actions rigid during
+                // overscroll; pull-to-refresh retains its existing owner.
                 scrollBehavior: widget.embedded
                     ? ScrollConfiguration.of(context)
                           .copyWith(overscroll: false)
@@ -451,8 +538,8 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
                   if (widget.embedded)
-                    const PinnedHeaderSliver(
-                      child: SizedBox(height: InkScreenHeader.extent - 8),
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: InkScreenHeader.extent),
                     ),
                   SliverToBoxAdapter(
                     child: Column(
@@ -520,7 +607,7 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
                             : InkIcons.magnifyingGlassMinus,
                         title: data.hasError || state?.error == true
                             ? 'Catalogue unavailable'
-                            : query.search.isNotEmpty
+                            : query.search.isNotEmpty || !query.filters.isEmpty
                             ? 'No matching books'
                             : 'Nothing here yet',
                         message: page?.lastUpdated == null
@@ -565,6 +652,12 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
                       height: MediaQuery.paddingOf(context).bottom + 12,
                     ),
                   ),
+                  if (widget.embedded)
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: 152 + MediaQuery.paddingOf(context).bottom,
+                      ),
+                    ),
                   if (widget.embedded && _filterMinimumExtent != null)
                     SliverLayoutBuilder(builder: _filterSpace),
                 ],
@@ -581,11 +674,63 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
 
   Widget _libraryButton(
     CatalogueItem? library,
-    AsyncValue<LocalCataloguePage> libraries,
-  ) {
+    AsyncValue<LocalCataloguePage> libraries, {
+    bool floating = false,
+  }) {
     final label =
         library?.title ??
         context.tr(_libraryId == null ? 'All libraries' : 'Selected library');
+    if (floating) {
+      return InkHeaderBubble(
+        key: const Key('catalogue-floating-library'),
+        tooltip: context.tr('Choose a library'),
+        onPressed: () async {
+          final choice = await showInkPopup<(String?,)>(
+            context: context,
+            title: 'Choose a library',
+            child: Builder(
+              builder: (panelContext) => ListView(
+                children: [
+                  ListTile(
+                    key: const Key('library-choice-all'),
+                    selected: _libraryId == null,
+                    leading: Icon(
+                      _libraryId == null
+                          ? InkIcons.checkCircle
+                          : InkIcons.books,
+                    ),
+                    title: const LText('All libraries'),
+                    onTap: () => Navigator.pop(panelContext, (null,)),
+                  ),
+                  ...libraries.when(
+                    loading: () => [const LinearProgressIndicator()],
+                    error: (_, _) => [
+                      const LText('Saved libraries unavailable.'),
+                    ],
+                    data: (page) => [
+                      for (final item in page.items)
+                        ListTile(
+                          key: ValueKey('library-choice-${item.id}'),
+                          selected: item.id == _libraryId,
+                          leading: Icon(
+                            item.id == _libraryId
+                                ? InkIcons.checkCircle
+                                : InkIcons.books,
+                          ),
+                          title: Text(item.title),
+                          onTap: () => Navigator.pop(panelContext, (item.id,)),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+          if (mounted && choice != null) _selectLibrary(choice);
+        },
+        icon: InkIcons.books,
+      );
+    }
     final compact =
         MediaQuery.sizeOf(context).width <= MediaQuery.sizeOf(context).height ||
         MediaQuery.sizeOf(context).width < 600 ||
@@ -709,8 +854,8 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
         leadingIcon: const Icon(InkIcons.sortAscending),
         menuChildren: [
           for (final option in catalogueSortOptions(
-            sequence: widget.groupId != null || widget.seriesId != null,
-            groupOrder: widget.groupId != null,
+            sequence: _groupId != null || _seriesId != null,
+            groupOrder: _groupId != null,
           ))
             MenuItemButton(
               key: ValueKey('catalogue-sort-${option.value.name}'),
@@ -722,6 +867,12 @@ class _CatalogueScreenState extends ConsumerState<CatalogueScreen> {
             ),
         ],
         child: const LText('Sort catalogue'),
+      ),
+      MenuItemButton(
+        key: const Key('catalogue-menu-saved-searches'),
+        leadingIcon: const Icon(InkIcons.bookmarks),
+        onPressed: _savedSearches,
+        child: const LText('Saved searches'),
       ),
       MenuItemButton(
         key: const Key('catalogue-menu-filters'),

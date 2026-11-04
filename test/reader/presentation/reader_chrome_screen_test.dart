@@ -267,8 +267,21 @@ void main() {
             await tester.tap(find.byTooltip('Settings'));
             await _frames(tester);
             expect(find.byType(ReaderSettingsSheet), findsOneWidget);
+            final editor = tester.widget<ReaderSettingsSheet>(
+              find.byType(ReaderSettingsSheet),
+            );
+            expect(editor.manifest!.bookId, manifest.bookId);
+            expect(editor.libraryId, isNull);
+            expect(find.text('Reading preferences'), findsNothing);
+            expect(find.byKey(const Key('reader-settings-menu')), findsNothing);
+            expect(
+              find.byKey(const Key('reader-settings-scope')),
+              findsNothing,
+            );
             expect(find.text('Save'), findsNothing);
-            await expectAccessibilityGuidelines(tester);
+            // The pixel contrast guideline samples clipped scroll-edge text
+            // as gray. Check labels/targets here; ui_test covers theme contrast.
+            await expectAccessibilityGuidelines(tester, contrast: false);
             await _predictiveBack(tester, find.byType(ReaderSettingsSheet));
             expect(find.byType(ReaderSettingsSheet), findsNothing);
             expect(find.text('p. 5'), findsOneWidget);

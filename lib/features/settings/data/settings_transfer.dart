@@ -187,7 +187,7 @@ final class SettingsTransfer {
           ...checked['ui'] as Map<String, dynamic>,
           'setupCompleted': current.setupCompleted,
           'setupStep': current.setupStep,
-          'setupVersion': 3,
+          'setupVersion': UiPreferences.setupVersion,
         }),
       );
       for (final p in checked['preferences'] as List) {

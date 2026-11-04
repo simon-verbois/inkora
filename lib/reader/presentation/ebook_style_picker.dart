@@ -34,7 +34,7 @@ class EbookStylePicker extends StatelessWidget {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       LText(style.label),
-      if (!style.publisherStyles) ...[
+      if (style.fontChoice != EbookFont.publisher) ...[
         const SizedBox(height: 4),
         LText(
           style.fontChoice.label,

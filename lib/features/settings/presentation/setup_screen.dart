@@ -1,7 +1,5 @@
 import '../../../app/widgets/ink_screen_header.dart';
-import '../../../app/widgets/inkora_widgets.dart';
 import '../../../app/icons/inkora_icons.dart';
-import 'preference_labels.dart';
 import 'library_defaults_screen.dart';
 import 'setup_introduction.dart';
 import '../../../app/l10n/app_strings.dart';
@@ -27,7 +25,6 @@ class SetupScreen extends ConsumerStatefulWidget {
 
 class _SetupScreenState extends ConsumerState<SetupScreen> {
   static const _sections = [
-    ('language', 'Language'),
     ('introduction', 'Welcome to Inkora'),
     ('appearance', 'Appearance'),
     ('gestures', 'Gestures'),
@@ -35,6 +32,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     ('quality', 'Image quality'),
     ('downloads', 'Downloads'),
     ('accessibility', 'Accessibility'),
+    ('completion', 'Ready to read'),
   ];
   bool _saving = false;
   late int? _editingStep = widget.editing ? 0 : null;
@@ -46,11 +44,21 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   void _back(int step) {
     if (_saving) return;
     if (_libraryId != null) {
-      setState(() => _libraryId = null);
+      _leaveLibrary();
     } else if (step > 0) {
       _move(step - 1);
     } else if (widget.editing) {
       context.go('/settings');
+    }
+  }
+
+  Future<void> _leaveLibrary() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      await _editorKey.currentState?.savePreferences();
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -75,8 +83,8 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         if (saved != true || !mounted) return;
       }
       await _move(
-        (step + 1).clamp(0, _sections.length),
-        finish: step == _sections.length,
+        (step + 1).clamp(0, _sections.length - 1),
+        finish: step == _sections.length - 1,
       );
     }
   }
@@ -125,14 +133,64 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     }
     final step = (_editingStep ?? preferences.setupStep).clamp(
       0,
-      _sections.length,
+      _sections.length - 1,
     );
-    final stepTitle = step < _sections.length
-        ? _sections[step].$2
-        : 'Ready to read';
-    return LayoutBuilder(
+    final stepTitle = _sections[step].$2;
+    final introduction = _sections[step].$1 == 'introduction';
+    final completion = _sections[step].$1 == 'completion';
+    final deviceLanguage =
+        WidgetsBinding.instance.platformDispatcher.locale.languageCode;
+    final welcomeLocale = AppStrings.localeFor(
+      languageNames.containsKey(deviceLanguage) ? deviceLanguage : 'en',
+    );
+    final content = LayoutBuilder(
       builder: (context, bounds) {
         final wide = useWideSettings(context, bounds.maxWidth);
+        final footer = Padding(
+          padding: EdgeInsets.all(
+            MediaQuery.textScalerOf(context).scale(1) > 1.5 ? 8 : 16,
+          ),
+          child: Align(
+            alignment: wide ? Alignment.centerRight : Alignment.center,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Padding(
+                key: const Key('setup-footer'),
+                padding: const EdgeInsets.all(8),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          key: const Key('setup-back'),
+                          onPressed: _saving || step == 0
+                              ? null
+                              : () => _back(step),
+                          child: const LText(
+                            'Back',
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: FilledButton(
+                          key: const Key('setup-next'),
+                          onPressed: _saving ? null : () => _next(step),
+                          child: LText(
+                            completion ? 'Start reading' : 'Next',
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
         return PopScope(
           canPop: false,
           onPopInvokedWithResult: (didPop, result) {
@@ -141,7 +199,17 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
           child: Scaffold(
             appBar: InkScreenHeader(
               automaticallyImplyLeading: false,
-              title: LText(wide ? stepTitle : 'Make Inkora yours'),
+              title: _libraryId != null
+                  ? Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: TextButton.icon(
+                        key: const Key('setup-library-back'),
+                        onPressed: _saving ? null : _leaveLibrary,
+                        icon: const Icon(InkIcons.caretLeft),
+                        label: const LText('Back'),
+                      ),
+                    )
+                  : LText(wide ? stepTitle : 'Make Inkora yours'),
               actions: [
                 if (widget.editing)
                   CloseButton(
@@ -170,7 +238,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                             const SizedBox(height: 8),
                             LText(
                               'Step {0} of {1}',
-                              arguments: [step + 1, _sections.length + 1],
+                              arguments: [step + 1, _sections.length],
                             ),
                             const SizedBox(height: 16),
                             Expanded(
@@ -178,7 +246,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                                 children: [
                                   for (
                                     var index = 0;
-                                    index <= _sections.length;
+                                    index < _sections.length;
                                     index++
                                   )
                                     SettingsNavTile(
@@ -192,11 +260,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                                               )
                                             : Text('${index + 1}'),
                                       ),
-                                      title: LText(
-                                        index < _sections.length
-                                            ? _sections[index].$2
-                                            : 'Ready to read',
-                                      ),
+                                      title: LText(_sections[index].$2),
                                     ),
                                 ],
                               ),
@@ -222,16 +286,12 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                               children: [
                                 LText(
                                   'Step {0} of {1}',
-                                  arguments: [step + 1, _sections.length + 1],
+                                  arguments: [step + 1, _sections.length],
                                 ),
                                 const SizedBox(height: 8),
                                 LinearProgressIndicator(
-                                  semanticsLabel: context.tr(
-                                    step < _sections.length
-                                        ? _sections[step].$2
-                                        : 'Ready to read',
-                                  ),
-                                  value: (step + 1) / (_sections.length + 1),
+                                  semanticsLabel: context.tr(stepTitle),
+                                  value: (step + 1) / (_sections.length),
                                 ),
                               ],
                             ),
@@ -240,34 +300,21 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                         Expanded(
                           child: SettingsPaneScope(
                             wide: wide,
-                            child: step < _sections.length
-                                ? _sections[step].$1 == 'library-defaults'
-                                      ? LibraryDefaultsScreen(
-                                          key: ValueKey(_libraryId),
-                                          embedded: true,
-                                          libraryId: _libraryId,
-                                          editorKey: _editorKey,
-                                          onLibrarySelected: (id) =>
-                                              setState(() => _libraryId = id),
-                                          onSaved: () =>
-                                              setState(() => _libraryId = null),
-                                        )
-                                      : _sections[step].$1 == 'introduction'
-                                      ? SetupIntroduction(showTitle: !wide)
-                                      : SettingsScreen(
-                                          key: ValueKey(step),
-                                          section: _sections[step].$1,
-                                          embedded: true,
-                                          editorKey:
-                                              _sections[step].$1 == 'quality'
-                                              ? _editorKey
-                                              : null,
-                                          onSaved:
-                                              _sections[step].$1 == 'quality'
-                                              ? () {}
-                                              : null,
-                                        )
-                                : Center(
+                            child: _sections[step].$1 == 'library-defaults'
+                                ? LibraryDefaultsScreen(
+                                    key: ValueKey(_libraryId),
+                                    embedded: true,
+                                    libraryId: _libraryId,
+                                    editorKey: _editorKey,
+                                    onLibrarySelected: (id) =>
+                                        setState(() => _libraryId = id),
+                                    onSaved: () =>
+                                        setState(() => _libraryId = null),
+                                  )
+                                : _sections[step].$1 == 'introduction'
+                                ? SetupIntroduction(footer: footer)
+                                : completion
+                                ? Center(
                                     child: SingleChildScrollView(
                                       padding: const EdgeInsets.all(24),
                                       child: ConstrainedBox(
@@ -275,8 +322,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                                           maxWidth: 560,
                                         ),
                                         child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.stretch,
+                                          mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Icon(
                                               InkIcons.checkCircle,
@@ -289,67 +335,31 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                                             if (!wide)
                                               LText(
                                                 'Ready to read',
-                                                textAlign: TextAlign.center,
                                                 style: Theme.of(context)
                                                     .textTheme
                                                     .headlineMedium,
+                                                textAlign: TextAlign.center,
                                               ),
                                             const SizedBox(height: 12),
                                             const LText(
-                                              'Your configuration is saved on this device. You can change every setting later, or reopen Guided setup from Settings.',
+                                              'Setup is complete. Enjoy your reading!',
                                               textAlign: TextAlign.center,
-                                            ),
-                                            const SizedBox(height: 24),
-                                            InkPanel(
-                                              child: Column(
-                                                children: [
-                                                  ListTile(
-                                                    contentPadding:
-                                                        EdgeInsets.zero,
-                                                    leading: const Icon(
-                                                      InkIcons.palette,
-                                                    ),
-                                                    title: LText(
-                                                      appearanceLabel(
-                                                        preferences.appearance,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  ListTile(
-                                                    contentPadding:
-                                                        EdgeInsets.zero,
-                                                    leading: const Icon(
-                                                      InkIcons.books,
-                                                    ),
-                                                    title: Text(
-                                                      languageNames[preferences
-                                                              .locale] ??
-                                                          context.tr(
-                                                            'System language',
-                                                          ),
-                                                    ),
-                                                  ),
-                                                  ListTile(
-                                                    contentPadding:
-                                                        EdgeInsets.zero,
-                                                    leading: const Icon(
-                                                      InkIcons.personArmsSpread,
-                                                    ),
-                                                    title: LText(
-                                                      gesturePresetLabel(
-                                                        preferences
-                                                            .gestures
-                                                            .preset,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
                                             ),
                                           ],
                                         ),
                                       ),
                                     ),
+                                  )
+                                : SettingsScreen(
+                                    key: ValueKey(step),
+                                    section: _sections[step].$1,
+                                    embedded: true,
+                                    editorKey: _sections[step].$1 == 'quality'
+                                        ? _editorKey
+                                        : null,
+                                    onSaved: _sections[step].$1 == 'quality'
+                                        ? () {}
+                                        : null,
                                   ),
                           ),
                         ),
@@ -358,60 +368,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                             padding: const EdgeInsets.all(8),
                             child: LText(_error!),
                           ),
-                        Padding(
-                          padding: EdgeInsets.all(
-                            MediaQuery.textScalerOf(context).scale(1) > 1.5
-                                ? 8
-                                : 16,
-                          ),
-                          child: Align(
-                            alignment: wide
-                                ? Alignment.centerRight
-                                : Alignment.center,
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 420),
-                              child: Padding(
-                                key: const Key('setup-footer'),
-                                padding: const EdgeInsets.all(8),
-                                child: IntrinsicHeight(
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      Expanded(
-                                        child: OutlinedButton(
-                                          key: const Key('setup-back'),
-                                          onPressed: _saving || step == 0
-                                              ? null
-                                              : () => _back(step),
-                                          child: const LText(
-                                            'Back',
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: FilledButton(
-                                          key: const Key('setup-next'),
-                                          onPressed: _saving
-                                              ? null
-                                              : () => _next(step),
-                                          child: LText(
-                                            step == _sections.length
-                                                ? 'Start reading'
-                                                : 'Next',
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
+                        if (!introduction && _libraryId == null) footer,
                       ],
                     ),
                   ),
@@ -422,5 +379,12 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         );
       },
     );
+    return introduction
+        ? Localizations.override(
+            context: context,
+            locale: welcomeLocale,
+            child: content,
+          )
+        : content;
   }
 }

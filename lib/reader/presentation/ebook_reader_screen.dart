@@ -841,6 +841,9 @@ class _EbookReaderScreenState extends ConsumerState<EbookReaderScreen>
         store: widget.repository.store,
         manifest: _manifest,
         modal: true,
+        showTitle: false,
+        showScope: false,
+        showReset: false,
       ),
     );
   }

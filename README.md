@@ -25,6 +25,8 @@ behind this branch; see [the changelog](CHANGELOG.md).
   storage and Wi-Fi preferences. From a series, choose all volumes or only
   unread and in-progress books. Optionally remove finished downloads for that
   series after at least 24 hours, keeping reading progress.
+  For selected series, keep the next two or three unfinished volumes offline;
+  the selection refills as you read while the app is open, within download limits.
 - **Keep your place.** Preview page thumbnails, save bookmarks and notes, and
   continue to the next volume from the completion screen. Reopen recent books
   from device-local reading history.
@@ -36,6 +38,8 @@ behind this branch; see [the changelog](CHANGELOG.md).
   for portrait and landscape windows.
 - **Find your next read.** Search your catalogue and browse series, collections
   and reading lists. Filter by format, reading status or downloaded availability.
+  Combine author and genre filters, then save named searches with their library,
+  search text and sorting for quick reuse on the same account.
 - **Choose what appears.** Edit multiple server connections and choose the
   visible libraries for each account in dedicated popups. All accessible
   libraries are selected by default.

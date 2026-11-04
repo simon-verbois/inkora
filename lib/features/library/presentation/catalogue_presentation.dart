@@ -28,6 +28,20 @@ void openCatalogueItem(BuildContext context, CatalogueItem item) {
   if (!item.canOpen) return;
   if (item.kind == CatalogueKind.book) {
     if (item.isEbook) {
+      final route = GoRouterState.of(context);
+      if (route.name == 'reader-parent') {
+        // Stay on the root reader stack rather than re-entering the covered
+        // Home shell, which would duplicate its page key.
+        context.pushNamed(
+          'reader-parent-book',
+          pathParameters: {
+            'id': route.pathParameters['id']!,
+            'bookId': item.id,
+          },
+          queryParameters: route.uri.queryParameters,
+        );
+        return;
+      }
       context.pushNamed(
         'catalogue-detail',
         pathParameters: {'kind': 'book', 'id': item.id},
@@ -47,13 +61,14 @@ void openCatalogueItem(BuildContext context, CatalogueItem item) {
 void openBookReader(BuildContext context, CatalogueItem item) {
   if (!item.canOpen) return;
   final route = GoRouterState.of(context);
-  if (route.name == 'reader-parent') {
+  if (route.name == 'reader-parent' || route.name == 'reader-parent-book') {
     final router = GoRouter.of(context);
     final currentBook = route.uri.queryParameters['book'];
     if (!router.canPop()) {
       router.goNamed('reader', pathParameters: {'id': item.id});
       return;
     }
+    if (route.name == 'reader-parent-book') router.pop();
     router.pop();
     if (currentBook != item.id) {
       // Readium owns one publication; replace the prior reader rather than

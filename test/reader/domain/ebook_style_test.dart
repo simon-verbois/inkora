@@ -94,11 +94,53 @@ void main() {
           },
         ),
       );
-      expect(custom.ebook!['publisherStyles'], false);
+      expect(custom.ebook!['publisherStyles'], true);
       expect(custom.ebook!['pageInsets'], isNotNull);
       final restored = EbookStyle.publisher.apply(custom);
       expect(restored.ebook!['font'], 'publisher');
       expect(restored.ebook!['publisherStyles'], true);
+    },
+  );
+
+  test(
+    'every template preserves publisher layout and scoped manual geometry',
+    () {
+      for (final style in EbookStyle.values) {
+        const draft = ReadingOverrides(
+          mode: ReadingMode.ebook,
+          ebook: {
+            'publisherStyles': false,
+            'lineHeight': 2.1,
+            'margins': 1.7,
+            'justify': true,
+            'pageInsets': {'left': 10, 'right': 20, 'top': 30, 'bottom': 40},
+            'scroll': true,
+            'columns': 'one',
+            'pageNumbers': false,
+          },
+        );
+        final applied = style.apply(draft);
+        final settings = ReadingSettings.resolve([applied]);
+        expect(settings.ebook.publisherStyles, true);
+        expect(settings.ebook.fontSize, 1);
+        expect(settings.ebook.fontChoice, style.fontChoice);
+        for (final field in [
+          'lineHeight',
+          'margins',
+          'justify',
+          'pageInsets',
+          'scroll',
+          'columns',
+          'pageNumbers',
+        ]) {
+          expect(applied.ebook![field], draft.ebook![field], reason: field);
+        }
+        expect(style.matches(settings), true);
+        final unconfigured = style.apply(const ReadingOverrides());
+        for (final field in ['lineHeight', 'margins', 'justify']) {
+          expect(unconfigured.ebook!.containsKey(field), false, reason: field);
+        }
+      }
     },
   );
 

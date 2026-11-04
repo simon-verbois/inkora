@@ -99,12 +99,15 @@ void main() {
               .getSingle(),
         ))!;
         final offsetStore = ReaderStore(harness.database, offsetRow.accountId);
+        final manga = (await tester.runAsync(
+          () => offsetStore.overrides(SettingsScope.library, 'library-a'),
+        ))!;
         expect(
-          (await tester.runAsync(
-            () => offsetStore.overrides(SettingsScope.library, 'library-a'),
-          ))!.fit,
-          ReadingFit.content,
+          manga.fit,
+          isNull,
+          reason: 'The selected default needs no redundant override',
         );
+        expect(ReadingSettings.resolve([manga]).fit, ReadingFit.content);
         expect(
           (await tester.runAsync(
             () => offsetStore.overrides(SettingsScope.library, 'library-a'),

@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/widgets/ink_filter_bar.dart';
-import 'package:inkora/app/widgets/ink_home_attachment.dart';
 import 'package:inkora/features/library/presentation/catalogue_grid.dart';
 import 'package:inkora/features/library/presentation/catalogue_card.dart';
 import 'package:inkora/features/library/domain/catalogue.dart';
-import 'package:inkora/features/library/domain/resume_entry.dart';
-import 'package:inkora/features/settings/domain/ui_preferences.dart';
 
 import '../../support/catalogue_fakes.dart';
 import '../../support/ui_harness.dart';
@@ -20,7 +17,7 @@ void main() {
     (const Size(1280, 800), 1.0),
   ]) {
     testWidgets(
-      'Home tools remain accessible and pin below header at $size/$scale',
+      'Home tools scroll away and reveal bottom actions at $size/$scale',
       (tester) async {
         tester.view.physicalSize = size;
         tester.view.devicePixelRatio = 1;
@@ -52,7 +49,10 @@ void main() {
         addTearDown(() => harness.close(tester));
         await harness.mount(tester, textScale: scale);
         final bar = find.byType(InkFilterBar);
-        final tools = find.byKey(const Key('catalogue-pinned-tools'));
+        final tools = find.byKey(
+          const Key('catalogue-tools'),
+          skipOffstage: false,
+        );
         final menu = find.byKey(const Key('catalogue-tools-menu'));
         final effective = (tester.getSize(bar).width - 24) / scale;
         final chips = find.byKey(
@@ -81,10 +81,7 @@ void main() {
         if (effective < 600) {
           expect(menu.hitTestable(), findsOneWidget);
           expect(tester.getCenter(chips).dy, tester.getCenter(menu).dy);
-          expect(
-            tester.getSize(tools).height,
-            tester.getSize(chips).height + 8,
-          );
+          expect(tester.getSize(tools).height, tester.getSize(chips).height);
           await tester.tap(menu);
           await tester.pumpAndSettle();
           await tester.tap(find.byKey(const Key('catalogue-library-menu')));
@@ -119,7 +116,7 @@ void main() {
           final selector = find.byKey(const Key('library-selector'));
           expect(
             tester.getBottomLeft(selector).dy - tester.getBottomLeft(chips).dy,
-            -10,
+            0,
           );
           expect(
             tester.getCenter(find.byKey(const Key('catalogue-sort'))).dy,
@@ -131,96 +128,27 @@ void main() {
         final header = find.byKey(const Key('home-header'));
         expect(header.hitTestable(), findsOneWidget);
         expect(
-          tester.getTopLeft(tools).dy,
-          closeTo(tester.getBottomLeft(header).dy - 8, 1),
+          tester.getBottomLeft(tools).dy,
+          lessThanOrEqualTo(tester.getBottomLeft(header).dy),
         );
-        expect(chips.hitTestable(), findsOneWidget);
+        final floating = find.byKey(const Key('catalogue-floating-actions'));
+        expect(floating, findsOneWidget);
+        expect(
+          find.byKey(const Key('catalogue-floating-library')).hitTestable(),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('catalogue-floating-filters')).hitTestable(),
+          findsOneWidget,
+        );
+        expect(tester.getRect(floating).right, greaterThan(size.width - 80));
+        expect(
+          tester.getRect(floating).bottom,
+          lessThanOrEqualTo(size.height - 16),
+        );
         expect(tester.takeException(), isNull);
         await harness.close(tester);
       },
     );
-  }
-
-  for (final (size, scale) in [
-    (const Size(1280, 800), 1.0),
-    (const Size(1600, 900), 1.25),
-  ]) {
-    for (final reduceMotion in [false, true]) {
-      testWidgets(
-        'wide Home side controls lower only while detached at $size/$scale, reduced motion=$reduceMotion',
-        (tester) async {
-          tester.view.physicalSize = size;
-          tester.view.devicePixelRatio = 1;
-          addTearDown(tester.view.resetPhysicalSize);
-          addTearDown(tester.view.resetDevicePixelRatio);
-          final harness = await UiHarness.create(
-            tester,
-            resumeEntries: [
-              ResumeEntry(
-                item: entry('resume-book'),
-                pageIndex: 1,
-                pageCount: 10,
-                fraction: 0,
-              ),
-            ],
-            preferences: UiPreferences(reduceMotion: reduceMotion),
-            catalogue: [
-              for (var i = 0; i < 180; i++)
-                entry('series-$i', kind: CatalogueKind.series),
-            ],
-          );
-          addTearDown(() => harness.close(tester));
-          await harness.mount(tester, textScale: scale);
-          final tools = find.byKey(const Key('catalogue-pinned-tools'));
-          final chips = find.byKey(const Key('catalogue-chips'));
-          final selector = find.byKey(const Key('library-selector'));
-          final sort = find.byKey(const Key('catalogue-sort'));
-          final height = tester.getSize(tools).height;
-          final scroll = tester
-              .state<ScrollableState>(
-                find
-                    .descendant(
-                      of: find.byType(CustomScrollView),
-                      matching: find.byType(Scrollable),
-                    )
-                    .first,
-              )
-              .position;
-
-          void expectAlignment(bool attached) {
-            final groups = tester.widgetList<InkHomeToolGroup>(
-              find.byType(InkHomeToolGroup),
-            );
-            expect(groups, hasLength(3));
-            expect(groups.every((group) => group.attached == attached), isTrue);
-            final bottom = tester.getBottomLeft(chips).dy;
-            for (final control in [selector, sort]) {
-              expect(
-                tester.getBottomLeft(control).dy - bottom,
-                closeTo(attached ? -10 : 0, .01),
-              );
-              expect(control.hitTestable(), findsOneWidget);
-            }
-            expect(tester.getSize(tools).height, height);
-          }
-
-          expectAlignment(false);
-          for (final offset in [800.0, 0.0, 800.0, 0.0]) {
-            scroll.jumpTo(offset);
-            await tester.pumpAndSettle();
-            expect(scroll.pixels, offset);
-            expectAlignment(offset > 0);
-            // Both visual positions retain an operable library popup.
-            await tester.tap(selector);
-            await tester.pumpAndSettle();
-            expect(find.byKey(const Key('library-choice-all')), findsOneWidget);
-            await tester.binding.handlePopRoute();
-            await tester.pumpAndSettle();
-          }
-          expect(tester.takeException(), isNull);
-          await harness.close(tester);
-        },
-      );
-    }
   }
 }

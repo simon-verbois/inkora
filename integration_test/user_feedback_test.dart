@@ -54,7 +54,7 @@ void main() {
     );
     expect(
       find.descendant(
-        of: find.byKey(const Key('catalogue-pinned-tools')),
+        of: find.byKey(const Key('catalogue-tools')),
         matching: find.byKey(const Key('open-search')),
       ),
       findsNothing,

@@ -1,3 +1,5 @@
+import '../../../app/widgets/preferred_hand_alignment.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../app/l10n/app_strings.dart';
@@ -39,8 +41,7 @@ class _SettingsResetButtonState extends State<SettingsResetButton> {
   }
 
   @override
-  Widget build(BuildContext context) => Align(
-    alignment: AlignmentDirectional.centerEnd,
+  Widget build(BuildContext context) => PreferredHandAlignment(
     child: TextButton(
       onPressed: _busy || !widget.enabled ? null : _reset,
       child: const LText('Reset to default'),

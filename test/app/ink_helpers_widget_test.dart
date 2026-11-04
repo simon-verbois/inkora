@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/theme/inkora_theme.dart';
-import 'package:inkora/app/widgets/ink_surface.dart';
 import 'package:inkora/app/widgets/inkora_widgets.dart';
 
 Future<Object?> _backEvent(WidgetTester tester, String method) async {
@@ -47,24 +46,13 @@ Future<BuildContext> _pump(WidgetTester tester, Size size) async {
   return captured;
 }
 
-Finder readerSheetHandle(WidgetTester tester) {
-  final context = tester.element(find.byType(BottomSheet).last);
-  final label = MaterialLocalizations.of(context).modalBarrierDismissLabel;
-  return find
-      .byWidgetPredicate(
-        (widget) =>
-            widget is Semantics &&
-            widget.properties.button == true &&
-            widget.properties.label == label &&
-            widget.properties.onTap != null,
-      )
-      .last;
-}
+Finder readerSheetHandle(WidgetTester tester) =>
+    find.byKey(const Key('ink-sheet-handle'));
 
 void registerReaderSheetGestureTests() {
   for (final size in [const Size(390, 844), const Size(1280, 800)]) {
     testWidgets(
-      'reader sheet dismisses only from its handle and keeps Back at $size',
+      'reader sheet dismisses from its handle or outside and keeps Back at $size',
       (tester) async {
         final context = await _pump(tester, size);
         var scrolls = 0;
@@ -98,7 +86,7 @@ void registerReaderSheetGestureTests() {
           ),
         );
         await tester.pumpAndSettle();
-        final panel = find.byType(InkOverlaySurface);
+        final panel = find.byKey(const Key('ink-sheet-surface'));
         final original = tester.getRect(panel);
         await tester.drag(
           find.byKey(const Key('sheet-slider-fixture')),
@@ -126,9 +114,7 @@ void registerReaderSheetGestureTests() {
         await tester.fling(find.byType(ListView), const Offset(0, 800), 1500);
         await tester.pumpAndSettle();
         expect(tester.getRect(panel), original);
-        await tester.tapAt(const Offset(4, 4));
-        await tester.pumpAndSettle();
-        expect(panel, findsOneWidget);
+
         final handle = readerSheetHandle(tester);
         expect(tester.getSize(handle).width, greaterThanOrEqualTo(48));
         expect(tester.getSize(handle).height, greaterThanOrEqualTo(48));
@@ -150,6 +136,14 @@ void registerReaderSheetGestureTests() {
         );
         await tester.pumpAndSettle();
         expect(panel, findsNothing);
+        showInkSheet<void>(
+          context: context,
+          child: const Text('Outside fixture'),
+        );
+        await tester.pumpAndSettle();
+        await tester.tapAt(const Offset(4, 4));
+        await tester.pumpAndSettle();
+        expect(find.text('Outside fixture'), findsNothing);
         showInkSheet<void>(context: context, child: const Text('Back fixture'));
         await tester.pumpAndSettle();
         final accepted = await _backEvent(tester, 'startBackGesture');
@@ -192,7 +186,7 @@ void main() {
       expect(find.text('Reading progress').hitTestable(), findsOneWidget);
       expect(find.text('Apply').hitTestable(), findsOneWidget);
       expect(
-        tester.getSize(find.byType(InkOverlaySurface)).height,
+        tester.getSize(find.byKey(const Key('ink-sheet-surface'))).height,
         lessThanOrEqualTo(size.height * .85),
       );
       // Predictive back (start, update, commit) closes the sheet. When the
@@ -215,7 +209,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(
-        tester.getSize(find.byType(InkOverlaySurface)).height,
+        tester.getSize(find.byKey(const Key('ink-sheet-surface'))).height,
         moreOrLessEquals(size.height * .5),
       );
       final handle = readerSheetHandle(tester);

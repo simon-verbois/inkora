@@ -111,7 +111,10 @@ final class DownloadScheduler {
     }
   }
 
-  Future<String> enqueue(String book) async {
+  Future<String> enqueue(
+    String book, {
+    FutureOr<bool> Function()? allow,
+  }) async {
     if (!current) throw StateError('Download session closed');
     final token = CancelToken();
     final signal = CancellationController();
@@ -126,7 +129,8 @@ final class DownloadScheduler {
       await gate.acquire(signal, request);
       acquired = true;
       final manifest = await loadManifest(book, token);
-      if (!current || token.isCancelled) {
+      final admitted = allow == null || await allow();
+      if (!current || token.isCancelled || !admitted) {
         throw StateError('Download session closed');
       }
       final id = await store.enqueue(manifest);
@@ -169,6 +173,9 @@ final class DownloadScheduler {
   Future<void> suspend(bool value) async {
     _suspended = value;
     if (value) {
+      for (final token in _enqueuing) {
+        token.cancel();
+      }
       _token?.cancel();
       _signal?.cancel();
       await idle;

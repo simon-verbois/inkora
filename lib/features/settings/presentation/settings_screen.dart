@@ -1,6 +1,5 @@
 import '../../../app/widgets/ink_screen_header.dart';
 import 'settings_transfer_panel.dart';
-import '../../../app/widgets/ink_slider.dart';
 import 'about_content.dart';
 import 'servers_screen.dart';
 import 'preference_labels.dart';
@@ -19,6 +18,7 @@ import '../../../app/widgets/inkora_widgets.dart';
 import '../../../app/theme/inkora_theme.dart';
 import '../../../reader/data/reader_store.dart';
 import '../../../reader/presentation/reader_settings_sheet.dart';
+import '../../../reader/presentation/reader_settings_layout.dart';
 import '../../../offline/presentation/download_settings_panel.dart';
 import '../../connection/application/session_controller.dart';
 import '../application/ui_preferences_provider.dart';
@@ -154,6 +154,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 : ReaderSettingsSheet(
                     key: widget.editorKey ?? ValueKey(account),
                     showReset: !widget.embedded,
+                    sectioned: widget.embedded,
                     store: ReaderStore(snapshot.requireData, account),
                     qualityOnly: section == 'quality',
                     upscalingControls: section == 'quality'
@@ -198,7 +199,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   'Saved appearance unavailable. Default settings are active.',
                 ),
               ),
-            if (section == 'appearance' || section == 'accessibility')
+            if (!widget.embedded &&
+                (section == 'appearance' || section == 'accessibility'))
               SettingsResetButton(
                 enabled: !_saving && data.hasValue,
                 onReset: () async {
@@ -217,6 +219,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         : current.copyWith(
                             textScale: defaults.textScale,
                             reduceMotion: defaults.reduceMotion,
+                            leftHanded: defaults.leftHanded,
                           ),
                   );
                 },
@@ -285,17 +288,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             ),
                     ),
                     const SizedBox(height: 16),
-                    SwitchListTile.adaptive(
-                      key: const Key('hide-tags'),
-                      contentPadding: EdgeInsets.zero,
-                      title: const LText('Hide tags'),
-                      value: preferences.hideTags,
-                      onChanged: _saving || !data.hasValue
-                          ? null
-                          : (value) => _save(
-                              (current) => current.copyWith(hideTags: value),
-                            ),
-                    ),
+                    if (!widget.embedded)
+                      SwitchListTile.adaptive(
+                        key: const Key('hide-tags'),
+                        contentPadding: EdgeInsets.zero,
+                        title: const LText('Hide tags'),
+                        value: preferences.hideTags,
+                        onChanged: _saving || !data.hasValue
+                            ? null
+                            : (value) => _save(
+                                (current) => current.copyWith(hideTags: value),
+                              ),
+                      ),
                     const LText(
                       'Reader backgrounds are configured separately in Reading.',
                     ),
@@ -304,11 +308,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ],
             if (section == 'gestures')
-              GestureSettings(showTitle: widget.embedded && !wide),
+              GestureSettings(
+                showTitle: widget.embedded && !wide,
+                showReset: !widget.embedded,
+              ),
             if (section == 'language')
-              LanguageSettings(showTitle: widget.embedded && !wide),
+              LanguageSettings(
+                showTitle: widget.embedded && !wide,
+                showReset: !widget.embedded,
+              ),
             if (section == 'transfer') const SettingsTransferPanel(),
-            if (section == 'downloads') const DownloadSettingsPanel(),
+            if (section == 'downloads')
+              DownloadSettingsPanel(showReset: !widget.embedded),
             if (section == 'accessibility')
               InkPanel(
                 framed: false,
@@ -316,6 +327,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    ReaderChoiceGroup(
+                      id: 'preferred-hand',
+                      label: 'Preferred hand',
+                      wrapLabels: true,
+                      choices: const {
+                        'right': 'Right-handed',
+                        'left': 'Left-handed',
+                      },
+                      selected: preferences.leftHanded ? 'left' : 'right',
+                      onSelected: _saving || !data.hasValue
+                          ? null
+                          : (value) => _save(
+                              (current) =>
+                                  current.copyWith(leftHanded: value == 'left'),
+                            ),
+                    ),
+                    const SizedBox(height: 24),
                     InkSlider(
                       sliderKey: const Key('interface-text-scale'),
                       label: context.tr('Interface text size'),

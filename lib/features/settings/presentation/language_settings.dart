@@ -10,8 +10,13 @@ import '../application/ui_preferences_provider.dart';
 import 'settings_reset_button.dart';
 
 class LanguageSettings extends ConsumerWidget {
-  const LanguageSettings({super.key, this.showTitle = true});
+  const LanguageSettings({
+    super.key,
+    this.showTitle = true,
+    this.showReset = true,
+  });
   final bool showTitle;
+  final bool showReset;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final preferences = ref.watch(uiPreferencesProvider).asData?.value;
@@ -21,12 +26,13 @@ class LanguageSettings extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SettingsResetButton(
-          onReset: () async {
-            await (await ref.read(uiPreferencesStoreProvider))
-                .update((current) => current.copyWith(systemLocale: true));
-          },
-        ),
+        if (showReset)
+          SettingsResetButton(
+            onReset: () async {
+              await (await ref.read(uiPreferencesStoreProvider))
+                  .update((current) => current.copyWith(systemLocale: true));
+            },
+          ),
         if (showTitle)
           LText('Language', style: Theme.of(context).textTheme.screenTitle),
         const LText(

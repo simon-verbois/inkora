@@ -201,6 +201,35 @@ Future<void> chooseFilter(WidgetTester tester, String name) async {
 Finder row(String id) => find.byKey(ValueKey('volume-$id'));
 
 void main() {
+  testWidgets(
+    'phone series header keeps its artwork band transparent while scrolling',
+    (tester) async {
+      final harness = await openSeries(tester);
+      for (final offset in [0.0, 12.0, 100.0]) {
+        tester.state<ScrollableState>(mainScroll()).position.jumpTo(offset);
+        await tester.pumpAndSettle();
+        final band = find.byWidgetPredicate(
+          (widget) =>
+              widget is DecoratedBox &&
+              widget.key is ValueKey<String> &&
+              (widget.key! as ValueKey<String>).value.startsWith(
+                'floating-header-',
+              ),
+        );
+        expect(
+          (tester.widget<DecoratedBox>(band).decoration as BoxDecoration).color,
+          Colors.transparent,
+        );
+        expect(
+          find.byKey(const Key('floating-header-back')).hitTestable(),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      }
+      await harness.close(tester);
+    },
+  );
+
   Future<List<(String, String, String)>> intents(
     UiHarness harness,
     WidgetTester tester,

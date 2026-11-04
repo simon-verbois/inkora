@@ -1,0 +1,231 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
+
+import '../l10n/app_strings.dart';
+import '../theme/inkora_theme.dart';
+
+/// Marks a modal whose available height is already owned by its snap container.
+class InkSheetViewport extends InheritedWidget {
+  const InkSheetViewport({super.key, required super.child});
+  static bool isResizableOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<InkSheetViewport>() != null;
+  @override
+  bool updateShouldNotify(InkSheetViewport oldWidget) => false;
+}
+
+/// Full-width modal with handle-only resizing. Body scroll/slider gestures keep
+/// their existing owners. Only this frame and its handle follow drag ticks;
+/// the supplied content remains mounted through snapping and window resizing.
+class InkSnapSheet extends StatefulWidget {
+  const InkSnapSheet({
+    super.key,
+    required this.child,
+    this.initialFraction = .6,
+  });
+  final Widget child;
+  final double initialFraction;
+  @override
+  State<InkSnapSheet> createState() => _InkSnapSheetState();
+}
+
+class _InkSnapSheetState extends State<InkSnapSheet>
+    with SingleTickerProviderStateMixin {
+  double get _middle =>
+      MediaQuery.textScalerOf(context).scale(1) > 1.3 ||
+          MediaQuery.sizeOf(context).height < 480
+      ? 1
+      : widget.initialFraction.clamp(.35, .9);
+  late final _extent = AnimationController(
+    vsync: this,
+    value: widget.initialFraction.clamp(.35, .9),
+  );
+  double _settled = .6;
+  bool _initialized = false;
+  double _dragValue = .6;
+  double _dragStart = .6;
+  double _height = 1;
+  bool _closing = false;
+  bool _dragging = false;
+  double get _minimum =>
+      (240 * MediaQuery.textScalerOf(context).scale(1) / _height).clamp(
+        .25,
+        _middle,
+      );
+  List<double> get _stops => {_minimum, _middle, 1.0}.toList()..sort();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _initialized = true;
+      _settled = _middle;
+      _extent.value = _middle;
+    }
+  }
+
+  void _close() {
+    if (_closing || !mounted) return;
+    _closing = true;
+    Navigator.of(context).pop();
+  }
+
+  void _snap(double target, {double velocity = 0}) {
+    _extent.stop();
+    if (target == 0) {
+      _close();
+      return;
+    }
+    _settled = target;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _extent.value = target;
+    } else {
+      _extent.animateWith(
+        SpringSimulation(
+          const SpringDescription(mass: 1, stiffness: 420, damping: 40),
+          _extent.value,
+          target,
+          velocity,
+        ),
+      );
+    }
+  }
+
+  void _end(DragEndDetails details) {
+    if (!_dragging) return;
+    _dragging = false;
+    final velocity = -(details.primaryVelocity ?? 0) / _height;
+    final projected = (_dragValue + velocity * .18).clamp(0.0, 1.0);
+    final stops = [0.0, ..._stops];
+    final target = stops.reduce(
+      (a, b) => (a - projected).abs() <= (b - projected).abs() ? a : b,
+    );
+    _snap(target, velocity: velocity);
+  }
+
+  void _expand() => _snap(
+    _stops.firstWhere((stop) => stop > _extent.value + .02, orElse: () => 1),
+  );
+
+  void _collapse() => _snap(
+    _stops.reversed.firstWhere(
+      (stop) => stop < _extent.value - .02,
+      orElse: () => _minimum,
+    ),
+  );
+
+  void _toggle() {
+    if (_extent.value < .99) {
+      _snap(1);
+    } else {
+      final target = _middle < 1 ? _middle : _minimum;
+      target >= .99 ? _close() : _snap(target);
+    }
+  }
+
+  @override
+  void dispose() {
+    _extent.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, bounds) {
+      _height = (bounds.maxHeight - MediaQuery.viewInsetsOf(context).bottom)
+          .clamp(1, double.infinity);
+      return Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: AnimatedBuilder(
+          animation: _extent,
+          child: InkSheetViewport(
+            child: SafeArea(
+              top: false,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: widget.child,
+                ),
+              ),
+            ),
+          ),
+          builder: (context, body) {
+            final full = _extent.value >= .99;
+            final radius = InkRadius.l * ((1 - _extent.value) / .1).clamp(0, 1);
+            return SizedBox(
+              width: bounds.maxWidth,
+              height: _height * _extent.value,
+              child: Material(
+                key: const Key('ink-sheet-surface'),
+                color: Theme.of(context).colorScheme.surfaceContainer,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(radius),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  children: [
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onVerticalDragStart: (_) {
+                        _dragging = true;
+                        _dragStart = _settled;
+                        _dragValue = _extent.value;
+                        _extent.stop();
+                      },
+                      onVerticalDragUpdate: (details) {
+                        _dragValue -= details.delta.dy / _height;
+                        _extent.value = _dragValue.clamp(_minimum, 1);
+                      },
+                      onVerticalDragEnd: _end,
+                      onVerticalDragCancel: () {
+                        // A tap also rejects the drag recognizer before start.
+                        // Only restore a detent after a real cancelled drag.
+                        if (!_dragging) return;
+                        _dragging = false;
+                        _snap(_dragStart);
+                      },
+                      child: Semantics(
+                        label: context.tr(
+                          full
+                              ? (_minimum >= .99 ? 'Close' : 'Show less')
+                              : 'Show more',
+                        ),
+                        onIncrease: full ? null : _expand,
+                        onDecrease: _extent.value <= _minimum + .02
+                            ? null
+                            : _collapse,
+                        child: InkWell(
+                          key: const Key('ink-sheet-handle'),
+                          onTap: _toggle,
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: Center(
+                              child: Container(
+                                width: 36,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(child: body!),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    },
+  );
+}

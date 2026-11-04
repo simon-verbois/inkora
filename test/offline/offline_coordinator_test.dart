@@ -9,6 +9,8 @@ import 'package:inkora/core/storage/app_database.dart';
 import 'package:inkora/offline/application/background_transfer.dart';
 import 'package:inkora/offline/application/offline_coordinator.dart';
 import 'package:inkora/offline/data/download_scheduler.dart';
+import 'package:inkora/offline/data/download_ahead_store.dart';
+import 'package:inkora/features/library/data/catalogue_store.dart';
 import 'package:inkora/offline/data/download_store.dart';
 import 'package:inkora/offline/data/progress_store.dart';
 import 'package:inkora/offline/data/progress_sync.dart';
@@ -20,6 +22,7 @@ import 'package:inkora/reader/domain/reader_manifest.dart';
 
 import '../support/connection_fakes.dart';
 import '../support/reader_fakes.dart';
+import '../support/catalogue_fakes.dart';
 import 'progress_sync_test.dart' show FakeRemote;
 
 class _Queries extends QueryInterceptor {
@@ -45,7 +48,7 @@ void main() {
   late ProgressStore progress;
   late FakeRemote remote;
   late _Queries queries;
-  var policyCalls = 0, paused = false, current = true;
+  var policyCalls = 0, paused = false, current = true, metered = false;
   final previousInterval = ReaderNetworkPolicy.pollInterval;
 
   Future<void> settle([int milliseconds = 60]) =>
@@ -66,12 +69,13 @@ void main() {
     policyCalls = 0;
     paused = false;
     current = true;
+    metered = false;
     messenger.setMockMethodCallHandler(ReaderNetworkPolicy.channel, (
       call,
     ) async {
       if (call.method == 'events') return false;
       policyCalls++;
-      return {'metered': false, 'dataSaver': paused};
+      return {'metered': metered, 'dataSaver': paused};
     });
     messenger.setMockMethodCallHandler(
       BackgroundTransfer.channel,
@@ -132,6 +136,119 @@ void main() {
     expect((queries.selects, policyCalls), before);
     expect(remote.writes, isEmpty);
   });
+
+  Future<void> prepareAhead() async {
+    final catalogue = CatalogueStore(database, 'reader-account');
+    await catalogue.stage('g', [
+      for (var i = 1; i <= 5; i++) entry('b$i', number: i.toDouble()),
+    ]);
+    await catalogue.publish('g', DateTime.now(), () => true);
+    await DownloadAheadStore(
+      database,
+      'reader-account',
+    ).configure('series-a', 2);
+  }
+
+  test('automatic admission respects quota and retries after the download limit changes', () async {
+    await prepareAhead();
+    await coordinator.store.configure(quota: 1, wifiOnly: false);
+    await coordinator.start();
+    await settle(120);
+    expect(await coordinator.store.jobs(), isEmpty);
+    final before = queries.selects;
+    await settle(100);
+    expect(queries.selects, before);
+    await coordinator.configure(quota: 256 * 1024 * 1024, wifiOnly: false);
+    await settle(180);
+    expect(await coordinator.store.jobs(), hasLength(2));
+  });
+
+  test('automatic window refills on completion and respects failed/paused/cancelled jobs', () async {
+    await prepareAhead();
+    await coordinator.start();
+    await settle(200);
+    expect((await coordinator.store.jobs()).map((j) => j.bookId).toSet(), {
+      'b1',
+      'b2',
+    });
+    await progress.observe(
+      'b1',
+      const ProgressSnapshot(
+        revision: 'revision-a',
+        pageIndex: 3,
+        completed: true,
+      ),
+    );
+    await settle(180);
+    expect((await coordinator.store.jobs()).map((j) => j.bookId).toSet(), {
+      'b1',
+      'b2',
+      'b3',
+    });
+    final second = (await coordinator.store.jobs()).firstWhere(
+      (j) => j.bookId == 'b2',
+    );
+    await coordinator.cancel(second.id);
+    await DownloadAheadStore(
+      database,
+      'reader-account',
+    ).configure('series-a', 3);
+    await settle(180);
+    expect(
+      (await coordinator.store.job(second.id))!.state,
+      DownloadState.cancelled,
+    );
+    expect((await coordinator.store.jobs()).map((j) => j.bookId).toSet(), {
+      'b1',
+      'b2',
+      'b3',
+      'b4',
+    });
+    final pausedJob = (await coordinator.store.jobs()).firstWhere(
+      (j) => j.bookId == 'b3',
+    );
+    await coordinator.downloads.pause(pausedJob.id);
+    coordinator.didChangeAppLifecycleState(AppLifecycleState.paused);
+    await settle();
+    coordinator.didChangeAppLifecycleState(AppLifecycleState.resumed);
+    await settle(180);
+    expect(
+      (await coordinator.store.job(pausedJob.id))!.state,
+      DownloadState.paused,
+    );
+  });
+
+  test(
+    'automatic admission waits for Wi-Fi, then stops when its rule is disabled',
+    () async {
+      metered = true;
+      await prepareAhead();
+      await coordinator.store.configure(
+        quota: 2 * 1024 * 1024 * 1024,
+        wifiOnly: true,
+      );
+      await coordinator.start();
+      await settle(100);
+      expect(await coordinator.store.jobs(), isEmpty);
+      metered = false;
+      await settle(220);
+      expect(await coordinator.store.jobs(), hasLength(2));
+      await DownloadAheadStore(
+        database,
+        'reader-account',
+      ).configure('series-a', 0);
+      await progress.observe(
+        'b1',
+        const ProgressSnapshot(
+          revision: 'revision-a',
+          pageIndex: 3,
+          completed: true,
+        ),
+      );
+      await settle(100);
+      expect(await coordinator.store.jobs(), hasLength(2));
+    },
+  );
 
   test('local outbox writes wake immediately and return to idle after acknowledgement', () async {
     await coordinator.start();

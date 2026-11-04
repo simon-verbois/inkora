@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/l10n/app_strings.dart';
+import '../../../app/icons/inkora_icons.dart';
+import '../../../app/theme/inkora_theme.dart';
 import '../../../app/widgets/inkora_widgets.dart';
 import '../domain/catalogue_metadata.dart';
 
@@ -48,40 +50,80 @@ class _CatalogueLinkButtonState extends State<CatalogueLinkButton> {
   }
 
   @override
-  Widget build(BuildContext context) => Align(
-    alignment: AlignmentDirectional.centerStart,
-    child: TextButton(
+  Widget build(BuildContext context) {
+    final host = Uri.tryParse(widget.link.url)?.host.toLowerCase();
+    final asset = switch (host) {
+      'anilist.co' || 'www.anilist.co' => 'anilist',
+      'mangadex.org' || 'www.mangadex.org' => 'mangadex',
+      'mangaupdates.com' || 'www.mangaupdates.com' => 'mangaupdates',
+      'openlibrary.org' || 'www.openlibrary.org' => 'openlibrary',
+      _ => null,
+    };
+    return TextButton(
       key: ValueKey('catalogue-link-${widget.link.url}'),
-      onPressed: _opening ? null : _open,
-      child: Text(
-        widget.link.label.isEmpty ? context.tr('Reference') : widget.link.label,
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        minimumSize: const Size(0, 48),
+        alignment: AlignmentDirectional.centerStart,
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+        shape: const RoundedRectangleBorder(borderRadius: InkRadius.medium),
       ),
-    ),
-  );
+      onPressed: _opening ? null : _open,
+      child: Row(
+        children: [
+          ExcludeSemantics(
+            child: asset == null
+                ? const Icon(InkIcons.globe, size: 24)
+                : Image.asset(
+                    'assets/websites/$asset.png',
+                    width: 24,
+                    height: 24,
+                    cacheWidth: 64,
+                    cacheHeight: 64,
+                  ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              widget.link.label.isEmpty
+                  ? context.tr('Reference')
+                  : widget.link.label,
+            ),
+          ),
+          const SizedBox(width: 8),
+          const ExcludeSemantics(child: Icon(InkIcons.caretRight, size: 18)),
+        ],
+      ),
+    );
+  }
 }
 
-/// Metadata websites in reading order, three columns with naturally sized rows.
+/// Website actions adapt to their local width and keep complete site names.
+/// Bundled favicons require no extra network requests while browsing metadata.
 class CatalogueLinks extends StatelessWidget {
   const CatalogueLinks({super.key, required this.links});
   final List<CatalogueLink> links;
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      for (var start = 0; start < links.length; start += 3)
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            for (var column = 0; column < 3; column++)
-              Expanded(
-                child: start + column < links.length
-                    ? CatalogueLinkButton(link: links[start + column])
-                    : const SizedBox.shrink(),
-              ),
-          ],
-        ),
-    ],
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final scale = MediaQuery.textScalerOf(context).scale(1);
+      final columns = (constraints.maxWidth / (240 * scale)).floor().clamp(
+        1,
+        3,
+      );
+      final width = (constraints.maxWidth - (columns - 1) * 12) / columns;
+      return Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: [
+          for (final link in links)
+            SizedBox(
+              width: width,
+              child: CatalogueLinkButton(link: link),
+            ),
+        ],
+      );
+    },
   );
 }

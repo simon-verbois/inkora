@@ -1,0 +1,24 @@
+Website identification icons
+
+AniList, MangaDex, MangaUpdates and Open Library names and icons belong to
+their respective owners. They identify external metadata destinations; no
+affiliation or endorsement is implied. The Inkora MIT license does not
+relicense these third-party marks.
+
+Retrieved 2026-11-03:
+AniList: https://anilist.co/img/icons/favicon-32x32.png
+Open Library: https://openlibrary.org/static/images/openlibrary-128x128.png
+MangaUpdates: https://www.mangaupdates.com/images/manga-updates.svg
+MangaDex: https://www.google.com/s2/favicons?domain=mangadex.org&sz=64
+(The cached site favicon was used because the site's image endpoints returned
+an HTML challenge. No favicon service is contacted by the app.)
+
+MangaUpdates' original SVG is rasterized at 64 pixels; the other icons retain
+the retrieved pixels. Icons are displayed at 24 logical pixels and decoded
+to at most 64 pixels per edge. Unknown sites use the app's generic globe.
+
+Bundled SHA-256 hashes:
+6e2e41b01abb9b69dc6a1353a48363a12f4992e2d21babeeff33cf3df57492a9  anilist.png
+d66082eb8bc546566988282b339348e6f2ac5d433164f034f145af307ebb26c7  mangadex.png
+fe993fba99d7e740eea245c3038bcd2716193d5b9b061e6b78233fe5678844d9  mangaupdates.png
+291d6aef766ebeac9a822878c18cc63993f1c5007dc9f2097c79ed0fca11d222  openlibrary.png

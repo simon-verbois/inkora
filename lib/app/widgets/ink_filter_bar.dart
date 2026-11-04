@@ -4,7 +4,6 @@ import '../icons/inkora_icons.dart';
 import '../l10n/app_strings.dart';
 import '../theme/inkora_motion.dart';
 import '../theme/inkora_theme.dart';
-import 'ink_home_attachment.dart';
 
 /// The shared browse tools of catalogue, Home and Downloads:
 /// an optional [leading] control (library selector or item count) beside a
@@ -25,9 +24,6 @@ class InkFilterBar extends StatelessWidget {
     this.startChipsWhenCompact = false,
     this.compactMenu,
     this.compactChips,
-    this.lowerWideSides = false,
-    this.attachedGroups = false,
-    this.groupsAttached = true,
     this.sort,
     this.filterCount,
     this.onFilters,
@@ -47,11 +43,6 @@ class InkFilterBar extends StatelessWidget {
 
   /// A fitted alternative to the scrolling chip row in the narrow tools row.
   final Widget? compactChips;
-  final bool lowerWideSides;
-
-  /// Home-only surfaces joining the header through concave upper corners.
-  final bool attachedGroups;
-  final bool groupsAttached;
   final Widget? leading, search, sort;
   final List<Widget> chips, actions;
 
@@ -80,7 +71,6 @@ class InkFilterBar extends StatelessWidget {
                 alignment: !wide && startChipsWhenCompact
                     ? MainAxisAlignment.start
                     : MainAxisAlignment.center,
-                fillWidth: !attachedGroups,
                 children: chips,
               );
         // The sort label may shrink (ellipsis) so the chips keep most of the
@@ -103,59 +93,28 @@ class InkFilterBar extends StatelessWidget {
         if (wide) {
           // Equal side slots keep filters centered on the whole toolbar,
           // independently of the selector and trailing action widths.
-          Widget group(Widget child, AlignmentGeometry alignment) {
-            if (!attachedGroups) return child;
-            return Padding(
-              padding: EdgeInsetsDirectional.only(
-                start: alignment == AlignmentDirectional.centerStart ? 24 : 0,
-                end: alignment == AlignmentDirectional.centerEnd ? 24 : 0,
-              ),
-              child: Align(
-                alignment: alignment,
-                child: InkHomeToolGroup(
-                  attached: groupsAttached,
-                  horizontalPadding: alignment == Alignment.center ? 20 : 12,
-                  compact: alignment != Alignment.center,
-                  child: child,
-                ),
-              ),
-            );
-          }
-
           return Row(
-            crossAxisAlignment: lowerWideSides
-                ? CrossAxisAlignment.end
-                : CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 flex: 3,
-                child: group(
-                  Row(
-                    mainAxisSize: attachedGroups
-                        ? MainAxisSize.min
-                        : MainAxisSize.max,
-                    children: [
-                      if (leading != null) Flexible(child: leading!),
-                      if (leading != null && search != null)
-                        const SizedBox(width: InkSpace.sm),
-                      if (search != null) Flexible(child: search!),
-                    ],
-                  ),
-                  AlignmentDirectional.centerStart,
+                child: Row(
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    if (leading != null) Flexible(child: leading!),
+                    if (leading != null && search != null)
+                      const SizedBox(width: InkSpace.sm),
+                    if (search != null) Flexible(child: search!),
+                  ],
                 ),
               ),
-              Expanded(flex: 4, child: group(chipRow, Alignment.center)),
+              Expanded(flex: 4, child: chipRow),
               Expanded(
                 flex: 3,
-                child: group(
-                  Row(
-                    mainAxisSize: attachedGroups
-                        ? MainAxisSize.min
-                        : MainAxisSize.max,
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [?sortButton, ...buttons],
-                  ),
-                  AlignmentDirectional.centerEnd,
+                child: Row(
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [?sortButton, ...buttons],
                 ),
               ),
             ],
@@ -175,7 +134,7 @@ class InkFilterBar extends StatelessWidget {
               compactMenu!,
             ],
           );
-          return attachedGroups ? compactGroup(row) : row;
+          return row;
         }
         // Compact windows give filters a full-width centered row. Search,
         // sort and actions share the other row so they cannot offset it.
@@ -212,16 +171,9 @@ class InkFilterBar extends StatelessWidget {
             if (chips.isNotEmpty) chipRow,
           ],
         );
-        return attachedGroups ? compactGroup(rows) : rows;
+        return rows;
       },
     ),
-  );
-
-  // Reserve the header's rounded corners in layout, so fill, outline and
-  // controls share the same bounds instead of narrowing only the outline.
-  Widget compactGroup(Widget child) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: InkRadius.l),
-    child: InkHomeToolGroup(attached: groupsAttached, child: child),
   );
 }
 

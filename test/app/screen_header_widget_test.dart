@@ -400,57 +400,61 @@ void main() {
     );
   }
 
-  testWidgets('Home header keeps search reachable above pinned tools', (
-    tester,
-  ) async {
-    final harness = await _mount(
-      tester,
-      _phone,
-      catalogue: [
-        for (var i = 0; i < 60; i++)
-          entry('series-$i', kind: CatalogueKind.series, title: 'Series $i'),
-      ],
-    );
-    final header = find.byKey(const Key('home-header'));
-    final tools = find.byKey(const Key('catalogue-pinned-tools'));
-    final search = find.byKey(const Key('open-search'));
-    final history = find.byKey(const Key('reading-history-action'));
-    expect(find.descendant(of: header, matching: history), findsOneWidget);
-    expect(tester.widget(history), isA<IconButton>());
-    expect(find.text('Reading history'), findsNothing);
-    final headerRect = tester.getRect(header);
-    expect(headerRect.top, 24);
-    expect(find.descendant(of: header, matching: search), findsOneWidget);
-    expect(find.descendant(of: tools, matching: search), findsNothing);
-    expect(tester.getRect(search).right, lessThanOrEqualTo(headerRect.right));
-    final scroll = tester.state<ScrollableState>(
-      find
-          .descendant(
-            of: find.byType(CustomScrollView),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    final visible = tester.widget(header);
-    for (final offset in [1.0, 20.0, 200.0, 600.0]) {
-      scroll.position.jumpTo(offset);
-      await tester.pump();
-      expect(tester.widget(header), same(visible));
-      expect(header.hitTestable(), findsOneWidget);
-      expect(history.hitTestable(), findsOneWidget);
-      expect(tester.getRect(header), headerRect);
-      expect(
-        tester.getTopLeft(tools).dy,
-        greaterThanOrEqualTo(headerRect.bottom - 8),
+  testWidgets(
+    'Home header keeps search reachable while tools scroll underneath',
+    (tester) async {
+      final harness = await _mount(
+        tester,
+        _phone,
+        catalogue: [
+          for (var i = 0; i < 60; i++)
+            entry('series-$i', kind: CatalogueKind.series, title: 'Series $i'),
+        ],
       );
-    }
-    await tester.tap(search);
-    await tester.pumpAndSettle();
-    expect(
-      tester.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus,
-      true,
-    );
-    expect(tester.takeException(), isNull);
-    await harness.close(tester);
-  });
+      final header = find.byKey(const Key('home-header'));
+      final tools = find.byKey(
+        const Key('catalogue-tools'),
+        skipOffstage: false,
+      );
+      final search = find.byKey(const Key('open-search'));
+      final history = find.byKey(const Key('reading-history-action'));
+      expect(find.descendant(of: header, matching: history), findsOneWidget);
+      expect(tester.widget(history), isA<IconButton>());
+      expect(find.text('Reading history'), findsNothing);
+      final headerRect = tester.getRect(header);
+      expect(headerRect.top, 24);
+      expect(find.descendant(of: header, matching: search), findsOneWidget);
+      expect(find.descendant(of: tools, matching: search), findsNothing);
+      expect(tester.getRect(search).right, lessThanOrEqualTo(headerRect.right));
+      final scroll = tester.state<ScrollableState>(
+        find
+            .descendant(
+              of: find.byType(CustomScrollView),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      final visible = tester.widget(header);
+      for (final offset in [1.0, 20.0, 200.0, 600.0]) {
+        scroll.position.jumpTo(offset);
+        await tester.pump();
+        expect(tester.widget(header), same(visible));
+        expect(header.hitTestable(), findsOneWidget);
+        expect(history.hitTestable(), findsOneWidget);
+        expect(tester.getRect(header), headerRect);
+        expect(
+          tester.getTopLeft(tools).dy,
+          lessThanOrEqualTo(headerRect.bottom),
+        );
+      }
+      await tester.tap(search);
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus,
+        true,
+      );
+      expect(tester.takeException(), isNull);
+      await harness.close(tester);
+    },
+  );
 }

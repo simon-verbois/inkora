@@ -8,6 +8,7 @@ import '../../../app/theme/inkora_theme.dart';
 import '../../../app/widgets/ink_filter_bar.dart';
 import '../../../app/widgets/inkora_widgets.dart';
 import '../domain/catalogue_filters.dart';
+import 'reading_filter_chips.dart';
 import 'catalogue_detail_widgets.dart' show humanizeMetadata;
 
 typedef CatalogueFilterResult = ({
@@ -61,7 +62,8 @@ String facetValueLabel(
 };
 
 /// Advanced metadata filters as chips (one value per dimension). Reading
-/// status and Downloaded live in the filter bar and pass through unchanged.
+/// status and Downloaded pass through unchanged unless [showReadingFilters]
+/// exposes them in the draft when Home's toolbar is no longer visible.
 /// The footer shows the draft's result count, queried once per settled change
 /// ([countDelay]); stale answers are ignored.
 class CatalogueFiltersSheet extends StatefulWidget {
@@ -70,10 +72,12 @@ class CatalogueFiltersSheet extends StatefulWidget {
     required this.options,
     required this.filters,
     this.showUnavailable,
+    this.showReadingFilters = false,
     this.count,
   });
   final Future<CatalogueFacets> options;
   final MetadataFilters filters;
+  final bool showReadingFilters;
 
   /// Null hides the unavailable-items switch (Downloads).
   final bool? showUnavailable;
@@ -86,6 +90,8 @@ class CatalogueFiltersSheet extends StatefulWidget {
 }
 
 class _CatalogueFiltersSheetState extends State<CatalogueFiltersSheet> {
+  late ReadingStatus _readingStatus = widget.filters.readingStatus;
+  late bool _downloadedOnly = widget.filters.downloadedOnly;
   late bool _unavailable = widget.showUnavailable ?? false;
   late final _selected = Map<CatalogueFacet, String>.of(widget.filters.values);
   Timer? _countTimer;
@@ -94,8 +100,8 @@ class _CatalogueFiltersSheetState extends State<CatalogueFiltersSheet> {
 
   MetadataFilters get _draft => MetadataFilters.from(
     _selected,
-    readingStatus: widget.filters.readingStatus,
-    downloadedOnly: widget.filters.downloadedOnly,
+    readingStatus: _readingStatus,
+    downloadedOnly: _downloadedOnly,
   );
 
   @override
@@ -161,9 +167,19 @@ class _CatalogueFiltersSheetState extends State<CatalogueFiltersSheet> {
           title: 'Filters',
           action: TextButton(
             key: const Key('filters-reset'),
-            onPressed: _selected.isEmpty
+            onPressed:
+                _selected.isEmpty &&
+                    (!widget.showReadingFilters ||
+                        (_readingStatus == ReadingStatus.any &&
+                            !_downloadedOnly))
                 ? null
-                : () => _update(_selected.clear),
+                : () => _update(() {
+                    _selected.clear();
+                    if (widget.showReadingFilters) {
+                      _readingStatus = ReadingStatus.any;
+                      _downloadedOnly = false;
+                    }
+                  }),
             child: const LText('Reset'),
           ),
         ),
@@ -175,6 +191,17 @@ class _CatalogueFiltersSheetState extends State<CatalogueFiltersSheet> {
               builder: (context, snapshot) => Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (widget.showReadingFilters)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: ReadingFilterMenu(
+                        filters: _draft,
+                        onChanged: (value) => _update(() {
+                          _readingStatus = value.readingStatus;
+                          _downloadedOnly = value.downloadedOnly;
+                        }),
+                      ),
+                    ),
                   if (snapshot.hasError)
                     const LText('Saved catalogue unavailable.')
                   else if (!snapshot.hasData)

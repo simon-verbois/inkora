@@ -263,7 +263,10 @@ void main() {
         );
         expect(settings.layout, ReadingLayout.automatic);
         expect(settings.spacing, 0);
-        expect(settings.fit, ReadingFit.page);
+        expect(
+          settings.fit,
+          mode == ReadingMode.manga ? ReadingFit.content : ReadingFit.page,
+        );
       }
       expect(tester.takeException(), isNull);
     } finally {

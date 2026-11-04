@@ -48,6 +48,7 @@ flutter:
   assets:
     - assets/reader/paper.png
     - assets/branding/buy-me-a-coffee.png
+    - assets/websites/
     - VERSION
     - CHANGELOG.md
     - assets/fonts/OFL.txt
@@ -59,6 +60,7 @@ flutter:
     - assets/icons/LICENSE.txt
     - assets/licenses/pdfium-notices.txt
     - assets/licenses/readium-sdk.txt
+    - assets/licenses/websites.txt
   fonts:
     - family: LibreBaskerville
       fonts:

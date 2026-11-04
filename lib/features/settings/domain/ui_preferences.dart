@@ -24,6 +24,7 @@ enum AppAppearance {
 }
 
 final class UiPreferences {
+  static const setupVersion = 6;
   static const minTextScale = .85;
   static const maxTextScale = 1.3;
   const UiPreferences({
@@ -34,6 +35,7 @@ final class UiPreferences {
     this.homeLandscapeColumns = 6,
     this.textScale = 1,
     this.reduceMotion = false,
+    this.leftHanded = false,
     this.hideTags = true,
     this.floatingNavigation = true,
     this.locale,
@@ -55,6 +57,7 @@ final class UiPreferences {
       width > height ? homeLandscapeColumns : homePortraitColumns;
   final double textScale;
   final bool reduceMotion, setupCompleted;
+  final bool leftHanded;
   final bool hideTags;
   final bool floatingNavigation;
   final String? locale;
@@ -70,6 +73,7 @@ final class UiPreferences {
     int? homeLandscapeColumns,
     double? textScale,
     bool? reduceMotion,
+    bool? leftHanded,
     bool? hideTags,
     bool? floatingNavigation,
     String? locale,
@@ -86,6 +90,7 @@ final class UiPreferences {
     homeLandscapeColumns: homeLandscapeColumns ?? this.homeLandscapeColumns,
     textScale: textScale ?? this.textScale,
     reduceMotion: reduceMotion ?? this.reduceMotion,
+    leftHanded: leftHanded ?? this.leftHanded,
     hideTags: hideTags ?? this.hideTags,
     floatingNavigation: floatingNavigation ?? this.floatingNavigation,
     locale: systemLocale ? null : locale ?? this.locale,
@@ -103,12 +108,13 @@ final class UiPreferences {
     'homeLandscapeColumns': homeLandscapeColumns,
     'textScale': textScale,
     'reduceMotion': reduceMotion,
+    'leftHanded': leftHanded,
     'hideTags': hideTags,
     'floatingNavigation': floatingNavigation,
     'locale': locale,
     'setupCompleted': setupCompleted,
     'setupStep': setupStep,
-    'setupVersion': 3,
+    'setupVersion': setupVersion,
     'gestures': gestures.toJson(),
     'imageEnhancement': imageEnhancement.name,
   };
@@ -128,15 +134,16 @@ final class UiPreferences {
     final savedStep = json['setupStep'] is int
         ? (json['setupStep'] as int).clamp(0, 8)
         : 0;
-    // Preserve the current section when inserting Quality after library defaults.
-    final previous = json['setupVersion'] == 2
-        ? savedStep.clamp(0, 7)
-        : const [0, 2, 3, 3, 4, 5, 6, 6, 7][savedStep];
-    final step = json['setupVersion'] == 3
-        ? savedStep
-        : previous >= 5
-        ? previous + 1
-        : previous;
+    // Retired Language resumes at Appearance; other configuration stages keep
+    // their meaning, including the historic introduction and Quality changes.
+    final step = switch (json['setupVersion']) {
+      6 => savedStep.clamp(0, 7),
+      5 => const [0, 1, 1, 2, 3, 4, 5, 6, 7][savedStep],
+      4 => savedStep.clamp(1, 7),
+      3 => const [1, 1, 1, 2, 3, 4, 5, 6, 7][savedStep],
+      2 => const [1, 1, 1, 2, 3, 5, 6, 7, 7][savedStep],
+      _ => const [1, 1, 2, 2, 3, 5, 6, 6, 7][savedStep],
+    };
     return UiPreferences(
       appearance:
           AppAppearance.values
@@ -179,6 +186,7 @@ final class UiPreferences {
           ? scale.toDouble()
           : 1,
       reduceMotion: json['reduceMotion'] == true,
+      leftHanded: json['leftHanded'] == true,
       hideTags: json['hideTags'] != false,
       floatingNavigation: json['floatingNavigation'] != false,
       imageEnhancement: ImageEnhancement.parse(json['imageEnhancement']),

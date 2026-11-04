@@ -9,8 +9,11 @@ import 'package:inkora/reader/data/reader_store.dart';
 import 'package:inkora/reader/domain/reading_settings.dart';
 import 'package:inkora/reader/presentation/reader_settings_sheet.dart';
 import 'package:inkora/offline/presentation/download_settings_panel.dart';
+import 'package:inkora/features/settings/presentation/settings_reset_button.dart';
+import 'package:inkora/features/settings/presentation/setup_introduction.dart';
 
 import '../../support/ui_harness.dart';
+import '../../support/onboarding_visuals.dart' show chooseSetupMode;
 
 void main() {
   for (final (size, scale, language) in [
@@ -27,7 +30,7 @@ void main() {
         addTearDown(tester.view.resetDevicePixelRatio);
         final harness = await UiHarness.create(
           tester,
-          preferences: UiPreferences(locale: language, setupStep: 4),
+          preferences: UiPreferences(locale: language, setupStep: 3),
         );
         addTearDown(() => harness.close(tester));
         await tester.runAsync(
@@ -54,8 +57,14 @@ void main() {
           await tester.pumpAndSettle();
         }
 
-        void checkWrapper() {
+        void checkWrapper({bool library = false}) {
           expect(router.routeInformationProvider.value.uri.path, '/setup');
+          if (library) {
+            expect(find.byKey(const Key('setup-library-back')), findsOneWidget);
+            expect(back, findsNothing);
+            expect(next, findsNothing);
+            return;
+          }
           expect(find.text(strings.text('Make Inkora yours')), findsOneWidget);
           expect(find.byKey(const Key('open-settings')), findsNothing);
           expect(tester.widget(back), isA<OutlinedButton>());
@@ -89,17 +98,23 @@ void main() {
         await revealLibrary();
         await tester.tap(find.text('Manga shelf'));
         await tester.pumpAndSettle();
-        checkWrapper();
+        checkWrapper(library: true);
         expect(find.byType(ReaderSettingsSheet), findsOneWidget);
-        final mode = find.byKey(const Key('reader-choice-mode-webtoon'));
-        await tester.ensureVisible(mode);
-        await tester.pumpAndSettle();
-        await tester.tap(mode);
+        expect(find.byType(TabBar), findsNothing);
+        expect(find.byKey(const Key('reader-settings-scope')), findsNothing);
+        expect(find.byKey(const Key('reader-settings-menu')), findsNothing);
+        expect(
+          tester
+              .widget<ReaderSettingsSheet>(find.byType(ReaderSettingsSheet))
+              .showReset,
+          isFalse,
+        );
+        await chooseSetupMode(tester, 'webtoon');
         await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 50)),
         );
         await tester.pumpAndSettle();
-        await tester.tap(next);
+        await tester.tap(find.byKey(const Key('setup-library-back')));
         await tester.pumpAndSettle();
         checkWrapper();
         expect(find.byType(ReaderSettingsSheet), findsNothing);
@@ -118,7 +133,7 @@ void main() {
           (await tester.runAsync(
             () => UiPreferencesStore(harness.database).watch().first,
           ))!.setupStep,
-          4,
+          3,
         );
 
         // System back cancels a library draft inside the wrapper.
@@ -134,6 +149,15 @@ void main() {
         checkWrapper();
         expect(find.text(strings.text('Browse libraries')), findsNothing);
         expect(find.byType(ReaderSettingsSheet), findsOneWidget);
+        expect(find.byType(TabBar), findsNothing);
+        expect(find.byKey(const Key('reader-settings-scope')), findsNothing);
+        expect(find.byKey(const Key('reader-settings-menu')), findsNothing);
+        expect(
+          tester
+              .widget<ReaderSettingsSheet>(find.byType(ReaderSettingsSheet))
+              .showReset,
+          isFalse,
+        );
         expect(
           find.text(strings.text('Upscaling and sharpening')),
           findsOneWidget,
@@ -142,11 +166,7 @@ void main() {
           find.widgetWithText(Tab, strings.text('Upscaling')),
           findsNothing,
         );
-        final rendering = find.widgetWithText(Tab, strings.text('Rendering'));
-        await tester.ensureVisible(rendering);
-        await tester.pumpAndSettle();
-        await tester.tap(rendering);
-        await tester.pumpAndSettle();
+        expect(find.byType(TabBar), findsNothing);
         expect(find.text(strings.text('Save')), findsNothing);
         final sampling = find.byKey(
           const Key('reader-choice-quality-all-sampling-nearest'),
@@ -194,7 +214,6 @@ void main() {
     await harness.mount(tester);
     final next = find.byKey(const Key('setup-next'));
     final back = find.byKey(const Key('setup-back'));
-    expect(tester.widget<OutlinedButton>(back).onPressed, isNull);
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(
@@ -206,48 +225,31 @@ void main() {
           .path,
       '/setup',
     );
+    expect(find.byType(SetupIntroduction), findsOneWidget);
+    final scrollable = find.descendant(
+      of: find.byKey(const Key('setup-introduction-scroll')),
+      matching: find.byType(Scrollable),
+    );
+    await tester.scrollUntilVisible(next, 180, scrollable: scrollable);
+    await tester.ensureVisible(next);
+    await tester.pumpAndSettle();
+    expect(tester.widget<OutlinedButton>(back).onPressed, isNull);
+    expect(find.descendant(of: scrollable, matching: next), findsOneWidget);
     await tester.tap(next);
     await tester.pumpAndSettle();
-    expect(find.text('Welcome to Inkora'), findsWidgets);
-    if (find.byKey(const Key('setup-sidebar')).evaluate().isNotEmpty) {
-      expect(
-        tester
-            .widget<ListTile>(find.byKey(const ValueKey('setup-stage-1')))
-            .selected,
-        true,
-      );
-    }
-    final ebookIntroduction = find.text(
-      'Read EPUB and PDF books with adjustable text, bookmarks and synchronized progress.',
-    );
-    await tester.scrollUntilVisible(
-      ebookIntroduction,
-      120,
-      scrollable: find
-          .descendant(
-            of: find.byType(ListView).last,
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    expect(ebookIntroduction, findsOneWidget);
-    expect(find.byType(ReaderSettingsSheet), findsNothing);
-    for (var step = 1; step < 8; step++) {
-      expect(find.text('Keep current reading settings'), findsNothing);
-      expect(find.text('All saved progress is synchronized.'), findsNothing);
+    expect(find.text('Language'), findsNothing);
+    expect(find.text('Appearance'), findsOneWidget);
+    for (var step = 1; step < 7; step++) {
+      expect(find.text('Language'), findsNothing);
+      expect(find.byType(SetupIntroduction), findsNothing);
+      expect(find.byType(SettingsResetButton), findsNothing);
+      expect(find.byKey(const Key('hide-tags')), findsNothing);
       await tester.tap(next);
       await tester.pumpAndSettle();
     }
-    expect(find.text('Ready to read'), findsWidgets);
-    if (find.byKey(const Key('setup-sidebar')).evaluate().isNotEmpty) {
-      expect(
-        tester
-            .widget<ListTile>(find.byKey(const ValueKey('setup-stage-8')))
-            .selected,
-        true,
-      );
-    }
-    expect(find.text('Start reading'), findsOneWidget);
+    expect(find.text('Start reading').hitTestable(), findsOneWidget);
+    expect(find.byType(SetupIntroduction), findsNothing);
+    expect(find.byType(SettingsResetButton), findsNothing);
     expect(find.text('Finish setup'), findsNothing);
     expect(
       (await tester.runAsync(

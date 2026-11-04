@@ -99,20 +99,12 @@ class ReaderBookDetails extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: LText(
-                  'Book details',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-              IconButton(
-                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(InkIcons.x),
-              ),
-            ],
+          Semantics(
+            header: true,
+            child: LText(
+              'Book details',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
           ),
           const SizedBox(height: 16),
           Row(

@@ -8,6 +8,8 @@ import 'package:inkora/features/library/domain/catalogue_metadata.dart';
 import 'package:inkora/features/library/presentation/catalogue_link_button.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
+import '../../support/onboarding_visuals.dart';
+
 class _Launcher extends UrlLauncherPlatform {
   @override
   get linkDelegate => null;
@@ -56,6 +58,7 @@ Future<void> _pump(
 }
 
 void main() {
+  setUpAll(loadOnboardingFonts);
   late _Launcher launcher;
   setUp(() {
     final previous = UrlLauncherPlatform.instance;
@@ -88,7 +91,7 @@ void main() {
   }
   for (final width in [320.0, 480.0]) {
     for (final scale in [1.0, 2.0]) {
-      testWidgets('metadata links wrap after three at $width/$scale', (
+      testWidgets('metadata links adapt to available width at $width/$scale', (
         tester,
       ) async {
         tester.view.physicalSize = Size(width, 1600);
@@ -117,14 +120,14 @@ void main() {
           for (final link in links)
             tester.getRect(find.byKey(ValueKey('catalogue-link-${link.url}'))),
         ];
-        expect(rects[0].top, rects[1].top);
-        expect(rects[1].top, rects[2].top);
-        expect(rects[3].top, greaterThanOrEqualTo(rects[0].bottom));
-        expect(rects[3].top, rects[4].top);
-        expect(rects[4].top, rects[5].top);
-        expect(rects[6].top, greaterThanOrEqualTo(rects[3].bottom));
-        expect(rects[0].left, rects[3].left);
-        expect(rects[0].left, rects[6].left);
+        final columns = (width / (240 * scale)).floor().clamp(1, 3);
+        for (var index = 1; index < rects.length; index++) {
+          if (index % columns == 0) {
+            expect(rects[index].top, greaterThan(rects[index - 1].bottom));
+          } else {
+            expect(rects[index].top, rects[index - 1].top);
+          }
+        }
         expect(tester.takeException(), isNull);
         await tester.tap(find.text('Metadata website 3'));
         await tester.pumpAndSettle();
@@ -133,6 +136,63 @@ void main() {
       });
     }
   }
+  testWidgets(
+    'known websites use bundled favicons and unknown hosts use a globe',
+    (tester) async {
+      final links = [
+        const CatalogueLink('AniList', 'https://anilist.co/manga/1'),
+        const CatalogueLink('MangaDex', 'https://mangadex.org/title/1'),
+        const CatalogueLink(
+          'MangaUpdates',
+          'https://www.mangaupdates.com/series/1',
+        ),
+        const CatalogueLink('Open Library', 'https://openlibrary.org/works/1'),
+        const CatalogueLink('Other', 'https://mangadex.org.example.test/1'),
+      ];
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      const capture = Key('website-links-capture');
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: InkoraTheme.dark(amoled: true),
+          home: Scaffold(
+            body: RepaintBoundary(
+              key: capture,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: CatalogueLinks(links: links),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final iconContext = tester.element(find.byType(CatalogueLinks));
+      await tester.runAsync(() async {
+        for (final icon in tester.widgetList<Image>(find.byType(Image))) {
+          await precacheImage(icon.image, iconContext);
+        }
+      });
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widgetList<RawImage>(find.byType(RawImage))
+            .where((image) => image.image != null),
+        hasLength(4),
+      );
+      await captureOnboarding(tester, find.byKey(capture), 'website-links');
+      expect(find.byType(Image), findsNWidgets(4));
+      for (final image in tester.widgetList<Image>(find.byType(Image))) {
+        expect(image.width, 24);
+        expect(image.height, 24);
+        expect(image.image, isA<ResizeImage>());
+      }
+      expect(launcher.calls, isEmpty);
+      expect(tester.takeException(), isNull);
+    },
+  );
   testWidgets('only confirmation launches the exact URL externally', (
     tester,
   ) async {

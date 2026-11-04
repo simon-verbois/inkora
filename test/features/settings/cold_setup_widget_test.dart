@@ -19,7 +19,7 @@ void main() {
         final harness = await UiHarness.create(
           tester,
           refreshCatalogue: false,
-          preferences: const UiPreferences(locale: 'en', setupStep: 4),
+          preferences: const UiPreferences(locale: 'en', setupStep: 3),
         );
         addTearDown(() => harness.close(tester));
         final remote = harness.repository.remote as FakeCatalogueRemote;

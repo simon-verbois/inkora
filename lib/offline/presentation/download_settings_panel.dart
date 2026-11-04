@@ -11,7 +11,8 @@ import '../data/download_store.dart';
 import '../../features/settings/presentation/settings_reset_button.dart';
 
 class DownloadSettingsPanel extends ConsumerStatefulWidget {
-  const DownloadSettingsPanel({super.key});
+  const DownloadSettingsPanel({super.key, this.showReset = true});
+  final bool showReset;
   @override
   ConsumerState<DownloadSettingsPanel> createState() =>
       _DownloadSettingsPanelState();
@@ -66,18 +67,19 @@ class _DownloadSettingsPanelState extends ConsumerState<DownloadSettingsPanel> {
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  SettingsResetButton(
-                    enabled: !_busy,
-                    onReset: () => _run((s) async {
-                      final used = await s.store.occupied();
-                      await s.configure(
-                        quota: used > defaultDownloadQuota
-                            ? used
-                            : defaultDownloadQuota,
-                        wifiOnly: true,
-                      );
-                    }),
-                  ),
+                  if (widget.showReset)
+                    SettingsResetButton(
+                      enabled: !_busy,
+                      onReset: () => _run((s) async {
+                        final used = await s.store.occupied();
+                        await s.configure(
+                          quota: used > defaultDownloadQuota
+                              ? used
+                              : defaultDownloadQuota,
+                          wifiOnly: true,
+                        );
+                      }),
+                    ),
                   InkPanel(
                     framed: false,
                     title: "Storage and network",

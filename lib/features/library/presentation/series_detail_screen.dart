@@ -22,6 +22,7 @@ import 'catalogue_widgets.dart';
 import 'series_header.dart';
 import 'book_detail_screen.dart';
 import 'series_download_dialog.dart';
+import '../../../offline/data/download_ahead_store.dart';
 import 'volume_actions.dart';
 import 'volume_browser.dart';
 
@@ -317,6 +318,11 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
         repository.store.accountId,
       );
       final enabled = await retention.enabled(_id);
+      final ahead = DownloadAheadStore(
+        repository.store.database,
+        repository.store.accountId,
+      );
+      final keepAhead = await ahead.count(_id);
       if (!mounted) return;
       final choice = await showDialog<SeriesDownloadChoice>(
         context: context,
@@ -324,6 +330,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
           progress: progress,
           skip: skip,
           removeFinished: enabled,
+          keepAhead: keepAhead,
         ),
       );
       if (choice == null || !mounted) return;
@@ -331,6 +338,14 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
       final current = await ref.read(catalogueRepositoryProvider.future);
       if (!identical(current, repository) || !mounted) return;
       await retention.configure(_id, choice.removeFinished);
+      await ahead.configure(_id, choice.keepAhead);
+      if (!choice.downloadNow) {
+        // The coordinator observes the durable rule and admits its bounded
+        // window under the current network policy.
+        await ref.read(offlineCoordinatorProvider.future);
+        if (mounted) notifyInk(context, 'Download rule saved.');
+        return;
+      }
       final latest = _progress;
       if (latest == null) return;
       final targets = seriesDownloadTargets(
@@ -529,7 +544,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen>
               ),
             InkFloatingHeader(
               overlay: wide,
-              transparentAtRest: !wide,
+              transparentBand: !wide,
               title: data.asData?.value == null
                   ? null
                   : Text(data.asData!.value!.title),

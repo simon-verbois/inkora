@@ -10,6 +10,33 @@ remain in progress.
 
 ## [Unreleased]
 
+## [2026.45.1] - 2026-11-04
+
+### Added
+
+- Choose a preferred hand in Accessibility to align secondary actions, with right-handed controls by default.
+- Keep the next two or three unfinished volumes of selected series offline, refilling as reading advances while respecting download network and storage limits.
+- Save named catalogue searches with combined metadata, reading and offline filters, library scope, search text and sorting; recall or remove them per account.
+
+### Changed
+
+- Start guided setup with a device-language welcome and feature presentation, keep language selection in Settings, and finish with a short completion message; use a mode dropdown, ordered library settings and a custom-gesture preview dialog.
+- Replace attached Home tools with bottom-right library and filter shortcuts when the toolbar scrolls beneath the header, on phones and tablets.
+- Use full-width popup panels with spring snapping, upward fullscreen expansion and retained drafts and scrolling.
+- Keep EPUB template text at 100% with publisher alignment and spacing, while applying each template’s font and colors.
+- Simplify in-reader preferences to edit only the open book, with tabs directly under the handle and no redundant title, scope selector or More menu.
+- Default Manga reading to Fit content while preserving saved fitting preferences.
+- Show readable website links with bundled site icons and simpler genre tags.
+- Validate the F-Droid source recipe in the official buildserver container and all nine remote CI jobs; submit the packaging candidate with explained network findings for maintainer review.
+- Prepare a complete F-Droid submission checklist and defer resubmission until active-development eligibility and fresh build verification are reviewed.
+
+### Fixed
+
+- Keep authentication labels readable on narrow screens and remove resets, scope controls and Hide tags from guided setup.
+- Keep book details visible when selecting another book from the reader’s author page, preserving reader and Back history.
+- Keep detail artwork visible behind Back while scrolling, adapt ebook controls to phone widths and allow outside taps to close reader panels.
+- Exclude Readium's unused precompiled native PDF engine from F-Droid preparation while retaining EPUB reading and source-built PDF rendering.
+
 ## [2026.44.3] - 2026-10-30
 
 ### Added

@@ -4,6 +4,31 @@ import 'package:inkora/reader/domain/reader_manifest.dart';
 import 'package:inkora/reader/domain/reading_settings.dart';
 
 void main() {
+  test('Manga defaults to content fitting while explicit fits remain authoritative', () {
+    expect(
+      const ReadingSettings(mode: ReadingMode.manga).fit,
+      ReadingFit.content,
+    );
+    expect(
+      const ReadingSettings(mode: ReadingMode.comics).fit,
+      ReadingFit.page,
+    );
+    expect(
+      const ReadingSettings(mode: ReadingMode.webtoon).fit,
+      ReadingFit.comfort,
+    );
+    for (final fit in ReadingFit.values) {
+      final restored = ReadingOverrides.fromJson({
+        'mode': 'manga',
+        'fit': fit.name,
+      });
+      expect(
+        ReadingSettings.resolveScopes({SettingsScope.library: restored}).fit,
+        fit,
+      );
+    }
+  });
+
   test('offset stays effective after a double-width scan', () {
     // Sanitized geometry of the reported book: five portrait files, a wide
     // scan, then portrait files. The old greedy layout converged after page 6.
@@ -140,7 +165,7 @@ void main() {
     expect(settings.direction, ReadingDirection.rightToLeft);
     expect(settings.layout, ReadingLayout.automatic);
     expect(settings.spacing, 0);
-    expect(settings.fit, ReadingFit.page);
+    expect(settings.fit, ReadingFit.content);
     expect(settings.background, ReadingBackground.sepia);
     final switched = ReadingSettings.resolve([
       const ReadingOverrides(mode: ReadingMode.manga),

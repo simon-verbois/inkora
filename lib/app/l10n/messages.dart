@@ -540,7 +540,6 @@ const Map<String, Map<String, String>> messages = {
     "White": "White",
     "Wide edge bands and visible system navigation":
         "Wide edge bands and visible system navigation",
-    "Your configuration is saved on this device. You can change every setting later, or reopen Guided setup from Settings.": "Your configuration is saved on this device. You can change every setting later, or reopen Guided setup from Settings.",
     "Your device controls the physical back gesture. These bands keep reader gestures away from its edges.": "Your device controls the physical back gesture. These bands keep reader gestures away from its edges.",
     "Your downloaded books and saved preferences remain on this device.":
         "Your downloaded books and saved preferences remain on this device.",
@@ -579,7 +578,6 @@ const Map<String, Map<String, String>> messages = {
     "Saved locally; waiting to sync: {0}.":
         "Saved locally; waiting to sync: {0}.",
     "Waiting to sync: {0}.": "Waiting to sync: {0}.",
-    "Welcome to Inkora": "Welcome to Inkora",
     "Your libraries, together": "Your libraries, together",
     "Browse and discover series from your Komga libraries.":
         "Browse and discover series from your Komga libraries.",
@@ -883,6 +881,28 @@ const Map<String, Map<String, String>> messages = {
     "Hue": "Hue",
     "Saturation": "Saturation",
     "Brightness": "Brightness",
+    "Keep the next {0} volumes offline": "Keep the next {0} volumes offline",
+    "Includes the volume in progress. The next volumes are queued as you read, while the app is open. Download network and storage limits apply.": "Includes the volume in progress. The next volumes are queued as you read, while the app is open. Download network and storage limits apply.",
+    "Turn off automatic downloads": "Turn off automatic downloads",
+    "Download rule saved.": "Download rule saved.",
+    "Saved searches": "Saved searches",
+    "Search name": "Search name",
+    "Save current search": "Save current search",
+    "A search with this name already exists.":
+        "A search with this name already exists.",
+    "Saved search limit reached. Remove a search to add another.":
+        "Saved search limit reached. Remove a search to add another.",
+    "Unable to save searches. Try again.":
+        "Unable to save searches. Try again.",
+    "Save a search to reuse its filters later.":
+        "Save a search to reuse its filters later.",
+    "Remove saved search": "Remove saved search",
+    "Preferred hand": "Preferred hand",
+    "Right-handed": "Right-handed",
+    "Left-handed": "Left-handed",
+    "Setup is complete. Enjoy your reading!":
+        "Setup is complete. Enjoy your reading!",
+    "Welcome to Inkora": "Welcome to Inkora",
   },
   "fr": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Un conflit nécessite votre choix. Ouvrez le livre concerné et sélectionnez « Progression de lecture ».",
@@ -1433,7 +1453,6 @@ const Map<String, Map<String, String>> messages = {
     "White": "Blanc",
     "Wide edge bands and visible system navigation":
         "Bandes larges sur les bords et navigation système visible",
-    "Your configuration is saved on this device. You can change every setting later, or reopen Guided setup from Settings.": "Votre configuration est enregistrée sur cet appareil. Vous pouvez modifier tous les paramètres ultérieurement ou rouvrir la « Configuration guidée » depuis les « Paramètres ».",
     "Your device controls the physical back gesture. These bands keep reader gestures away from its edges.": "Votre appareil gère le geste système de retour. Ces bandes éloignent les gestes du lecteur des bords de l’écran.",
     "Your downloaded books and saved preferences remain on this device.": "Vos livres téléchargés et vos préférences enregistrées restent sur cet appareil.",
     "Your offline shelf is empty": "Votre bibliothèque hors ligne est vide",
@@ -1470,7 +1489,6 @@ const Map<String, Map<String, String>> messages = {
     "Saved locally; waiting to sync: {0}.":
         "Enregistrement local ; synchronisation en attente : {0}.",
     "Waiting to sync: {0}.": "En attente de synchronisation : {0}.",
-    "Welcome to Inkora": "Bienvenue sur Inkora",
     "Your libraries, together": "Vos bibliothèques réunies",
     "Browse and discover series from your Komga libraries.":
         "Parcourez et découvrez des séries issues de vos bibliothèques Komga.",
@@ -1772,6 +1790,29 @@ const Map<String, Map<String, String>> messages = {
     "Saturation": "Saturation",
     "Brightness": "Luminosité",
     "Page numbers": "Numéros de page",
+    "Keep the next {0} volumes offline":
+        "Conserver les {0} prochains tomes hors ligne",
+    "Includes the volume in progress. The next volumes are queued as you read, while the app is open. Download network and storage limits apply.": "Le tome en cours de lecture est inclus. Les tomes suivants sont ajoutés à la file à mesure que vous lisez, pendant que l’application est ouverte. Les limites de réseau et de stockage des téléchargements s’appliquent.",
+    "Turn off automatic downloads":
+        "Désactiver les téléchargements automatiques",
+    "Download rule saved.": "Règle de téléchargement enregistrée.",
+    "Saved searches": "Recherches enregistrées",
+    "Search name": "Nom de la recherche",
+    "Save current search": "Enregistrer la recherche en cours",
+    "A search with this name already exists.":
+        "Une recherche portant ce nom existe déjà.",
+    "Saved search limit reached. Remove a search to add another.": "Limite de recherches enregistrées atteinte. Supprimez une recherche pour en ajouter une autre.",
+    "Unable to save searches. Try again.":
+        "Impossible d’enregistrer les recherches. Réessayez.",
+    "Save a search to reuse its filters later.":
+        "Enregistrez une recherche pour réutiliser ses filtres ultérieurement.",
+    "Remove saved search": "Supprimer la recherche enregistrée",
+    "Preferred hand": "Main dominante",
+    "Right-handed": "Droitier",
+    "Left-handed": "Gaucher",
+    "Setup is complete. Enjoy your reading!":
+        "La configuration est terminée. Bonne lecture !",
+    "Welcome to Inkora": "Bienvenue sur Inkora",
   },
   "de": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Bei einem Konflikt müssen Sie eine Entscheidung treffen. Öffnen Sie das betroffene Buch und wählen Sie „Lesefortschritt“ aus.",
@@ -2309,7 +2350,6 @@ const Map<String, Map<String, String>> messages = {
     "White": "Weiß",
     "Wide edge bands and visible system navigation":
         "Breite Randstreifen und sichtbare Systemnavigation",
-    "Your configuration is saved on this device. You can change every setting later, or reopen Guided setup from Settings.": "Ihre Konfiguration wird auf diesem Gerät gespeichert. Sie können jede Einstellung später ändern oder die „Geführte Einrichtung“ über die „Einstellungen“ erneut öffnen.",
     "Your device controls the physical back gesture. These bands keep reader gestures away from its edges.": "Ihr Gerät steuert die systemweite Zurück-Geste. Diese Randbereiche halten die Lesegesten von den Bildschirmrändern fern.",
     "Your downloaded books and saved preferences remain on this device.": "Ihre heruntergeladenen Bücher und gespeicherten Einstellungen verbleiben auf diesem Gerät.",
     "Your offline shelf is empty": "Ihr Offline-Regal ist leer",
@@ -2347,7 +2387,6 @@ const Map<String, Map<String, String>> messages = {
     "Saved locally; waiting to sync: {0}.":
         "Lokal gespeichert; noch zu synchronisieren: {0}.",
     "Waiting to sync: {0}.": "Noch zu synchronisieren: {0}.",
-    "Welcome to Inkora": "Willkommen bei Inkora",
     "Your libraries, together": "Ihre Bibliotheken an einem Ort",
     "Browse and discover series from your Komga libraries.":
         "Durchstöbern Sie Ihre Komga-Bibliotheken und entdecken Sie Serien.",
@@ -2646,6 +2685,27 @@ const Map<String, Map<String, String>> messages = {
     "Saturation": "Sättigung",
     "Brightness": "Helligkeit",
     "Page numbers": "Seitenzahlen",
+    "Keep the next {0} volumes offline":
+        "Die nächsten {0} Bände offline bereithalten",
+    "Includes the volume in progress. The next volumes are queued as you read, while the app is open. Download network and storage limits apply.": "Enthält den aktuell gelesenen Band. Während Sie lesen und die App geöffnet ist, werden die nächsten Bände eingereiht. Die Netzwerk- und Speicherlimits für Downloads gelten.",
+    "Turn off automatic downloads": "Automatische Downloads deaktivieren",
+    "Download rule saved.": "Download-Regel gespeichert.",
+    "Saved searches": "Gespeicherte Suchanfragen",
+    "Search name": "Name der Suche",
+    "Save current search": "Aktuelle Suche speichern",
+    "A search with this name already exists.":
+        "Es existiert bereits eine Suche mit diesem Namen.",
+    "Saved search limit reached. Remove a search to add another.": "Maximale Anzahl gespeicherter Suchen erreicht. Entfernen Sie eine Suche, um eine weitere hinzuzufügen.",
+    "Unable to save searches. Try again.": "Suchanfragen können nicht gespeichert werden. Versuchen Sie es erneut.",
+    "Save a search to reuse its filters later.":
+        "Speichern Sie eine Suche, um ihre Filter später wiederzuverwenden.",
+    "Remove saved search": "Gespeicherte Suche entfernen",
+    "Preferred hand": "Bevorzugte Hand",
+    "Right-handed": "Rechtshändig",
+    "Left-handed": "Linkshändig",
+    "Setup is complete. Enjoy your reading!":
+        "Die Einrichtung ist abgeschlossen. Viel Spaß beim Lesen!",
+    "Welcome to Inkora": "Willkommen bei Inkora",
   },
   "es": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Un conflicto requiere que usted elija. Abra el libro afectado y seleccione «Progreso de lectura».",
@@ -3196,7 +3256,6 @@ const Map<String, Map<String, String>> messages = {
     "White": "Blanco",
     "Wide edge bands and visible system navigation":
         "Bordes anchos y navegación del sistema visible",
-    "Your configuration is saved on this device. You can change every setting later, or reopen Guided setup from Settings.": "Su configuración se guarda en este dispositivo. Puede modificar todos los ajustes más adelante o volver a abrir la «Configuración guiada» desde «Ajustes».",
     "Your device controls the physical back gesture. These bands keep reader gestures away from its edges.": "Su dispositivo controla el gesto físico de «atrás». Estas bandas mantienen los gestos del lector alejados de los bordes.",
     "Your downloaded books and saved preferences remain on this device.": "Sus libros descargados y sus preferencias guardadas permanecen en este dispositivo.",
     "Your offline shelf is empty": "Su estantería sin conexión está vacía",
@@ -3234,7 +3293,6 @@ const Map<String, Map<String, String>> messages = {
     "Saved locally; waiting to sync: {0}.":
         "Datos guardados localmente; pendientes de sincronización: {0}.",
     "Waiting to sync: {0}.": "Sincronización pendiente: {0}.",
-    "Welcome to Inkora": "Bienvenido a Inkora",
     "Your libraries, together": "Sus bibliotecas reunidas",
     "Browse and discover series from your Komga libraries.":
         "Explore y descubra series de sus bibliotecas de Komga.",
@@ -3534,6 +3592,28 @@ const Map<String, Map<String, String>> messages = {
     "Saturation": "Saturación",
     "Brightness": "Brillo",
     "Page numbers": "Números de página",
+    "Keep the next {0} volumes offline":
+        "Conservar los siguientes {0} volúmenes sin conexión",
+    "Includes the volume in progress. The next volumes are queued as you read, while the app is open. Download network and storage limits apply.": "Incluye el volumen que está leyendo. Los siguientes se añaden a la cola a medida que lee, mientras la aplicación está abierta. Se respetan los límites de red y almacenamiento de las descargas.",
+    "Turn off automatic downloads": "Desactivar las descargas automáticas",
+    "Download rule saved.": "Regla de descarga guardada.",
+    "Saved searches": "Búsquedas guardadas",
+    "Search name": "Nombre de la búsqueda",
+    "Save current search": "Guardar búsqueda actual",
+    "A search with this name already exists.":
+        "Ya existe una búsqueda con este nombre.",
+    "Saved search limit reached. Remove a search to add another.": "Se ha alcanzado el límite de búsquedas guardadas. Elimine una búsqueda para añadir otra.",
+    "Unable to save searches. Try again.":
+        "No se pueden guardar las búsquedas. Inténtelo de nuevo.",
+    "Save a search to reuse its filters later.":
+        "Guarde una búsqueda para reutilizar sus filtros más tarde.",
+    "Remove saved search": "Eliminar búsqueda guardada",
+    "Preferred hand": "Mano preferida",
+    "Right-handed": "Diestro",
+    "Left-handed": "Zurdo",
+    "Setup is complete. Enjoy your reading!":
+        "La configuración ha terminado. ¡Disfruta de la lectura!",
+    "Welcome to Inkora": "Bienvenido a Inkora",
   },
   "it": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Per risolvere un conflitto è necessaria una sua scelta. Apra il libro interessato e selezioni «Progresso di lettura».",
@@ -4082,7 +4162,6 @@ const Map<String, Map<String, String>> messages = {
     "White": "Bianco",
     "Wide edge bands and visible system navigation":
         "Bordi larghi e navigazione di sistema visibile",
-    "Your configuration is saved on this device. You can change every setting later, or reopen Guided setup from Settings.": "La sua configurazione viene salvata su questo dispositivo. Potrà modificare ogni impostazione in un secondo momento oppure riaprire la «Configurazione guidata» dalle «Impostazioni».",
     "Your device controls the physical back gesture. These bands keep reader gestures away from its edges.": "Il suo dispositivo gestisce il gesto fisico di ritorno indietro. Queste bande mantengono i gesti del lettore lontani dai bordi dello schermo.",
     "Your downloaded books and saved preferences remain on this device.": "I libri scaricati e le preferenze salvate rimangono su questo dispositivo.",
     "Your offline shelf is empty": "La sua libreria offline è vuota",
@@ -4118,7 +4197,6 @@ const Map<String, Map<String, String>> messages = {
     "Saved locally; waiting to sync: {0}.":
         "Dati salvati in locale; in attesa di sincronizzazione: {0}.",
     "Waiting to sync: {0}.": "In attesa di sincronizzazione: {0}.",
-    "Welcome to Inkora": "Benvenuto in Inkora",
     "Your libraries, together": "Le sue librerie riunite",
     "Browse and discover series from your Komga libraries.":
         "Sfogli e scopra le serie delle sue librerie Komga.",
@@ -4421,6 +4499,28 @@ const Map<String, Map<String, String>> messages = {
     "Saturation": "Saturazione",
     "Brightness": "Luminosità",
     "Page numbers": "Numeri di pagina",
+    "Keep the next {0} volumes offline":
+        "Mantieni offline i prossimi {0} volumi",
+    "Includes the volume in progress. The next volumes are queued as you read, while the app is open. Download network and storage limits apply.": "Include il volume in lettura. I volumi successivi vengono aggiunti alla coda man mano che leggi, mentre l’app è aperta. Si applicano i limiti di rete e di spazio di archiviazione per i download.",
+    "Turn off automatic downloads": "Disattiva i download automatici",
+    "Download rule saved.": "Regola di download salvata.",
+    "Saved searches": "Ricerche salvate",
+    "Search name": "Nome della ricerca",
+    "Save current search": "Salva la ricerca corrente",
+    "A search with this name already exists.":
+        "Esiste già una ricerca con questo nome.",
+    "Saved search limit reached. Remove a search to add another.": "Raggiunto il limite di ricerche salvate. Rimuovi una ricerca per aggiungerne un’altra.",
+    "Unable to save searches. Try again.":
+        "Impossibile salvare le ricerche. Riprova.",
+    "Save a search to reuse its filters later.":
+        "Salva una ricerca per riutilizzarne i filtri in seguito.",
+    "Remove saved search": "Rimuovi la ricerca salvata",
+    "Preferred hand": "Mano preferita",
+    "Right-handed": "Destro",
+    "Left-handed": "Mancino",
+    "Setup is complete. Enjoy your reading!":
+        "La configurazione è terminata. Buona lettura!",
+    "Welcome to Inkora": "Benvenuto in Inkora",
   },
   "pl": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "W przypadku konfliktu należy dokonać wyboru. Proszę otworzyć daną książkę i wybrać opcję „Postęp czytania”.",
@@ -4966,7 +5066,6 @@ const Map<String, Map<String, String>> messages = {
     "White": "Biały",
     "Wide edge bands and visible system navigation":
         "Szerokie paski na krawędziach i widoczna nawigacja systemowa",
-    "Your configuration is saved on this device. You can change every setting later, or reopen Guided setup from Settings.": "Konfiguracja jest zapisana na tym urządzeniu. Każde ustawienie można później zmienić lub ponownie otworzyć Konfigurację z przewodnikiem w Ustawieniach.",
     "Your device controls the physical back gesture. These bands keep reader gestures away from its edges.": "Urządzenie obsługuje systemowy gest cofania. Te pasy oddzielają gesty czytnika od krawędzi ekranu.",
     "Your downloaded books and saved preferences remain on this device.":
         "Pobrane książki i zapisane preferencje pozostają na tym urządzeniu.",
@@ -5005,7 +5104,6 @@ const Map<String, Map<String, String>> messages = {
     "Saved locally; waiting to sync: {0}.":
         "Zapisano lokalnie; do synchronizacji: {0}.",
     "Waiting to sync: {0}.": "Oczekiwanie na synchronizację: {0}.",
-    "Welcome to Inkora": "Witamy w aplikacji Inkora",
     "Your libraries, together": "Twoje biblioteki w jednym miejscu",
     "Browse and discover series from your Komga libraries.":
         "Przeglądaj i odkrywaj serie ze swoich bibliotek Komga.",
@@ -5303,6 +5401,28 @@ const Map<String, Map<String, String>> messages = {
     "Saturation": "Nasycenie",
     "Brightness": "Jasność",
     "Page numbers": "Numery stron",
+    "Keep the next {0} volumes offline":
+        "Zachowaj następne {0} tomy w trybie offline",
+    "Includes the volume in progress. The next volumes are queued as you read, while the app is open. Download network and storage limits apply.": "Obejmuje aktualnie czytany tom. Kolejne tomy są dodawane do kolejki w miarę czytania, gdy aplikacja jest otwarta. Obowiązują ograniczenia sieci i miejsca na pobierane pliki.",
+    "Turn off automatic downloads": "Wyłącz automatyczne pobieranie",
+    "Download rule saved.": "Reguła pobierania została zapisana.",
+    "Saved searches": "Zapisane wyszukiwania",
+    "Search name": "Nazwa wyszukiwania",
+    "Save current search": "Zapisz bieżące wyszukiwanie",
+    "A search with this name already exists.":
+        "Wyszukiwanie o tej nazwie już istnieje.",
+    "Saved search limit reached. Remove a search to add another.": "Osiągnięto limit zapisanych wyszukiwań. Usuń wyszukiwanie, aby dodać kolejne.",
+    "Unable to save searches. Try again.":
+        "Nie można zapisać wyszukiwań. Spróbuj ponownie.",
+    "Save a search to reuse its filters later.":
+        "Zapisz wyszukiwanie, aby później ponownie użyć filtrów.",
+    "Remove saved search": "Usuń zapisane wyszukiwanie",
+    "Preferred hand": "Preferowana ręka",
+    "Right-handed": "Praworęczny",
+    "Left-handed": "Leworęczny",
+    "Setup is complete. Enjoy your reading!":
+        "Konfiguracja została zakończona. Miłej lektury!",
+    "Welcome to Inkora": "Witamy w aplikacji Inkora",
   },
   "nl": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Bij een conflict dient u een keuze te maken. Open het betreffende boek en selecteer ‘Leesvoortgang’.",
@@ -5855,7 +5975,6 @@ const Map<String, Map<String, String>> messages = {
     "White": "Wit",
     "Wide edge bands and visible system navigation":
         "Brede randstroken en zichtbare systeemnavigatie",
-    "Your configuration is saved on this device. You can change every setting later, or reopen Guided setup from Settings.": "Uw configuratie is opgeslagen op dit apparaat. U kunt elke instelling later wijzigen of Begeleide configuratie opnieuw openen via Instellingen.",
     "Your device controls the physical back gesture. These bands keep reader gestures away from its edges.": "Uw apparaat regelt het systeemgebaar om terug te gaan. Deze randstroken houden leesgebaren weg van de schermranden.",
     "Your downloaded books and saved preferences remain on this device.": "Uw gedownloade boeken en opgeslagen voorkeuren blijven op dit apparaat bewaard.",
     "Your offline shelf is empty": "Uw offline boekenplank is leeg",
@@ -5893,7 +6012,6 @@ const Map<String, Map<String, String>> messages = {
     "Saved locally; waiting to sync: {0}.":
         "Lokaal opgeslagen; nog te synchroniseren: {0}.",
     "Waiting to sync: {0}.": "Nog te synchroniseren: {0}.",
-    "Welcome to Inkora": "Welkom bij Inkora",
     "Your libraries, together": "Uw bibliotheken op één plek",
     "Browse and discover series from your Komga libraries.":
         "Blader door en ontdek series uit uw Komga-bibliotheken.",
@@ -6195,6 +6313,28 @@ const Map<String, Map<String, String>> messages = {
     "Saturation": "Verzadiging",
     "Brightness": "Helderheid",
     "Page numbers": "Paginanummers",
+    "Keep the next {0} volumes offline":
+        "De volgende {0} delen offline bewaren",
+    "Includes the volume in progress. The next volumes are queued as you read, while the app is open. Download network and storage limits apply.": "Het deel dat u nu leest telt mee. De volgende delen worden tijdens het lezen aan de wachtrij toegevoegd zolang de app geopend is. De netwerk- en opslaglimieten voor downloads gelden.",
+    "Turn off automatic downloads": "Automatische downloads uitschakelen",
+    "Download rule saved.": "Downloadregel opgeslagen.",
+    "Saved searches": "Opgeslagen zoekopdrachten",
+    "Search name": "Naam zoekopdracht",
+    "Save current search": "Huidige zoekopdracht opslaan",
+    "A search with this name already exists.":
+        "Er bestaat al een zoekopdracht met deze naam.",
+    "Saved search limit reached. Remove a search to add another.": "Maximumaantal opgeslagen zoekopdrachten bereikt. Verwijder een zoekopdracht om een andere toe te voegen.",
+    "Unable to save searches. Try again.":
+        "Kan zoekopdrachten niet opslaan. Probeer het opnieuw.",
+    "Save a search to reuse its filters later.":
+        "Sla een zoekopdracht op om de filters later opnieuw te gebruiken.",
+    "Remove saved search": "Verwijder opgeslagen zoekopdracht",
+    "Preferred hand": "Voorkeurshand",
+    "Right-handed": "Rechtshandig",
+    "Left-handed": "Linkshandig",
+    "Setup is complete. Enjoy your reading!":
+        "De configuratie is voltooid. Veel leesplezier!",
+    "Welcome to Inkora": "Welkom bij Inkora",
   },
   "pt": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Um conflito requer a sua escolha. Abra o livro afetado e selecione «Progresso de leitura».",
@@ -6742,7 +6882,6 @@ const Map<String, Map<String, String>> messages = {
     "White": "Branco",
     "Wide edge bands and visible system navigation":
         "Barras laterais largas e navegação visível do sistema",
-    "Your configuration is saved on this device. You can change every setting later, or reopen Guided setup from Settings.": "A sua configuração é guardada neste dispositivo. Pode alterar todas as definições posteriormente ou reabrir a «Configuração guiada» a partir de «Definições».",
     "Your device controls the physical back gesture. These bands keep reader gestures away from its edges.": "O seu dispositivo controla o gesto físico de voltar. Estas faixas mantêm os gestos do leitor afastados das margens do ecrã.",
     "Your downloaded books and saved preferences remain on this device.": "Os seus livros descarregados e as suas preferências guardadas permanecem neste dispositivo.",
     "Your offline shelf is empty": "A sua prateleira offline está vazia",
@@ -6780,7 +6919,6 @@ const Map<String, Map<String, String>> messages = {
     "Saved locally; waiting to sync: {0}.":
         "Dados guardados localmente; à espera de sincronização: {0}.",
     "Waiting to sync: {0}.": "À espera de sincronização: {0}.",
-    "Welcome to Inkora": "Bem-vindo ao Inkora",
     "Your libraries, together": "As suas bibliotecas reunidas",
     "Browse and discover series from your Komga libraries.":
         "Navegue e descubra séries nas suas bibliotecas Komga.",
@@ -7080,6 +7218,28 @@ const Map<String, Map<String, String>> messages = {
     "Saturation": "Saturação",
     "Brightness": "Brilho",
     "Page numbers": "Números de página",
+    "Keep the next {0} volumes offline":
+        "Manter os próximos {0} volumes disponíveis offline",
+    "Includes the volume in progress. The next volumes are queued as you read, while the app is open. Download network and storage limits apply.": "Inclui o volume em leitura. Os volumes seguintes são adicionados à fila à medida que lê, enquanto a aplicação está aberta. Aplicam-se os limites de rede e armazenamento das transferências.",
+    "Turn off automatic downloads": "Desativar transferências automáticas",
+    "Download rule saved.": "Regra de transferência guardada.",
+    "Saved searches": "Pesquisas guardadas",
+    "Search name": "Nome da pesquisa",
+    "Save current search": "Guardar pesquisa atual",
+    "A search with this name already exists.":
+        "Já existe uma pesquisa com este nome.",
+    "Saved search limit reached. Remove a search to add another.": "Atingiu o limite de pesquisas guardadas. Remova uma pesquisa para adicionar outra.",
+    "Unable to save searches. Try again.":
+        "Não foi possível guardar as pesquisas. Tente novamente.",
+    "Save a search to reuse its filters later.":
+        "Guarde uma pesquisa para reutilizar os filtros mais tarde.",
+    "Remove saved search": "Remover pesquisa guardada",
+    "Preferred hand": "Mão preferida",
+    "Right-handed": "Destro",
+    "Left-handed": "Canhoto",
+    "Setup is complete. Enjoy your reading!":
+        "A configuração está concluída. Boas leituras!",
+    "Welcome to Inkora": "Bem-vindo ao Inkora",
   },
   "ro": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Un conflict necesită alegerea dvs. Deschideți cartea afectată și selectați „Progresul lecturii”.",
@@ -7625,7 +7785,6 @@ const Map<String, Map<String, String>> messages = {
     "White": "Alb",
     "Wide edge bands and visible system navigation":
         "Benzi late la margini și navigare de sistem vizibilă",
-    "Your configuration is saved on this device. You can change every setting later, or reopen Guided setup from Settings.": "Configurația dvs. este salvată pe acest dispozitiv. Puteți modifica orice setare ulterior sau puteți redeschide „Configurare ghidată” din „Setări”.",
     "Your device controls the physical back gesture. These bands keep reader gestures away from its edges.": "Dispozitivul dvs. controlează gestul fizic Înapoi. Aceste benzi mențin gesturile de citire departe de marginile ecranului.",
     "Your downloaded books and saved preferences remain on this device.":
         "Cărțile descărcate și preferințele salvate rămân pe acest dispozitiv.",
@@ -7664,7 +7823,6 @@ const Map<String, Map<String, String>> messages = {
     "Saved locally; waiting to sync: {0}.":
         "Date salvate local; în așteptare de sincronizare: {0}.",
     "Waiting to sync: {0}.": "În așteptare de sincronizare: {0}.",
-    "Welcome to Inkora": "Bine ați venit la Inkora",
     "Your libraries, together": "Bibliotecile dvs. reunite",
     "Browse and discover series from your Komga libraries.":
         "Răsfoiți și descoperiți serii din bibliotecile dvs. Komga.",
@@ -7964,6 +8122,28 @@ const Map<String, Map<String, String>> messages = {
     "Saturation": "Saturație",
     "Brightness": "Luminozitate",
     "Page numbers": "Numere de pagină",
+    "Keep the next {0} volumes offline":
+        "Păstrați următoarele {0} volume offline",
+    "Includes the volume in progress. The next volumes are queued as you read, while the app is open. Download network and storage limits apply.": "Include volumul în curs de lectură. Volumele următoare sunt adăugate în coadă pe măsură ce citiți, cât timp aplicația este deschisă. Se aplică limitele de rețea și de stocare pentru descărcări.",
+    "Turn off automatic downloads": "Dezactivați descărcările automate",
+    "Download rule saved.": "Regula de descărcare a fost salvată.",
+    "Saved searches": "Căutări salvate",
+    "Search name": "Numele căutării",
+    "Save current search": "Salvați căutarea curentă",
+    "A search with this name already exists.":
+        "Există deja o căutare cu acest nume.",
+    "Saved search limit reached. Remove a search to add another.": "A fost atinsă limita de căutări salvate. Eliminați o căutare pentru a adăuga alta.",
+    "Unable to save searches. Try again.":
+        "Nu se pot salva căutările. Încercați din nou.",
+    "Save a search to reuse its filters later.":
+        "Salvați o căutare pentru a reutiliza filtrele acesteia mai târziu.",
+    "Remove saved search": "Eliminați căutarea salvată",
+    "Preferred hand": "Mâna preferată",
+    "Right-handed": "Dreptaci",
+    "Left-handed": "Stângaci",
+    "Setup is complete. Enjoy your reading!":
+        "Configurarea este finalizată. Lectură plăcută!",
+    "Welcome to Inkora": "Bine ați venit la Inkora",
   },
   "el": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Μια διένεξη απαιτεί την επιλογή σας. Ανοίξτε το σχετικό βιβλίο και επιλέξτε «Πρόοδος ανάγνωσης».",
@@ -8517,7 +8697,6 @@ const Map<String, Map<String, String>> messages = {
     "White": "Λευκό",
     "Wide edge bands and visible system navigation":
         "Ευρείες λωρίδες στα άκρα και ορατή πλοήγηση συστήματος",
-    "Your configuration is saved on this device. You can change every setting later, or reopen Guided setup from Settings.": "Η διαμόρφωσή σας αποθηκεύεται σε αυτή τη συσκευή. Μπορείτε να αλλάξετε κάθε ρύθμιση αργότερα ή να ανοίξετε ξανά την «Καθοδηγούμενη ρύθμιση» από τις «Ρυθμίσεις».",
     "Your device controls the physical back gesture. These bands keep reader gestures away from its edges.": "Η συσκευή σας ελέγχει τη χειρονομία επιστροφής. Αυτές οι ζώνες κρατούν τις χειρονομίες ανάγνωσης μακριά από τις άκρες της οθόνης.",
     "Your downloaded books and saved preferences remain on this device.": "Τα βιβλία που έχετε κατεβάσει και οι αποθηκευμένες προτιμήσεις σας παραμένουν σε αυτή τη συσκευή.",
     "Your offline shelf is empty": "Το ράφι σας εκτός σύνδεσης είναι άδειο",
@@ -8556,7 +8735,6 @@ const Map<String, Map<String, String>> messages = {
     "Saved locally; waiting to sync: {0}.":
         "Τοπική αποθήκευση · αναμονή για συγχρονισμό: {0}.",
     "Waiting to sync: {0}.": "Αναμονή για συγχρονισμό: {0}.",
-    "Welcome to Inkora": "Καλώς ήρθατε στο Inkora",
     "Your libraries, together": "Οι βιβλιοθήκες σας συγκεντρωμένες",
     "Browse and discover series from your Komga libraries.":
         "Περιηγηθείτε και ανακαλύψτε σειρές από τις βιβλιοθήκες σας στο Komga.",
@@ -8864,6 +9042,27 @@ const Map<String, Map<String, String>> messages = {
     "Saturation": "Κορεσμός",
     "Brightness": "Φωτεινότητα",
     "Page numbers": "Αριθμοί σελίδων",
+    "Keep the next {0} volumes offline":
+        "Διατηρήστε τους επόμενους {0} τόμους εκτός σύνδεσης",
+    "Includes the volume in progress. The next volumes are queued as you read, while the app is open. Download network and storage limits apply.": "Περιλαμβάνεται ο τόμος που διαβάζετε. Οι επόμενοι τόμοι προστίθενται στην ουρά καθώς διαβάζετε, όσο η εφαρμογή είναι ανοιχτή. Ισχύουν οι περιορισμοί δικτύου και αποθήκευσης για τις λήψεις.",
+    "Turn off automatic downloads": "Απενεργοποιήστε τις αυτόματες λήψεις",
+    "Download rule saved.": "Ο κανόνας λήψης αποθηκεύτηκε.",
+    "Saved searches": "Αποθηκευμένες αναζητήσεις",
+    "Search name": "Όνομα αναζήτησης",
+    "Save current search": "Αποθήκευση της τρέχουσας αναζήτησης",
+    "A search with this name already exists.":
+        "Υπάρχει ήδη αναζήτηση με αυτό το όνομα.",
+    "Saved search limit reached. Remove a search to add another.": "Συμπληρώθηκε το όριο αποθηκευμένων αναζητήσεων. Καταργήστε μια αναζήτηση για να προσθέσετε άλλη.",
+    "Unable to save searches. Try again.":
+        "Δεν είναι δυνατή η αποθήκευση αναζητήσεων. Προσπαθήστε ξανά.",
+    "Save a search to reuse its filters later.": "Αποθηκεύστε μια αναζήτηση για να χρησιμοποιήσετε ξανά τα φίλτρα της αργότερα.",
+    "Remove saved search": "Κατάργηση αποθηκευμένης αναζήτησης",
+    "Preferred hand": "Προτιμώμενο χέρι",
+    "Right-handed": "Δεξιόχειρας",
+    "Left-handed": "Αριστερόχειρας",
+    "Setup is complete. Enjoy your reading!":
+        "Η ρύθμιση έχει ολοκληρωθεί. Καλή ανάγνωση!",
+    "Welcome to Inkora": "Καλώς ήρθατε στο Inkora",
   },
   "hu": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Egy ütközés esetén döntést kell hoznia. Nyissa meg az érintett könyvet, és válassza az Olvasási előrehaladás menüpontot.",
@@ -9404,7 +9603,6 @@ const Map<String, Map<String, String>> messages = {
     "White": "Fehér",
     "Wide edge bands and visible system navigation":
         "Széles szélső sávok és látható rendszernavigáció",
-    "Your configuration is saved on this device. You can change every setting later, or reopen Guided setup from Settings.": "A beállításait ezen az eszközön mentjük. Minden beállítást később módosíthat, vagy a Beállítások menüpontból újra megnyithatja a Vezetett beállítást.",
     "Your device controls the physical back gesture. These bands keep reader gestures away from its edges.": "A készülék vezérli a visszalépő gesztust. Ezek a sávok távol tartják az olvasási gesztusokat a képernyő széleitől.",
     "Your downloaded books and saved preferences remain on this device.": "A letöltött könyvek és a mentett beállítások ezen az eszközön maradnak.",
     "Your offline shelf is empty": "Az offline könyvespolc üres",
@@ -9441,7 +9639,6 @@ const Map<String, Map<String, String>> messages = {
     "Saved locally; waiting to sync: {0}.":
         "Helyileg mentve; szinkronizálásra vár: {0}.",
     "Waiting to sync: {0}.": "Szinkronizálásra vár: {0}.",
-    "Welcome to Inkora": "Üdvözöljük az Inkora alkalmazásban",
     "Your libraries, together": "Könyvtárai egy helyen",
     "Browse and discover series from your Komga libraries.":
         "Böngésszen és fedezzen fel sorozatokat a Komga-könyvtáraiból.",
@@ -9742,6 +9939,28 @@ const Map<String, Map<String, String>> messages = {
     "Saturation": "Telítettség",
     "Brightness": "Fényerő",
     "Page numbers": "Oldalszámok",
+    "Keep the next {0} volumes offline":
+        "Tartsa a következő {0} kötetet offline állapotban",
+    "Includes the volume in progress. The next volumes are queued as you read, while the app is open. Download network and storage limits apply.": "A jelenleg olvasott kötet is beleszámít. Olvasás közben a következő kötetek várólistára kerülnek, amíg az alkalmazás nyitva van. A letöltésekre vonatkozó hálózati és tárhelykorlátok érvényesek.",
+    "Turn off automatic downloads": "Kapcsolja ki az automatikus letöltést",
+    "Download rule saved.": "Letöltési szabály mentve.",
+    "Saved searches": "Mentett keresések",
+    "Search name": "Keresés neve",
+    "Save current search": "Az aktuális keresés mentése",
+    "A search with this name already exists.":
+        "Már létezik ilyen nevű keresés.",
+    "Saved search limit reached. Remove a search to add another.": "Elérte a mentett keresések számának korlátját. Távolítson el egy keresést egy új hozzáadásához.",
+    "Unable to save searches. Try again.":
+        "Nem sikerült menteni a kereséseket. Próbálja újra.",
+    "Save a search to reuse its filters later.":
+        "Mentse el a keresést a szűrők későbbi újrafelhasználásához.",
+    "Remove saved search": "Mentett keresés eltávolítása",
+    "Preferred hand": "Előnyben részesített kéz",
+    "Right-handed": "Jobbkezes",
+    "Left-handed": "Balkezes",
+    "Setup is complete. Enjoy your reading!":
+        "A beállítás befejeződött. Jó olvasást!",
+    "Welcome to Inkora": "Üdvözöljük az Inkora alkalmazásban",
   },
   "cs": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Konflikt vyžaduje vaše rozhodnutí. Otevřete příslušnou knihu a vyberte „Průběh čtení“.",
@@ -10277,7 +10496,6 @@ const Map<String, Map<String, String>> messages = {
     "White": "Bílá",
     "Wide edge bands and visible system navigation":
         "Široké okrajové pruhy a viditelná systémová navigace",
-    "Your configuration is saved on this device. You can change every setting later, or reopen Guided setup from Settings.": "Vaše konfigurace je uložena v tomto zařízení. Každé nastavení můžete později změnit nebo znovu otevřít Nastavení s průvodcem z nabídky Nastavení.",
     "Your device controls the physical back gesture. These bands keep reader gestures away from its edges.": "Vaše zařízení řídí systémové gesto Zpět. Tyto pruhy oddělují gesta čtečky od okrajů obrazovky.",
     "Your downloaded books and saved preferences remain on this device.":
         "Vaše stažené knihy a uložené předvolby zůstanou v tomto zařízení.",
@@ -10316,7 +10534,6 @@ const Map<String, Map<String, String>> messages = {
     "Saved locally; waiting to sync: {0}.":
         "Uloženo místně; čekající na synchronizaci: {0}.",
     "Waiting to sync: {0}.": "Čekající na synchronizaci: {0}.",
-    "Welcome to Inkora": "Vítejte v aplikaci Inkora",
     "Your libraries, together": "Vaše knihovny na jednom místě",
     "Browse and discover series from your Komga libraries.":
         "Procházejte a objevujte série ze svých knihoven Komga.",
@@ -10614,5 +10831,26 @@ const Map<String, Map<String, String>> messages = {
     "Saturation": "Nasycení",
     "Brightness": "Jas",
     "Page numbers": "Čísla stránek",
+    "Keep the next {0} volumes offline": "Ponechat další {0} svazky offline",
+    "Includes the volume in progress. The next volumes are queued as you read, while the app is open. Download network and storage limits apply.": "Zahrnuje právě čtený svazek. Další svazky se při čtení přidávají do fronty, dokud je aplikace otevřená. Platí omezení sítě a úložiště pro stahování.",
+    "Turn off automatic downloads": "Vypněte automatické stahování",
+    "Download rule saved.": "Pravidlo stahování bylo uloženo.",
+    "Saved searches": "Uložená vyhledávání",
+    "Search name": "Název vyhledávání",
+    "Save current search": "Uložit aktuální vyhledávání",
+    "A search with this name already exists.":
+        "Vyhledávání s tímto názvem již existuje.",
+    "Saved search limit reached. Remove a search to add another.": "Byl dosažen limit uložených vyhledávání. Odeberte vyhledávání, abyste mohli přidat další.",
+    "Unable to save searches. Try again.":
+        "Vyhledávání nelze uložit. Zkuste to znovu.",
+    "Save a search to reuse its filters later.":
+        "Uložte vyhledávání, abyste mohli jeho filtry později znovu použít.",
+    "Remove saved search": "Odebrat uložené vyhledávání",
+    "Preferred hand": "Preferovaná ruka",
+    "Right-handed": "Pravák",
+    "Left-handed": "Levák",
+    "Setup is complete. Enjoy your reading!":
+        "Nastavení je dokončeno. Příjemné čtení!",
+    "Welcome to Inkora": "Vítejte v aplikaci Inkora",
   },
 };

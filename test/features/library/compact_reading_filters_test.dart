@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inkora/app/l10n/app_strings.dart';
 import 'package:inkora/app/router.dart';
 import 'package:inkora/app/widgets/ink_filter_bar.dart';
-import 'package:inkora/app/widgets/ink_home_attachment.dart';
 import 'package:inkora/features/library/domain/catalogue.dart';
 import 'package:inkora/features/library/domain/catalogue_filters.dart';
 import 'package:inkora/features/library/presentation/catalogue_screen.dart';
@@ -53,13 +52,11 @@ void main() {
         expect(find.byKey(const Key('catalogue-chips')), findsNothing);
         final tools = find.byKey(const Key('catalogue-tools-menu'));
         final rect = tester.getRect(selector);
-        final group = tester.getRect(
-          find.ancestor(of: selector, matching: find.byType(InkHomeToolGroup)),
-        );
+        final group = tester.getRect(find.byType(InkFilterBar));
         expect(rect.height, greaterThanOrEqualTo(48));
         expect(rect.right, lessThanOrEqualTo(tester.getRect(tools).left));
-        expect(rect.left, closeTo(group.left + 20, .01));
-        expect(tester.getRect(tools).right, closeTo(group.right - 20, .01));
+        expect(rect.left, closeTo(group.left + 12, .01));
+        expect(tester.getRect(tools).right, closeTo(group.right - 12, .01));
         if (scale == 1) {
           // The short French label must leave free space before the burger.
           expect(rect.width, lessThan(160));
@@ -76,8 +73,6 @@ void main() {
                   .first,
             )
             .position;
-        position.jumpTo(300);
-        await tester.pumpAndSettle();
         final before = position.pixels;
 
         Future<void> open() async {

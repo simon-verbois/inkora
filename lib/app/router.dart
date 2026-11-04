@@ -90,6 +90,23 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         name: 'reader-parent',
         path: '/reader-parent/:id',
+        routes: [
+          GoRoute(
+            name: 'reader-parent-book',
+            path: 'book/:bookId',
+            pageBuilder: (_, state) => page(
+              state,
+              InkoraShell(
+                currentPath:
+                    '/catalogue/book/${state.pathParameters['bookId']!}',
+                child: CatalogueDetailScreen(
+                  kind: CatalogueKind.book,
+                  id: state.pathParameters['bookId']!,
+                ),
+              ),
+            ),
+          ),
+        ],
         pageBuilder: (_, state) => page(
           state,
           InkoraShell(

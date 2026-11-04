@@ -103,17 +103,13 @@ class EbookSettingsControls extends StatelessWidget {
               section == EbookControlsSection.typography)) ...[
         if (section == EbookControlsSection.all) const SizedBox(height: 20),
         if (backgroundPicker case final background?)
-          Row(
+          ReaderSettingsGrid(
             key: const Key('ebook-color-font-row'),
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: background),
-              const SizedBox(width: 16),
-              Expanded(
-                child: EbookFontPicker(
-                  font: settings.fontChoice,
-                  onSelected: (font) => onChanged('font', font.id),
-                ),
+              background,
+              EbookFontPicker(
+                font: settings.fontChoice,
+                onSelected: (font) => onChanged('font', font.id),
               ),
             ],
           )

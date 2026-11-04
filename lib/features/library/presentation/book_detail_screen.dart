@@ -30,7 +30,7 @@ class BookDetailScreen extends ConsumerWidget {
         children: [
           if (item != null) Positioned.fill(child: SeriesBackdrop(item: item)),
           InkFloatingHeader(
-            transparentAtRest: true,
+            transparentBand: true,
             title: item == null ? null : Text(item.title),
             body: InkContent(
               maxWidth: 1120,

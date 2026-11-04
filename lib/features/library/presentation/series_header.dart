@@ -1,3 +1,5 @@
+import '../../../app/widgets/preferred_hand_alignment.dart';
+
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -421,12 +423,23 @@ class SeriesAbout extends ConsumerWidget {
           section('Genres'),
           Wrap(
             spacing: InkSpace.sm,
-            runSpacing: InkSpace.xs,
+            runSpacing: InkSpace.sm,
             children: [
               for (final genre in metadata.genres)
                 ActionChip(
                   key: ValueKey('genre-$genre'),
-                  label: Text(genre),
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: InkRadius.medium,
+                  ),
+                  side: BorderSide.none,
+                  backgroundColor: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainer,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  label: Text(genre, softWrap: true),
                   onPressed: () => context.pushNamed(
                     'catalogue',
                     pathParameters: {'kind': CatalogueKind.series.name},
@@ -553,21 +566,23 @@ class _SeriesSynopsisState extends State<SeriesSynopsis> {
             else
               collapsed,
             if (overflow)
-              TextButton(
-                key: const Key('detail-summary-toggle'),
-                onPressed: () {
-                  if (_expanded) {
-                    // Keep a visible synopsis in place. Only reveal its start
-                    // when it has scrolled above the pane before shrinking.
-                    Scrollable.ensureVisible(
-                      context,
-                      alignmentPolicy:
-                          ScrollPositionAlignmentPolicy.keepVisibleAtStart,
-                    );
-                  }
-                  setState(() => _expanded = !_expanded);
-                },
-                child: LText(_expanded ? 'Show less' : 'Read more'),
+              PreferredHandAlignment(
+                child: TextButton(
+                  key: const Key('detail-summary-toggle'),
+                  onPressed: () {
+                    if (_expanded) {
+                      // Keep a visible synopsis in place. Only reveal its start
+                      // when it has scrolled above the pane before shrinking.
+                      Scrollable.ensureVisible(
+                        context,
+                        alignmentPolicy:
+                            ScrollPositionAlignmentPolicy.keepVisibleAtStart,
+                      );
+                    }
+                    setState(() => _expanded = !_expanded);
+                  },
+                  child: LText(_expanded ? 'Show less' : 'Read more'),
+                ),
               ),
           ],
         );

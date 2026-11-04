@@ -13,6 +13,7 @@ import '../../reader/data/reader_asset_store.dart';
 import '../data/download_scheduler.dart';
 import '../data/download_store.dart';
 import '../data/download_retention_store.dart';
+import '../data/download_ahead_store.dart';
 import '../data/progress_store.dart';
 import '../data/progress_sync.dart';
 import '../domain/progress.dart';
@@ -188,6 +189,11 @@ final class OfflineCoordinator with WidgetsBindingObserver {
   Timer? _timer;
   StreamSubscription<({bool hasWork, int? dueAt})>? _progressSubscription;
   StreamSubscription<bool>? _downloadSubscription;
+  StreamSubscription<List<String>>? _aheadSubscription;
+  List<String> _aheadTargets = const [];
+  bool _aheadPending = false;
+  int _aheadGeneration = 0;
+  Future<void>? _aheadWork;
   bool _progressWork = false, _downloadWork = false;
   int _monitorGeneration = 0, _retryGeneration = 0;
   Future<void>? _replayWork;
@@ -218,10 +224,22 @@ final class OfflineCoordinator with WidgetsBindingObserver {
       _downloadWork = active;
       _updatePolicyWatch();
     });
+    _aheadSubscription = DownloadAheadStore(store.database, store.accountId)
+        .watchTargets()
+        .listen((targets) {
+          if (!current || _backgrounded || generation != _monitorGeneration) {
+            return;
+          }
+          _aheadGeneration++;
+          _aheadTargets = targets;
+          _aheadPending = targets.isNotEmpty;
+          _updatePolicyWatch();
+          unawaited(_tick().catchError((Object _) {}));
+        });
   }
 
   void _updatePolicyWatch() {
-    if (!_progressWork && !_downloadWork) {
+    if (!_progressWork && !_downloadWork && !_aheadPending) {
       unawaited(_policySubscription?.cancel());
       _policySubscription = null;
       _policy = null;
@@ -246,6 +264,11 @@ final class OfflineCoordinator with WidgetsBindingObserver {
     unawaited(_downloadSubscription?.cancel());
     _downloadSubscription = null;
     _progressWork = _downloadWork = false;
+    _aheadGeneration++;
+    unawaited(_aheadSubscription?.cancel());
+    _aheadSubscription = null;
+    _aheadTargets = const [];
+    _aheadPending = false;
     unawaited(_policySubscription?.cancel());
     _policySubscription = null;
     _policy = null;
@@ -304,6 +327,57 @@ final class OfflineCoordinator with WidgetsBindingObserver {
     if (!current || _backgrounded) return;
     sync.paused = policy.paused;
     _wakeReplay();
+    if (!policy.paused && !(store.wifiOnly && policy.constrained)) {
+      _refillAhead();
+    }
+  }
+
+  /// Serial admission through the existing scheduler, never a second transfer
+  /// loop. A failed admission waits for another policy/progress/resume event.
+  void _refillAhead() {
+    if (!_aheadPending || _aheadWork != null) return;
+    final generation = _aheadGeneration;
+    bool allowed() =>
+        current &&
+        !_backgrounded &&
+        generation == _aheadGeneration &&
+        _policy != null &&
+        !_policy!.paused &&
+        !(store.wifiOnly && _policy!.constrained);
+    Future<void> fill() async {
+      final jobs = await store.jobs();
+      var retry = false;
+      for (final book in _aheadTargets) {
+        if (!allowed()) return;
+        // Honor user pause/cancel and failed-job recovery. Never silently
+        // resume one, or refill further volumes instead of that window slot.
+        if (jobs.any((job) => job.bookId == book)) continue;
+        try {
+          await downloads.enqueue(
+            book,
+            allow: () async {
+              // A manual action may have happened while the manifest loaded.
+              final latest = await store.jobs();
+              return allowed() && !latest.any((job) => job.bookId == book);
+            },
+          );
+        } catch (_) {
+          retry = true;
+          // Quota/offline failure must not repeatedly fetch other manifests.
+          break;
+        }
+      }
+      if (allowed()) _aheadPending = retry;
+    }
+
+    _aheadWork = fill().catchError((Object _) {}).whenComplete(() {
+      _aheadWork = null;
+      if (!current || _backgrounded) return;
+      _updatePolicyWatch();
+      if (generation != _aheadGeneration) {
+        unawaited(_tick().catchError((Object _) {}));
+      }
+    });
   }
 
   Future<void> configure({required int quota, required bool wifiOnly}) async {

@@ -20,7 +20,6 @@
   "Application theme": "Motiv aplikace",
   "Applied in addition to your device text size.": "Používá se navíc k velikosti textu nastavené na vašem zařízení.",
   "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Tato nastavení se použijí na všechny série a knihy v této knihovně a nahradí jejich vlastní nastavení čtení.",
-  "Apply to all series and books": "Použít na všechny série a knihy",
   "Authentication failed. Please sign in again.": "Ověření se nezdařilo. Přihlaste se prosím znovu.",
   "Authorization": "Autorizace",
   "Authors": "Autoři",
@@ -775,5 +774,7 @@
   "Setup is complete. Enjoy your reading!": "Nastavení je dokončeno. Příjemné čtení!",
   "Welcome to Inkora": "Vítejte v aplikaci Inkora",
   "Visible metadata": "Viditelná metadata",
-  "Cover artist": "Ilustrátor obálky"
+  "Cover artist": "Ilustrátor obálky",
+  "Apply": "Použít",
+  "Apply to all": "Použít na všechny"
 }

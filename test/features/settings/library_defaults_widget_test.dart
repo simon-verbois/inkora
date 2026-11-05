@@ -8,8 +8,10 @@ import 'package:inkora/reader/domain/reader_manifest.dart';
 import 'package:inkora/reader/domain/reading_settings.dart';
 
 import '../../support/ui_harness.dart';
+import '../../support/onboarding_visuals.dart';
 
 void main() {
+  setUpAll(loadOnboardingFonts);
   for (final (size, scale) in [
     (const Size(390, 844), 1.0),
     (const Size(1024, 768), 1.0),
@@ -24,7 +26,11 @@ void main() {
         addTearDown(tester.view.resetDevicePixelRatio);
         final harness = await UiHarness.create(tester);
         addTearDown(() => harness.close(tester));
-        await harness.mount(tester, textScale: scale);
+        await harness.mount(
+          tester,
+          textScale: scale,
+          captureKey: const Key('library-editor-capture'),
+        );
         final router = harness.container.read(routerProvider);
         router.go('/settings');
         await tester.pumpAndSettle();
@@ -77,6 +83,8 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text('Manga shelf'));
         await tester.pumpAndSettle();
+        expect(find.byKey(const Key('reader-settings-scope')), findsNothing);
+        expect(find.text('Reading mode'), findsOneWidget);
         expect(find.text('Inherit'), findsNothing);
         expect(find.text('Preference inheritance'), findsNothing);
         expect(find.text('Comics'), findsOneWidget);
@@ -171,6 +179,12 @@ void main() {
         await tester.tap(find.text('Manga shelf'));
         await tester.pumpAndSettle();
         expect(find.text('Webtoon'), findsOneWidget);
+        expect(find.byKey(const Key('reader-settings-scope')), findsNothing);
+        await captureOnboarding(
+          tester,
+          find.byKey(const Key('library-editor-capture')),
+          'library-editor-${size.width.toInt()}-${scale.toInt()}',
+        );
         expect(find.byKey(const Key('reader-settings-menu')), findsNothing);
         expect(
           (await tester.runAsync(() => store.settings(manifest).first))!.mode,

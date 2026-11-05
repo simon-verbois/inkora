@@ -123,7 +123,7 @@ class _LibraryDefaultsScreenState extends ConsumerState<LibraryDefaultsScreen> {
                 final editor = ReaderSettingsSheet(
                   key: widget.editorKey ?? ValueKey((account, libraryId)),
 
-                  showScope: !widget.embedded,
+                  showScope: false,
                   showLibraryApply: !widget.embedded,
 
                   store: _store!,

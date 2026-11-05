@@ -20,7 +20,6 @@
   "Application theme": "Θέμα εφαρμογής",
   "Applied in addition to your device text size.": "Εφαρμόζεται επιπλέον του μεγέθους κειμένου της συσκευής σας.",
   "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Εφαρμόστε αυτές τις προτιμήσεις σε κάθε σειρά και βιβλίο αυτής της βιβλιοθήκης, αντικαθιστώντας τις προσαρμοσμένες προτιμήσεις ανάγνωσής τους.",
-  "Apply to all series and books": "Εφαρμογή σε όλες τις σειρές και τα βιβλία",
   "Authentication failed. Please sign in again.": "Η πιστοποίηση απέτυχε. Παρακαλώ συνδεθείτε ξανά.",
   "Authorization": "Εξουσιοδότηση",
   "Authors": "Συγγραφείς",
@@ -775,5 +774,7 @@
   "Setup is complete. Enjoy your reading!": "Η ρύθμιση έχει ολοκληρωθεί. Καλή ανάγνωση!",
   "Welcome to Inkora": "Καλώς ήρθατε στο Inkora",
   "Visible metadata": "Ορατά μεταδεδομένα",
-  "Cover artist": "Καλλιτέχνης εξωφύλλου"
+  "Cover artist": "Καλλιτέχνης εξωφύλλου",
+  "Apply": "Εφαρμογή",
+  "Apply to all": "Εφαρμογή σε όλα"
 }

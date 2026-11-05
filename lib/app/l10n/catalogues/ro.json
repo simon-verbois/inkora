@@ -20,7 +20,6 @@
   "Application theme": "Tema aplicației",
   "Applied in addition to your device text size.": "Se aplică în plus față de dimensiunea textului de pe dispozitivul dumneavoastră.",
   "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Aplicați aceste preferințe la fiecare serie și carte din această bibliotecă, înlocuind preferințele de citire personalizate ale acestora.",
-  "Apply to all series and books": "Aplicare la toate seriile și cărțile",
   "Authentication failed. Please sign in again.": "Autentificarea a eșuat. Vă rugăm să vă autentificați din nou.",
   "Authorization": "Autorizare",
   "Authors": "Autori",
@@ -775,5 +774,7 @@
   "Setup is complete. Enjoy your reading!": "Configurarea este finalizată. Lectură plăcută!",
   "Welcome to Inkora": "Bine ați venit la Inkora",
   "Visible metadata": "Metadate vizibile",
-  "Cover artist": "Ilustrator de copertă"
+  "Cover artist": "Ilustrator de copertă",
+  "Apply": "Aplică",
+  "Apply to all": "Aplică tuturor"
 }

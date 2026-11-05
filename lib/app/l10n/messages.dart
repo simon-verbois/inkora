@@ -27,7 +27,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Applied in addition to your device text size.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Apply these preferences to every series and book in this library, replacing their custom reading preferences.",
-    "Apply to all series and books": "Apply to all series and books",
     "Authentication failed. Please sign in again.":
         "Authentication failed. Please sign in again.",
     "Authorization": "Authorization",
@@ -902,6 +901,8 @@ const Map<String, Map<String, String>> messages = {
     "Welcome to Inkora": "Welcome to Inkora",
     "Visible metadata": "Visible metadata",
     "Cover artist": "Cover artist",
+    "Apply": "Apply",
+    "Apply to all": "Apply to all",
   },
   "fr": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Un conflit nécessite votre choix. Ouvrez le livre concerné et sélectionnez « Progression de lecture ».",
@@ -930,8 +931,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Appliqué en plus de la taille du texte de votre appareil.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Appliquez ces préférences à toutes les séries et à tous les livres de cette bibliothèque, en remplaçant leurs préférences de lecture personnalisées.",
-    "Apply to all series and books":
-        "Appliquer à toutes les séries et à tous les livres",
     "Authentication failed. Please sign in again.":
         "Échec de l’authentification. Veuillez vous reconnecter.",
     "Authorization": "Autorisation",
@@ -1811,6 +1810,8 @@ const Map<String, Map<String, String>> messages = {
     "Welcome to Inkora": "Bienvenue sur Inkora",
     "Visible metadata": "Métadonnées affichées",
     "Cover artist": "Illustrateur de couverture",
+    "Apply": "Appliquer",
+    "Apply to all": "Appliquer à tous",
   },
   "de": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Bei einem Konflikt müssen Sie eine Entscheidung treffen. Öffnen Sie das betroffene Buch und wählen Sie „Lesefortschritt“ aus.",
@@ -1839,7 +1840,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Wird zusätzlich zur Textgröße Ihres Geräts angewendet.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Wenden Sie diese Einstellungen auf alle Serien und Bücher in dieser Bibliothek an und ersetzen Sie dabei deren benutzerdefinierte Leseeinstellungen.",
-    "Apply to all series and books": "Auf alle Serien und Bücher anwenden",
     "Authentication failed. Please sign in again.": "Die Authentifizierung ist fehlgeschlagen. Bitte melden Sie sich erneut an.",
     "Authorization": "Autorisierung",
     "Authors": "Autoren",
@@ -2703,6 +2703,8 @@ const Map<String, Map<String, String>> messages = {
     "Welcome to Inkora": "Willkommen bei Inkora",
     "Visible metadata": "Sichtbare Metadaten",
     "Cover artist": "Coverillustrator",
+    "Apply": "Anwenden",
+    "Apply to all": "Auf alle anwenden",
   },
   "es": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Un conflicto requiere que usted elija. Abra el libro afectado y seleccione «Progreso de lectura».",
@@ -2731,7 +2733,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Se aplica además del tamaño de texto de su dispositivo.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Aplique estas preferencias a todas las series y libros de esta biblioteca para sustituir sus preferencias de lectura personalizadas.",
-    "Apply to all series and books": "Aplicar a todas las series y libros",
     "Authentication failed. Please sign in again.":
         "Error de autenticación. Inicie sesión de nuevo.",
     "Authorization": "Autorización",
@@ -3610,6 +3611,8 @@ const Map<String, Map<String, String>> messages = {
     "Welcome to Inkora": "Bienvenido a Inkora",
     "Visible metadata": "Metadatos visibles",
     "Cover artist": "Ilustrador de portada",
+    "Apply": "Aplicar",
+    "Apply to all": "Aplicar a todos",
   },
   "it": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Per risolvere un conflitto è necessaria una sua scelta. Apra il libro interessato e selezioni «Progresso di lettura».",
@@ -3638,8 +3641,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Applicato in aggiunta alla dimensione del testo del suo dispositivo.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Applichi queste preferenze a tutte le serie e a tutti i libri di questa libreria, sostituendo le loro preferenze di lettura personalizzate.",
-    "Apply to all series and books":
-        "Applica a tutte le serie e a tutti i libri",
     "Authentication failed. Please sign in again.": "Autenticazione non riuscita. Si prega di effettuare nuovamente l’accesso.",
     "Authorization": "Autorizzazione",
     "Authors": "Autori",
@@ -4516,6 +4517,8 @@ const Map<String, Map<String, String>> messages = {
     "Welcome to Inkora": "Benvenuto in Inkora",
     "Visible metadata": "Metadati visibili",
     "Cover artist": "Illustratore della copertina",
+    "Apply": "Applica",
+    "Apply to all": "Applica a tutti",
   },
   "pl": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "W przypadku konfliktu należy dokonać wyboru. Proszę otworzyć daną książkę i wybrać opcję „Postęp czytania”.",
@@ -4543,7 +4546,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Stosowane dodatkowo do rozmiaru tekstu ustawionego na urządzeniu.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Zastosuj te preferencje do wszystkich serii i książek w tej bibliotece, zastępując ich niestandardowe preferencje czytania.",
-    "Apply to all series and books": "Zastosuj do wszystkich serii i książek",
     "Authentication failed. Please sign in again.":
         "Uwierzytelnianie nie powiodło się. Proszę zalogować się ponownie.",
     "Authorization": "Autoryzacja",
@@ -5417,6 +5419,8 @@ const Map<String, Map<String, String>> messages = {
     "Welcome to Inkora": "Witamy w aplikacji Inkora",
     "Visible metadata": "Widoczne metadane",
     "Cover artist": "Ilustrator okładki",
+    "Apply": "Zastosuj",
+    "Apply to all": "Zastosuj do wszystkich",
   },
   "nl": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Bij een conflict dient u een keuze te maken. Open het betreffende boek en selecteer ‘Leesvoortgang’.",
@@ -5444,7 +5448,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Wordt toegepast naast de tekstgrootte van uw apparaat.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Pas deze voorkeuren toe op elke reeks en elk boek in deze bibliotheek, ter vervanging van hun aangepaste leesvoorkeuren.",
-    "Apply to all series and books": "Toepassen op alle series en boeken",
     "Authentication failed. Please sign in again.":
         "De authenticatie is mislukt. Meld u alstublieft opnieuw aan.",
     "Authorization": "Autorisatie",
@@ -6328,6 +6331,8 @@ const Map<String, Map<String, String>> messages = {
     "Welcome to Inkora": "Welkom bij Inkora",
     "Visible metadata": "Zichtbare metagegevens",
     "Cover artist": "Omslagillustrator",
+    "Apply": "Toepassen",
+    "Apply to all": "Op alles toepassen",
   },
   "pt": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Um conflito requer a sua escolha. Abra o livro afetado e selecione «Progresso de leitura».",
@@ -6356,7 +6361,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Aplicado para além do tamanho do texto do seu dispositivo.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Aplique estas preferências a todas as séries e livros desta biblioteca, substituindo as respetivas preferências de leitura personalizadas.",
-    "Apply to all series and books": "Aplicar a todas as séries e livros",
     "Authentication failed. Please sign in again.":
         "Falha na autenticação. Por favor, inicie sessão novamente.",
     "Authorization": "Autorização",
@@ -7232,6 +7236,8 @@ const Map<String, Map<String, String>> messages = {
     "Welcome to Inkora": "Bem-vindo ao Inkora",
     "Visible metadata": "Metadados visíveis",
     "Cover artist": "Ilustrador da capa",
+    "Apply": "Aplicar",
+    "Apply to all": "Aplicar a todos",
   },
   "ro": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Un conflict necesită alegerea dvs. Deschideți cartea afectată și selectați „Progresul lecturii”.",
@@ -7258,7 +7264,6 @@ const Map<String, Map<String, String>> messages = {
     "Application theme": "Tema aplicației",
     "Applied in addition to your device text size.": "Se aplică în plus față de dimensiunea textului de pe dispozitivul dumneavoastră.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Aplicați aceste preferințe la fiecare serie și carte din această bibliotecă, înlocuind preferințele de citire personalizate ale acestora.",
-    "Apply to all series and books": "Aplicare la toate seriile și cărțile",
     "Authentication failed. Please sign in again.":
         "Autentificarea a eșuat. Vă rugăm să vă autentificați din nou.",
     "Authorization": "Autorizare",
@@ -8135,6 +8140,8 @@ const Map<String, Map<String, String>> messages = {
     "Welcome to Inkora": "Bine ați venit la Inkora",
     "Visible metadata": "Metadate vizibile",
     "Cover artist": "Ilustrator de copertă",
+    "Apply": "Aplică",
+    "Apply to all": "Aplică tuturor",
   },
   "el": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Μια διένεξη απαιτεί την επιλογή σας. Ανοίξτε το σχετικό βιβλίο και επιλέξτε «Πρόοδος ανάγνωσης».",
@@ -8163,8 +8170,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Εφαρμόζεται επιπλέον του μεγέθους κειμένου της συσκευής σας.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Εφαρμόστε αυτές τις προτιμήσεις σε κάθε σειρά και βιβλίο αυτής της βιβλιοθήκης, αντικαθιστώντας τις προσαρμοσμένες προτιμήσεις ανάγνωσής τους.",
-    "Apply to all series and books":
-        "Εφαρμογή σε όλες τις σειρές και τα βιβλία",
     "Authentication failed. Please sign in again.":
         "Η πιστοποίηση απέτυχε. Παρακαλώ συνδεθείτε ξανά.",
     "Authorization": "Εξουσιοδότηση",
@@ -9053,6 +9058,8 @@ const Map<String, Map<String, String>> messages = {
     "Welcome to Inkora": "Καλώς ήρθατε στο Inkora",
     "Visible metadata": "Ορατά μεταδεδομένα",
     "Cover artist": "Καλλιτέχνης εξωφύλλου",
+    "Apply": "Εφαρμογή",
+    "Apply to all": "Εφαρμογή σε όλα",
   },
   "hu": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Egy ütközés esetén döntést kell hoznia. Nyissa meg az érintett könyvet, és válassza az Olvasási előrehaladás menüpontot.",
@@ -9080,7 +9087,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Az eszközön beállított szövegméreten felül érvényesül.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Ezeket a beállításokat alkalmazza a könyvtárban található összes sorozatra és könyvre, felülírva azok egyéni olvasási beállításait.",
-    "Apply to all series and books": "Alkalmazás minden sorozatra és könyvre",
     "Authentication failed. Please sign in again.":
         "A hitelesítés sikertelen volt. Kérjük, jelentkezzen be újra.",
     "Authorization": "Jogosultság",
@@ -9950,6 +9956,8 @@ const Map<String, Map<String, String>> messages = {
     "Welcome to Inkora": "Üdvözöljük az Inkora alkalmazásban",
     "Visible metadata": "Látható metaadatok",
     "Cover artist": "Borítórajzoló",
+    "Apply": "Alkalmazás",
+    "Apply to all": "Alkalmazás az összesre",
   },
   "cs": {
     "A conflict needs your choice. Open the affected book and select Reading progress.": "Konflikt vyžaduje vaše rozhodnutí. Otevřete příslušnou knihu a vyberte „Průběh čtení“.",
@@ -9978,7 +9986,6 @@ const Map<String, Map<String, String>> messages = {
     "Applied in addition to your device text size.":
         "Používá se navíc k velikosti textu nastavené na vašem zařízení.",
     "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Tato nastavení se použijí na všechny série a knihy v této knihovně a nahradí jejich vlastní nastavení čtení.",
-    "Apply to all series and books": "Použít na všechny série a knihy",
     "Authentication failed. Please sign in again.":
         "Ověření se nezdařilo. Přihlaste se prosím znovu.",
     "Authorization": "Autorizace",
@@ -10840,5 +10847,7 @@ const Map<String, Map<String, String>> messages = {
     "Welcome to Inkora": "Vítejte v aplikaci Inkora",
     "Visible metadata": "Viditelná metadata",
     "Cover artist": "Ilustrátor obálky",
+    "Apply": "Použít",
+    "Apply to all": "Použít na všechny",
   },
 };

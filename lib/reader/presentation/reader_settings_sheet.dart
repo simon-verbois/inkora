@@ -453,15 +453,60 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
     return true;
   }
 
+  bool _libraryConfirmationOpen = false;
+
   Future<void> _applyToLibrary() async {
-    final confirmed = await confirmInk(
-      context,
-      title: 'Apply to all series and books?',
-      message: 'Apply these preferences to every series and book in this library, replacing their custom reading preferences.',
-      confirmLabel: 'Apply to all series and books',
-      destructive: true,
-    );
-    if (!confirmed || !mounted) return;
+    if (_loading || _libraryConfirmationOpen) return;
+    setState(() => _libraryConfirmationOpen = true);
+    final bool? confirmed;
+    try {
+      confirmed = await showInkPopup<bool>(
+        context: context,
+        heightFactor: .45,
+        child: Builder(
+          builder: (sheetContext) => SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const InkSheetHeader(title: 'Apply to all series and books?'),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const LText(
+                        'Apply these preferences to every series and book in this library, replacing their custom reading preferences.',
+                      ),
+                      const SizedBox(height: 24),
+                      OverflowBar(
+                        alignment: MainAxisAlignment.end,
+                        spacing: 12,
+                        overflowSpacing: 12,
+                        children: [
+                          OutlinedButton(
+                            key: const Key('library-apply-cancel'),
+                            onPressed: () => Navigator.pop(sheetContext, false),
+                            child: const LText('Cancel'),
+                          ),
+                          FilledButton(
+                            key: const Key('library-apply-confirm'),
+                            onPressed: () => Navigator.pop(sheetContext, true),
+                            child: const LText('Apply'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _libraryConfirmationOpen = false);
+    }
+    if (confirmed != true || !mounted) return;
     setState(() {
       _loading = true;
       _message = null;
@@ -719,7 +764,8 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       if (!widget.qualityOnly) ...[
-        if (widget.manifest?.isDocument != true)
+        if (widget.manifest?.isDocument != true) ...[
+          _sectionHeading('Reading mode', first: true),
           DropdownButtonFormField<ReadingMode>(
             key: const Key('reader-mode-selector'),
             initialValue: _effective.mode,
@@ -750,6 +796,7 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
                     }
                   },
           ),
+        ],
         if (_supportsTypography) ...[
           _sectionHeading(
             'Appearance',
@@ -828,14 +875,19 @@ class ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
                     if (_scope == SettingsScope.library &&
                         widget.showLibraryApply) ...[
                       const SizedBox(height: 24),
-                      const LText(
-                        'Apply these preferences to every series and book in this library, replacing their custom reading preferences.',
-                      ),
-                      const SizedBox(height: 8),
-                      OutlinedButton(
+                      OutlinedButton.icon(
                         key: const Key('apply-library-defaults'),
-                        onPressed: _loading ? null : _applyToLibrary,
-                        child: const LText('Apply to all series and books'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 14,
+                          ),
+                        ),
+                        onPressed: _loading || _libraryConfirmationOpen
+                            ? null
+                            : _applyToLibrary,
+                        icon: const Icon(InkIcons.books),
+                        label: const LText('Apply to all'),
                       ),
                     ],
                     if (_message != null) ...[

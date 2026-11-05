@@ -20,7 +20,6 @@
   "Application theme": "Az alkalmazás témája",
   "Applied in addition to your device text size.": "Az eszközön beállított szövegméreten felül érvényesül.",
   "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Ezeket a beállításokat alkalmazza a könyvtárban található összes sorozatra és könyvre, felülírva azok egyéni olvasási beállításait.",
-  "Apply to all series and books": "Alkalmazás minden sorozatra és könyvre",
   "Authentication failed. Please sign in again.": "A hitelesítés sikertelen volt. Kérjük, jelentkezzen be újra.",
   "Authorization": "Jogosultság",
   "Authors": "Szerzők",
@@ -775,5 +774,7 @@
   "Setup is complete. Enjoy your reading!": "A beállítás befejeződött. Jó olvasást!",
   "Welcome to Inkora": "Üdvözöljük az Inkora alkalmazásban",
   "Visible metadata": "Látható metaadatok",
-  "Cover artist": "Borítórajzoló"
+  "Cover artist": "Borítórajzoló",
+  "Apply": "Alkalmazás",
+  "Apply to all": "Alkalmazás az összesre"
 }

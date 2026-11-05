@@ -10,6 +10,15 @@ remain in progress.
 
 ## [Unreleased]
 
+## [2026.45.5] - 2026-11-05
+
+### Changed
+
+- Pair website features with relevant phone/tablet screens in all twelve languages, share the app wordmark with the README and move support below the full introduction.
+- Present the README with the app wordmark, reader-focused feature descriptions and contextual phone/tablet captures; place support after the introduction and fold build instructions into an expandable section.
+- Remove the redundant Library badge above reading defaults and introduce the shared Reading mode category heading.
+- Simplify library-wide preference application to an adaptive button and confirmation drawer; explain replacement only inside the drawer and preserve custom values on cancellation or dismissal.
+
 ## [2026.45.4] - 2026-11-04
 
 ### Added

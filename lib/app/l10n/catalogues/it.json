@@ -20,7 +20,6 @@
   "Application theme": "Tema dell’applicazione",
   "Applied in addition to your device text size.": "Applicato in aggiunta alla dimensione del testo del suo dispositivo.",
   "Apply these preferences to every series and book in this library, replacing their custom reading preferences.": "Applichi queste preferenze a tutte le serie e a tutti i libri di questa libreria, sostituendo le loro preferenze di lettura personalizzate.",
-  "Apply to all series and books": "Applica a tutte le serie e a tutti i libri",
   "Authentication failed. Please sign in again.": "Autenticazione non riuscita. Si prega di effettuare nuovamente l’accesso.",
   "Authorization": "Autorizzazione",
   "Authors": "Autori",
@@ -775,5 +774,7 @@
   "Setup is complete. Enjoy your reading!": "La configurazione è terminata. Buona lettura!",
   "Welcome to Inkora": "Benvenuto in Inkora",
   "Visible metadata": "Metadati visibili",
-  "Cover artist": "Illustratore della copertina"
+  "Cover artist": "Illustratore della copertina",
+  "Apply": "Applica",
+  "Apply to all": "Applica a tutti"
 }

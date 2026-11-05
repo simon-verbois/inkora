@@ -15,7 +15,7 @@ Hungarian and Czech. English is at the root; the other languages have actual
 `fr/index.html`, `de/index.html`, etc. files. Language selection follows ordinary
 links, with no redirect, runtime translation request or server rewrite.
 
-Edit `docs/site-template.html`, the matching 67-key dictionaries under
+Edit `docs/site-template.html`, the matching 52-key dictionaries under
 `docs/locales/`, `docs/styles.css` and `docs/site.js`. After changing the template
 or copy, regenerate and check the committed pages:
 
@@ -44,7 +44,7 @@ with a fresh directory for subsequent builds; the builder preserves nonempty
 destinations. It verifies committed generation, all twelve routes, local assets,
 fragments and containment, rejecting root-relative paths. Its runtime artifact
 contains twelve HTML pages, twenty-four demonstration screenshots, CSS, JavaScript,
-favicon, font/license and `.nojekyll`; translation/template sources are omitted.
+favicon, wordmark, font/license and `.nojekyll`; translation/template sources are omitted.
 
 ## GitHub Pages setup
 
@@ -65,14 +65,19 @@ locale loads work without a fallback page. See GitHub's official
 [publishing source guide](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
 and [custom workflow guide](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
 
-## Complete screenshot tour
+## Features in context
 
-The gallery contains 24 freshly rendered phone/tablet views. Core screens are
-visible immediately; **Explore all screens** opens a native disclosure for the
-rest, including filters, metadata, custom gestures, servers and library setup.
-It works without JavaScript. Screenshot links open original images directly;
-JavaScript adds the existing keyboard-accessible enlargement dialog. Images in
-the lower gallery load lazily and retain their original aspect ratios.
+Nine selected screenshots sit beside the features they illustrate: resuming a
+book, finding your next read, downloading volumes, adjusting reading controls,
+choosing appearance and browsing on a tablet. On narrow screens, each explanation
+precedes its images. There is no separate screenshot gallery; the existing
+`#gallery` fragment still reaches the tablet feature for older links.
+
+Screenshot links open original images directly; JavaScript adds the existing
+keyboard-accessible enlargement dialog. Images load lazily, reserve their
+dimensions and retain their original aspect ratios. All 24 demonstration images
+remain in the static artifact for existing direct image links. The header and
+footer share the README's dark-theme wordmark image, with accessible Inkora text.
 
 ## Images and product claims
 
@@ -86,12 +91,13 @@ credentials. Keep the bundled font/license identical to
 
 ## Support button
 
-Each language page contains one official Buy Me a Coffee button in the hero,
+Each language page contains one official Buy Me a Coffee button after the full
+hero introduction, download links and platform status,
 linking to `https://buymeacoffee.com/simonverbois`. The local
 `buy-me-a-coffee.png` image retains its original artwork and displays at 178×50
 pixels. It loads from the site artifact, with a visible keyboard focus indicator
 and an accessible brand name; there is no third-party image request, embedded
 payment widget or tracking script. The source brand name stays unchanged in all
-languages. The same image appears once near the top of the README and in the
+languages. The same image appears once after the README introduction and in the
 app's About screen. Keep the fixed destination and identical artwork together
 when maintaining these placements.

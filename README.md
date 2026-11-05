@@ -1,114 +1,127 @@
-# Inkora
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/branding/inkora-wordmark-dark.png">
+    <img src="assets/branding/inkora-wordmark-light.png" width="240" height="72" alt="Inkora">
+  </picture>
+</h1>
+
+**Your Komga library, wherever you read.**
+
+Read your manga, comics, webtoons and ebooks on your phone or tablet. Connect
+Inkora to your [Komga](https://komga.org/) server, find your next read and pick
+up where you left off. Download a few volumes before you leave and keep reading
+without a connection.
+
+[Download for Android](https://github.com/simon-verbois/inkora/releases) ·
+[Visit the website](https://simon-verbois.github.io/inkora/) ·
+[See what's new](CHANGELOG.md)
+
+Inkora is in active development. Android is the currently tested platform;
+iOS support is under development and has not yet been validated on a native
+build. This page presents the development version, so some features may arrive
+in a later APK.
+
+If you enjoy Inkora, you can support its development:
 
 <a href="https://buymeacoffee.com/simonverbois"><img src="assets/branding/buy-me-a-coffee.png" width="178" height="50" alt="Buy Me a Coffee"></a>
 
-Your Komga library, wherever you read.
+## Pick up where you left off
 
-Inkora is a reader for manga, comics, webtoons and ebooks, built for phones and
-tablets. Connect your own [Komga](https://komga.org/) server, pick up where you left
-off and keep books available offline.
+Your current reads are waiting at the top of Home. Tap a cover to return
+straight to your book, or revisit a recent read from your reading history.
+Your progress syncs with Komga when you reconnect.
 
-**In active development.** Android is the currently tested platform. iOS support
-is under development and has not yet been validated on a native build. See
-[Releases](https://github.com/simon-verbois/inkora/releases) for Android APKs.
+<p>
+  <img src="docs/screenshots/phone-home.png" width="280" alt="Home with current reads above the library, ready to resume in one tap">
+</p>
 
-**Current development features are described below.** Published APKs may lag
-behind this branch; see [the changelog](CHANGELOG.md).
+## Find your next read
 
-## A home for your reading
+Browse your libraries, collections and reading lists, or narrow things down by
+format, reading status, author or genre. Save searches you return to often, such
+as unread manga or books already downloaded to your device.
 
-- **One library, every format.** Browse manga and comics, scroll through webtoons,
-  or read EPUB and PDF books.
-- **Continue in one tap.** Open the exact book you were reading, with progress
-  synchronized to Komga when you reconnect.
-- **Take books offline.** Download volumes, manage the transfer queue and set
-  storage and Wi-Fi preferences. From a series, choose all volumes or only
-  unread and in-progress books. Optionally remove finished downloads for that
-  series after at least 24 hours, keeping reading progress.
-  For selected series, keep the next two or three unfinished volumes offline;
-  the selection refills as you read while the app is open, within download limits.
-- **Keep your place.** Preview page thumbnails, save bookmarks and notes, and
-  continue to the next volume from the completion screen. Reopen recent books
-  from device-local reading history.
-- **Make it yours.** Choose from twelve light and dark palettes, including Mint
-  and Lavender. Set reading direction, page layout, gestures and EPUB typography.
-  Use one scaling/filter choice for all image formats, with sharpening on the
-  same page. Configure reading defaults per visible library with clear sections
-  and dropdown choices. Set Home covers per row separately
-  for portrait and landscape windows. Choose which metadata appears on series
-  and author pages, including individual credit roles; tags and language are
-  hidden by default.
-- **Find your next read.** Search your catalogue and browse series, collections
-  and reading lists. Filter by format, reading status or downloaded availability.
-  Combine author and genre filters, then save named searches with their library,
-  search text and sorting for quick reuse on the same account.
-- **Choose what appears.** Edit multiple server connections and choose the
-  visible libraries for each account in dedicated popups. All accessible
-  libraries are selected by default.
-- **Explore each book.** Open individual ebook details and author pages. Browse
-  series information beside its volumes on tablets, with completed covers muted
-  and selection actions floating over the page. Catalogue links ask before
-  opening an external site.
-- **Keep browsing comfortably.** Library and filter buttons stay within reach at
-  the bottom right, in portrait and landscape. Filters preserve your position,
-  and a subtle divider separates Continue reading from your library grid.
-- **Bring settings along.** Export settings and bookmarks to a file, preview an
-  import, or scan an existing settings QR code. Credentials,
-  books and reading progress are excluded. Account-specific files require the same
-  server/account; existing QR settings are portable.
-- **Read in your language.** The interface supports Czech, Dutch, English,
-  French, German, Greek, Hungarian, Italian, Polish, Portuguese, Romanian and
-  Spanish.
+Open a book to see its synopsis and publication details, or explore an author's
+other work. Switch between your saved servers and choose which libraries appear
+in **Settings → Servers**.
 
-## Screenshots
+<p>
+  <img src="docs/screenshots/phone-filters.png" width="260" alt="Catalogue filters for unread, in-progress and downloaded books, with saved searches">
+  <img src="docs/screenshots/phone-ebook.png" width="260" alt="An ebook's synopsis, author and publication details beside its Read book action">
+</p>
 
-Real app screens in English, rendered with a fictional demonstration catalogue
-and original sample cover artwork. Captures show the development version and
-are rendered by Flutter; they are not device photographs.
+## Take the next volumes with you
 
-| Library home | Library | Appearance |
-| --- | --- | --- |
-| ![Library home with Continue reading above the cover grid](docs/screenshots/phone-home.png) | ![Library grid with illustrated sample covers](docs/screenshots/phone-library.png) | ![Appearance themes and portrait/landscape Home cover counts](docs/screenshots/phone-appearance.png) |
+Download a whole series, just the unfinished volumes, or keep the next two or
+three ready to read. Inkora refills that selection as you read while the app is
+open, within your download limits.
 
-| Ebook details | Image quality | Batch downloads |
-| --- | --- | --- |
-| ![Individual ebook detail page](docs/screenshots/phone-ebook.png) | ![Shared image scaling, filters and sharpening](docs/screenshots/phone-quality.png) | ![Series download confirmation](docs/screenshots/phone-batch-download.png) |
+Manage the queue, set a storage limit and choose Wi-Fi-only downloads. You can
+also have finished volumes removed from your device after at least 24 hours,
+while keeping your reading progress.
 
-| Filters | Settings | Visible metadata |
-| --- | --- | --- |
-| ![Catalogue filters with sorting and saved searches](docs/screenshots/phone-filters.png) | ![Settings categories and search](docs/screenshots/phone-settings.png) | ![Metadata visibility with tags and language hidden](docs/screenshots/phone-metadata.png) |
+<p>
+  <img src="docs/screenshots/phone-batch-download.png" width="280" alt="Series download choices, including the next two or three volumes and optional removal of finished books">
+</p>
 
-| Custom gestures | Library reading setup | Servers and account |
-| --- | --- | --- |
-| ![Resizable gesture drawer with reading-area preview](docs/screenshots/phone-gestures.png) | ![Sectioned reading setup with the library name in the topbar](docs/screenshots/phone-setup-library.png) | ![Saved server with full-width identity and separate actions](docs/screenshots/phone-servers.png) |
+## Read your way
 
-![Inkora library home on a tablet](docs/screenshots/tablet-home.png)
+Turn pages through manga and comics, scroll through webtoons, or settle into an
+EPUB or PDF. Choose your reading direction and page layout, tune image scaling
+and sharpening, and adjust EPUB fonts and spacing. Page thumbnails, bookmarks
+and notes help you find your place again; finishing a volume lets you continue
+to the next one.
 
-![Series information, volumes and floating selection actions on a tablet](docs/screenshots/tablet-selection.png)
+Make the rest of the app comfortable too: choose from twelve light and dark
+palettes, adjust gesture areas and set reading defaults for each library.
+Choose which book details appear and how many covers fit across Home in portrait
+and landscape.
 
-![Rendering and sharpening settings on a tablet](docs/screenshots/tablet-quality.png)
+<p>
+  <img src="docs/screenshots/phone-appearance.png" width="260" alt="Appearance settings with light and dark palettes, including Mint, Lavender and Ocean">
+  <img src="docs/screenshots/phone-gestures.png" width="260" alt="Custom gesture settings with a preview of the reading area and adjustable edge zones">
+</p>
 
-The [website gallery](https://simon-verbois.github.io/inkora/#gallery) includes
-all 24 current phone and tablet captures.
+The interface is available in Czech, Dutch, English, French, German, Greek,
+Hungarian, Italian, Polish, Portuguese, Romanian and Spanish. You can export
+settings and bookmarks to a file and preview them before importing; credentials,
+books and reading progress stay out of that file.
+
+## Give your library room
+
+On a tablet, series information sits beside the volumes so you can read the
+synopsis and choose your next book in the same view. The library and reading
+layouts adapt to portrait and landscape, whether you read on a phone or a
+larger screen.
+
+<p>
+  <img src="docs/screenshots/tablet-series.png" width="900" alt="Tablet view with series synopsis and publication details beside a grid of volumes">
+</p>
+
+*Screens show the development app in English with fictional books and original
+sample covers. They are rendered by Flutter, rather than photographed on a
+device.*
 
 ## Get started
 
-You need a reachable Komga server and an account with access to its libraries.
-Inkora does not provide books or a hosted server.
+Inkora connects to your own Komga library. You'll need a reachable server and an
+account with access to its books; Inkora does not include books or host a server.
 
-1. Open Inkora and enter your `http://` or `https://` server address, including
+1. [Download the Android APK](https://github.com/simon-verbois/inkora/releases)
+   and install it on your phone or tablet.
+2. Open Inkora and enter your `http://` or `https://` server address, including
    its port and subpath if applicable.
-2. Sign in with a Komga API key or your username and password.
-3. Complete the guided setup, browse your libraries and open a book.
+3. Sign in with a Komga API key or your username and password.
+4. Follow the guided setup, choose a book and start reading.
 
 HTTP is supported for self-hosted servers; it sends credentials and reading data
 without encryption. Prefer HTTPS, especially outside a trusted local network.
 
 Server credentials are kept in platform secure storage. Downloads, local reading
 positions and pending progress updates remain scoped to their server account.
-You can change accounts and visible libraries in **Settings → Servers**.
 
-## Build from source
+<details>
+<summary>Build from source</summary>
 
 The pinned toolchain is recorded in [toolchain.lock.json](toolchain.lock.json):
 Flutter 3.47.7 / Dart 3.13.5, JDK 21 and Android SDK 36. Install those tools and
@@ -135,14 +148,10 @@ Root [VERSION](VERSION) supplies the Android version. [CHANGELOG.md](CHANGELOG.m
 records changes and development history. Both are bundled in the app and can be
 read offline from **Settings → About Inkora**.
 
-## Presentation website
+For local preview and hosting of the presentation website, see
+[the Pages guide](docs/PAGES.md).
 
-The [presentation website](https://simon-verbois.github.io/inkora/) has the same
-twelve languages as the app and introduces
-[Komga Meta Manager](https://simon-verbois.github.io/komga-meta-manager/), an
-independent metadata companion for Komga. See [the Pages guide](docs/PAGES.md)
-for local preview and hosting. Committed static locale pages support publishing
-from the default branch’s `/docs` folder or the optional Python build/workflow.
+</details>
 
 ## License and F-Droid
 

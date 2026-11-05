@@ -27,7 +27,11 @@ SCREENSHOTS = (
     'phone-gestures', 'phone-servers', 'phone-setup-library', 'phone-series-about',
     'tablet-filters', 'tablet-metadata', 'tablet-settings',
 )
-ASSETS = ('styles.css', 'site.js', 'favicon.svg', 'buy-me-a-coffee.png', 'font-license.txt',
+FEATURE_SCREENSHOTS = (
+    'phone-home', 'phone-filters', 'phone-ebook', 'phone-batch-download',
+    'phone-gestures', 'phone-quality', 'phone-appearance', 'phone-metadata', 'tablet-series',
+)
+ASSETS = ('styles.css', 'site.js', 'favicon.svg', 'buy-me-a-coffee.png', 'inkora-wordmark.png', 'font-license.txt',
           'fonts/LibreBaskerville.ttf') + tuple(f'screenshots/{name}.png' for name in SCREENSHOTS)
 PLACEHOLDER = re.compile(r'{{([a-z_]+)}}')
 
